@@ -1,0 +1,19 @@
+# Node
+node_modules/
+dist/
+.vite/
+# .NET
+bin/
+obj/
+.vs/
+# Environment and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+appsettings.Development.json
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
