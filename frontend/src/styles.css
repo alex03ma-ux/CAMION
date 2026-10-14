@@ -1,8 +1,138 @@
-:root { font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif; color: #1d2939; background: #f7f8fa; font-synthesis: none; text-rendering: optimizeLegibility; }
-* { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; }
-.container { min-height: 100vh; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; max-width: 850px; padding: 2rem; margin: auto; }
-.eyebrow { text-transform: uppercase; letter-spacing: .16em; color: #52657b; font-size: .8rem; font-weight: 700; }
-h1 { font-size: clamp(2rem, 5vw, 3.5rem); margin: .4rem 0 1rem; }
-p { line-height: 1.6; }
-.tag { margin-top: 1rem; border: 1px solid #cbd5e1; border-radius: 999px; padding: .45rem .85rem; font-size: .85rem; }
+:root {
+  font-family: Inter, system-ui, Arial, sans-serif;
+  color: #18263a;
+  background: #f3f5f8;
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+.container {
+  min-height: 100vh;
+  max-width: 1100px;
+  margin: auto;
+  padding: 60px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.eyebrow {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 3px;
+}
+
+h1 {
+  font-size: clamp(32px, 5vw, 52px);
+  margin: 12px 0;
+  color: #14263e;
+}
+
+.container > p {
+  line-height: 1.6;
+}
+
+form,
+.container section {
+  width: 100%;
+  max-width: 430px;
+  margin-top: 30px;
+  padding: 35px;
+  background: white;
+  border-radius: 18px;
+  box-shadow: 0 12px 40px rgba(20, 38, 62, 0.1);
+  text-align: left;
+}
+
+h2 {
+  margin-top: 0;
+  margin-bottom: 25px;
+  font-size: 24px;
+}
+
+label {
+  display: block;
+  margin: 16px 0 7px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+input {
+  display: block;
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  font-size: 15px;
+}
+
+input:focus {
+  outline: 2px solid #2563eb;
+  border-color: transparent;
+}
+
+button {
+  width: 100%;
+  margin-top: 24px;
+  padding: 14px;
+  background: #17365d;
+  color: white;
+  border: none;
+  border-radius: 9px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #24548c;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+[role="alert"] {
+  color: #b42318;
+  font-size: 14px;
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 30px 16px;
+  }
+
+  form,
+  .container section {
+    padding: 24px;
+  }
+}
+.auth-switch {
+  margin-top: 24px;
+  margin-bottom: 0;
+  text-align: center;
+  font-size: 14px;
+  color: #52657b;
+}
+
+.secondary-button {
+  margin-top: 12px;
+  background: #e8eef6;
+  color: #17365d;
+}
+
+.secondary-button:hover {
+  background: #d5e2f1;
+}
