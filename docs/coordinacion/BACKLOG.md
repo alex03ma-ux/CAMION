@@ -6,10 +6,10 @@ El estado funcional de cada módulo se toma de `ESTADO-REAL.md`, no de este arch
 | Orden | Trabajo | Criterio de salida | Estado | Rama / PR |
 |---|---|---|---|---|
 | P0 | Auditoría inicial de repositorio y requisitos | Mapa real de endpoints, tablas, HU y cobertura; diferencias documentadas (`ESTADO-REAL.md`) | PENDIENTE | — |
-| P1 | Robustecer autenticación | Duplicados, errores HTTP claros, contraseñas inválidas, permisos, expiración, persistencia de sesión, pruebas y UX | PENDIENTE (depende de P0) | — |
-| P2 | Seguridad de usuarios y aprobación de asesores | Roles y flujos aprobatorios protegidos en API; auditoría | PENDIENTE (depende de D-3) | — |
+| P1 | Robustecer autenticación | Duplicados, errores HTTP claros, contraseñas inválidas, permisos, expiración, persistencia de sesión, bloqueo de login para cuentas no aprobadas (D-3), pruebas y UX | PENDIENTE (depende de P0) | — |
+| P2 | Seguridad de usuarios y aprobación de todas las cuentas (D-3) | Registro en estado Pendiente; aprobación/rechazo/bloqueo por el administrador protegidos en API; auditoría | PENDIENTE | — |
 | P3 | Catálogo público de vehículos | Listado, detalle, filtros, búsqueda y visibilidad por estado | PENDIENTE | — |
-| P4 | Inventario y publicaciones | CRUD seguro, imágenes, plan/cupo, vigencia y propietario | PENDIENTE (depende de D-2) | — |
+| P4 | Inventario y publicaciones | CRUD seguro, imágenes, plan/cupo, vigencia y propietario | PENDIENTE (placa opcional y única, D-2) | — |
 | P5 | Leads y contactos | Captura anónima, asignación y seguimiento trazable | PENDIENTE | — |
 | P6 | Créditos y búsquedas | Formularios, estados, asignaciones, notificaciones y seguimiento | PENDIENTE | — |
 | P7 | Ventas, planes y administración | Historial, reversión, parametrización, panel administrativo | PENDIENTE | — |
