@@ -13,6 +13,8 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.11" />
     <!-- Misma versión de EF Core que resuelve Pomelo 8.0.3 (8.0.13). -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.13" />
+    <!-- Fuerza un SQLite nativo sin el aviso GHSA-2m69-gcr7-jv3q (afecta a lib.e_sqlite3 <= 2.1.11, la que trae EF Core). -->
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.53.3" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Camion.Api\Camion.Api.csproj" />
