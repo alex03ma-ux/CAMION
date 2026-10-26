@@ -44,7 +44,7 @@ Petición: `{ "email", "password" }`.
 - 200 `{ "accessToken", "tokenType": "Bearer", "expiraEnUtc", "usuarioId", "nombreCompleto", "email", "roles": [] }`
 - 400 `{ "error": "Escribe tu correo y tu contraseña." }` si falta alguno
 - 401 `{ "error": "Correo o contraseña incorrectos." }` — mismo mensaje si el correo no existe, la contraseña es incorrecta o la cuenta no está ACTIVA (no revela qué falló, HU-062)
-- 423 `{ "error": "Cuenta bloqueada temporalmente por varios intentos fallidos. Intenta de nuevo en 15 minutos." }` tras 5 intentos fallidos (bloqueo de Identity ya configurado)
+- 423 `{ "error": "Cuenta bloqueada temporalmente por varios intentos fallidos. Intenta de nuevo en 15 minutos." }` desde el 5.º intento fallido inclusive (bloqueo de Identity ya configurado). Se acepta que el 423 y el 409 del registro indiquen que el correo existe: es el comportamiento habitual y el bloqueo frena los ataques de fuerza bruta.
 
 ### GET /api/auth/me — requiere token (HU-059)
 - 200 `{ "usuarioId", "nombreCompleto", "email", "phoneNumber", "roles": [] }`
@@ -61,7 +61,8 @@ La comprobación de `session_version` y de `EstadoCuenta == ACTIVA` se hace en e
 - El token y su `expiraEnUtc` se guardan en `localStorage` (clave `camion.sesion`). Al cargar la app: si caducó, se borra; si no, se llama a `/api/auth/me`; si responde 401 se borra y se muestra el login.
 - Cualquier 401 de una llamada autenticada borra la sesión y muestra "Tu sesión terminó. Inicia sesión de nuevo."
 - "Cerrar sesión" llama a `POST /api/auth/logout` y borra la sesión local aunque la llamada falle.
-- Cierre automático por inactividad: tras **30 minutos** sin actividad (clics/teclas) se cierra la sesión como en "Cerrar sesión". Valor PROPUESTO, pendiente de confirmación de la responsable. La caducidad del token sigue siendo 2 horas.
+- Cierre automático por inactividad: tras **30 minutos** sin actividad (clics/teclas/toques) se borra la sesión **solo en ese navegador** (no llama a `/logout`, para no cerrar la sesión en otros equipos). La hora de la última actividad se guarda en `localStorage` (`camion.ultimaActividad`); al abrir o recargar la app, si pasaron más de 30 minutos, la sesión se borra aunque el token siga vigente. Valor de 30 min PROPUESTO, pendiente de confirmación de la responsable. La caducidad del token sigue siendo 2 horas.
+- "Cerrar sesión" (botón) sí llama a `/logout` y, por tanto, cierra la sesión en todos los dispositivos de ese usuario (PROPUESTO).
 
 ## Auditoría y datos personales (HU-061, HU-062)
 - Se registran en el log del servidor (ILogger, sin tabla nueva en P1): registro exitoso, login exitoso, login fallido, bloqueo y logout, con id de usuario cuando existe. Nunca se registran contraseñas ni tokens; el correo de un intento fallido no se registra completo.
