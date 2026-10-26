@@ -53,3 +53,28 @@ Las decisiones D-1 a D-5 se detectaron al comparar los documentos fuente el 2026
 ## D-5 — Envío de credenciales vs. autorregistro · TOMADA (2026-10-26)
 - Contexto: RN-US-004 "Envía credenciales iniciales" por correo, mientras que el registro actual permite que el usuario elija su contraseña. No hay servicio de correo configurado.
 - **Decisión: autorregistro con contraseña elegida por el usuario.** No se envían credenciales. Cuando se apruebe una integración de correo, el correo solo notificará la aprobación de la cuenta.
+
+## D-8 — ¿Qué HU oficial se cita para el registro de comprador? · TOMADA (2026-10-26)
+- Contexto: la matriz oficial de 87 HU (D-1) no tiene una HU "Registrar usuario/comprador"; solo aparece como HU-043 en la lista de 90 HU descartada. El registro de comprador ya existe en el código (`ESTADO-REAL.md`, secciones 7 y 11).
+- Opciones: A) crear HU-N03 "Registro de comprador" (como HU-N01/N02); B) citarlo bajo HU-059 / RN-SE-001 (inicio de sesión).
+- Recomendación del coordinador: A, para que tenga sus propios criterios de aceptación.
+- **Decisión: A. Se crea HU-N03 "Registro de comprador"**, con sus propios criterios y pruebas.
+
+## D-9 — Datos mínimos de un visitante sin cuenta al contactar · TOMADA (2026-10-26)
+- Contexto: D-3 y RN-SE-005 permiten contactar sin cuenta, pero el script SQL exige usuario y correo en `solicitudes` (`002_…sql:347`, `352`). HU-N01 pide solo nombre y WhatsApp.
+- Opciones: A) nombre + teléfono obligatorios, correo opcional; B) nombre + teléfono + correo obligatorios.
+- Recomendación del coordinador: A, coherente con HU-N01/N02.
+- **Decisión: A. Nombre y teléfono obligatorios, correo opcional**, en todo formulario de contacto o solicitud sin cuenta. Las solicitudes no exigen usuario registrado.
+
+## D-10 — Estados definitivos de la cuenta de asesor · TOMADA (2026-10-26)
+- Contexto: el script usa AUTORIZADO/DESAUTORIZADO; la v3.0 usa Aprobado/Rechazado/Bloqueado (D-4 no cubrió usuarios).
+- Opciones: A) Pendiente / Aprobado / Rechazado / Bloqueado (v3.0 + estado inicial de D-3); B) los del script.
+- Recomendación del coordinador: A.
+- **Decisión: A. Estados del asesor: Pendiente / Aprobado / Rechazado / Bloqueado.** Los valores AUTORIZADO/DESAUTORIZADO del script se migran a estos sin perder registros.
+
+## D-11 — ¿Se mantiene el estado "Reservado" de publicación? · TOMADA (2026-10-26)
+- Contexto: existe en el script SQL, pero no en la v3.0 ni en D-4.
+- Opciones: A) eliminarlo (solo Activo / Inactivo / Vendido); B) mantenerlo como estado extra.
+- Recomendación del coordinador: A, salvo que el negocio aparte vehículos para un cliente.
+- **Decisión: B. Se mantiene "Reservado"**: en el negocio se aparta un camión para un cliente mientras se cierra la venta. Estados del vehículo: Activo / Reservado / Inactivo / Vendido.
+- PROPUESTO (confirmar al diseñar P4): Activo → Reservado → Vendido, o Reservado → Activo si la venta no se cierra; lo marcan el asesor dueño o el administrador; en el catálogo público se sigue mostrando con la etiqueta "Reservado".
