@@ -188,6 +188,30 @@ Cómo se crea es una DECISIÓN pendiente (D-13), así que **no se implementa en 
   - Un 403 o un 401 se tratan como en P1.
 - **Usuarios no administradores:** no ven el panel ni el enlace al panel.
 
+## Aclaraciones del coordinador (respuesta a C-P2-3, C-P2-4 y C-P2-6 de `P2.md`)
+
+- **Orden en el login:**
+  1. Validación de datos (400).
+  2. Usuario inexistente (401).
+  3. Bloqueo por intentos (423).
+  4. Contraseña (401).
+  5. Estado distinto de ACTIVA (403).
+- **El 403 por estado no cuenta como intento fallido**: la contraseña era correcta, así que el contador se reinicia como en un login correcto.
+- **`ultimoAccesoEn`**: solo se actualiza en un login correcto con la cuenta ACTIVA.
+- **Nombres de estado:**
+  - `historial_autorizaciones` y `perfiles_asesor` usan los nombres de D-10: PENDIENTE / APROBADO / RECHAZADO / BLOQUEADO.
+  - `auditoria_eventos` usa los valores de `EstadoCuenta`.
+  - El texto del 409 usa nombres legibles en minúscula: "pendiente", "activa", "rechazada" o "bloqueada". Ejemplo: "No se puede aprobar una cuenta en estado activa."
+- **Mensajes de 400 en `/api/admin/*`** (con `errores` por parámetro):
+  - Texto general (`error`): "Revisa los filtros." en la lista y "Revisa los datos marcados." en las acciones.
+  - Por parámetro:
+    - `estado`: "Estado no válido."
+    - `rol`: "Rol no válido."
+    - `buscar`: "La búsqueda no puede tener más de 100 caracteres."
+    - `pagina` y `tamano`: "Página o tamaño no válidos."
+- **Pruebas de P1 que cambian:** CA-059-05 y CA-062-04 (cuenta no ACTIVA con la contraseña correcta) pasan de 401 a 403 por este contrato. Con la contraseña incorrecta sigue siendo 401.
+- **Trazabilidad:** HU-045 "Activar acceso" se traza al login de un asesor aprobado (RN-US-003), no al rechazo.
+
 ## Fuera de P2
 
 - Creación del primer administrador (D-13).
