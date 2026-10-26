@@ -24,7 +24,10 @@ Todas las respuestas de error con cuerpo usan JSON:
 | nombreCompleto | obligatorio; 2 a 150 caracteres tras recortar espacios | "Escribe tu nombre completo (2 a 150 caracteres)." |
 | email | obligatorio; formato de correo válido; máximo 254 caracteres | "Escribe un correo válido." / "El correo no puede tener más de 254 caracteres." |
 | telefono | obligatorio; 7 a 25 caracteres; solo dígitos, espacios, `+`, `-`, `(`, `)`; al menos 7 dígitos | "Escribe un teléfono válido (solo números, espacios, +, - o paréntesis)." |
-| password | obligatoria; mínimo 8 caracteres; al menos una mayúscula, una minúscula y un dígito; máximo 128 | Un mensaje por regla incumplida: "Debe tener al menos 8 caracteres.", "Debe tener al menos una letra mayúscula.", "Debe tener al menos una letra minúscula.", "Debe tener al menos un número." |
+| password | obligatoria; mínimo 8 caracteres; al menos una mayúscula, una minúscula y un dígito; máximo 128 | Un mensaje por regla incumplida: "Debe tener al menos 8 caracteres.", "Debe tener al menos una letra mayúscula.", "Debe tener al menos una letra minúscula.", "Debe tener al menos un número.", "No puede tener más de 128 caracteres." |
+
+- Texto general (`error`) de un 400 de registro: "Revisa los datos marcados."
+- Mayúscula/minúscula/dígito se evalúan solo en ASCII (igual que Identity): "Ñ" no cuenta como mayúscula. El frontend usa el mismo criterio.
 
 El correo se guarda recortado y en minúsculas. Las reglas de contraseña se muestran en el formulario antes de enviar (con indicación de cuáles se cumplen).
 
