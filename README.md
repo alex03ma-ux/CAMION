@@ -109,7 +109,7 @@ Abre **http://localhost:5173**. Vite reenvía (proxy) las rutas `/api` y `/healt
 
 ## Ejecutar las pruebas
 
-Las pruebas automáticas **se están creando en este ítem (P1)**; todavía no hay resultados que reportar. Cuando estén listas, los comandos serán:
+Pruebas automáticas (añadidas en P1). No usan la base de datos real: el backend se prueba con SQLite en memoria.
 
 ```powershell
 # Backend (desde la raíz del repositorio)
@@ -120,7 +120,7 @@ cd frontend
 npm test
 ```
 
-Nota: en el momento de escribir esto, `frontend/package.json` aún no tiene el script `test`, así que `npm test` fallará hasta que se añada.
+Resultado el 2026-10-26 en la rama `feature/p1-autenticacion`: backend 76/76 y frontend 42/42 pruebas pasan.
 
 ## Seguridad
 
