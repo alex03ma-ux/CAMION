@@ -40,3 +40,4 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - Pendiente: CI (INF-1).
 - Sin E2E con navegador (Playwright): la verificación manual con la app arrancada queda para la responsable o para un ítem posterior.
 - `gh` no está instalado: la rama se publica y el PR lo abre la responsable.
+- PR [#3](https://github.com/alex03ma-ux/CAMION/pull/3) abierto para P1. Pruebas verificadas de nuevo por el coordinador principal: 76/76 backend, 42/42 frontend. La responsable resolvió D-12: 30 minutos de inactividad; "Cerrar sesión" en todos los equipos.
