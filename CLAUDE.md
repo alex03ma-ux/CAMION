@@ -9,6 +9,16 @@ Stack: React 19 + Vite 7 + TypeScript (`frontend/`), ASP.NET Core .NET 8 + Ident
 - **Primero se audita el código** (`auditor-codigo` → `docs/coordinacion/ESTADO-REAL.md`). Nada documentado se considera implementado sin esa verificación. El README puede estar desactualizado.
 - Requisitos: `docs/requisitos/`. Estado real, backlog, decisiones y bitácora: `docs/coordinacion/`.
 
+## Reglas de negocio confirmadas por la responsable
+
+- **Comprador**: perfil independiente (no es asesor ni administrador).
+  - Registro opcional; sin cuenta se consulta el catálogo y se contacta.
+  - Si se registra, el acceso es inmediato, sin aprobación.
+  - Acceso de solo lectura: nunca puede crear, editar ni modificar vehículos, publicaciones ni datos de otros.
+  - Busca opciones de compra y puede preguntar por seguro, solicitar crédito y ofrecer un camión (detalle pendiente en D-6).
+- Solo los **asesores** requieren aprobación del administrador.
+- El resto de decisiones vigentes está en `docs/coordinacion/DECISIONES.md`; consúltalas antes de diseñar.
+
 ## Reglas permanentes
 
 - Ramas `feature/*`; commits pequeños citando HU/RN; PR contra `main` sin merge. Nunca push a `main`, merge, `--force` ni despliegues sin aprobación humana.

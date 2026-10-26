@@ -6,12 +6,12 @@ El estado funcional de cada módulo se toma de `ESTADO-REAL.md`, no de este arch
 | Orden | Trabajo | Criterio de salida | Estado | Rama / PR |
 |---|---|---|---|---|
 | P0 | Auditoría inicial de repositorio y requisitos | Mapa real de endpoints, tablas, HU y cobertura; diferencias documentadas (`ESTADO-REAL.md`) | PENDIENTE | — |
-| P1 | Robustecer autenticación | Duplicados, errores HTTP claros, contraseñas inválidas, permisos, expiración, persistencia de sesión, bloqueo de login para cuentas no aprobadas (D-3), pruebas y UX | PENDIENTE (depende de P0) | — |
-| P2 | Seguridad de usuarios y aprobación de todas las cuentas (D-3) | Registro en estado Pendiente; aprobación/rechazo/bloqueo por el administrador protegidos en API; auditoría | PENDIENTE | — |
+| P1 | Robustecer autenticación | Duplicados, errores HTTP claros, contraseñas inválidas, permisos, expiración, persistencia de sesión, registro de comprador inmediato y de solo lectura (D-3), pruebas y UX | PENDIENTE (depende de P0) | — |
+| P2 | Seguridad de usuarios y aprobación de asesores (D-3) | Asesor registrado en estado Pendiente; aprobación/rechazo/bloqueo por el administrador protegidos en API; comprador sin permisos de edición; auditoría | PENDIENTE | — |
 | P3 | Catálogo público de vehículos | Listado, detalle, filtros, búsqueda y visibilidad por estado | PENDIENTE | — |
 | P4 | Inventario y publicaciones | CRUD seguro, imágenes, plan/cupo, vigencia y propietario | PENDIENTE (placa opcional y única, D-2) | — |
 | P5 | Leads y contactos | Captura anónima, asignación y seguimiento trazable | PENDIENTE | — |
-| P6 | Créditos y búsquedas | Formularios, estados, asignaciones, notificaciones y seguimiento | PENDIENTE | — |
+| P6 | Créditos y búsquedas (+ seguro y "ofrecer un camión" del comprador, según D-6) | Formularios, estados, asignaciones, notificaciones y seguimiento | PENDIENTE (seguro/ofrecer camión bloqueados por D-6) | — |
 | P7 | Ventas, planes y administración | Historial, reversión, parametrización, panel administrativo | PENDIENTE | — |
 | P8 | Reportes, marketing e integraciones | Indicadores e integraciones aprobadas; pruebas y operación | PENDIENTE | — |
 | INF-1 | CI en GitHub Actions (build + pruebas en cada PR) | Flujo verde en un PR de prueba | PENDIENTE | — |
