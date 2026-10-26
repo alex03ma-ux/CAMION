@@ -68,7 +68,7 @@ public static partial class ValidacionAuth
         return limpio.Length == 0 ? null : limpio;
     }
 
-    // Motivo de las acciones del administrador: obligatorio (5 a 500) para rechazar y bloquear, opcional (hasta 500) en las demás.
+    // Motivo de las acciones del administrador: obligatorio (5 a 500) para rechazar, bloquear y reconsiderar, opcional (hasta 500) en las demás.
     public static Dictionary<string, string[]> ValidarMotivo(string? motivo, bool obligatorio)
     {
         var errores = new Dictionary<string, string[]>();
