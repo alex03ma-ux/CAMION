@@ -38,3 +38,9 @@ public sealed record ErrorResponse(
     string Error,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     IReadOnlyDictionary<string, string[]>? Errores = null);
+
+public static class MensajesError
+{
+    public const string Interno = "No se pudo completar la operación. Intenta de nuevo en unos minutos.";
+    public const string FormatoInvalido = "La solicitud no tiene un formato válido.";
+}

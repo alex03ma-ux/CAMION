@@ -81,7 +81,19 @@ app.Use(async (context, next) =>
     {
         context.Response.Clear();
         context.Response.StatusCode = ex.StatusCode;
-        await context.Response.WriteAsJsonAsync(new ErrorResponse("La solicitud no tiene un formato válido."));
+        await context.Response.WriteAsJsonAsync(new ErrorResponse(MensajesError.FormatoInvalido));
+    }
+    catch (Exception ex) when (!context.RequestAborted.IsCancellationRequested)
+    {
+        // Sin el mensaje de la excepción: puede contener datos personales (p. ej. el valor de un índice único).
+        context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("Camion.Api.Errores").LogError(
+            "Error no controlado {Tipo} (interno: {TipoInterno}) en {Metodo} {Ruta} traceId={TraceId} pila={Pila}",
+            ex.GetType().FullName, ex.InnerException?.GetType().FullName, context.Request.Method,
+            context.Request.Path.Value, context.TraceIdentifier, ex.StackTrace);
+        if (context.Response.HasStarted) throw;
+        context.Response.Clear();
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        await context.Response.WriteAsJsonAsync(new ErrorResponse(MensajesError.Interno));
     }
 });
 
@@ -103,7 +115,7 @@ app.MapGet("/health/database", async (IConfiguration configuration, Cancellation
     }
     catch (MySqlException)
     {
-        return Results.Problem("No fue posible conectar con MariaDB.", statusCode: 503);
+        return Results.Json(new ErrorResponse("No fue posible conectar con MariaDB."), statusCode: StatusCodes.Status503ServiceUnavailable);
     }
 });
 

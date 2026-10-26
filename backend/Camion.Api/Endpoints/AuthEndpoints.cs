@@ -52,7 +52,7 @@ public static class AuthEndpoints
                 {
                     var roleResult = await roles.CreateAsync(new IdentityRole(RolComprador));
                     if (!roleResult.Succeeded && !await roles.RoleExistsAsync(RolComprador))
-                        return Results.Problem("No se pudo preparar el rol comprador.");
+                        return ErrorInterno();
                 }
             }
             catch (DbUpdateException)
@@ -60,7 +60,7 @@ public static class AuthEndpoints
                 // Otro registro simultáneo creó el rol.
                 db.ChangeTracker.Clear();
                 if (!await roles.RoleExistsAsync(RolComprador))
-                    return Results.Problem("No se pudo preparar el rol comprador.");
+                    return ErrorInterno();
             }
 
             await using var tx = await db.Database.BeginTransactionAsync();
@@ -86,7 +86,7 @@ public static class AuthEndpoints
                 if (!assigned.Succeeded)
                 {
                     await tx.RollbackAsync();
-                    return Results.Problem("No fue posible asignar el rol comprador.");
+                    return ErrorInterno();
                 }
                 db.PerfilesComprador.Add(new PerfilComprador { UsuarioId = user.Id });
                 await db.SaveChangesAsync();
@@ -100,7 +100,7 @@ public static class AuthEndpoints
                 if (ex.InnerException is MySqlException { ErrorCode: MySqlErrorCode.DuplicateKeyEntry } ||
                     await users.FindByEmailAsync(email) is not null)
                     return Results.Conflict(new ErrorResponse(MensajeDuplicado));
-                throw;
+                throw; // Lo atiende el manejador global: 500 con { error }.
             }
 
             log.LogInformation("Auditoria registro_comprador exitoso usuarioId={UsuarioId}", user.Id);
@@ -200,11 +200,14 @@ public static class AuthEndpoints
                 // Conflicto de concurrencia (otro cambio simultáneo): se recarga y se reintenta.
                 await db.Entry(user).ReloadAsync();
             }
-            return Results.Problem("No fue posible cerrar la sesión. Intenta de nuevo.");
+            return ErrorInterno();
         }).RequireAuthorization();
 
         return app;
     }
+
+    private static IResult ErrorInterno() =>
+        Results.Json(new ErrorResponse(MensajesError.Interno), statusCode: StatusCodes.Status500InternalServerError);
 
     private static IResult Credenciales() =>
         Results.Json(new ErrorResponse(MensajeCredenciales), statusCode: StatusCodes.Status401Unauthorized);
