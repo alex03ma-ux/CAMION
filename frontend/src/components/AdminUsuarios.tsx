@@ -64,6 +64,7 @@ const EXITO_ACCION: Record<AccionUsuario, (nombre: string) => string> = {
   rechazar: (n) => `Se rechazó la solicitud de asesor de ${n}.`,
   bloquear: (n) => `Se bloqueó la cuenta de ${n}.`,
   desbloquear: (n) => `Se desbloqueó la cuenta de ${n}.`,
+  reconsiderar: (n) => `Se reconsideró y aprobó la cuenta de asesor de ${n}.`,
 }
 
 const FILTROS_INICIALES: FiltrosUsuarios = {
@@ -94,6 +95,8 @@ export function accionesValidas(u: UsuarioAdmin, usuarioIdPropio: string): Accio
       return ['bloquear']
     case 'BLOQUEADA':
       return ['desbloquear']
+    case 'RECHAZADA':
+      return esAsesor(u) ? ['reconsiderar'] : []
     default:
       return []
   }

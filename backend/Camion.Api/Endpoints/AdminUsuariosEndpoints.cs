@@ -46,6 +46,9 @@ public static class AdminUsuariosEndpoints
             SoloAsesores: false, MotivoObligatorio: true, CierraSesion: true),
         new("desbloquear", Auditoria.Desbloquear, EstadosCuenta.Bloqueada, EstadosCuenta.Activa, PerfilAsesor.Aprobado,
             SoloAsesores: false, MotivoObligatorio: false, CierraSesion: false),
+        // D-15: el administrador puede reconsiderar a un asesor rechazado.
+        new("reconsiderar", Auditoria.Reconsiderar, EstadosCuenta.Rechazada, EstadosCuenta.Activa, PerfilAsesor.Aprobado,
+            SoloAsesores: true, MotivoObligatorio: true, CierraSesion: false),
     ];
 
     public static IEndpointRouteBuilder MapAdminUsuariosEndpoints(this IEndpointRouteBuilder app)
@@ -195,7 +198,7 @@ public static class AdminUsuariosEndpoints
                     {
                         var estadoAsesorAnterior = perfil.EstadoAutorizacion;
                         perfil.EstadoAutorizacion = accion.EstadoAsesor;
-                        if (accion.Ruta == "aprobar")
+                        if (accion.Ruta is "aprobar" or "reconsiderar")
                         {
                             perfil.AutorizadoPor = administradorId;
                             perfil.AutorizadoEn = ahora;

@@ -13,6 +13,7 @@ public static class Auditoria
     public const string Rechazar = "RECHAZAR";
     public const string Bloquear = "BLOQUEAR";
     public const string Desbloquear = "DESBLOQUEAR";
+    public const string Reconsiderar = "RECONSIDERAR";
 
     // Solo agrega la fila al contexto; se guarda en la misma transacción que el cambio auditado.
     public static void Agregar(CamionDbContext db, string? actorId, string usuarioAfectadoId, string accion,

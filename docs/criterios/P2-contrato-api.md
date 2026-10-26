@@ -38,6 +38,7 @@ Cualquier otra transición devuelve 409.
 | rechazar | PENDIENTE | RECHAZADA | asesores |
 | bloquear | ACTIVA | BLOQUEADA | comprador o asesor (nunca un administrador) |
 | desbloquear | BLOQUEADA | ACTIVA | comprador o asesor |
+| reconsiderar (D-15) | RECHAZADA | ACTIVA | asesores; motivo obligatorio; escribe `autorizado_por`/`autorizado_en`; auditoría `RECONSIDERAR` |
 
 - Rechazar y bloquear incrementan `SessionVersion`: la persona pierde la sesión al momento en todos los equipos.
 - Aprobar y desbloquear no tocan `SessionVersion`.
@@ -128,12 +129,12 @@ Respuesta 200:
 - Orden: primero los PENDIENTE, después por `creadoEn` descendente.
 - La respuesta nunca incluye hash, SecurityStamp ni otros campos internos de Identity.
 
-### POST /api/admin/usuarios/{id}/aprobar | rechazar | bloquear | desbloquear — SoloAdministrador
+### POST /api/admin/usuarios/{id}/aprobar | rechazar | bloquear | desbloquear | reconsiderar — SoloAdministrador
 
 Corresponden a HU-043, HU-044/HU-045 y HU-047.
 
 Petición: `{ "motivo": "..." }`.
-- Para rechazar y bloquear, el motivo es obligatorio, de 5 a 500 caracteres (PROPUESTO). Mensaje: "Escribe el motivo (5 a 500 caracteres)."
+- Para rechazar, bloquear y reconsiderar, el motivo es obligatorio, de 5 a 500 caracteres (PROPUESTO). Mensaje: "Escribe el motivo (5 a 500 caracteres)."
 - Para aprobar y desbloquear es opcional, hasta 500 caracteres.
 
 Respuestas:
@@ -157,7 +158,7 @@ Contenido de cada fila:
 - `usuario_id`: quién actúa (el administrador, o el propio usuario en el registro).
 - `entidad`: `Usuario`.
 - `entidad_id`: el id del afectado.
-- `accion`: `REGISTRO_ASESOR` / `APROBAR` / `RECHAZAR` / `BLOQUEAR` / `DESBLOQUEAR`.
+- `accion`: `REGISTRO_ASESOR` / `APROBAR` / `RECHAZAR` / `BLOQUEAR` / `DESBLOQUEAR` / `RECONSIDERAR`.
 - `datos_anteriores`: `{ "estado": "..." }`.
 - `datos_nuevos`: `{ "estado": "...", "motivo": "..." }`.
 - `creado_en`: la fecha y hora (UTC).

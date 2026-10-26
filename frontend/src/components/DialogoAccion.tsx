@@ -38,6 +38,12 @@ export const TEXTOS_ACCION: Record<
     pregunta: (n) => `¿Desbloquear la cuenta de ${n}? Podrá volver a iniciar sesión.`,
     enviando: 'Desbloqueando...',
   },
+  reconsiderar: {
+    boton: 'Reconsiderar',
+    titulo: 'Reconsiderar solicitud de asesor',
+    pregunta: (n) => `¿Reconsiderar y aprobar la solicitud de asesor de ${n}? Podrá iniciar sesión de inmediato.`,
+    enviando: 'Reconsiderando...',
+  },
 }
 
 const SELECTOR_ENFOCABLES =

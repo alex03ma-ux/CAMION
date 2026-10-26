@@ -15,6 +15,7 @@ El estado funcional de cada módulo se toma de `ESTADO-REAL.md`, no de este arch
 | P6 | Créditos y búsquedas | Formularios, estados, asignación al administrador (D-7), notificaciones y seguimiento | PENDIENTE | — |
 | P7 | Ventas, planes y administración | Historial, reversión, parametrización, panel administrativo | PENDIENTE | — |
 | P8 | Reportes, marketing e integraciones | Indicadores e integraciones aprobadas; pruebas y operación | PENDIENTE | — |
+| P2b | "Solicitar ser asesor" desde la cuenta de comprador (D-15) | Un comprador pide pasar a asesor con el mismo correo; queda Pendiente hasta aprobación | PENDIENTE | — |
 | INF-1 | CI en GitHub Actions (build + pruebas en cada PR) | Flujo verde en un PR de prueba | PENDIENTE | — |
 
 ## Primer encargo (P1, tras P0)

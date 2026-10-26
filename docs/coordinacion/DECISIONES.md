@@ -120,7 +120,7 @@ Las decisiones D-1 a D-5 se detectaron al comparar los documentos fuente el 2026
   4. Se aplica solo cuando el código de P2 compile y pase sus pruebas.
   5. En la bitácora quedan la ruta del respaldo, los conteos y el resultado.
 
-## D-15 — ¿Qué pasa con un asesor rechazado y con un comprador que quiere ser asesor? · PENDIENTE (detectada en P2, 2026-10-26)
+## D-15 — ¿Qué pasa con un asesor rechazado y con un comprador que quiere ser asesor? · TOMADA (2026-10-26)
 - Contexto: con el contrato de P2, un asesor rechazado no tiene salida. No puede volver a pedir el alta, porque su correo y su documento ya existen (409). Un comprador tampoco puede pasar a asesor con el mismo correo. La v3.0 no dice nada sobre ninguno de los dos casos (C-P2-2 y C-P2-5 de `docs/criterios/P2.md`).
 - Opciones:
   - A) El administrador puede **reconsiderar**: aprobar a un asesor rechazado (paso de Rechazado a Aprobado, con motivo y auditoría). Un comprador que quiere ser asesor usa por ahora otro correo; más adelante se añade "Solicitar ser asesor" desde su cuenta.
@@ -128,5 +128,5 @@ Las decisiones D-1 a D-5 se detectaron al comparar los documentos fuente el 2026
   - B) Un rechazo es definitivo. Para volver a intentarlo hay que hablar con el administrador, sin cambios en el sistema.
     - Impacto: no hay trabajo nuevo, pero no hay salida dentro del sistema.
 - Recomendación del coordinador: A.
-- Bloquea: nada de P2. P2 se entrega con el rechazo definitivo; la opción A se añadiría después.
+- **Decisión: A. "El admin puede reconsiderar"** (respuesta de la responsable, transmitida por el coordinador principal). El administrador puede pasar a un asesor de Rechazado a Aprobado, con motivo obligatorio y auditoría; se incluye en P2. Un comprador que quiera ser asesor usa, por ahora, otro correo. "Solicitar ser asesor" desde la cuenta del comprador queda como ítem futuro del backlog.
 - Nota de trazabilidad (C-P2-1): la matriz asocia HU-047 "Bloquear usuario" a RN-US-005, pero en la v3.0 esa regla es "Notificación de acceso". Se mantiene HU-047 como referencia del bloqueo.

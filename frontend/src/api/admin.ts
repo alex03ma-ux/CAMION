@@ -43,7 +43,7 @@ export type FiltrosUsuarios = {
   tamano: number
 }
 
-export type AccionUsuario = 'aprobar' | 'rechazar' | 'bloquear' | 'desbloquear'
+export type AccionUsuario = 'aprobar' | 'rechazar' | 'bloquear' | 'desbloquear' | 'reconsiderar'
 
 export const TAMANO_PAGINA = 20
 export const BUSCAR_MAX = 100
@@ -54,9 +54,9 @@ export const MENSAJE_MOTIVO = 'Escribe el motivo (5 a 500 caracteres).'
 export const MENSAJE_MOTIVO_LARGO = 'El motivo no puede tener más de 500 caracteres.'
 export const MENSAJE_USUARIO_NO_ENCONTRADO = 'Usuario no encontrado.'
 
-/** Rechazar y bloquear exigen motivo; aprobar y desbloquear lo tienen opcional. */
+/** Rechazar, bloquear y reconsiderar exigen motivo; aprobar y desbloquear lo tienen opcional. */
 export function motivoObligatorio(accion: AccionUsuario): boolean {
-  return accion === 'rechazar' || accion === 'bloquear'
+  return accion === 'rechazar' || accion === 'bloquear' || accion === 'reconsiderar'
 }
 
 /** Valida el motivo según el contrato. Devuelve la lista de errores. */
