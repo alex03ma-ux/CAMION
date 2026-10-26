@@ -17,12 +17,17 @@ public static class AuthEndpoints
     public const string Emisor = "Camion.Api";
     public const string Audiencia = "Camion.Frontend";
     public const string ClaimSessionVersion = "session_version";
-    public const string RolComprador = "COMPRADOR";
+    public const string RolComprador = Roles.Comprador;
     public const string CategoriaAuditoria = "Camion.Api.Auditoria";
 
     private const string MensajeCredenciales = "Correo o contraseña incorrectos.";
     private const string MensajeDuplicado = "Este correo ya está registrado.";
     private const string MensajeBloqueo = "Cuenta bloqueada temporalmente por varios intentos fallidos. Intenta de nuevo en 15 minutos.";
+    private const string MensajeDocumentoDuplicado = "Ya existe un asesor con ese documento.";
+    private const string MensajeSolicitudAsesor = "Solicitud enviada. Podrás iniciar sesión cuando el administrador apruebe tu cuenta.";
+    private const string MensajePendiente = "Tu cuenta de asesor está pendiente de aprobación. Te avisaremos cuando el administrador la apruebe.";
+    private const string MensajeRechazada = "Tu solicitud de asesor no fue aprobada. Comunícate con el administrador.";
+    private const string MensajeBloqueada = "Tu cuenta está bloqueada. Comunícate con el administrador.";
 
     public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder app, string jwtKey)
     {
@@ -45,23 +50,9 @@ public static class AuthEndpoints
             if (await users.FindByEmailAsync(email) is not null)
                 return Results.Conflict(new ErrorResponse(MensajeDuplicado));
 
-            try
-            {
-                // El rol se crea una sola vez si aún no existe.
-                if (!await roles.RoleExistsAsync(RolComprador))
-                {
-                    var roleResult = await roles.CreateAsync(new IdentityRole(RolComprador));
-                    if (!roleResult.Succeeded && !await roles.RoleExistsAsync(RolComprador))
-                        return ErrorInterno();
-                }
-            }
-            catch (DbUpdateException)
-            {
-                // Otro registro simultáneo creó el rol.
-                db.ChangeTracker.Clear();
-                if (!await roles.RoleExistsAsync(RolComprador))
-                    return ErrorInterno();
-            }
+            // El rol se crea una sola vez si aún no existe (tolera que otro registro simultáneo lo cree).
+            if (!await Roles.AsegurarAsync(roles, db, RolComprador))
+                return ErrorInterno();
 
             await using var tx = await db.Database.BeginTransactionAsync();
             var user = new ApplicationUser
@@ -108,6 +99,87 @@ public static class AuthEndpoints
                 new RegistroCompradorResponse(user.Id, "Cuenta creada. Ya puedes iniciar sesión."));
         });
 
+        // P2 (HU-043, D-3, D-5): registro público de asesor; rol fijo ASESOR y cuenta PENDIENTE hasta su aprobación.
+        auth.MapPost("/registro/asesor", async (
+            RegistroAsesorRequest? request,
+            UserManager<ApplicationUser> users,
+            RoleManager<IdentityRole> roles,
+            CamionDbContext db,
+            ILoggerFactory loggerFactory) =>
+        {
+            var log = loggerFactory.CreateLogger(CategoriaAuditoria);
+            request ??= new RegistroAsesorRequest(null, null, null, null, null, null, null);
+            var errores = ValidacionAuth.ValidarRegistroAsesor(request);
+            if (errores.Count > 0) return Validacion(errores);
+
+            var email = ValidacionAuth.NormalizarEmail(request.Email);
+            var tipo = ValidacionAuth.NormalizarTipoDocumento(request.TipoDocumento);
+            var numero = ValidacionAuth.NormalizarNumeroDocumento(request.NumeroDocumento);
+            if (await users.FindByEmailAsync(email) is not null)
+                return Results.Conflict(new ErrorResponse(MensajeDuplicado));
+            if (await DocumentoRegistrado(db, tipo, numero))
+                return DocumentoDuplicado();
+
+            if (!await Roles.AsegurarAsync(roles, db, Roles.Asesor))
+                return ErrorInterno();
+
+            await using var tx = await db.Database.BeginTransactionAsync();
+            var user = new ApplicationUser
+            {
+                Id = Guid.NewGuid().ToString(),
+                UserName = email,
+                Email = email,
+                PhoneNumber = request.Telefono!.Trim(),
+                NombreCompleto = request.NombreCompleto!.Trim(),
+                EstadoCuenta = EstadosCuenta.Pendiente
+            };
+            try
+            {
+                var created = await users.CreateAsync(user, request.Password!);
+                if (!created.Succeeded)
+                {
+                    await tx.RollbackAsync();
+                    if (ValidacionAuth.EsDuplicado(created.Errors))
+                        return Results.Conflict(new ErrorResponse(MensajeDuplicado));
+                    return Validacion(ValidacionAuth.TraducirErroresIdentity(created.Errors));
+                }
+                var assigned = await users.AddToRoleAsync(user, Roles.Asesor);
+                if (!assigned.Succeeded)
+                {
+                    await tx.RollbackAsync();
+                    return ErrorInterno();
+                }
+                db.PerfilesAsesor.Add(new PerfilAsesor
+                {
+                    UsuarioId = user.Id,
+                    TipoDocumento = tipo,
+                    NumeroDocumento = numero,
+                    NombreComercial = ValidacionAuth.NormalizarOpcional(request.NombreComercial),
+                    EstadoAutorizacion = PerfilAsesor.Pendiente
+                });
+                Auditoria.Agregar(db, user.Id, user.Id, Auditoria.RegistroAsesor,
+                    estadoAnterior: null, EstadosCuenta.Pendiente, motivo: null, incluirMotivo: false);
+                await db.SaveChangesAsync();
+                await tx.CommitAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                await tx.RollbackAsync();
+                db.ChangeTracker.Clear();
+                // Registros simultáneos chocan en los índices únicos (correo o documento): 409, nunca 500.
+                if (await users.FindByEmailAsync(email) is not null)
+                    return Results.Conflict(new ErrorResponse(MensajeDuplicado));
+                if (await DocumentoRegistrado(db, tipo, numero))
+                    return DocumentoDuplicado();
+                if (ex.InnerException is MySqlException { ErrorCode: MySqlErrorCode.DuplicateKeyEntry })
+                    return Results.Conflict(new ErrorResponse(MensajeDuplicado));
+                throw; // Lo atiende el manejador global: 500 con { error }.
+            }
+
+            log.LogInformation("Auditoria registro_asesor exitoso usuarioId={UsuarioId}", user.Id);
+            return Results.Created("/api/auth/me", new RegistroCompradorResponse(user.Id, MensajeSolicitudAsesor));
+        });
+
         // HU-059, RN-SE-001, HU-062: mismo mensaje para cualquier fallo de credenciales.
         auth.MapPost("/login", async (
             LoginRequest? request,
@@ -122,10 +194,10 @@ public static class AuthEndpoints
                 return Results.BadRequest(new ErrorResponse("Escribe tu correo y tu contraseña."));
 
             var user = await users.FindByEmailAsync(email);
-            if (user is null || user.EstadoCuenta != "ACTIVA")
+            if (user is null)
             {
-                log.LogWarning("Auditoria login fallido motivo={Motivo} usuarioId={UsuarioId} correo={Correo}",
-                    user is null ? "usuario_inexistente" : "cuenta_no_activa", user?.Id, ValidacionAuth.EnmascararEmail(email));
+                log.LogWarning("Auditoria login fallido motivo=usuario_inexistente correo={Correo}",
+                    ValidacionAuth.EnmascararEmail(email));
                 return Credenciales();
             }
 
@@ -139,6 +211,24 @@ public static class AuthEndpoints
             {
                 log.LogWarning("Auditoria login fallido motivo=contrasena_incorrecta usuarioId={UsuarioId}", user.Id);
                 return Credenciales();
+            }
+
+            // P2: primero la contraseña, después el estado; así el estado solo se revela a quien conoce la contraseña.
+            if (user.EstadoCuenta != EstadosCuenta.Activa)
+            {
+                log.LogWarning("Auditoria login fallido motivo=cuenta_no_activa estado={Estado} usuarioId={UsuarioId}",
+                    user.EstadoCuenta, user.Id);
+                var mensaje = user.EstadoCuenta switch
+                {
+                    EstadosCuenta.Pendiente => MensajePendiente,
+                    EstadosCuenta.Rechazada => MensajeRechazada,
+                    EstadosCuenta.Bloqueada => MensajeBloqueada,
+                    _ => null
+                };
+                // Un valor fuera de los estados del contrato no se revela: se responde como en P1.
+                if (mensaje is null) return Credenciales();
+                return Results.Json(new ErrorResponse(mensaje, Estado: user.EstadoCuenta),
+                    statusCode: StatusCodes.Status403Forbidden);
             }
 
             var userRoles = await users.GetRolesAsync(user);
@@ -174,8 +264,9 @@ public static class AuthEndpoints
             var user = id is null ? null : await users.FindByIdAsync(id);
             if (user is null) return Results.Unauthorized();
             var userRoles = await users.GetRolesAsync(user);
-            return Results.Ok(new MeResponse(user.Id, user.NombreCompleto, user.Email, user.PhoneNumber, userRoles.ToArray()));
-        }).RequireAuthorization();
+            return Results.Ok(new MeResponse(user.Id, user.NombreCompleto, user.Email, user.PhoneNumber,
+                userRoles.ToArray(), user.EstadoCuenta));
+        }).RequireAuthorization(Roles.PoliticaAutenticado);
 
         // HU-060, RN-SE-002: invalida todos los tokens emitidos antes para el usuario.
         auth.MapPost("/logout", async (
@@ -201,10 +292,17 @@ public static class AuthEndpoints
                 await db.Entry(user).ReloadAsync();
             }
             return ErrorInterno();
-        }).RequireAuthorization();
+        }).RequireAuthorization(Roles.PoliticaAutenticado);
 
         return app;
     }
+
+    private static Task<bool> DocumentoRegistrado(CamionDbContext db, string tipo, string numero) =>
+        db.PerfilesAsesor.AnyAsync(p => p.TipoDocumento == tipo && p.NumeroDocumento == numero);
+
+    private static IResult DocumentoDuplicado() =>
+        Results.Conflict(new ErrorResponse(MensajeDocumentoDuplicado,
+            new Dictionary<string, string[]> { ["numeroDocumento"] = [MensajeDocumentoDuplicado] }));
 
     private static IResult ErrorInterno() =>
         Results.Json(new ErrorResponse(MensajesError.Interno), statusCode: StatusCodes.Status500InternalServerError);
