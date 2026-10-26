@@ -43,7 +43,7 @@ Las decisiones D-1 a D-5 se detectaron al comparar los documentos fuente el 2026
   - RN-CL-003 / HU-031: un lead de publicación va al asesor dueño solo con plan vigente; si no, al administrador.
   - RN-CO-007 / RN-CO-008 / HU-041 / HU-042: créditos asignados y gestionados por el administrador.
   - RN-BU-002 / HU-035 a HU-038: búsquedas gestionadas por el administrador.
-- Pendiente de confirmar: si el administrador puede reasignar manualmente una solicitud a un asesor. Mientras no se confirme, **no se implementa reasignación**.
+- **Reasignación manual (confirmada 2026-10-26):** el administrador puede reasignar manualmente cualquier solicitud a un asesor si lo decide. La asignación automática siempre va al administrador. La reasignación debe quedar auditada: quién, cuándo, de quién a quién (RN-SE-003).
 
 ## D-4 — Estados incompletos en la línea base · TOMADA (2026-10-26)
 - Contexto: las transiciones usan Crédito "Cerrado" y Suscripción "Reactivada", que no están en la tabla de estados; RN-VE-008 menciona solo Activo/Inactivo pero existe Vendido.

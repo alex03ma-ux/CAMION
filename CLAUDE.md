@@ -17,7 +17,7 @@ Stack: React 19 + Vite 7 + TypeScript (`frontend/`), ASP.NET Core .NET 8 + Ident
   - Acceso de solo lectura: nunca puede crear, editar ni modificar vehículos, publicaciones ni datos de otros.
   - Busca opciones de compra y puede pedir seguro, solicitar crédito y vender su propio vehículo.
 - Solo los **asesores** requieren aprobación del administrador.
-- **Todo servicio lo atiende el administrador** (créditos, búsquedas, solicitudes generales, venta de vehículos de clientes, seguros). El asesor solo atiende los contactos de **sus propios vehículos publicados con plan vigente** (D-7).
+- **Todo servicio lo atiende el administrador** (créditos, búsquedas, solicitudes generales, venta de vehículos de clientes, seguros). El asesor solo atiende los contactos de **sus propios vehículos publicados con plan vigente**, o lo que el administrador le reasigne manualmente; la reasignación se audita (D-7).
 - Avisos del portal (D-6), ambos sin cuenta y dirigidos al administrador:
   - **"Vende tu camión"**: nombre, teléfono WhatsApp y descripción del vehículo (máx. 500 caracteres).
   - **"Compra tu seguro todo riesgo"**: nombre, teléfono y tipo de vehículo.
