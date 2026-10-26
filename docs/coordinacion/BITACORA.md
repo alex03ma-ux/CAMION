@@ -42,3 +42,14 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
 - `gh` no está instalado: la rama se publica y el PR lo abre la responsable.
 - PR [#3](https://github.com/alex03ma-ux/CAMION/pull/3) abierto para P1. Pruebas verificadas de nuevo por el coordinador principal: 76/76 backend, 42/42 frontend. La responsable resolvió D-12: 30 minutos de inactividad; "Cerrar sesión" en todos los equipos.
 - Prueba manual de P1 hecha por la responsable con la app arrancada contra MariaDB `camion_ventas` (2026-10-26): registro de comprador con acceso inmediato, sesión conservada al recargar, cierre de sesión, contraseña incorrecta con mensaje claro, bloqueo de 15 minutos al 5.º intento fallido (los intentos durante el bloqueo se rechazan) e inicio de sesión correcto pasado el bloqueo. Todo según lo esperado; evidencia en el registro de auditoría del servidor. Queda una cuenta de prueba en la base de datos.
+
+## 2026-10-26 — P2 Asesores y administración (EN CURSO, interrumpido por límite de uso)
+- Rama `feature/p2-asesores` desde `main` (`b0a9506`). Contrato `docs/criterios/P2-contrato-api.md`, 109 criterios en `docs/criterios/P2.md`, D-13 y D-14 TOMADAS, D-15 PENDIENTE.
+- IMPLEMENTADO (sin pruebas P2 todavía):
+  - Backend: registro de asesor, login con 403 por estado, roles y políticas, panel `/api/admin/usuarios`, auditoría, `promover-admin` y migración 003 (sin aplicar). `dotnet build` sin errores; 75 de 76 pruebas de P1 pasan. La que falla es el inventario de endpoints, que hay que actualizar por las rutas nuevas.
+  - Frontend: registro de asesor, avisos de estado en el login y panel de administración. `npm run build` correcto; las 42 pruebas de P1 pasan.
+- Pendiente:
+  - Pruebas de API y de componentes de P2 (los agentes de QA se detuvieron antes de terminar).
+  - Revisión de `devops-seguridad`.
+  - Documentación (README, guía de autenticación, `docs/GUIA-ADMINISTRACION.md`).
+  - **Migración 003 NO aplicada**: la condición 4 de D-14 exige que antes pasen las pruebas de P2.
