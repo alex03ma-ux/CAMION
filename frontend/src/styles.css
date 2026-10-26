@@ -136,3 +136,150 @@ button:disabled {
 .secondary-button:hover {
   background: #d5e2f1;
 }
+/* ---- P1 autenticación: campos, errores, avisos y reglas de contraseña ---- */
+
+.form-ayuda {
+  margin: -12px 0 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #52657b;
+}
+
+.campo + .campo {
+  margin-top: 0;
+}
+
+input[aria-invalid="true"] {
+  border-color: #b42318;
+  background: #fffafa;
+}
+
+input:disabled {
+  background: #f1f5f9;
+}
+
+.campo-errores {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  color: #b42318;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.aviso {
+  margin: 18px 0 0;
+  padding: 12px 14px;
+  border-radius: 9px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.aviso-error {
+  background: #fef3f2;
+  border: 1px solid #fecdca;
+  color: #b42318;
+}
+
+.aviso-exito {
+  background: #ecfdf3;
+  border: 1px solid #abefc6;
+  color: #067647;
+}
+
+.aviso-info {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+}
+
+.reglas-password {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border-radius: 9px;
+  font-size: 13px;
+}
+
+.reglas-titulo {
+  margin: 0 0 6px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.reglas-password ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reglas-password li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 2px 0;
+}
+
+.regla-marca {
+  display: inline-block;
+  width: 1em;
+  text-align: center;
+  font-weight: 700;
+}
+
+.regla-cumplida {
+  color: #067647;
+}
+
+.regla-pendiente {
+  color: #475569;
+}
+
+.perfil-datos {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 16px;
+  margin: 0 0 20px;
+}
+
+.perfil-datos dt {
+  font-weight: 600;
+}
+
+.perfil-datos dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+h2:focus {
+  outline: none;
+}
+
+button:focus-visible,
+h2:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 480px) {
+  .perfil-datos {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .perfil-datos dd {
+    margin-bottom: 8px;
+  }
+}

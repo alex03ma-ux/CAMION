@@ -1,110 +1,175 @@
-import { useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  cerrarSesionServidor,
+  esSesionTerminada,
+  MENSAJE_SESION_TERMINADA,
+  obtenerPerfil,
+  type LoginResponse,
+  type PerfilUsuario,
+} from './api/auth'
+import { ApiError, MENSAJE_INESPERADO } from './api/http'
+import { inactividadGuardadaVencida, useInactividad } from './auth/inactivity'
+import {
+  borrarSesion,
+  CLAVE_SESION,
+  guardarSesion,
+  guardarUltimaActividad,
+  leerSesion,
+  msHastaCaducidad,
+  sesionCaducada,
+  sesionDesdeLogin,
+  type SesionGuardada,
+} from './auth/session'
+import type { DatosAviso } from './components/Aviso'
+import { Aviso } from './components/Aviso'
+import { LoginForm } from './components/LoginForm'
+import { PerfilPanel } from './components/PerfilPanel'
+import { RegistroForm } from './components/RegistroForm'
 
-type Perfil = {
-  usuarioId: string
-  nombreCompleto: string
-  email: string
-  phoneNumber: string
-  roles: string[]
+type Vista =
+  | { tipo: 'verificando'; sesion: SesionGuardada }
+  | { tipo: 'sinConexion'; sesion: SesionGuardada; mensaje: string }
+  | { tipo: 'login'; aviso: DatosAviso | null; email: string }
+  | { tipo: 'registro' }
+  | { tipo: 'perfil'; sesion: SesionGuardada; perfil: PerfilUsuario }
+
+const AVISO_SESION_TERMINADA: DatosAviso = { tipo: 'error', texto: MENSAJE_SESION_TERMINADA }
+const AVISO_SESION_CERRADA: DatosAviso = { tipo: 'exito', texto: 'Cerraste sesión correctamente.' }
+
+/** Tiempo máximo de espera del logout en el servidor antes de seguir. */
+const ESPERA_LOGOUT_MS = 5000
+/** setTimeout no admite más de ~24,8 días. */
+const MAX_TIMEOUT_MS = 2_147_483_647
+
+function vistaInicial(): Vista {
+  const sesion = leerSesion()
+  if (!sesion) return { tipo: 'login', aviso: null, email: '' }
+  // Token caducado o más de 30 min sin actividad (aunque el token siga vigente).
+  if (sesionCaducada(sesion) || inactividadGuardadaVencida()) {
+    borrarSesion()
+    return { tipo: 'login', aviso: AVISO_SESION_TERMINADA, email: sesion.email }
+  }
+  return { tipo: 'verificando', sesion }
 }
 
-type Modo = 'login' | 'registro'
+function loginCon(aviso: DatosAviso | null, email = ''): Vista {
+  return { tipo: 'login', aviso, email }
+}
 
 export default function App() {
-  const [modo, setModo] = useState<Modo>('login')
-  const [nombreCompleto, setNombreCompleto] = useState('')
-  const [email, setEmail] = useState('')
-  const [telefono, setTelefono] = useState('')
-  const [password, setPassword] = useState('')
-  const [perfil, setPerfil] = useState<Perfil | null>(null)
-  const [mensaje, setMensaje] = useState('')
-  const [cargando, setCargando] = useState(false)
+  const [vista, setVista] = useState<Vista>(vistaInicial)
+  const [cerrando, setCerrando] = useState(false)
+  // Clave para reiniciar el formulario de login cuando cambia el aviso.
+  const [claveLogin, setClaveLogin] = useState(0)
+  const cerrandoRef = useRef(false)
 
-  function cambiarModo(nuevoModo: Modo) {
-    setModo(nuevoModo)
-    setMensaje('')
-    setPassword('')
-  }
+  const irALogin = useCallback((aviso: DatosAviso | null, email = '') => {
+    setClaveLogin((k) => k + 1)
+    setVista(loginCon(aviso, email))
+  }, [])
 
-  async function enviarFormulario(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setCargando(true)
-    setMensaje('')
+  /** La sesión ya no vale (401 o token caducado): se borra sin llamar al servidor. */
+  const terminarSesion = useCallback(
+    (email = '') => {
+      borrarSesion()
+      irALogin(AVISO_SESION_TERMINADA, email)
+    },
+    [irALogin],
+  )
 
-    try {
-      if (modo === 'registro') {
-        const respuesta = await fetch('/api/auth/registro/comprador', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            nombreCompleto,
-            email,
-            telefono,
-            password,
-          }),
-        })
-
-        if (!respuesta.ok) {
-          if (respuesta.status === 409) {
-            throw new Error('Este correo ya está registrado.')
-          }
-
-          throw new Error(
-            'No se pudo crear la cuenta. Revisa los datos ingresados.'
-          )
-        }
-
-        setModo('login')
-        setPassword('')
-        setMensaje('Cuenta creada correctamente. Ya puedes iniciar sesión.')
-        return
+  /** Cierra sesión en el servidor y borra la local aunque la llamada falle. */
+  const cerrarSesion = useCallback(
+    async (token: string, aviso: DatosAviso) => {
+      if (cerrandoRef.current) return
+      cerrandoRef.current = true
+      setCerrando(true)
+      borrarSesion()
+      try {
+        await Promise.race([
+          cerrarSesionServidor(token),
+          new Promise((resolver) => window.setTimeout(resolver, ESPERA_LOGOUT_MS)),
+        ])
+      } catch {
+        // Se ignora: la sesión local ya se borró.
+      } finally {
+        cerrandoRef.current = false
+        setCerrando(false)
+        irALogin(aviso)
       }
+    },
+    [irALogin],
+  )
 
-      const respuesta = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
-
-      if (!respuesta.ok) {
-        throw new Error('No se pudo iniciar sesión. Verifica tus datos.')
-      }
-
-      const datos = await respuesta.json()
-
-      const respuestaPerfil = await fetch('/api/auth/me', {
-        headers: {
-          Authorization: `Bearer ${datos.accessToken}`,
-        },
-      })
-
-      if (!respuestaPerfil.ok) {
-        throw new Error('No se pudo consultar el perfil.')
-      }
-
-      const usuario: Perfil = await respuestaPerfil.json()
-      setPerfil(usuario)
-      setPassword('')
-    } catch (error) {
-      setMensaje(
-        error instanceof Error
-          ? error.message
-          : 'Ocurrió un error inesperado.'
-      )
-    } finally {
-      setCargando(false)
+  // Verificación de la sesión guardada contra /api/auth/me.
+  useEffect(() => {
+    if (vista.tipo !== 'verificando') return
+    const { sesion } = vista
+    if (sesionCaducada(sesion)) {
+      terminarSesion(sesion.email)
+      return
     }
-  }
+    const control = new AbortController()
+    obtenerPerfil(sesion.accessToken, control.signal)
+      .then((perfil) => setVista({ tipo: 'perfil', sesion, perfil }))
+      .catch((error: unknown) => {
+        if (control.signal.aborted) return
+        if (esSesionTerminada(error)) {
+          terminarSesion(sesion.email)
+          return
+        }
+        setVista({
+          tipo: 'sinConexion',
+          sesion,
+          mensaje: error instanceof ApiError ? error.mensaje : MENSAJE_INESPERADO,
+        })
+      })
+    return () => control.abort()
+  }, [vista, terminarSesion])
 
-  function cerrarSesion() {
-    setPerfil(null)
-    setNombreCompleto('')
-    setEmail('')
-    setTelefono('')
-    setPassword('')
-    setMensaje('')
-    setModo('login')
-  }
+  // Al caducar el token (2 h) se termina la sesión aunque haya actividad.
+  const sesionActiva = vista.tipo === 'perfil' ? vista.sesion : null
+  useEffect(() => {
+    if (!sesionActiva) return
+    const restante = msHastaCaducidad(sesionActiva)
+    const temporizador = window.setTimeout(
+      () => terminarSesion(sesionActiva.email),
+      Math.max(0, Math.min(restante, MAX_TIMEOUT_MS)),
+    )
+    return () => window.clearTimeout(temporizador)
+  }, [sesionActiva, terminarSesion])
+
+  // Si otra pestaña cierra la sesión, esta también la cierra.
+  useEffect(() => {
+    if (!sesionActiva) return
+    const alCambiarAlmacen = (evento: StorageEvent) => {
+      if (evento.key === CLAVE_SESION && evento.newValue === null) {
+        irALogin(AVISO_SESION_TERMINADA, sesionActiva.email)
+      }
+    }
+    window.addEventListener('storage', alCambiarAlmacen)
+    return () => window.removeEventListener('storage', alCambiarAlmacen)
+  }, [sesionActiva, irALogin])
+
+  // Cierre automático por inactividad (HU-060): solo local, sin llamar a /logout,
+  // para no cerrar la sesión del usuario en otros equipos (CA-060-10).
+  const alExpirarInactividad = useCallback(() => {
+    if (sesionActiva) terminarSesion(sesionActiva.email)
+  }, [sesionActiva, terminarSesion])
+  useInactividad(sesionActiva !== null, alExpirarInactividad)
+
+  const alIniciarSesion = useCallback(async (respuesta: LoginResponse) => {
+    const sesion = sesionDesdeLogin(respuesta)
+    guardarSesion(sesion)
+    guardarUltimaActividad()
+    try {
+      const perfil = await obtenerPerfil(sesion.accessToken)
+      setVista({ tipo: 'perfil', sesion, perfil })
+    } catch (error) {
+      borrarSesion()
+      if (esSesionTerminada(error)) throw new ApiError(401, MENSAJE_SESION_TERMINADA)
+      throw error
+    }
+  }, [])
 
   return (
     <main className="container">
@@ -112,107 +177,53 @@ export default function App() {
       <h1>Financiamos Tu Camión</h1>
       <p>Tu próximo negocio puede comenzar con un camión.</p>
 
-      {perfil ? (
-        <section>
-          <h2>¡Bienvenido, {perfil.nombreCompleto}!</h2>
-          <p><strong>Correo:</strong> {perfil.email}</p>
-          <p><strong>Teléfono:</strong> {perfil.phoneNumber}</p>
-          <p><strong>Rol:</strong> {perfil.roles.join(', ')}</p>
-
-          <button type="button" onClick={cerrarSesion}>
-            Cerrar sesión
-          </button>
+      {vista.tipo === 'verificando' && (
+        <section aria-busy="true">
+          <p role="status">Verificando tu sesión...</p>
         </section>
-      ) : (
-        <form onSubmit={enviarFormulario}>
-          <h2>
-            {modo === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
-          </h2>
+      )}
 
-          {modo === 'registro' && (
-            <>
-              <label htmlFor="nombre">Nombre completo</label>
-              <input
-                id="nombre"
-                type="text"
-                value={nombreCompleto}
-                onChange={(e) => setNombreCompleto(e.target.value)}
-                minLength={2}
-                maxLength={150}
-                required
-              />
-            </>
-          )}
-
-          <label htmlFor="email">Correo electrónico</label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            maxLength={254}
-            required
-          />
-
-          {modo === 'registro' && (
-            <>
-              <label htmlFor="telefono">Teléfono</label>
-              <input
-                id="telefono"
-                type="tel"
-                value={telefono}
-                onChange={(e) => setTelefono(e.target.value)}
-                maxLength={25}
-                required
-              />
-            </>
-          )}
-
-          <label htmlFor="password">Contraseña</label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            minLength={modo === 'registro' ? 8 : undefined}
-            autoComplete={
-              modo === 'registro' ? 'new-password' : 'current-password'
-            }
-            required
-          />
-
-          <button type="submit" disabled={cargando}>
-            {cargando
-              ? 'Procesando...'
-              : modo === 'login'
-                ? 'Ingresar'
-                : 'Crear mi cuenta'}
+      {vista.tipo === 'sinConexion' && (
+        <section>
+          <h2>No pudimos verificar tu sesión</h2>
+          <Aviso aviso={{ tipo: 'error', texto: vista.mensaje }} />
+          <button type="button" onClick={() => setVista({ tipo: 'verificando', sesion: vista.sesion })}>
+            Reintentar
           </button>
-
-          {mensaje && (
-            <p
-              role={mensaje.startsWith('Cuenta creada') ? 'status' : 'alert'}
-            >
-              {mensaje}
-            </p>
-          )}
-
-          <p className="auth-switch">
-            {modo === 'login'
-              ? '¿Todavía no tienes cuenta?'
-              : '¿Ya tienes una cuenta?'}
-          </p>
-
           <button
             className="secondary-button"
             type="button"
-            onClick={() =>
-              cambiarModo(modo === 'login' ? 'registro' : 'login')
-            }
+            disabled={cerrando}
+            onClick={() => void cerrarSesion(vista.sesion.accessToken, AVISO_SESION_CERRADA)}
           >
-            {modo === 'login' ? 'Registrarme' : 'Volver a iniciar sesión'}
+            {cerrando ? 'Cerrando sesión...' : 'Cerrar sesión'}
           </button>
-        </form>
+        </section>
+      )}
+
+      {vista.tipo === 'login' && (
+        <LoginForm
+          key={claveLogin}
+          avisoInicial={vista.aviso}
+          emailInicial={vista.email}
+          onSesionIniciada={alIniciarSesion}
+          onIrARegistro={() => setVista({ tipo: 'registro' })}
+        />
+      )}
+
+      {vista.tipo === 'registro' && (
+        <RegistroForm
+          onRegistrado={(mensaje, email) => irALogin({ tipo: 'exito', texto: mensaje }, email)}
+          onIrALogin={() => irALogin(null)}
+        />
+      )}
+
+      {vista.tipo === 'perfil' && (
+        <PerfilPanel
+          perfil={vista.perfil}
+          cerrando={cerrando}
+          onCerrarSesion={() => void cerrarSesion(vista.sesion.accessToken, AVISO_SESION_CERRADA)}
+        />
       )}
     </main>
   )
