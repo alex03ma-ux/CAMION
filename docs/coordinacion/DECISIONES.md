@@ -19,13 +19,31 @@ Las decisiones D-1 a D-5 se detectaron al comparar los documentos fuente el 2026
   - El registro es **opcional**: sin cuenta se consulta el catálogo y se contacta (RN-SE-005, RN-CL-001).
   - Si se registra, el acceso es **inmediato**, sin aprobación (como funciona hoy en `main`).
   - Acceso de **solo lectura**: no puede crear, editar ni modificar vehículos, publicaciones ni datos de otros usuarios.
-  - Puede buscar opciones de compra, preguntar por un seguro, solicitar crédito y ofrecer un camión (ver D-6).
+  - Puede buscar opciones de compra, pedir un seguro, solicitar crédito y vender su vehículo; todo lo atiende el administrador (ver D-6 y D-7).
 
-## D-6 — Alcance nuevo del comprador: seguro y "ofrecer un camión" · PENDIENTE
-- Contexto: la responsable indicó que el comprador puede preguntar por un **seguro** y **ofrecer un camión**. Ninguna de las dos funciones está en la línea base v3.0 (87 HU).
-- Falta definir, antes de diseñar: qué datos pide cada formulario, a quién se asigna (asesor o administrador), qué estados tiene y si "ofrecer un camión" crea una publicación o solo una solicitud que revisa un asesor.
-- Propuesta del coordinador: tratarlas como solicitudes (similares a crédito y leads, HU-029 a HU-042) que se asignan a un asesor o al administrador, sin que el comprador publique directamente. El comprador mantiene el acceso de solo lectura.
-- Bloquea: nada de P0–P5; se planifica junto a P6 (créditos y búsquedas).
+## D-6 — Alcance nuevo: "Vende tu camión" y "Compra tu seguro todo riesgo" · TOMADA (2026-10-26)
+- Contexto: funciones nuevas pedidas por la responsable; no están en la línea base v3.0 (87 HU). Se identifican provisionalmente como **HU-N01** y **HU-N02** hasta que se integren al documento maestro.
+- **HU-N01 — Aviso "Vende tu camión"** (portal público):
+  - Para el cliente que quiere vender su propio camión o carro.
+  - La solicitud va **siempre al administrador**, nunca a un asesor.
+  - Formulario: **nombre** (obligatorio), **teléfono WhatsApp** (obligatorio, formato de teléfono válido), **descripción del vehículo** (campo abierto, obligatorio, máximo **500 caracteres**).
+  - No crea una publicación: solo registra una solicitud para el administrador.
+- **HU-N02 — Aviso "Compra tu seguro todo riesgo"** (portal público):
+  - Formulario: **nombre del cliente**, **teléfono** y **tipo de vehículo** (todos obligatorios).
+  - La solicitud la atiende **el administrador**.
+- Ambos formularios no exigen cuenta (D-3).
+- PROPUESTO por el coordinador (confirmar al diseñar):
+  - Estados Abierta → Cerrada, como los leads.
+  - El administrador ve las solicitudes en su panel.
+  - "Tipo de vehículo" como lista: camión / carro / otro.
+
+## D-7 — Regla de asignación: todo servicio lo atiende el administrador · TOMADA (2026-10-26)
+- **Decisión: ningún servicio queda asignado a un asesor**, excepto los contactos/leads de **sus propios vehículos publicados mientras su plan esté vigente**. Todo lo demás lo atiende el administrador: créditos, búsquedas, solicitudes generales, "Vende tu camión" y seguros.
+- Modifica la línea base v3.0:
+  - RN-CL-003 / HU-031: un lead de publicación va al asesor dueño solo con plan vigente; si no, al administrador.
+  - RN-CO-007 / RN-CO-008 / HU-041 / HU-042: créditos asignados y gestionados por el administrador.
+  - RN-BU-002 / HU-035 a HU-038: búsquedas gestionadas por el administrador.
+- Pendiente de confirmar: si el administrador puede reasignar manualmente una solicitud a un asesor. Mientras no se confirme, **no se implementa reasignación**.
 
 ## D-4 — Estados incompletos en la línea base · TOMADA (2026-10-26)
 - Contexto: las transiciones usan Crédito "Cerrado" y Suscripción "Reactivada", que no están en la tabla de estados; RN-VE-008 menciona solo Activo/Inactivo pero existe Vendido.

@@ -15,8 +15,12 @@ Stack: React 19 + Vite 7 + TypeScript (`frontend/`), ASP.NET Core .NET 8 + Ident
   - Registro opcional; sin cuenta se consulta el catálogo y se contacta.
   - Si se registra, el acceso es inmediato, sin aprobación.
   - Acceso de solo lectura: nunca puede crear, editar ni modificar vehículos, publicaciones ni datos de otros.
-  - Busca opciones de compra y puede preguntar por seguro, solicitar crédito y ofrecer un camión (detalle pendiente en D-6).
+  - Busca opciones de compra y puede pedir seguro, solicitar crédito y vender su propio vehículo.
 - Solo los **asesores** requieren aprobación del administrador.
+- **Todo servicio lo atiende el administrador** (créditos, búsquedas, solicitudes generales, venta de vehículos de clientes, seguros). El asesor solo atiende los contactos de **sus propios vehículos publicados con plan vigente** (D-7).
+- Avisos del portal (D-6), ambos sin cuenta y dirigidos al administrador:
+  - **"Vende tu camión"**: nombre, teléfono WhatsApp y descripción del vehículo (máx. 500 caracteres).
+  - **"Compra tu seguro todo riesgo"**: nombre, teléfono y tipo de vehículo.
 - El resto de decisiones vigentes está en `docs/coordinacion/DECISIONES.md`; consúltalas antes de diseñar.
 
 ## Reglas permanentes
