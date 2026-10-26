@@ -20,6 +20,8 @@ import {
   sesionDesdeLogin,
   type SesionGuardada,
 } from './auth/session'
+import { esAdministrador } from './auth/roles'
+import { AdminUsuarios } from './components/AdminUsuarios'
 import type { DatosAviso } from './components/Aviso'
 import { Aviso } from './components/Aviso'
 import { LoginForm } from './components/LoginForm'
@@ -32,6 +34,8 @@ type Vista =
   | { tipo: 'login'; aviso: DatosAviso | null; email: string }
   | { tipo: 'registro' }
   | { tipo: 'perfil'; sesion: SesionGuardada; perfil: PerfilUsuario }
+  /** P2: panel de administración; solo se entra si /api/auth/me trae el rol ADMINISTRADOR. */
+  | { tipo: 'admin'; sesion: SesionGuardada; perfil: PerfilUsuario }
 
 const AVISO_SESION_TERMINADA: DatosAviso = { tipo: 'error', texto: MENSAJE_SESION_TERMINADA }
 const AVISO_SESION_CERRADA: DatosAviso = { tipo: 'exito', texto: 'Cerraste sesión correctamente.' }
@@ -127,7 +131,7 @@ export default function App() {
   }, [vista, terminarSesion])
 
   // Al caducar el token (2 h) se termina la sesión aunque haya actividad.
-  const sesionActiva = vista.tipo === 'perfil' ? vista.sesion : null
+  const sesionActiva = vista.tipo === 'perfil' || vista.tipo === 'admin' ? vista.sesion : null
   useEffect(() => {
     if (!sesionActiva) return
     const restante = msHastaCaducidad(sesionActiva)
@@ -156,6 +160,11 @@ export default function App() {
     if (sesionActiva) terminarSesion(sesionActiva.email)
   }, [sesionActiva, terminarSesion])
   useInactividad(sesionActiva !== null, alExpirarInactividad)
+
+  // Un 401 dentro del panel de administración termina la sesión igual que en P1.
+  const alTerminarSesionAdmin = useCallback(() => {
+    terminarSesion(sesionActiva?.email ?? '')
+  }, [sesionActiva, terminarSesion])
 
   const alIniciarSesion = useCallback(async (respuesta: LoginResponse) => {
     const sesion = sesionDesdeLogin(respuesta)
@@ -223,6 +232,20 @@ export default function App() {
           perfil={vista.perfil}
           cerrando={cerrando}
           onCerrarSesion={() => void cerrarSesion(vista.sesion.accessToken, AVISO_SESION_CERRADA)}
+          onAbrirAdministracion={
+            esAdministrador(vista.perfil.roles)
+              ? () => setVista({ tipo: 'admin', sesion: vista.sesion, perfil: vista.perfil })
+              : undefined
+          }
+        />
+      )}
+
+      {vista.tipo === 'admin' && esAdministrador(vista.perfil.roles) && (
+        <AdminUsuarios
+          token={vista.sesion.accessToken}
+          usuarioIdPropio={vista.perfil.usuarioId}
+          onSesionTerminada={alTerminarSesionAdmin}
+          onVolver={() => setVista({ tipo: 'perfil', sesion: vista.sesion, perfil: vista.perfil })}
         />
       )}
     </main>

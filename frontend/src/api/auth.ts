@@ -1,4 +1,5 @@
-// Llamadas y tipos de la API de autenticación (contrato docs/criterios/P1-contrato-api.md).
+// Llamadas y tipos de la API de autenticación
+// (contratos docs/criterios/P1-contrato-api.md y P2-contrato-api.md).
 import { ApiError, esObjetoJson, MENSAJE_INESPERADO, peticion } from './http'
 
 // ---- Tipos del contrato ----
@@ -14,6 +15,27 @@ export type RegistroCompradorResponse = {
   usuarioId: string
   mensaje: string
 }
+
+/** Tipos de documento del asesor (contrato P2, PROPUESTO). */
+export type TipoDocumento = 'CC' | 'CE' | 'NIT' | 'PAS'
+
+export const TIPOS_DOCUMENTO: readonly { valor: TipoDocumento; nombre: string }[] = [
+  { valor: 'CC', nombre: 'Cédula de ciudadanía' },
+  { valor: 'CE', nombre: 'Cédula de extranjería' },
+  { valor: 'NIT', nombre: 'NIT' },
+  { valor: 'PAS', nombre: 'Pasaporte' },
+]
+
+export type RegistroAsesorRequest = RegistroCompradorRequest & {
+  tipoDocumento: TipoDocumento
+  numeroDocumento: string
+  nombreComercial: string | null
+}
+
+export type RegistroAsesorResponse = RegistroCompradorResponse
+
+/** Estados de `EstadoCuenta` (contrato P2). */
+export type EstadoCuenta = 'ACTIVA' | 'PENDIENTE' | 'RECHAZADA' | 'BLOQUEADA'
 
 export type LoginRequest = {
   email: string
@@ -36,12 +58,17 @@ export type PerfilUsuario = {
   email: string
   phoneNumber: string
   roles: string[]
+  /** P2: valor de `EstadoCuenta`; vacío si el servidor no lo envía. */
+  estado: string
 }
 
 // ---- Mensajes del contrato (respaldo si el cuerpo no trae `error`) ----
 
 export const MENSAJE_REGISTRO_OK = 'Cuenta creada. Ya puedes iniciar sesión.'
 export const MENSAJE_CORREO_DUPLICADO = 'Este correo ya está registrado.'
+export const MENSAJE_SOLICITUD_ASESOR_OK =
+  'Solicitud enviada. Podrás iniciar sesión cuando el administrador apruebe tu cuenta.'
+export const MENSAJE_DOCUMENTO_DUPLICADO = 'Ya existe un asesor con ese documento.'
 export const MENSAJE_LOGIN_FALTAN_DATOS = 'Escribe tu correo y tu contraseña.'
 export const MENSAJE_CREDENCIALES = 'Correo o contraseña incorrectos.'
 export const MENSAJE_BLOQUEO =
@@ -80,6 +107,24 @@ export async function registrarComprador(
   return {
     usuarioId: texto(cuerpo.usuarioId),
     mensaje: texto(cuerpo.mensaje) || MENSAJE_REGISTRO_OK,
+  }
+}
+
+export async function registrarAsesor(
+  datos: RegistroAsesorRequest,
+): Promise<RegistroAsesorResponse> {
+  const respuesta = await peticion('/api/auth/registro/asesor', {
+    method: 'POST',
+    body: datos,
+    mensajesPorCodigo: {
+      400: MENSAJE_REVISA_DATOS,
+      409: MENSAJE_CORREO_DUPLICADO,
+    },
+  })
+  const cuerpo = esObjetoJson(respuesta) ? respuesta : {}
+  return {
+    usuarioId: texto(cuerpo.usuarioId),
+    mensaje: texto(cuerpo.mensaje) || MENSAJE_SOLICITUD_ASESOR_OK,
   }
 }
 
@@ -124,6 +169,7 @@ export async function obtenerPerfil(
     email: texto(respuesta.email),
     phoneNumber: texto(respuesta.phoneNumber),
     roles: listaTextos(respuesta.roles),
+    estado: texto(respuesta.estado),
   }
 }
 
