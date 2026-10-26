@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text;
+using Camion.Api.Contracts;
 using Camion.Api.Data;
 using Camion.Api.Endpoints;
 using Camion.Api.Models;
@@ -66,7 +67,23 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 builder.Services.AddAuthorization();
+// JSON malformado o con tipos incorrectos: el framework lanza BadHttpRequestException y se responde con el formato común.
+builder.Services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = true);
 var app = builder.Build();
+
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next(context);
+    }
+    catch (BadHttpRequestException ex) when (!context.Response.HasStarted)
+    {
+        context.Response.Clear();
+        context.Response.StatusCode = ex.StatusCode;
+        await context.Response.WriteAsJsonAsync(new ErrorResponse("La solicitud no tiene un formato válido."));
+    }
+});
 
 app.UseAuthentication();
 app.UseAuthorization();
