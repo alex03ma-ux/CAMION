@@ -20,3 +20,23 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
 - Registradas D-8 a D-11 como PENDIENTE. P2 bloqueado por D-10; P5, P5b y P6 por D-9; estados de P4 por D-11. P1 puede empezar.
 - La compilación dejó `frontend/tsconfig.*.tsbuildinfo` sin seguimiento; no se commitean (propuesta: añadirlos a `.gitignore` en P1).
 - La responsable resolvió D-8 a D-11: HU-N03 para el registro de comprador; contacto sin cuenta con nombre y teléfono (correo opcional); estados del asesor Pendiente/Aprobado/Rechazado/Bloqueado; se mantiene el estado "Reservado". P2, P5 y P5b desbloqueados.
+
+## 2026-10-26 — P1 Robustecer autenticación
+- Rama `feature/p1-autenticacion` desde `main` (`a3212ea`).
+- Contrato de API fijado por el coordinador antes de programar (`docs/criterios/P1-contrato-api.md`); `analista-funcional` escribió 81 criterios (`docs/criterios/P1.md`) trazados a HU-N03, HU-059 a HU-062 y RN-SE-006. HU-063 (recuperar contraseña) BLOQUEADO: no hay servicio de correo (D-5).
+- Por eficiencia, criterios, backend y frontend se ejecutaron en paralelo sobre el contrato fijado (archivos distintos). Las contradicciones del analista se resolvieron en el contrato:
+  - C-1: se aceptan 409 y 423 aunque revelen que el correo existe (decisión técnica reversible).
+  - C-2 y C-3: la inactividad solo cierra la sesión local, comprueba la última actividad al cargar y la comparte entre pestañas.
+  - C-4: pasa a P2.
+  - C-5: el contrato se completó.
+- Backend: validación manual con mensajes en español; 409 también en registros simultáneos; 400/401/423 en el login; nuevo `POST /api/auth/logout` (incrementa `SessionVersion`); comprobación de sesión en `OnTokenValidated` para toda la API; log de auditoría sin datos sensibles; JSON malformado → 400 `{ error }`; `global.json` con el SDK 8.0.425.
+- Frontend: módulos `api/`, `auth/` y `components/`; sesión en `localStorage` (riesgo XSS aceptado para P1); reglas de contraseña visibles (solo ASCII); cierre por inactividad de 30 min (PROPUESTO); `*.tsbuildinfo` en `.gitignore`.
+- Pruebas (nuevas): `backend/Camion.Api.Tests` (xUnit, WebApplicationFactory, SQLite en memoria; nunca toca `camion_ventas`) y Vitest + Testing Library en `frontend/tests`.
+  - Defecto D-P1-01: un JSON malformado daba 400 sin cuerpo. Se corrigió.
+  - Limitación: el choque de registros simultáneos contra el índice único de MariaDB no se reproduce con SQLite.
+- `devops-seguridad`: sin secretos, sin cambios de esquema, `npm audit` sin vulnerabilidades.
+  - Bloqueante: SQLite nativo transitivo con GHSA-2m69-gcr7-jv3q. Corregido fijando `SQLitePCLRaw.lib.e_sqlite3` 3.53.3; la 2.1.11 que se propuso al principio también es vulnerable.
+  - Recomendaciones aplicadas: errores 500 con el formato común y manejador global de excepciones.
+  - Pendiente: CI (INF-1).
+- Sin E2E con navegador (Playwright): la verificación manual con la app arrancada queda para la responsable o para un ítem posterior.
+- `gh` no está instalado: la rama se publica y el PR lo abre la responsable.
