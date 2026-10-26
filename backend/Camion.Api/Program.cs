@@ -1,9 +1,8 @@
-using System.ComponentModel.DataAnnotations;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Camion.Api.Contracts;
 using Camion.Api.Data;
+using Camion.Api.Endpoints;
 using Camion.Api.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -44,17 +43,59 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
-            ValidIssuer = "Camion.Api",
+            ValidIssuer = AuthEndpoints.Emisor,
             ValidateAudience = true,
-            ValidAudience = "Camion.Frontend",
+            ValidAudience = AuthEndpoints.Audiencia,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromSeconds(30)
         };
+        // RN-SE-006: en todos los endpoints protegidos la cuenta debe estar ACTIVA y la sesión vigente.
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var id = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+                var users = context.HttpContext.RequestServices.GetRequiredService<UserManager<ApplicationUser>>();
+                var user = id is null ? null : await users.FindByIdAsync(id);
+                if (user is null || user.EstadoCuenta != "ACTIVA" ||
+                    !int.TryParse(context.Principal!.FindFirstValue(AuthEndpoints.ClaimSessionVersion), out var version) ||
+                    version != user.SessionVersion)
+                    context.Fail("Sesión no vigente.");
+            }
+        };
     });
 builder.Services.AddAuthorization();
+// JSON malformado o con tipos incorrectos: el framework lanza BadHttpRequestException y se responde con el formato común.
+builder.Services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = true);
 var app = builder.Build();
+
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next(context);
+    }
+    catch (BadHttpRequestException ex) when (!context.Response.HasStarted)
+    {
+        context.Response.Clear();
+        context.Response.StatusCode = ex.StatusCode;
+        await context.Response.WriteAsJsonAsync(new ErrorResponse(MensajesError.FormatoInvalido));
+    }
+    catch (Exception ex) when (!context.RequestAborted.IsCancellationRequested)
+    {
+        // Sin el mensaje de la excepción: puede contener datos personales (p. ej. el valor de un índice único).
+        context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("Camion.Api.Errores").LogError(
+            "Error no controlado {Tipo} (interno: {TipoInterno}) en {Metodo} {Ruta} traceId={TraceId} pila={Pila}",
+            ex.GetType().FullName, ex.InnerException?.GetType().FullName, context.Request.Method,
+            context.Request.Path.Value, context.TraceIdentifier, ex.StackTrace);
+        if (context.Response.HasStarted) throw;
+        context.Response.Clear();
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        await context.Response.WriteAsJsonAsync(new ErrorResponse(MensajesError.Interno));
+    }
+});
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -74,111 +115,13 @@ app.MapGet("/health/database", async (IConfiguration configuration, Cancellation
     }
     catch (MySqlException)
     {
-        return Results.Problem("No fue posible conectar con MariaDB.", statusCode: 503);
+        return Results.Json(new ErrorResponse("No fue posible conectar con MariaDB."), statusCode: StatusCodes.Status503ServiceUnavailable);
     }
 });
 
-app.MapPost("/api/auth/registro/comprador", async (
-    RegistroCompradorRequest request,
-    UserManager<ApplicationUser> users,
-    RoleManager<IdentityRole> roles,
-    CamionDbContext db) =>
-{
-    if (string.IsNullOrWhiteSpace(request.NombreCompleto) ||
-        string.IsNullOrWhiteSpace(request.Telefono) ||
-        string.IsNullOrWhiteSpace(request.Email) ||
-        string.IsNullOrWhiteSpace(request.Password) ||
-        !new EmailAddressAttribute().IsValid(request.Email) ||
-        request.NombreCompleto.Trim().Length is < 2 or > 150 ||
-        request.Telefono.Trim().Length > 25 ||
-        request.Password.Length < 8)
-        return Results.BadRequest(new { error = "Verifica nombre, correo, telefono y contrasena." });
-
-    var email = request.Email.Trim().ToLowerInvariant();
-    if (await users.FindByEmailAsync(email) is not null)
-        return Results.Conflict(new { error = "Este correo ya esta registrado." });
-
-    // El rol se crea una sola vez si aun no existe.
-    if (!await roles.RoleExistsAsync("COMPRADOR"))
-    {
-        var roleResult = await roles.CreateAsync(new IdentityRole("COMPRADOR"));
-        if (!roleResult.Succeeded && !await roles.RoleExistsAsync("COMPRADOR"))
-            return Results.Problem("No se pudo preparar el rol comprador.");
-    }
-
-    await using var tx = await db.Database.BeginTransactionAsync();
-    var user = new ApplicationUser
-    {
-        Id = Guid.NewGuid().ToString(),
-        UserName = email,
-        Email = email,
-        PhoneNumber = request.Telefono.Trim(),
-        NombreCompleto = request.NombreCompleto.Trim()
-    };
-    var created = await users.CreateAsync(user, request.Password);
-    if (!created.Succeeded)
-    {
-        await tx.RollbackAsync();
-        return Results.BadRequest(new { errors = created.Errors.Select(e => e.Description) });
-    }
-    var assigned = await users.AddToRoleAsync(user, "COMPRADOR");
-    if (!assigned.Succeeded)
-    {
-        await tx.RollbackAsync();
-        return Results.Problem("No fue posible asignar el rol comprador.");
-    }
-    db.PerfilesComprador.Add(new PerfilComprador { UsuarioId = user.Id });
-    await db.SaveChangesAsync();
-    await tx.CommitAsync();
-    return Results.Created($"/api/auth/me", new { usuarioId = user.Id, mensaje = "Comprador registrado correctamente. Ya puedes iniciar sesion." });
-});
-
-app.MapPost("/api/auth/login", async (
-    LoginRequest request,
-    UserManager<ApplicationUser> users,
-    SignInManager<ApplicationUser> signIn,
-    CamionDbContext db) =>
-{
-    var user = await users.FindByEmailAsync(request.Email?.Trim() ?? "");
-    if (user is null || user.EstadoCuenta != "ACTIVA")
-        return Results.Unauthorized();
-    var check = await signIn.CheckPasswordSignInAsync(user, request.Password ?? "", lockoutOnFailure: true);
-    if (!check.Succeeded) return Results.Unauthorized();
-    var userRoles = await users.GetRolesAsync(user);
-    var expiry = DateTime.UtcNow.AddHours(2);
-    var claims = new List<Claim>
-    {
-        new(JwtRegisteredClaimNames.Sub, user.Id),
-        new(ClaimTypes.NameIdentifier, user.Id),
-        new(ClaimTypes.Name, user.NombreCompleto),
-        new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-        new("session_version", user.SessionVersion.ToString())
-    };
-    claims.AddRange(userRoles.Select(role => new Claim(ClaimTypes.Role, role)));
-    var token = new JwtSecurityToken(
-        issuer: "Camion.Api",
-        audience: "Camion.Frontend",
-        claims: claims,
-        expires: expiry,
-        signingCredentials: new SigningCredentials(
-            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)), SecurityAlgorithms.HmacSha256));
-    user.UltimoAccesoEn = DateTime.UtcNow;
-    await users.UpdateAsync(user);
-    return Results.Ok(new AuthResponse(
-        new JwtSecurityTokenHandler().WriteToken(token), "Bearer", expiry,
-        user.Id, user.NombreCompleto, user.Email ?? "", userRoles.ToArray()));
-});
-
-app.MapGet("/api/auth/me", async (ClaimsPrincipal principal, UserManager<ApplicationUser> users) =>
-{
-    var id = principal.FindFirstValue(ClaimTypes.NameIdentifier);
-    if (id is null) return Results.Unauthorized();
-    var user = await users.FindByIdAsync(id);
-    if (user is null || user.EstadoCuenta != "ACTIVA") return Results.Unauthorized();
-    if (!int.TryParse(principal.FindFirstValue("session_version"), out var version) ||
-        version != user.SessionVersion) return Results.Unauthorized();
-    var userRoles = await users.GetRolesAsync(user);
-    return Results.Ok(new { usuarioId = user.Id, user.NombreCompleto, user.Email, user.PhoneNumber, roles = userRoles });
-}).RequireAuthorization();
+app.MapAuthEndpoints(jwtKey);
 
 app.Run();
+
+// Permite pruebas de integración con WebApplicationFactory<Program>.
+public partial class Program { }
