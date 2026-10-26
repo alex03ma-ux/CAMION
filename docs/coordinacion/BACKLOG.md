@@ -6,12 +6,12 @@ El estado funcional de cada módulo se toma de `ESTADO-REAL.md`, no de este arch
 | Orden | Trabajo | Criterio de salida | Estado | Rama / PR |
 |---|---|---|---|---|
 | P0 | Auditoría inicial de repositorio y requisitos | Mapa real de endpoints, tablas, HU y cobertura; diferencias documentadas (`ESTADO-REAL.md`) | EN REVISIÓN | `feature/p0-auditoria` |
-| P1 | Robustecer autenticación | Duplicados, errores HTTP claros, contraseñas inválidas, permisos, expiración, persistencia de sesión, registro de comprador inmediato y de solo lectura (D-3), pruebas y UX | PENDIENTE (desbloqueado por P0; trazabilidad depende de D-8) | — |
-| P2 | Seguridad de usuarios y aprobación de asesores (D-3) | Asesor registrado en estado Pendiente; aprobación/rechazo/bloqueo por el administrador protegidos en API; comprador sin permisos de edición; auditoría | BLOQUEADO (D-10) | — |
+| P1 | Robustecer autenticación | Duplicados, errores HTTP claros, contraseñas inválidas, permisos, expiración, persistencia de sesión, registro de comprador inmediato y de solo lectura (D-3), pruebas y UX | PENDIENTE (HU-N03, D-8) | — |
+| P2 | Seguridad de usuarios y aprobación de asesores (D-3) | Asesor registrado en estado Pendiente; aprobación/rechazo/bloqueo por el administrador protegidos en API; comprador sin permisos de edición; auditoría | PENDIENTE (estados D-10) | — |
 | P3 | Catálogo público de vehículos | Listado, detalle, filtros, búsqueda y visibilidad por estado | PENDIENTE | — |
-| P4 | Inventario y publicaciones | CRUD seguro, imágenes, plan/cupo, vigencia y propietario | PENDIENTE (placa opcional y única, D-2; estados BLOQUEADO por D-11) | — |
-| P5 | Leads y contactos | Captura anónima; asignación al asesor dueño solo con plan vigente, si no al administrador (D-7); seguimiento trazable | BLOQUEADO (D-9) | — |
-| P5b | Avisos "Vende tu camión" y "Compra tu seguro todo riesgo" (HU-N01, HU-N02) | Formularios públicos sin cuenta, validaciones (500 caracteres, teléfono), solicitudes visibles solo para el administrador (D-6) | BLOQUEADO (D-9) | — |
+| P4 | Inventario y publicaciones | CRUD seguro, imágenes, plan/cupo, vigencia y propietario | PENDIENTE (placa opcional y única D-2; estado Reservado D-11) | — |
+| P5 | Leads y contactos | Captura anónima; asignación al asesor dueño solo con plan vigente, si no al administrador (D-7); seguimiento trazable | PENDIENTE (nombre y teléfono, D-9) | — |
+| P5b | Avisos "Vende tu camión" y "Compra tu seguro todo riesgo" (HU-N01, HU-N02) | Formularios públicos sin cuenta, validaciones (500 caracteres, teléfono), solicitudes visibles solo para el administrador (D-6) | PENDIENTE (nombre y teléfono, D-9) | — |
 | P6 | Créditos y búsquedas | Formularios, estados, asignación al administrador (D-7), notificaciones y seguimiento | PENDIENTE | — |
 | P7 | Ventas, planes y administración | Historial, reversión, parametrización, panel administrativo | PENDIENTE | — |
 | P8 | Reportes, marketing e integraciones | Indicadores e integraciones aprobadas; pruebas y operación | PENDIENTE | — |

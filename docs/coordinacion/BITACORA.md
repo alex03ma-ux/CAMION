@@ -19,3 +19,4 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
 - Contraste con decisiones: el código cumple D-3 (comprador inmediato, rol fijo COMPRADOR, sin endpoints de escritura) y D-5. El esquema SQL no cumple D-2 (sin placa), D-4 (estados) ni D-6 (solicitudes exigen usuario y correo; sin tipos venta/seguro).
 - Registradas D-8 a D-11 como PENDIENTE. P2 bloqueado por D-10; P5, P5b y P6 por D-9; estados de P4 por D-11. P1 puede empezar.
 - La compilación dejó `frontend/tsconfig.*.tsbuildinfo` sin seguimiento; no se commitean (propuesta: añadirlos a `.gitignore` en P1).
+- La responsable resolvió D-8 a D-11: HU-N03 para el registro de comprador; contacto sin cuenta con nombre y teléfono (correo opcional); estados del asesor Pendiente/Aprobado/Rechazado/Bloqueado; se mantiene el estado "Reservado". P2, P5 y P5b desbloqueados.
