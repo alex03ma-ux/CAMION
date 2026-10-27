@@ -39,7 +39,7 @@ function etiquetas(): string[] {
 
 async function llenarCamion(u: U) {
   await u.selectOptions(screen.getByLabelText('Marca'), '10')
-  await u.selectOptions(screen.getByLabelText('Línea (modelo) (opcional)'), '100')
+  await u.selectOptions(screen.getByLabelText('Línea (modelo)'), '100')
   await u.type(screen.getByLabelText('Año'), '2020')
   await u.type(screen.getByLabelText('Kilometraje (km)'), '85000')
   await u.type(screen.getByLabelText('Placa (opcional)'), 'abc-123')
@@ -71,7 +71,7 @@ describe('Categoría primero y campos por categoría (CA-UI-05)', () => {
     '1': [
       'Categoría',
       'Marca',
-      'Línea (modelo) (opcional)',
+      'Línea (modelo)',
       'Año',
       'Carrocería (subtipo) (opcional)',
       'Placa (opcional)',
@@ -87,7 +87,7 @@ describe('Categoría primero y campos por categoría (CA-UI-05)', () => {
     '2': [
       'Categoría',
       'Marca',
-      'Línea (modelo) (opcional)',
+      'Línea (modelo)',
       'Año',
       'Carrocería (subtipo) (opcional)',
       'Placa (opcional)',
@@ -120,7 +120,7 @@ describe('Categoría primero y campos por categoría (CA-UI-05)', () => {
     '4': [
       'Categoría',
       'Marca',
-      'Línea (modelo) (opcional)',
+      'Línea (modelo)',
       'Año',
       'Tipo de máquina',
       'Placa (opcional)',
@@ -157,7 +157,7 @@ describe('Listas dependientes (CA-UI-07)', () => {
     abrirNuevo(['ASESOR'])
     const u = userEvent.setup()
     await u.selectOptions(await screen.findByLabelText('Categoría'), '2')
-    const linea = screen.getByLabelText('Línea (modelo) (opcional)')
+    const linea = screen.getByLabelText('Línea (modelo)')
     expect(linea).toBeDisabled()
     await u.selectOptions(screen.getByLabelText('Marca'), '10')
     expect(linea).toBeEnabled()
@@ -280,7 +280,7 @@ describe('Errores del servidor (CA-UI-09)', () => {
     await llenarCamion(u)
     await u.click(screen.getByRole('button', { name: 'Registrar vehículo' }))
     const error = await screen.findByText('El modelo no corresponde a la marca elegida.')
-    const linea = screen.getByLabelText('Línea (modelo) (opcional)')
+    const linea = screen.getByLabelText('Línea (modelo)')
     expect(linea.getAttribute('aria-describedby')).toContain(error.closest('ul')?.id)
     expect(linea).toHaveAttribute('aria-invalid', 'true')
     const km = screen.getByLabelText('Kilometraje (km)')
@@ -438,7 +438,7 @@ describe('Edición (CA-UI-10, HU-019, RN-VE-003)', () => {
     expect(screen.queryByLabelText('Asesor propietario')).toBeNull()
     expect(screen.getByText('Asesor Uno Ficticio')).toBeInTheDocument()
     expect(screen.getByLabelText('Precio de venta (COP)')).toHaveValue('115.000.000')
-    expect(screen.getByLabelText('Línea (modelo) (opcional)')).toHaveValue('100')
+    expect(screen.getByLabelText('Línea (modelo)')).toHaveValue('100')
     expect(screen.getByLabelText('Departamento')).toHaveValue('20')
     expect(screen.getByLabelText('Placa (opcional)')).toHaveValue('ABC123')
     const km = screen.getByLabelText('Kilometraje (km)')

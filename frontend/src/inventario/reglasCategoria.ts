@@ -57,11 +57,11 @@ const O = 'obligatorio' as const
 const P = 'opcional' as const
 const N = 'no' as const
 
-/** Tabla del contrato, tal cual. */
+/** Tabla del contrato; D-25: línea obligatoria en Carro, Camión y Maquinaria. */
 export const REGLAS_CATEGORIA: Readonly<Record<Categoria, Readonly<Record<CampoVehiculo, Regla>>>> = {
   CARRO: {
     marcaId: O,
-    lineaId: P,
+    lineaId: O,
     modeloAnio: O,
     kilometraje: O,
     horasUso: N,
@@ -82,7 +82,7 @@ export const REGLAS_CATEGORIA: Readonly<Record<Categoria, Readonly<Record<CampoV
   },
   CAMION: {
     marcaId: O,
-    lineaId: P,
+    lineaId: O,
     modeloAnio: O,
     kilometraje: O,
     horasUso: N,
@@ -124,7 +124,7 @@ export const REGLAS_CATEGORIA: Readonly<Record<Categoria, Readonly<Record<CampoV
   },
   MAQUINARIA: {
     marcaId: O,
-    lineaId: P,
+    lineaId: O,
     modeloAnio: O,
     kilometraje: N,
     horasUso: P,

@@ -41,6 +41,7 @@ export const MENSAJES_CAMPO = {
   tipoId: 'Elige la categoría del vehículo.',
   asesorId: 'Elige el asesor propietario del vehículo.',
   marcaId: 'Elige la marca.',
+  lineaId: 'Elige el modelo.',
   lineaMarca: 'La línea no corresponde a la marca elegida.',
   modeloAnio: (max: number) => `Escribe un año entre ${ANIO_MIN_VEHICULO} y ${max}.`,
   kilometraje: 'Escribe el kilometraje (número entero mayor o igual a 0).',
@@ -125,8 +126,10 @@ export function normalizarPlaca(placa: string): string {
   return placa.replace(/[\s-]+/g, '').toUpperCase()
 }
 
-export function placaValida(placa: string): boolean {
-  return /^[A-Z0-9]{5,7}$/.test(normalizarPlaca(placa))
+/** D-25: de 5 a 7 letras y números; hasta 8 en maquinaria. */
+export function placaValida(placa: string, categoria?: Categoria): boolean {
+  const max = categoria === 'MAQUINARIA' ? 8 : 7
+  return new RegExp(`^[A-Z0-9]{5,${max}}$`).test(normalizarPlaca(placa))
 }
 
 /** Entero ≥ 0 escrito sin separadores o con puntos de miles bien agrupados ("1.500"); "1.5" no es válido. */
@@ -204,6 +207,7 @@ export function validarFormulario(
 
   // Marca y línea
   if (falta('marcaId')) poner('marcaId', MENSAJES_CAMPO.marcaId)
+  if (falta('lineaId')) poner('lineaId', MENSAJES_CAMPO.lineaId)
   if (aplicaYHay('lineaId')) {
     const marca = catalogos.marcas.find((m) => String(m.id) === f.marcaId)
     if (!marca || !marca.lineas.some((l) => String(l.id) === f.lineaId)) {
@@ -231,7 +235,7 @@ export function validarFormulario(
   }
 
   // Placa (D-2: opcional y única; la unicidad la comprueba la API con 409)
-  if (aplicaYHay('placa') && !placaValida(f.placa)) poner('placa', MENSAJES_CAMPO.placa)
+  if (aplicaYHay('placa') && !placaValida(f.placa, categoria)) poner('placa', MENSAJES_CAMPO.placa)
 
   // Listas obligatorias según la categoría
   if (falta('carroceriaId')) poner('carroceriaId', MENSAJES_CAMPO.carroceriaId)

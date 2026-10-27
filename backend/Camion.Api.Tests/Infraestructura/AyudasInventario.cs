@@ -128,7 +128,7 @@ public sealed class InventarioApi : IDisposable
 
     public Dictionary<string, object?> CuerpoCarro(long? asesorId = null) => new()
     {
-        ["tipoId"] = Carro, ["marcaId"] = Chevrolet, ["modeloAnio"] = 2020, ["kilometraje"] = 45_000,
+        ["tipoId"] = Carro, ["marcaId"] = Chevrolet, ["lineaId"] = Npr, ["modeloAnio"] = 2020, ["kilometraje"] = 45_000,
         ["municipioId"] = Medellin, ["precioCop"] = 50_000_000, ["asesorId"] = asesorId
     };
 
@@ -146,7 +146,7 @@ public sealed class InventarioApi : IDisposable
 
     public Dictionary<string, object?> CuerpoMaquinaria(long? asesorId = null) => new()
     {
-        ["tipoId"] = Maquinaria, ["marcaId"] = Kenworth, ["modeloAnio"] = 2018, ["tipoMaquinaId"] = Retro,
+        ["tipoId"] = Maquinaria, ["marcaId"] = Kenworth, ["lineaId"] = T800, ["modeloAnio"] = 2018, ["tipoMaquinaId"] = Retro,
         ["municipioId"] = Bogota, ["precioCop"] = 300_000_000, ["asesorId"] = asesorId
     };
 

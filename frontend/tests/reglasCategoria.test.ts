@@ -43,7 +43,7 @@ const CATALOGOS: CatalogosInventario = { ...CAT, asesores: [] }
 const TABLA: Record<CampoVehiculo, [string, string, string, string]> = {
   //                   Carro Camión Carrocería Maquinaria
   marcaId: ['O', 'O', 'P', 'O'],
-  lineaId: ['P', 'P', 'P', 'P'],
+  lineaId: ['O', 'O', 'P', 'O'], // D-25
   modeloAnio: ['O', 'O', 'P', 'O'],
   kilometraje: ['O', 'O', 'N', 'N'],
   horasUso: ['N', 'N', 'N', 'P'],
@@ -189,12 +189,19 @@ describe('Validación en cliente', () => {
     expect(validarFormulario(formularioVacio(), null, OPC)).toEqual({ tipoId: [MENSAJES_CAMPO.tipoId] })
   })
 
-  it('Camión vacío: marca, año, kilometraje, departamento, municipio y precio', () => {
+  it('Camión vacío: marca, modelo (D-25), año, kilometraje, departamento, municipio y precio', () => {
     const e = validarFormulario(formulario({ tipoId: '2' }), 'CAMION', OPC)
     expect(Object.keys(e).sort()).toEqual(
-      ['departamentoId', 'kilometraje', 'marcaId', 'modeloAnio', 'municipioId', 'precioCop'].sort(),
+      ['departamentoId', 'kilometraje', 'lineaId', 'marcaId', 'modeloAnio', 'municipioId', 'precioCop'].sort(),
     )
     expect(e.modeloAnio).toEqual(['Escribe un año entre 1950 y 2027.'])
+    expect(e.lineaId).toEqual([MENSAJES_CAMPO.lineaId])
+  })
+
+  it('D-25: placa de maquinaria hasta 8 caracteres; las demás hasta 7', () => {
+    expect(placaValida('MC123456', 'MAQUINARIA')).toBe(true)
+    expect(placaValida('MC123456', 'CAMION')).toBe(false)
+    expect(placaValida('MC1234567', 'MAQUINARIA')).toBe(false)
   })
 
   it('Carrocería vacía: no pide marca, año ni kilometraje; sí el tipo de carrocería', () => {

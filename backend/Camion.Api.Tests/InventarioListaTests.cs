@@ -21,7 +21,7 @@ public sealed class InventarioListaTests : IAsyncLifetime
         _api = await InventarioApi.Crear();
         _placaCamionA = PlacaUnica();
         _camionA = await _api.CrearId(_api.A, "camion", ("placa", _placaCamionA), ("descripcionTecnica", "Furgón refrigerado de prueba"));
-        _carroA = await _api.CrearId(_api.A, "carro", ("marcaId", _api.Kenworth));
+        _carroA = await _api.CrearId(_api.A, "carro", ("marcaId", _api.Kenworth), ("lineaId", _api.T800));
         _maquinaA = await _api.CrearId(_api.A, "maquinaria", ("horasUso", 3400));
         _carroceriaA = await _api.CrearId(_api.A, "carroceria");
         _camionB = await _api.CrearId(_api.B, "camion");

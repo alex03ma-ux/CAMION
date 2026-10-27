@@ -49,6 +49,7 @@ public static partial class ReglasInventario
     public const string MensajeTipoCambio = "La categoría de un vehículo no se puede cambiar.";
     public const string MensajeMarca = "Elige la marca.";
     public const string MensajeMarcaInvalida = "Marca no válida.";
+    public const string MensajeLinea = "Elige el modelo.";
     public const string MensajeLineaInvalida = "Modelo no válido.";
     public const string MensajeLineaMarca = "El modelo no corresponde a la marca elegida.";
     public const string MensajeKilometraje = "Escribe el kilometraje (número entero mayor o igual a 0).";
@@ -101,6 +102,9 @@ public static partial class ReglasInventario
 
     [GeneratedRegex("^[A-Z0-9]{5,7}$", RegexOptions.CultureInvariant, 1000)]
     private static partial Regex FormatoPlaca();
+
+    [GeneratedRegex("^[A-Z0-9]{5,8}$", RegexOptions.CultureInvariant, 1000)]
+    private static partial Regex FormatoPlacaMaquinaria();
 
     /// <summary>Carro, Camión, Carrocería o Maquinaria (sin distinguir mayúsculas ni tildes); null si es otro nombre.</summary>
     public static Categoria? CategoriaDe(string? nombreTipo) => SinTildes(nombreTipo ?? "").Trim().ToUpperInvariant() switch
@@ -195,6 +199,9 @@ public static partial class ReglasInventario
             else if (!await db.Marcas.AsNoTracking().AnyAsync(m => m.Id == r.MarcaId && m.Activo, ct))
                 Error("marcaId", MensajeMarcaInvalida);
         }
+        // D-25: el modelo (línea) es obligatorio en Carro, Camión y Maquinaria; opcional en Carrocería.
+        if (r.LineaId is null && cat != Categoria.Carroceria)
+            Error("lineaId", MensajeLinea);
         if (r.LineaId is not null)
         {
             var linea = await db.Lineas.AsNoTracking().Where(l => l.Id == r.LineaId && l.Activo)
@@ -226,7 +233,9 @@ public static partial class ReglasInventario
             Error("horasUso", MensajeHorasUso);
 
         // Placa (D-2).
-        if (Admite(reglas.Placa, "placa", placa is not null) && placa is not null && !FormatoPlaca().IsMatch(placa))
+        // D-25: la placa de maquinaria admite hasta 8 caracteres.
+        var formatoPlaca = cat == Categoria.Maquinaria ? FormatoPlacaMaquinaria() : FormatoPlaca();
+        if (Admite(reglas.Placa, "placa", placa is not null) && placa is not null && !formatoPlaca.IsMatch(placa))
             Error("placa", MensajePlaca);
 
         // Carrocería.

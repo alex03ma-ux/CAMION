@@ -121,6 +121,9 @@ public sealed class InventarioCrearEditarTests(InventarioFixture fx) : IClassFix
     [InlineData("maquinaria", "municipioId", "Elige el municipio.")]
     [InlineData("maquinaria", "precioCop", "Escribe el precio en pesos (número entero mayor que 0 y hasta 10.000.000.000).")]
     [InlineData("carro", "tipoId", "Elige la categoría.")]
+    [InlineData("carro", "lineaId", "Elige el modelo.")]
+    [InlineData("camion", "lineaId", "Elige el modelo.")]
+    [InlineData("maquinaria", "lineaId", "Elige el modelo.")]
     public async Task Falta_obligatorio(string categoria, string campo, string mensaje)
     {
         if (mensaje == "AÑO") mensaje = $"Escribe un año entre 1950 y {Anio + 1}.";
@@ -131,10 +134,10 @@ public sealed class InventarioCrearEditarTests(InventarioFixture fx) : IClassFix
         Assert.Equal(antes, await _api.Leer(db => Task.FromResult(db.Vehiculos.Count())));
     }
 
-    [Theory(DisplayName = "D-19: marca y año son opcionales solo en carrocería; línea y descripción opcionales en todas")]
+    [Theory(DisplayName = "D-19/D-25: marca, año y línea son opcionales solo en carrocería; horas de uso opcionales")]
     [InlineData("carroceria", "marcaId")]
     [InlineData("carroceria", "modeloAnio")]
-    [InlineData("camion", "lineaId")]
+    [InlineData("carroceria", "lineaId")]
     [InlineData("maquinaria", "horasUso")]
     public async Task Opcionales_ausentes_dan_201(string categoria, string campo) =>
         await _api.Creado(_api.A.Token, Sin(_api.Cuerpo(categoria), campo));
@@ -518,5 +521,17 @@ public sealed class InventarioCrearEditarTests(InventarioFixture fx) : IClassFix
         await _api.Crear(_api.A.Token, Con(_api.CuerpoCamion(), ("placa", placa)));
         await _api.Editar(_api.A.Token, id, Con(_api.CuerpoCamion(), ("tipoId", _api.Carro)));
         Assert.Equal(antes + 1, await _api.Leer(db => Task.FromResult(db.AuditoriaEventos.Count(a => a.Entidad == "Vehiculo"))));
+    }
+
+    [Theory(DisplayName = "D-25: placa de maquinaria hasta 8 caracteres; en carro y camión hasta 7")]
+    [InlineData("maquinaria", "MC123456", true)]
+    [InlineData("maquinaria", "MC1234567", false)]
+    [InlineData("camion", "MC123456", false)]
+    [InlineData("carro", "ABC1234", true)]
+    public async Task Placa_por_categoria(string categoria, string placa, bool valida)
+    {
+        var r = await _api.Crear(_api.A.Token, Con(_api.Cuerpo(categoria), ("placa", placa)));
+        if (valida) Assert.Equal(HttpStatusCode.Created, r.StatusCode);
+        else await Afirmar400(r, "placa", "Escribe una placa válida (letras y números).");
     }
 }
