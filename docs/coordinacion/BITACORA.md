@@ -63,3 +63,9 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - Respaldo completo nuevo: `C:\Respaldo_CAMION\camion_ventas_completo_antes_migracion003_20261026_191015.sql` (51.366 bytes, 39 tablas, "Dump completed").
   - Conteos antes: AspNetUsers 4, perfiles_asesor 0, perfiles_comprador 4, AspNetUserRoles 4 (historial_autorizaciones 0). La restricción `CK_Asesor_Estado` tiene todavía los valores antiguos.
   - **SUBIR NO aplicado**: el sistema de permisos de esta sesión bloqueó la escritura en `camion_ventas`. Se comprobó que la base sigue sin cambios. Queda para la responsable (pasos en `docs/GUIA-ADMINISTRACION.md`, sección 4) o para una sesión con permiso.
+- PR [#4](https://github.com/alex03ma-ux/CAMION/pull/4) abierto para P2. El coordinador principal volvió a ejecutar las pruebas: 223/223 API y 93/93 pantallas.
+- D-16: la responsable aplicó la migración 003 (sección SUBIR) en `camion_ventas` desde phpMyAdmin (2026-10-26).
+  - Respaldo previo: `C:\Respaldo_CAMION\camion_ventas_completo_antes_migracion003_20261026_191015.sql` (51 KB).
+  - Conteos antes y después, iguales: AspNetUsers 4, perfiles_asesor 0, perfiles_comprador 4, AspNetUserRoles 4.
+  - `CK_Asesor_Estado` admite ahora PENDIENTE/APROBADO/RECHAZADO/BLOQUEADO; `valores_fuera_de_d10` = 0. Las 7 instrucciones, sin errores.
+
