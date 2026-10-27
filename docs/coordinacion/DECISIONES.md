@@ -282,7 +282,7 @@ Las decisiones D-1 a D-5 se detectaron al comparar los documentos fuente el 2026
 - Recomendación: A. Sirven para probar P4a y P4b, y el inventario de un asesor real no las ve, porque son de otro asesor.
 - Bloquea: nada.
 
-## D-25 — Detalles del formulario de inventario · PENDIENTE (detectada en P4a, 2026-10-27)
+## D-25 — Detalles del formulario de inventario · TOMADA (2026-10-27)
 Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, C-5 y C-6 de `docs/criterios/P4a.md`). Ninguna bloquea P4a. Hoy funciona con la opción recomendada en cada una.
 
 1. **¿El modelo (la línea) es obligatorio?**
@@ -296,8 +296,13 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
    - ¿Las carrocerías necesitan capacidad? D-19 no la incluía, y hoy es opcional.
 
 - Recomendación: 1A; en 2, ampliar a 8 caracteres solo si hace falta; en 3, mantener kg y la capacidad opcional en las carrocerías.
+- **Decisión** (respuesta de la responsable, transmitida por el coordinador principal):
+  1. **El modelo (línea) es OBLIGATORIO desde ya** en Carro, Camión y Maquinaria. En Carrocería sigue opcional. Se eligió la opción B, no la recomendada. Cómo resolver que la lista de líneas está casi vacía queda en D-27.
+  2. La placa de maquinaria admite **hasta 8 caracteres**; las demás, de 5 a 7.
+  3. La capacidad se mide en **kg** en camiones y máquinas, y es opcional en las carrocerías.
+- Implementado en P4a, con las pruebas actualizadas.
 
-## D-26 — ¿Se adelanta la parte de planes y suscripciones de P7? · PENDIENTE (detectada en P4a, 2026-10-27)
+## D-26 — ¿Se adelanta la parte de planes y suscripciones de P7? · TOMADA (2026-10-27)
 - Contexto: por D-21 (B), nadie puede publicar sin un plan activo, y los planes llegan en P7. Si no se adelantan, P4b (publicaciones) se podrá probar con pruebas automáticas, pero **no se podrá usar con datos reales hasta P7**.
 - Alcance mínimo que habría que adelantar:
   - HU-049 a HU-051: planes. El administrador crea y edita planes con nombre, precio, duración y cupo de publicaciones.
@@ -313,3 +318,18 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
 - Recomendación: A. Separado es más fácil de revisar, y el orden P4a → P4p → P4b deja cada entrega usable.
 - Bloquea: el uso real de P4b. No bloquea P4a.
 - El backlog no se reordena hasta tener la respuesta.
+- **Decisión: A** (respuesta de la responsable, transmitida por el coordinador principal). Se crea **P4p "Planes y suscripciones"** justo después de P4a y antes de P4b, con el alcance mínimo propuesto: sin pagos en línea; el administrador activa la suscripción a mano. El backlog queda reordenado.
+
+## D-27 — ¿Cómo se completa la lista de marcas y modelos ahora que el modelo es obligatorio? · PENDIENTE (detectada en P4a, 2026-10-27)
+- Contexto: por D-25, el modelo es obligatorio en Carro, Camión y Maquinaria.
+  - En `camion_ventas` solo hay las marcas y líneas del DEMO.
+  - El administrador no puede añadirlas hasta P7 (HU-082/HU-083).
+  - Mientras tanto, un asesor **no puede registrar** un vehículo cuyo modelo no esté en la lista.
+- Opciones:
+  - A) **Pantalla mínima de administración de marcas y modelos** (crear, renombrar y desactivar, con auditoría), en P4p o en un ítem pequeño antes de P4b.
+    - Impacto: es la solución duradera, con algo más de trabajo.
+  - B) **Catálogo inicial con un script de solo INSERT**: marcas y modelos habituales de camiones, carros y maquinaria en Colombia, revisado por la responsable y aplicado por ella en phpMyAdmin (D-16).
+    - Impacto: rápido, pero cada modelo nuevo exige otro script hasta que exista la pantalla.
+  - C) **Ambas**: el script para arrancar y la pantalla para el día a día.
+- Recomendación: C, con el script ahora y la pantalla dentro de P4p.
+- Bloquea: el uso real de P4a con vehículos de modelos que no estén en la lista. No bloquea las pruebas ni el merge.

@@ -56,7 +56,7 @@ Dos cambios más en `vehiculos`:
 | Campo | Carro | Camión | Carrocería | Maquinaria |
 |---|---|---|---|---|
 | marca | obligatoria | obligatoria | **opcional** | obligatoria |
-| línea (modelo) | opcional | opcional | opcional | opcional |
+| línea (modelo) | **obligatoria** (D-25) | **obligatoria** (D-25) | opcional | **obligatoria** (D-25) |
 | año (`modeloAnio`) | obligatorio, entre 1950 y el año actual + 1 | igual | opcional | obligatorio |
 | kilometraje | obligatorio ≥ 0 | obligatorio ≥ 0 | **no se admite** (se guarda 0) | **no se admite** (se guarda 0) |
 | horasUso | no se admite | no se admite | no se admite | opcional ≥ 0 |
@@ -218,3 +218,8 @@ Las fotos de un vehículo VENDIDO no se pueden modificar (409).
 - Marcar como vendido (HU-064, D-22).
 - Gestión de catálogos (P7).
 - Retirar el DEMO (D-24).
+
+## Cambios por D-25 (2026-10-27)
+- El modelo (línea) es obligatorio en Carro, Camión y Maquinaria: si falta, 400 en `lineaId` con "Elige el modelo.". En Carrocería sigue siendo opcional.
+- La placa de Maquinaria admite de 5 a 8 caracteres. En las demás categorías se mantiene de 5 a 7. La columna `placa` VARCHAR(10) de la migración 004 ya sirve, así que el esquema no cambia.
+- La capacidad se guarda en kg en camiones y máquinas, y es opcional en las carrocerías. Así estaba ya.
