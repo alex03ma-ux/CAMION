@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { obtenerFiltros } from './api/catalogo'
 import {
   cerrarSesionServidor,
   esSesionTerminada,
@@ -21,12 +22,18 @@ import {
   type SesionGuardada,
 } from './auth/session'
 import { esAdministrador } from './auth/roles'
+import { usePeticion } from './catalogo/usePeticion'
 import { AdminUsuarios } from './components/AdminUsuarios'
 import type { DatosAviso } from './components/Aviso'
 import { Aviso } from './components/Aviso'
+import { DetalleVehiculo } from './components/DetalleVehiculo'
+import { Encabezado } from './components/Encabezado'
+import { Inicio } from './components/Inicio'
 import { LoginForm } from './components/LoginForm'
 import { PerfilPanel } from './components/PerfilPanel'
 import { RegistroForm } from './components/RegistroForm'
+import { Resultados } from './components/Resultados'
+import { HASH_CUENTA, HASH_REGISTRO, leerRuta, navegar, useHash, type Ruta } from './rutas'
 
 type Vista =
   | { tipo: 'verificando'; sesion: SesionGuardada }
@@ -60,12 +67,33 @@ function loginCon(aviso: DatosAviso | null, email = ''): Vista {
   return { tipo: 'login', aviso, email }
 }
 
+const NOMBRE_PORTAL = 'Financiamos Tu Camión'
+
+function tituloDocumento(ruta: Ruta): string {
+  if (ruta.nombre === 'buscar') return `Buscar vehículos | ${NOMBRE_PORTAL}`
+  if (ruta.nombre === 'vehiculo') return `Detalle del vehículo | ${NOMBRE_PORTAL}`
+  if (ruta.nombre === 'cuenta') return `Mi cuenta | ${NOMBRE_PORTAL}`
+  return NOMBRE_PORTAL
+}
+
+const cargarFiltros = (signal: AbortSignal) => obtenerFiltros(signal)
+
 export default function App() {
   const [vista, setVista] = useState<Vista>(vistaInicial)
   const [cerrando, setCerrando] = useState(false)
   // Clave para reiniciar el formulario de login cuando cambia el aviso.
   const [claveLogin, setClaveLogin] = useState(0)
   const cerrandoRef = useRef(false)
+
+  // P3: navegación por hash. La lógica de sesión (verificación, caducidad,
+  // inactividad, otras pestañas) sigue montada en todas las rutas.
+  const hash = useHash()
+  const ruta = leerRuta(hash)
+  const principal = useRef<HTMLElement>(null)
+  const primeraRuta = useRef(true)
+  // Opciones de filtros (tipos para Carros/Camiones, marcas, modelos): una sola carga.
+  const [opcionesFiltros, reintentarOpcionesFiltros] = usePeticion(cargarFiltros, 'filtros')
+  const tipos = opcionesFiltros.estado === 'ok' ? opcionesFiltros.datos.tipos : []
 
   const irALogin = useCallback((aviso: DatosAviso | null, email = '') => {
     setClaveLogin((k) => k + 1)
@@ -180,10 +208,61 @@ export default function App() {
     }
   }, [])
 
+  // #/cuenta/registro abre el registro; #/cuenta vuelve al login desde el registro.
+  const enCuenta = ruta.nombre === 'cuenta'
+  const enRegistro = ruta.nombre === 'cuenta' && ruta.registro
+  useEffect(() => {
+    if (!enCuenta) return
+    if (enRegistro) setVista((v) => (v.tipo === 'login' ? { tipo: 'registro' } : v))
+    else setVista((v) => (v.tipo === 'registro' ? loginCon(null) : v))
+  }, [enCuenta, enRegistro])
+
+  // Al cambiar de ruta: título del documento y foco al título de la página.
+  // En la cuenta, los formularios ya mueven el foco a su propio título.
+  useEffect(() => {
+    document.title = tituloDocumento(leerRuta(hash))
+    if (primeraRuta.current) {
+      primeraRuta.current = false
+      return
+    }
+    const contenedor = principal.current
+    if (!contenedor) return
+    const activo = document.activeElement
+    const focoEnCuenta =
+      leerRuta(hash).nombre === 'cuenta' &&
+      activo !== null &&
+      activo !== contenedor &&
+      contenedor.contains(activo)
+    if (focoEnCuenta) return
+    contenedor.querySelector<HTMLHeadingElement>('h1')?.focus()
+  }, [hash])
+
+  const conSesion = vista.tipo !== 'login' && vista.tipo !== 'registro'
+
   return (
-    <main className="container">
+    <>
+      <Encabezado ruta={ruta} tipos={tipos} conSesion={conSesion} />
+      <main id="contenido" ref={principal} tabIndex={-1} className="cat-principal">
+        {ruta.nombre === 'inicio' && <Inicio tipos={tipos} />}
+        {ruta.nombre === 'buscar' && (
+          <Resultados
+            filtros={ruta.filtros}
+            hash={hash}
+            opciones={opcionesFiltros}
+            onReintentarOpciones={reintentarOpcionesFiltros}
+          />
+        )}
+        {ruta.nombre === 'vehiculo' && <DetalleVehiculo key={ruta.slug} slug={ruta.slug} />}
+        {ruta.nombre === 'cuenta' && renderCuenta()}
+      </main>
+    </>
+  )
+
+  function renderCuenta() {
+    return (
+    <div className="container cuenta">
       <p className="eyebrow">RED DE VENTA</p>
-      <h1>Financiamos Tu Camión</h1>
+      <h1 tabIndex={-1}>Financiamos Tu Camión</h1>
       <p>Tu próximo negocio puede comenzar con un camión.</p>
 
       {vista.tipo === 'verificando' && (
@@ -216,14 +295,23 @@ export default function App() {
           avisoInicial={vista.aviso}
           emailInicial={vista.email}
           onSesionIniciada={alIniciarSesion}
-          onIrARegistro={() => setVista({ tipo: 'registro' })}
+          onIrARegistro={() => {
+            setVista({ tipo: 'registro' })
+            navegar(HASH_REGISTRO)
+          }}
         />
       )}
 
       {vista.tipo === 'registro' && (
         <RegistroForm
-          onRegistrado={(mensaje, email) => irALogin({ tipo: 'exito', texto: mensaje }, email)}
-          onIrALogin={() => irALogin(null)}
+          onRegistrado={(mensaje, email) => {
+            irALogin({ tipo: 'exito', texto: mensaje }, email)
+            navegar(HASH_CUENTA)
+          }}
+          onIrALogin={() => {
+            irALogin(null)
+            navegar(HASH_CUENTA)
+          }}
         />
       )}
 
@@ -248,6 +336,7 @@ export default function App() {
           onVolver={() => setVista({ tipo: 'perfil', sesion: vista.sesion, perfil: vista.perfil })}
         />
       )}
-    </main>
-  )
+    </div>
+    )
+  }
 }
