@@ -69,3 +69,10 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - Conteos antes y después, iguales: AspNetUsers 4, perfiles_asesor 0, perfiles_comprador 4, AspNetUserRoles 4.
   - `CK_Asesor_Estado` admite ahora PENDIENTE/APROBADO/RECHAZADO/BLOQUEADO; `valores_fuera_de_d10` = 0. Las 7 instrucciones, sin errores.
 
+- Prueba manual de P2 hecha por la responsable contra `camion_ventas` (2026-10-26), confirmada en el registro de auditoría del servidor:
+  - Registro como comprador y `promover-admin` (D-13): la cuenta pasó a ADMINISTRADOR, con evento en `auditoria_eventos`.
+  - Login de administradora con el botón "Administrar usuarios".
+  - Registro de asesor de prueba (`registro_asesor`), aprobación (`admin_aprobar`) y bloqueo (`admin_bloquear`).
+  - Login del asesor bloqueado rechazado (`cuenta_no_activa estado=BLOQUEADA`).
+  - Sin errores. El registro no muestra el intento de login del asesor en estado Pendiente (cubierto por las pruebas automáticas).
+  - Quedan en la base la cuenta de administradora y un asesor de prueba bloqueado.
