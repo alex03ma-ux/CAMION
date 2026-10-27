@@ -258,3 +258,6 @@ Respuesta 200:
 - **C-P3-5, enlaces de categoría:** se aceptan. Solo aparecen las categorías que tienen al menos una publicación visible, porque así lo devuelve `/filtros`.
 - **C-P3-6, kilometraje 0:** se acepta que `kmMax` y `km_asc` incluyan las carrocerías y las máquinas con 0 km. La búsqueda ignora tildes según la intercalación de MariaDB; en SQLite solo ignora mayúsculas. Esa diferencia queda como limitación de las pruebas.
 - **C-P3-8:** el inventario de endpoints de P2 se amplía con las 4 rutas anónimas del catálogo.
+- **Ids no numéricos:** `tipoId`, `marcaId` y `lineaId` que no son números responden 400 con estos mensajes: "Categoría no válida.", "Marca no válida." y "Modelo no válido."
+- **Redondeo de `rangos`:** `precioMin` se redondea hacia abajo y `precioMax` hacia arriba, para que el rango incluya todos los precios.
+- **Hora del script DEMO:** usa UTC (`UTC_TIMESTAMP()`), igual que la regla de visibilidad.
