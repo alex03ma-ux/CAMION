@@ -118,3 +118,36 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - Conteos después: 7 usuarios (+1 asesor DEMO), 12 publicaciones DEMO, 12 vehículos y 2 destacadas. Por categoría: Camión 5, Carro 3, Carrocería 2, Maquinaria 2. Tildes guardadas en UTF-8 correcto.
 - Prueba manual de P3 hecha por la responsable con los datos DEMO: inicio con destacados y recientes, las cuatro categorías, filtros con "Limpiar", búsqueda, detalle, etiqueta "Reservado" y carrocería sin kilometraje. Todo según lo esperado.
 - Pendiente: ejecutar la sección BAJAR del script DEMO (con respaldo nuevo) antes de cargar datos reales en P4. Las publicaciones DEMO dejan de verse solas a los 30 días.
+
+## 2026-10-27 — P4a Inventario de vehículos
+- Rama `feature/p4a-inventario` desde `main` (`de4c7fb`). Contrato `docs/criterios/P4a-contrato-api.md`, 120 criterios en `docs/criterios/P4a.md`.
+- Decisiones:
+  - TOMADAS: D-20 (fotos), D-21 (planes en P7), D-22 (vendido en P4b), D-23 (migración 004), D-24 (retirar el DEMO tras P4b), D-25 y D-26.
+  - D-25: línea obligatoria, placa de maquinaria de hasta 8 caracteres y capacidad en kg.
+  - D-26: P4p antes de P4b.
+  - PENDIENTE: D-27 (marcas y modelos).
+  - Nota sobre D-22: la respuesta decía "A", pero el texto pedía meterlo en P4b, y se registró P4b.
+- Backend:
+  - `/api/inventario` (política AsesorOAdministrador) con validación por categoría, placa normalizada y única, precio con precio anterior, estados, y auditoría de solo los campos que cambian.
+  - Fotos en `Media:Ruta` (por defecto `C:\CAMION_media`): se validan por su contenido, hasta 5 MB y 10 por vehículo; se sirven en `/media` de forma segura.
+  - Condición 7 en el catálogo.
+- Migración `database/migraciones/004_p4a_inventario.sql` escrita y sin aplicar (D-23).
+- Frontend: rutas `#/inventario`, lista, formulario por categoría y gestión de fotos.
+- Defectos hallados por las pruebas y corregidos:
+  - el peso y la capacidad no admitían decimales;
+  - "1.5" se leía como 15.
+- Los agentes de pruebas se cortaron por el límite de uso. Las pruebas de la API que dejaron estaban completas, y el coordinador las terminó, las ajustó a D-25 y las ejecutó.
+- Resultados ejecutados:
+  - `dotnet test`: 650/650.
+  - `npm test`: 312/312.
+  - `npm run build`: correcto.
+- Revisión de seguridad (coordinador):
+  - sin secretos ni dependencias nuevas;
+  - permisos por rol;
+  - `/media` protegido contra rutas fuera de la carpeta;
+  - fotos validadas por su contenido;
+  - la migración 004 solo añade, y su BAJAR (comentado) solo quita lo que añadió.
+- Limitaciones:
+  - SQLite no reproduce los bloqueos de fila de MariaDB.
+  - El portal sigue mostrando el precio y las fotos de la publicación hasta P4b.
+  - Prueba manual pendiente de la migración 004 y de D-27.
