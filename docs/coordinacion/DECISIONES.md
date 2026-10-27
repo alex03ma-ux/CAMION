@@ -211,3 +211,61 @@ Las decisiones D-1 a D-5 se detectaron al comparar los documentos fuente el 2026
   - Hacen falta columnas nuevas para las medidas, el material, las horas de uso, el tipo de máquina y la capacidad.
   - Hacen falta catálogos nuevos para los materiales y los tipos de máquina.
 - P3 no puede mostrar esos campos porque todavía no existen en el esquema. Lo único que ya hace P3 es ocultar el kilometraje de las carrocerías (y el de las máquinas con 0 km). El resto queda para P4.
+
+## D-20 — ¿Dónde y cómo se guardan las fotos? · PENDIENTE (detectada en P4a, 2026-10-27)
+- Contexto: HU-014 y RN-VE-001 permiten hasta 10 fotos por vehículo. Las fotos no pueden ir al repositorio ni a la base de datos.
+- Propuesta (ya usada en el contrato de P4a, `docs/criterios/P4a-contrato-api.md`):
+  - Carpeta local **fuera del repositorio**, `C:\CAMION_media`, configurable con `Media:Ruta`.
+  - Formatos JPG, PNG y WebP, validados por su contenido. Máximo 5 MB por foto y 10 fotos por vehículo.
+  - Nombres aleatorios.
+  - Las fotos se sirven en `/media/...`.
+- Opciones:
+  - A) Aceptar la propuesta.
+    - Impacto: sin costo.
+    - Hay que incluir esa carpeta en los respaldos; propuesta: copiarla junto a `C:\Respaldo_CAMION\`.
+  - B) Otro límite (por ejemplo 2 MB, u otro número de fotos) u otra carpeta.
+    - Impacto: es un ajuste de configuración.
+  - C) Almacenamiento en la nube (por ejemplo, un servicio de archivos).
+    - Impacto: costo e integración externa; se haría más adelante.
+- Recomendación: A.
+- Bloquea: la subida de fotos con la base y la carpeta reales (no bloquea las pruebas automáticas).
+
+## D-21 — ¿Cómo obtiene un asesor un plan activo antes de P7? · PENDIENTE (detectada en P4a, 2026-10-27)
+- Contexto: publicar exige un plan activo con cupo (RN-CO-001), y la gestión de planes y pagos llega en P7.
+- Opciones:
+  - A) En P4b, el administrador asigna o renueva a mano un plan a un asesor, desde el panel y con auditoría. Los planes se crean con un script inicial que aplica la responsable.
+  - B) Adelantar a P4b una gestión mínima de planes (crear un plan con nombre, precio, duración y cupo).
+  - C) Un plan de prueba automático para todo asesor aprobado.
+- Recomendación: A.
+- Bloquea: P4b. **No bloquea P4a**, porque registrar vehículos en el inventario no exige plan.
+
+## D-22 — ¿"Marcar como vendido" (HU-064) entra ya o espera a P7? · PENDIENTE (detectada en P4a, 2026-10-27)
+- Contexto: la venta registra la fecha, el precio final, el origen y observaciones, y se puede revertir con un motivo (§15). Es gestión comercial.
+- Opciones:
+  - A) Esperar a P7. En P4a el estado VENDIDO existe en la base, pero no hay botón para marcarlo.
+  - B) Incluirlo en P4b, junto con la publicación (vender oculta la publicación, RN-VE-014).
+- Recomendación: B. Cerrar el ciclo del vehículo junto con sus publicaciones evita estados a medias.
+- Bloquea: nada de P4a.
+
+## D-23 — Aplicar la migración 004 de P4a a `camion_ventas` · PENDIENTE (detectada en P4a, 2026-10-27)
+- Contexto: P4a necesita cambiar el esquema; el detalle está en el contrato.
+  - En `vehiculos`: placa única opcional, estado, precio y precio anterior, campos de carrocería y máquina; la marca y el año pasan a ser opcionales.
+  - Tablas nuevas: materiales, tipos de máquina y fotos del vehículo.
+- La migración `database/migraciones/004_p4a_inventario.sql`:
+  - es reversible (sección BAJAR) y no borra datos;
+  - copia a cada vehículo DEMO el precio de su publicación.
+- Procedimiento, igual que la 003 (D-16): el coordinador hace el respaldo completo previo; la responsable la aplica desde phpMyAdmin en Chrome, con los conteos antes y después.
+- Opciones:
+  - A) Aplicarla cuando P4a tenga sus pruebas en verde.
+  - B) Esperar y aplicarla junto con la de P4b.
+- Recomendación: A, para poder hacer la prueba manual de P4a.
+- Bloquea: la prueba manual de P4a con la base real. Sin la migración, la API nueva fallaría contra `camion_ventas`.
+
+## D-24 — ¿Cuándo se retiran los datos DEMO? · PENDIENTE (detectada en P4a, 2026-10-27)
+- Contexto: hay 12 publicaciones DEMO de un asesor que no puede iniciar sesión, y su vigencia termina 30 días después de la carga. La sección BAJAR del script solo borra filas DEMO.
+- Opciones:
+  - A) Retirarlas cuando P4b esté fusionado y antes de cargar el primer vehículo real.
+  - B) Retirarlas ya, antes de probar P4a.
+  - C) Dejarlas hasta que venzan solas. No se recomienda: quedarían filas de prueba para siempre.
+- Recomendación: A. Sirven para probar P4a y P4b, y el inventario de un asesor real no las ve, porque son de otro asesor.
+- Bloquea: nada.
