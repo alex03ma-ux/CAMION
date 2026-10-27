@@ -183,17 +183,46 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
         }
     }
 
-    [Fact(DisplayName = "CA-SE006-03/05: anónimos solo registro, login y /health; únicos endpoints que modifican datos: registro, login, logout")]
+    [Fact(DisplayName = "CA-SE006-03/05/13, CA-061-15, CA-N03-R04: anónimos solo registros, login y /health; /api/admin exige SoloAdministrador; ninguna ruta edita auditoría")]
     public async Task Inventario_de_endpoints()
     {
         var todos = Endpoints(factory.Services).ToList();
         var anonimos = todos.Where(e => e.Metadata.GetMetadata<IAuthorizeData>() is null)
             .Select(e => $"{Metodo(e)} /{e.RoutePattern.RawText!.TrimStart('/')}").OrderBy(x => x, StringComparer.Ordinal).ToArray();
-        Assert.Equal(new[] { "GET /health", "GET /health/database", "POST /api/auth/login", "POST /api/auth/registro/comprador" }, anonimos);
+        // P2: se añade el registro de asesor (anónimo, D-3).
+        Assert.Equal(new[]
+        {
+            "GET /health", "GET /health/database", "POST /api/auth/login",
+            "POST /api/auth/registro/asesor", "POST /api/auth/registro/comprador"
+        }, anonimos);
 
         var modifican = todos.Where(e => Metodo(e) is "POST" or "PUT" or "PATCH" or "DELETE")
             .Select(e => "/" + e.RoutePattern.RawText!.TrimStart('/')).OrderBy(x => x, StringComparer.Ordinal).ToArray();
-        Assert.Equal(new[] { "/api/auth/login", "/api/auth/logout", "/api/auth/registro/comprador" }, modifican);
+        Assert.Equal(new[]
+        {
+            "/api/admin/usuarios/{id}/aprobar", "/api/admin/usuarios/{id}/bloquear", "/api/admin/usuarios/{id}/desbloquear",
+            "/api/admin/usuarios/{id}/rechazar", "/api/admin/usuarios/{id}/reconsiderar",
+            "/api/auth/login", "/api/auth/logout", "/api/auth/registro/asesor", "/api/auth/registro/comprador"
+        }, modifican);
+
+        // CA-SE006-13: toda ruta bajo /api/admin exige SoloAdministrador (5 acciones + la lista).
+        var admin = todos.Where(e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/admin", StringComparison.Ordinal)).ToList();
+        Assert.Equal(6, admin.Count);
+        foreach (var e in admin)
+        {
+            var politicas = e.Metadata.GetOrderedMetadata<IAuthorizeData>().Select(a => a.Policy).ToArray();
+            Assert.True(politicas.Contains("SoloAdministrador"),
+                $"{Metodo(e)} {e.RoutePattern.RawText} no exige SoloAdministrador (políticas: {string.Join(",", politicas)})");
+        }
+        // Las tres políticas con nombre existen.
+        var proveedor = factory.Services.GetRequiredService<IAuthorizationPolicyProvider>();
+        foreach (var nombre in new[] { "SoloAdministrador", "SoloAsesor", "Autenticado" })
+            Assert.NotNull(await proveedor.GetPolicyAsync(nombre));
+
+        // CA-061-15: ninguna ruta permite editar o borrar auditoría ni historial.
+        Assert.DoesNotContain(todos, e => e.RoutePattern.RawText!.Contains("auditoria", StringComparison.OrdinalIgnoreCase) ||
+                                          e.RoutePattern.RawText!.Contains("historial", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(todos, e => Metodo(e) is "PUT" or "PATCH" or "DELETE");
 
         // /health es anónimo (no se prueba /health/database: intentaría conectar con MariaDB).
         Assert.Equal(HttpStatusCode.OK, (await _c.GetAsync("/health")).StatusCode);
