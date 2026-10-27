@@ -2,7 +2,10 @@
 
 Esta guía explica, paso a paso, cómo crear la primera cuenta de administrador, cómo usar el panel "Administrar usuarios", dónde queda el registro de lo que se hace (auditoría) y cómo aplicar o revertir la migración 003.
 
-- Estado: todo lo que se describe está **IMPLEMENTADO** en la rama `feature/p2-asesores`. **Nada está PROBADO** todavía: las pruebas automáticas de P2 se están escribiendo.
+- Estado: todo lo que se describe está **IMPLEMENTADO y PROBADO** (P2, fusionado en `main` con el PR #4):
+  - Pruebas automáticas: 223 de API y 93 de pantallas.
+  - Prueba manual de la responsable contra `camion_ventas`: superada.
+  - La migración 003 ya está aplicada (D-14, D-16).
 - Valores marcados como **PROPUESTO** (pendientes de confirmar por la responsable): los tipos de documento CC / CE / NIT / PAS y el largo del motivo (5 a 500 caracteres).
 - Trazabilidad: HU-043 Aprobar, HU-044 Rechazar, HU-045 Activar acceso, HU-047 Bloquear, HU-048 Consultar usuarios, HU-061 Auditoría (RN-SE-003), RN-SE-006 Control de accesos. Decisiones D-3, D-10, D-12, D-13, D-14 y D-15 (`docs/coordinacion/DECISIONES.md`).
 - Detalle técnico de la API: `backend/GUIA-AUTENTICACION.md` y `docs/criterios/P2-contrato-api.md`.

@@ -135,3 +135,34 @@ Las decisiones D-1 a D-5 se detectaron al comparar los documentos fuente el 2026
 - Contexto: el sistema de permisos impidió que el agente escribiera en `camion_ventas` (detectada en el cierre de P2).
 - **Decisión: la aplica la responsable, guiada, desde phpMyAdmin.** Los agentes no reciben permiso de escritura en la base real.
 - Nota práctica: la ventana de confirmación de phpMyAdmin no funciona en el navegador integrado de Claude; los cambios en la base se ejecutan desde Chrome/Edge.
+
+## D-17 — Categorías "Carros" y "Camiones", y significado de "modelo" · PENDIENTE (detectada en P3, 2026-10-26)
+- Contexto: HU-005/HU-006 piden las categorías Carros y Camiones, y HU-008 un filtro por "modelo". El esquema no tiene una columna de categoría. Tiene `tipos_vehiculo` (tipo), `tipos_carroceria` (subtipo) y `lineas` (modelo de cada marca). Hoy las tres tablas están vacías.
+- Propuesta del coordinador, ya usada en el contrato de P3:
+  - `tipos_vehiculo` contiene solo **Carro** y **Camión**: son las dos categorías.
+  - Los subtipos (sedán, SUV, volqueta, furgón, estacas…) van en `tipos_carroceria`.
+  - **"Modelo"** es la **línea** (por ejemplo Chevrolet → NPR), y el **año** es aparte.
+  - Además:
+    - un "Reservado" se ve en el catálogo con su etiqueta (D-11);
+    - las publicaciones de un asesor bloqueado o rechazado no se muestran.
+- Opciones:
+  - A) Aceptar la propuesta.
+    - Impacto: no cambia el esquema y P3 queda listo.
+  - B) Más categorías (por ejemplo Motos o Maquinaria), o "modelo" = año.
+    - Impacto: se añaden filas al catálogo o se ajusta un filtro.
+- Recomendación: A.
+- Bloquea: nada. Si se elige B, el cambio es pequeño.
+
+## D-18 — Datos de demostración en `camion_ventas` para la prueba manual de P3 · PENDIENTE (detectada en P3, 2026-10-26)
+- Contexto: el catálogo está vacío porque la creación de vehículos llega en P4. Sin datos, la prueba manual de P3 solo mostraría "Pronto tendremos vehículos publicados".
+- El script `database/demo/demo_p3_catalogo.sql`:
+  - Inserta unas 10 publicaciones de ejemplo de un asesor DEMO que no puede iniciar sesión, más sus catálogos.
+  - Solo hace INSERT. Está marcado como DEMO.
+  - Tiene la sección BAJAR, que borra únicamente las filas DEMO.
+- Opciones:
+  - A) Aplicarlo desde phpMyAdmin, con un respaldo previo y el mismo procedimiento que la 003 (D-16), y quitarlo con BAJAR antes de pasar a datos reales.
+    - Impacto: permite probar el portal completo.
+  - B) No aplicarlo y probar P3 solo con las pruebas automáticas.
+    - Impacto: la prueba manual queda limitada al catálogo vacío.
+- Recomendación: A.
+- Bloquea: solo la prueba manual completa de P3.
