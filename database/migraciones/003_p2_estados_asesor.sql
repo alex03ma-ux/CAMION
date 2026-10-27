@@ -51,6 +51,8 @@ WHERE CONSTRAINT_SCHEMA = 'camion_ventas' AND TABLE_NAME = 'perfiles_asesor';
 
 -- =====================================================================
 -- SUBIR (aplicar la migración)
+-- Antes: detener la API (entre el paso 1 y el 3 la tabla queda sin CHECK).
+-- Ejecutar con el cliente mysql SIN --force, para que se detenga en el primer error.
 -- =====================================================================
 
 -- 1. Quitar la restricción antigua (si no, el UPDATE a los valores nuevos falla).
@@ -97,6 +99,10 @@ WHERE CONSTRAINT_SCHEMA = 'camion_ventas' AND TABLE_NAME = 'perfiles_asesor';
 -- Atención: RECHAZADO y BLOQUEADO se unifican en DESAUTORIZADO (la
 -- distinción se pierde; el respaldo previo la conserva).
 -- Antes de bajar, detener la API de P2: escribe los valores nuevos.
+-- BAJAR solo revierte perfiles_asesor: no toca AspNetUsers.EstadoCuenta ni las
+-- filas de historial_autorizaciones (esa tabla no tiene CHECK; las filas
+-- nuevas conservan APROBADO/RECHAZADO/BLOQUEADO y las antiguas
+-- AUTORIZADO/DESAUTORIZADO). Para volver al estado exacto, restaurar el respaldo completo.
 -- =====================================================================
 /*
 ALTER TABLE perfiles_asesor DROP CONSTRAINT CK_Asesor_Estado;
