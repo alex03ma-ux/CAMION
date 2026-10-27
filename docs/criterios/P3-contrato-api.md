@@ -31,10 +31,14 @@ Además: RN-VE-013 (solo vigentes), RN-VE-014 (vendido oculta), RN-SE-005 (consu
 
 Ningún endpoint de P3 escribe en la base.
 
-## Significado de los términos (PROPUESTO, confirmar en D-17)
+## Significado de los términos (D-17 TOMADA)
 
 - **Modelo** (HU-008, RN-VE-006 "Catálogo") = la **línea** del vehículo (`lineas`), por ejemplo Chevrolet → NPR. El **año** es `vehiculos.modelo_anio` (HU-010).
-- **Categoría** (HU-005/HU-006) = `tipos_vehiculo`. El catálogo de tipos se llena con **Carro** y **Camión**. Los subtipos (sedán, SUV, volqueta, furgón, estacas…) van en `tipos_carroceria`. Así no hace falta ninguna columna nueva.
+- **Categoría** = `tipos_vehiculo`. Por D-17 hay **cuatro categorías principales: Carro, Camión, Carrocería y Maquinaria**.
+  - Carros es HU-005 y Camiones es HU-006. Carrocería y Maquinaria se añaden por D-17.
+  - Los subtipos (sedán, SUV, volqueta, furgón, estacas…) siguen en `tipos_carroceria`, y siguen siendo una característica de los camiones.
+  - Una carrocería suelta se publica en la categoría Carrocería con marca (fabricante), línea, año, tipo de carrocería y kilometraje 0.
+  - No hay columnas nuevas. Los campos propios de carrocerías y máquinas están pendientes en D-19.
 - **Estados** (D-4, D-11), a partir de `publicaciones.estado_publicacion` y `estado_comercial`:
 
 | Estado | Condición |
@@ -51,10 +55,10 @@ Una publicación es **visible** solo si se cumple todo lo siguiente, evaluado co
 1. `estado_publicacion = 'PUBLICADA'`.
 2. `estado_comercial IN ('DISPONIBLE','RESERVADO')`. Un vendido nunca se muestra.
 3. **Vigente**: existe una fila en `historial_vigencias` de esa publicación con `inicio <= ahora < fin`. Si no la hay, la publicación está vencida y no se muestra.
-4. El asesor dueño tiene la cuenta `ACTIVA` (`AspNetUsers.EstadoCuenta`, a través de `perfiles_asesor`). PROPUESTO: un asesor bloqueado o rechazado no puede exhibir vehículos.
+4. El asesor dueño tiene la cuenta `ACTIVA` (`AspNetUsers.EstadoCuenta`, a través de `perfiles_asesor`). Un asesor bloqueado o rechazado no exhibe vehículos (confirmado en D-17).
 5. `precio_cop > 0` y `titulo` no vacío. La CHECK de la base ya lo exige para PUBLICADA, pero se comprueba de todas formas.
 
-Los **reservados** se muestran con `estadoComercial: "RESERVADO"`, y la interfaz les pone la etiqueta "Reservado" (D-11, PROPUESTO).
+Los **reservados** se muestran con `estadoComercial: "RESERVADO"`, y la interfaz les pone la etiqueta "Reservado" (D-11; confirmado en D-17).
 
 Una publicación es **destacada** si es visible y además tiene una fila en `publicaciones_destacadas` con `estado = 'ACTIVA'` y `inicio <= ahora < fin`.
 
@@ -193,11 +197,11 @@ Respuesta 200:
 | `#/vehiculo/<slug>` | Detalle |
 | `#/cuenta` | La pantalla actual de login/registro/perfil |
 
-**Encabezado.** En todas las páginas: logo/nombre, búsqueda, enlaces "Carros" y "Camiones", y según la sesión "Iniciar sesión / Registrarme" o "Mi cuenta". El panel de administración sigue dentro de "Mi cuenta".
+**Encabezado.** En todas las páginas: logo/nombre, búsqueda, enlaces "Carros", "Camiones", "Carrocerías" y "Maquinaria" (por los nombres de `tipos` Carro / Camión / Carrocería / Maquinaria; un enlace sin tipo correspondiente no se muestra), y según la sesión "Iniciar sesión / Registrarme" o "Mi cuenta". El panel de administración sigue dentro de "Mi cuenta".
 
 **Inicio (HU-001 a HU-003).**
 - Sección "Destacados" primero y después "Recientes", con tarjetas.
-- Accesos a las categorías Carros y Camiones.
+- Accesos a las cuatro categorías.
 - Si no hay vehículos: "Pronto tendremos vehículos publicados." más un acceso a la búsqueda.
 
 **Resultados (HU-004 a HU-012).**
@@ -216,13 +220,14 @@ Respuesta 200:
 
 **Tarjeta.**
 - Foto (o imagen de reemplazo), título, precio en formato `$ 120.000.000`, año, kilometraje con formato de miles + "km", ciudad.
+- El kilometraje **no se muestra** cuando el tipo es Carrocería, ni cuando es Maquinaria con kilometraje 0. La regla es la misma en la tarjeta y en el detalle.
 - Etiqueta "Destacado" y etiqueta "Reservado" cuando corresponda, siempre con texto y no solo con color.
 - Toda la tarjeta enlaza al detalle.
 
 **Detalle.**
 - Galería accesible: foto principal, miniaturas, textos alternativos y navegación con teclado.
 - Precio, "Negociable" si aplica, etiqueta "Reservado".
-- Ficha técnica (solo los campos con valor) y descripción.
+- Ficha técnica (solo los campos con valor, aplicando la misma regla de kilometraje) y descripción.
 - Botón "Volver a resultados".
 - Un 404 muestra "Este vehículo no está disponible." y un enlace al inicio.
 
