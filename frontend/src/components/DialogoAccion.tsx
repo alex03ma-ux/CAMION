@@ -75,11 +75,73 @@ export function DialogoAccion({
   onCancelar,
 }: DialogoAccionProps) {
   const textos = TEXTOS_ACCION[accion]
-  const obligatorio = motivoObligatorio(accion)
+  return (
+    <DialogoConfirmacion
+      titulo={textos.titulo}
+      descripcion={textos.pregunta(usuario.nombreCompleto || usuario.email)}
+      textoBoton={textos.boton}
+      textoEnviando={textos.enviando}
+      peligro={accion === 'rechazar' || accion === 'bloquear'}
+      motivo={motivoObligatorio(accion) ? 'obligatorio' : 'opcional'}
+      validarMotivo={(m) => validarMotivo(accion, m)}
+      enviando={enviando}
+      erroresMotivo={erroresMotivo}
+      error={error}
+      onConfirmar={onConfirmar}
+      onCancelar={onCancelar}
+    />
+  )
+}
+
+const SIN_ERRORES: string[] = []
+
+type DialogoConfirmacionProps = {
+  titulo: string
+  descripcion: string
+  textoBoton: string
+  textoEnviando: string
+  /** Botón de confirmar en rojo (acciones que quitan algo). */
+  peligro?: boolean
+  /** P4a: "no" muestra solo la pregunta (p. ej. eliminar una foto). */
+  motivo: 'obligatorio' | 'opcional' | 'no'
+  /** Validación del motivo en cliente; devuelve la lista de errores. */
+  validarMotivo?: (motivo: string) => string[]
+  /** Texto de ayuda bajo el motivo; por defecto el de 5 a 500 caracteres. */
+  ayudaMotivo?: string
+  enviando: boolean
+  erroresMotivo?: string[]
+  error: DatosAviso | null
+  onConfirmar: (motivo: string) => void
+  onCancelar: () => void
+}
+
+/**
+ * Diálogo modal genérico (P2, reutilizado en P4a para inactivar vehículos y
+ * eliminar fotos): foco atrapado dentro, Escape cancela y, al cerrarse, quien
+ * lo abrió devuelve el foco al botón de origen.
+ */
+export function DialogoConfirmacion({
+  titulo,
+  descripcion,
+  textoBoton,
+  textoEnviando,
+  peligro = false,
+  motivo: modoMotivo,
+  validarMotivo: validar = () => [],
+  ayudaMotivo,
+  enviando,
+  erroresMotivo = SIN_ERRORES,
+  error,
+  onConfirmar,
+  onCancelar,
+}: DialogoConfirmacionProps) {
+  const conMotivo = modoMotivo !== 'no'
+  const obligatorio = modoMotivo === 'obligatorio'
   const [motivo, setMotivo] = useState('')
   const [erroresLocales, setErroresLocales] = useState<string[]>([])
   const refDialogo = useRef<HTMLDivElement>(null)
   const refMotivo = useRef<HTMLTextAreaElement>(null)
+  const refConfirmar = useRef<HTMLButtonElement>(null)
 
   const errores = erroresLocales.length > 0 ? erroresLocales : erroresMotivo
   const tieneErrores = errores.length > 0
@@ -89,7 +151,8 @@ export function DialogoAccion({
   const idAyuda = 'dialogo-motivo-ayuda'
 
   useEffect(() => {
-    refMotivo.current?.focus()
+    if (refMotivo.current) refMotivo.current.focus()
+    else refConfirmar.current?.focus()
   }, [])
 
   // Si el servidor rechaza el motivo, el foco vuelve al campo.
@@ -127,7 +190,11 @@ export function DialogoAccion({
   function enviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault()
     if (enviando) return
-    const validacion = validarMotivo(accion, motivo)
+    if (!conMotivo) {
+      onConfirmar('')
+      return
+    }
+    const validacion = validar(motivo)
     setErroresLocales(validacion)
     if (validacion.length > 0) {
       refMotivo.current?.focus()
@@ -150,47 +217,52 @@ export function DialogoAccion({
         onKeyDown={alTeclear}
       >
         <form className="dialogo-form" onSubmit={enviar} noValidate aria-busy={enviando}>
-          <h3 id={idTitulo}>{textos.titulo}</h3>
-          <p id={idDescripcion}>{textos.pregunta(usuario.nombreCompleto || usuario.email)}</p>
+          <h3 id={idTitulo}>{titulo}</h3>
+          <p id={idDescripcion}>{descripcion}</p>
 
-          <label htmlFor="dialogo-motivo">{obligatorio ? 'Motivo' : 'Motivo (opcional)'}</label>
-          <textarea
-            ref={refMotivo}
-            id="dialogo-motivo"
-            name="motivo"
-            rows={4}
-            value={motivo}
-            maxLength={MOTIVO_MAX}
-            onChange={(e) => {
-              setMotivo(e.target.value)
-              if (erroresLocales.length > 0) setErroresLocales(validarMotivo(accion, e.target.value))
-            }}
-            aria-required={obligatorio ? 'true' : undefined}
-            aria-invalid={tieneErrores}
-            aria-describedby={describedBy}
-            disabled={enviando}
-          />
-          <p id={idAyuda} className="campo-ayuda">
-            {obligatorio ? 'De 5 a 500 caracteres.' : 'Hasta 500 caracteres.'} Llevas{' '}
-            {motivo.trim().length}.
-          </p>
-          {tieneErrores && (
-            <ul id={idError} className="campo-errores">
-              {errores.map((m) => (
-                <li key={m}>{m}</li>
-              ))}
-            </ul>
+          {conMotivo && (
+            <>
+              <label htmlFor="dialogo-motivo">{obligatorio ? 'Motivo' : 'Motivo (opcional)'}</label>
+              <textarea
+                ref={refMotivo}
+                id="dialogo-motivo"
+                name="motivo"
+                rows={4}
+                value={motivo}
+                maxLength={MOTIVO_MAX}
+                onChange={(e) => {
+                  setMotivo(e.target.value)
+                  if (erroresLocales.length > 0) setErroresLocales(validar(e.target.value))
+                }}
+                aria-required={obligatorio ? 'true' : undefined}
+                aria-invalid={tieneErrores}
+                aria-describedby={describedBy}
+                disabled={enviando}
+              />
+              <p id={idAyuda} className="campo-ayuda">
+                {ayudaMotivo ?? (obligatorio ? 'De 5 a 500 caracteres.' : 'Hasta 500 caracteres.')}{' '}
+                Llevas {motivo.trim().length}.
+              </p>
+              {tieneErrores && (
+                <ul id={idError} className="campo-errores">
+                  {errores.map((m) => (
+                    <li key={m}>{m}</li>
+                  ))}
+                </ul>
+              )}
+            </>
           )}
 
           <Aviso aviso={error} />
 
           <div className="dialogo-botones">
             <button
+              ref={refConfirmar}
               type="submit"
-              className={accion === 'rechazar' || accion === 'bloquear' ? 'boton-peligro' : undefined}
+              className={peligro ? 'boton-peligro' : undefined}
               disabled={enviando}
             >
-              {enviando ? textos.enviando : textos.boton}
+              {enviando ? textoEnviando : textoBoton}
             </button>
             <button
               type="button"

@@ -20,7 +20,7 @@ type CampoProps = {
   errores?: string[]
   autoComplete?: string
   maxLength?: number
-  inputMode?: 'text' | 'email' | 'tel' | 'numeric' | 'search'
+  inputMode?: 'text' | 'email' | 'tel' | 'numeric' | 'search' | 'decimal'
   /** Ids de textos de ayuda adicionales (p. ej. la lista de reglas). */
   describidoPor?: string
   deshabilitado?: boolean

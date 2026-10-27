@@ -45,8 +45,10 @@ export class ApiError extends Error {
 }
 
 type OpcionesPeticion = {
-  method?: 'GET' | 'POST'
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
   body?: unknown
+  /** P4a: cuerpo multipart (fotos). El navegador pone el Content-Type con su boundary. */
+  formulario?: FormData
   token?: string
   signal?: AbortSignal
   /** Mensaje por código cuando la respuesta no trae `error`. */
@@ -102,9 +104,9 @@ export async function peticion(
   ruta: string,
   opciones: OpcionesPeticion = {},
 ): Promise<unknown> {
-  const { method = 'GET', body, token, signal, mensajesPorCodigo = {} } = opciones
+  const { method = 'GET', body, formulario, token, signal, mensajesPorCodigo = {} } = opciones
   const headers: Record<string, string> = { Accept: 'application/json' }
-  if (body !== undefined) headers['Content-Type'] = 'application/json'
+  if (body !== undefined && formulario === undefined) headers['Content-Type'] = 'application/json'
   if (token) headers.Authorization = `Bearer ${token}`
 
   let respuesta: Response
@@ -112,7 +114,7 @@ export async function peticion(
     respuesta = await fetch(ruta, {
       method,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: formulario ?? (body === undefined ? undefined : JSON.stringify(body)),
       signal,
     })
   } catch (error) {

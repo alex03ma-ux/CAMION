@@ -29,11 +29,20 @@ import { Aviso } from './components/Aviso'
 import { DetalleVehiculo } from './components/DetalleVehiculo'
 import { Encabezado } from './components/Encabezado'
 import { Inicio } from './components/Inicio'
+import { InventarioPagina } from './components/InventarioPagina'
 import { LoginForm } from './components/LoginForm'
 import { PerfilPanel } from './components/PerfilPanel'
 import { RegistroForm } from './components/RegistroForm'
 import { Resultados } from './components/Resultados'
-import { HASH_CUENTA, HASH_REGISTRO, leerRuta, navegar, useHash, type Ruta } from './rutas'
+import {
+  esRutaInventario,
+  HASH_CUENTA,
+  HASH_REGISTRO,
+  leerRuta,
+  navegar,
+  useHash,
+  type Ruta,
+} from './rutas'
 
 type Vista =
   | { tipo: 'verificando'; sesion: SesionGuardada }
@@ -73,6 +82,9 @@ function tituloDocumento(ruta: Ruta): string {
   if (ruta.nombre === 'buscar') return `Buscar vehículos | ${NOMBRE_PORTAL}`
   if (ruta.nombre === 'vehiculo') return `Detalle del vehículo | ${NOMBRE_PORTAL}`
   if (ruta.nombre === 'cuenta') return `Mi cuenta | ${NOMBRE_PORTAL}`
+  if (ruta.nombre === 'inventario') return `Inventario | ${NOMBRE_PORTAL}`
+  if (ruta.nombre === 'inventarioNuevo') return `Registrar vehículo | ${NOMBRE_PORTAL}`
+  if (ruta.nombre === 'inventarioVehiculo') return `Editar vehículo | ${NOMBRE_PORTAL}`
   return NOMBRE_PORTAL
 }
 
@@ -239,6 +251,13 @@ export default function App() {
 
   const conSesion = vista.tipo !== 'login' && vista.tipo !== 'registro'
 
+  // P4a: el inventario exige sesión; sin ella se va al login de #/cuenta
+  // (si la sesión terminó, allí se ve el aviso "Tu sesión terminó...").
+  const enInventario = esRutaInventario(ruta)
+  useEffect(() => {
+    if (enInventario && !conSesion) navegar(HASH_CUENTA)
+  }, [enInventario, conSesion])
+
   return (
     <>
       <Encabezado ruta={ruta} tipos={tipos} conSesion={conSesion} />
@@ -260,9 +279,46 @@ export default function App() {
         )}
         {ruta.nombre === 'vehiculo' && <DetalleVehiculo key={ruta.slug} slug={ruta.slug} />}
         {ruta.nombre === 'cuenta' && renderCuenta()}
+        {(ruta.nombre === 'inventario' ||
+          ruta.nombre === 'inventarioNuevo' ||
+          ruta.nombre === 'inventarioVehiculo') &&
+          renderInventario(ruta)}
       </main>
     </>
   )
+
+  function renderInventario(rutaInventario: Extract<Ruta, { nombre: 'inventario' | 'inventarioNuevo' | 'inventarioVehiculo' }>) {
+    if (vista.tipo === 'perfil' || vista.tipo === 'admin') {
+      return (
+        <InventarioPagina
+          key={vista.perfil.usuarioId}
+          ruta={rutaInventario}
+          token={vista.sesion.accessToken}
+          perfil={vista.perfil}
+          onSesionTerminada={alTerminarSesionAdmin}
+        />
+      )
+    }
+    return (
+      <div className="cat-pagina inv-pagina">
+        <h1 tabIndex={-1} className="inv-titulo">
+          Inventario
+        </h1>
+        {vista.tipo === 'verificando' && <p role="status">Verificando tu sesión...</p>}
+        {vista.tipo === 'sinConexion' && (
+          <>
+            <Aviso aviso={{ tipo: 'error', texto: vista.mensaje }} />
+            <p>
+              <a href={HASH_CUENTA}>Ir a mi cuenta</a>
+            </p>
+          </>
+        )}
+        {(vista.tipo === 'login' || vista.tipo === 'registro') && (
+          <p role="status">Inicia sesión para ver el inventario.</p>
+        )}
+      </div>
+    )
+  }
 
   function renderCuenta() {
     return (

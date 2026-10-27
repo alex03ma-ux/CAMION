@@ -21,7 +21,8 @@ export type TarjetaVehiculo = {
   estadoComercial: EstadoComercial
   destacado: boolean
   tipo: string
-  marca: string
+  /** P4a: null en carrocerías sin marca (D-19). */
+  marca: string | null
   linea: string | null
   modeloAnio: number | null
   kilometraje: number | null
@@ -237,7 +238,16 @@ function lista(valor: unknown): unknown[] {
 function aTarjeta(valor: unknown): TarjetaVehiculo | null {
   if (!esObjetoJson(valor)) return null
   const slug = texto(valor.slug)
-  const titulo = texto(valor.titulo)
+  const marca = textoONulo(valor.marca)
+  const linea = textoONulo(valor.linea)
+  const modeloAnio = numeroONulo(valor.modeloAnio)
+  const tipo = texto(valor.tipo)
+  // P4a: una carrocería puede no tener marca ni año; si falta el título se arma
+  // con lo que haya (marca, línea, año) o, en último caso, con el tipo.
+  const titulo =
+    texto(valor.titulo).trim() ||
+    [marca, linea, modeloAnio !== null ? String(modeloAnio) : null].filter(Boolean).join(' ') ||
+    tipo
   const precioCop = numeroONulo(valor.precioCop)
   if (slug === '' || titulo === '' || precioCop === null) return null
   return {
@@ -247,10 +257,10 @@ function aTarjeta(valor: unknown): TarjetaVehiculo | null {
     negociable: valor.negociable === true,
     estadoComercial: valor.estadoComercial === 'RESERVADO' ? 'RESERVADO' : 'DISPONIBLE',
     destacado: valor.destacado === true,
-    tipo: texto(valor.tipo),
-    marca: texto(valor.marca),
-    linea: textoONulo(valor.linea),
-    modeloAnio: numeroONulo(valor.modeloAnio),
+    tipo,
+    marca,
+    linea,
+    modeloAnio,
     kilometraje: numeroONulo(valor.kilometraje),
     municipio: textoONulo(valor.municipio),
     departamento: textoONulo(valor.departamento),
