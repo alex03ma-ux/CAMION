@@ -33,6 +33,7 @@ export const PRECIO_MAX = 10_000_000_000
 export const DESCRIPCION_MAX = 4000
 export const MEDIDA_MAX = 9999.99
 const ENTERO_MAX = 2_147_483_647
+const KG_MAX = 9_999_999_999.99
 
 export const MENSAJE_REVISA_VEHICULO = 'Revisa los datos marcados.'
 
@@ -49,6 +50,7 @@ export const MENSAJES_CAMPO = {
   medida: 'Escribe una medida en metros mayor que 0 (hasta 2 decimales).',
   tipoMaquinaId: 'Elige el tipo de máquina.',
   entero: 'Escribe un número entero mayor o igual a 0.',
+  kg: 'Escribe un peso válido en kg (mayor que 0, hasta 2 decimales).',
   departamentoId: 'Elige el departamento.',
   municipioId: 'Elige el municipio.',
   precioCop: 'Escribe el precio de venta (número entero mayor que 0, hasta $ 10.000.000.000).',
@@ -127,12 +129,20 @@ export function placaValida(placa: string): boolean {
   return /^[A-Z0-9]{5,7}$/.test(normalizarPlaca(placa))
 }
 
-/** Entero ≥ 0 escrito con o sin puntos de miles; null si no es válido. */
+/** Entero ≥ 0 escrito sin separadores o con puntos de miles bien agrupados ("1.500"); "1.5" no es válido. */
 export function leerEntero(texto: string): number | null {
-  const limpio = texto.trim().replace(/[.\s]/g, '')
-  if (!/^\d+$/.test(limpio)) return null
-  const n = Number(limpio)
+  const t = texto.trim()
+  if (!/^(\d+|\d{1,3}(\.\d{3})+)$/.test(t)) return null
+  const n = Number(t.replace(/\./g, ''))
   return Number.isSafeInteger(n) && n <= ENTERO_MAX ? n : null
+}
+
+/** Peso o capacidad en kg con coma o punto decimal, > 0 y hasta 2 decimales; null si no es válido. */
+export function leerKg(texto: string): number | null {
+  const limpio = texto.trim().replace(',', '.')
+  if (!/^\d+(\.\d{1,2})?$/.test(limpio)) return null
+  const n = Number(limpio)
+  return n > 0 && n <= KG_MAX ? n : null
 }
 
 /** Medida en metros con coma o punto decimal, > 0 y hasta 2 decimales; null si no es válida. */
@@ -233,8 +243,10 @@ export function validarFormulario(
   }
 
   // Enteros opcionales
-  for (const campo of ['cilindrajeCc', 'pesoBrutoKg', 'capacidadCargaKg'] as const) {
-    if (aplicaYHay(campo) && leerEntero(f[campo]) === null) poner(campo, MENSAJES_CAMPO.entero)
+  if (aplicaYHay('cilindrajeCc') && leerEntero(f.cilindrajeCc) === null) poner('cilindrajeCc', MENSAJES_CAMPO.entero)
+  // Peso y capacidad admiten 2 decimales, igual que la API.
+  for (const campo of ['pesoBrutoKg', 'capacidadCargaKg'] as const) {
+    if (aplicaYHay(campo) && leerKg(f[campo]) === null) poner(campo, MENSAJES_CAMPO.kg)
   }
 
   // Ubicación
@@ -290,8 +302,9 @@ export function construirCuerpo(
   if (usa('tipoMaquinaId')) cuerpo.tipoMaquinaId = id('tipoMaquinaId')
   if (usa('combustibleId')) cuerpo.combustibleId = id('combustibleId')
   if (usa('cilindrajeCc')) cuerpo.cilindrajeCc = entero('cilindrajeCc')
-  if (usa('pesoBrutoKg')) cuerpo.pesoBrutoKg = entero('pesoBrutoKg')
-  if (usa('capacidadCargaKg')) cuerpo.capacidadCargaKg = entero('capacidadCargaKg')
+  const kg = (campo: CampoVehiculo) => (f[campo].trim() === '' ? null : leerKg(f[campo]))
+  if (usa('pesoBrutoKg')) cuerpo.pesoBrutoKg = kg('pesoBrutoKg')
+  if (usa('capacidadCargaKg')) cuerpo.capacidadCargaKg = kg('capacidadCargaKg')
   const descripcion = f.descripcionTecnica.trim()
   cuerpo.descripcionTecnica = descripcion === '' ? null : descripcion
   // asesorId es perfiles_asesor.id: se envía como número si lo es.
