@@ -269,3 +269,18 @@ Las decisiones D-1 a D-5 se detectaron al comparar los documentos fuente el 2026
   - C) Dejarlas hasta que venzan solas. No se recomienda: quedarían filas de prueba para siempre.
 - Recomendación: A. Sirven para probar P4a y P4b, y el inventario de un asesor real no las ve, porque son de otro asesor.
 - Bloquea: nada.
+
+## D-25 — Detalles del formulario de inventario · PENDIENTE (detectada en P4a, 2026-10-27)
+Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, C-5 y C-6 de `docs/criterios/P4a.md`). Ninguna bloquea P4a. Hoy funciona con la opción recomendada en cada una.
+
+1. **¿El modelo (la línea) es obligatorio?**
+   - Contexto: RN-VE-006 y D-19 piden registrar el modelo, pero la lista de líneas está casi vacía y el administrador no podrá añadir líneas hasta P7.
+   - A) Opcional hasta P7 y obligatorio para Carro, Camión y Maquinaria cuando el administrador ya pueda añadir líneas. **Recomendado.**
+   - B) Obligatorio desde ya. Riesgo: no se podría registrar un vehículo cuyo modelo no esté en la lista.
+2. **Placa de maquinaria.** Hoy se admiten placas de 5 a 7 letras y números. Hay que confirmar si las placas de maquinaria pueden ser más largas, porque en ese caso se amplía a 8 caracteres.
+3. **¿En qué unidad se mide la capacidad?**
+   - Hoy la capacidad de camiones y máquinas se guarda en kg.
+   - ¿Las máquinas necesitan otra unidad, como toneladas o m³ de balde?
+   - ¿Las carrocerías necesitan capacidad? D-19 no la incluía, y hoy es opcional.
+
+- Recomendación: 1A; en 2, ampliar a 8 caracteres solo si hace falta; en 3, mantener kg y la capacidad opcional en las carrocerías.
