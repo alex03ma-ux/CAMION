@@ -110,3 +110,11 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - SQLite no reproduce la intercalación de MariaDB: tildes y mayúsculas en la búsqueda, y mayúsculas en el slug.
   - Las fotos devuelven URL `/media/…`, pero el servicio de archivos llega en P4.
   - Sin E2E en navegador ni CI (INF-1).
+- PR [#5](https://github.com/alex03ma-ux/CAMION/pull/5) abierto para P3. El coordinador principal volvió a ejecutar las pruebas: 382/382 API y 191/191 pantallas.
+- D-18 aplicada (2026-10-27):
+  - El coordinador principal hizo el respaldo completo previo `C:\Respaldo_CAMION\camion_ventas_antes_demo_p3_20261027_102121.sql` (39 tablas).
+  - Conteos antes: 6 usuarios, 0 publicaciones, 0 vehículos y catálogos vacíos; existe el rol ASESOR.
+  - La responsable importó `database/demo/demo_p3_catalogo.sql` desde phpMyAdmin (Importar, en Chrome): "140 consultas", sin errores.
+  - Conteos después: 7 usuarios (+1 asesor DEMO), 12 publicaciones DEMO, 12 vehículos y 2 destacadas. Por categoría: Camión 5, Carro 3, Carrocería 2, Maquinaria 2. Tildes guardadas en UTF-8 correcto.
+- Prueba manual de P3 hecha por la responsable con los datos DEMO: inicio con destacados y recientes, las cuatro categorías, filtros con "Limpiar", búsqueda, detalle, etiqueta "Reservado" y carrocería sin kilometraje. Todo según lo esperado.
+- Pendiente: ejecutar la sección BAJAR del script DEMO (con respaldo nuevo) antes de cargar datos reales en P4. Las publicaciones DEMO dejan de verse solas a los 30 días.
