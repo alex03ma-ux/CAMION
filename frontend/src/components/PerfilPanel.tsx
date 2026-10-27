@@ -1,26 +1,30 @@
 import { useEffect, useRef } from 'react'
 import type { PerfilUsuario } from '../api/auth'
 import { MINUTOS_INACTIVIDAD } from '../auth/inactivity'
+import { esAdministrador, nombreRol } from '../auth/roles'
 
 type PerfilPanelProps = {
   perfil: PerfilUsuario
   cerrando: boolean
   onCerrarSesion: () => void
+  /** Abre el panel de administración; solo se ofrece a quien tiene el rol ADMINISTRADOR. */
+  onAbrirAdministracion?: () => void
 }
 
-const NOMBRES_ROL: Record<string, string> = {
-  COMPRADOR: 'Comprador',
-  ASESOR: 'Asesor',
-  ADMINISTRADOR: 'Administrador',
-}
-
-export function PerfilPanel({ perfil, cerrando, onCerrarSesion }: PerfilPanelProps) {
+export function PerfilPanel({
+  perfil,
+  cerrando,
+  onCerrarSesion,
+  onAbrirAdministracion,
+}: PerfilPanelProps) {
   const titulo = useRef<HTMLHeadingElement>(null)
   useEffect(() => {
     titulo.current?.focus()
   }, [])
 
-  const roles = perfil.roles.map((r) => NOMBRES_ROL[r.toUpperCase()] ?? r).join(', ')
+  const roles = perfil.roles.map(nombreRol).join(', ')
+  // Solo oculta el acceso: la API vuelve a comprobar el rol en cada petición.
+  const verAdministracion = onAbrirAdministracion !== undefined && esAdministrador(perfil.roles)
 
   return (
     <section aria-labelledby="perfil-titulo">
@@ -38,7 +42,17 @@ export function PerfilPanel({ perfil, cerrando, onCerrarSesion }: PerfilPanelPro
       <p className="form-ayuda">
         Por seguridad, la sesión se cierra sola tras {MINUTOS_INACTIVIDAD} minutos sin actividad.
       </p>
-      <button type="button" onClick={onCerrarSesion} disabled={cerrando}>
+      {verAdministracion && (
+        <button type="button" onClick={onAbrirAdministracion} disabled={cerrando}>
+          Administrar usuarios
+        </button>
+      )}
+      <button
+        className={verAdministracion ? 'secondary-button' : undefined}
+        type="button"
+        onClick={onCerrarSesion}
+        disabled={cerrando}
+      >
         {cerrando ? 'Cerrando sesión...' : 'Cerrar sesión'}
       </button>
     </section>

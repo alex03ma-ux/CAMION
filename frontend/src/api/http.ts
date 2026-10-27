@@ -8,6 +8,8 @@ export type ErroresPorCampo = Record<string, string[]>
 export type CuerpoError = {
   error?: string
   errores?: ErroresPorCampo
+  /** P2: estado de la cuenta en los 403 del login (PENDIENTE, RECHAZADA, BLOQUEADA). */
+  estado?: string
 }
 
 export const MENSAJE_SIN_CONEXION = 'No se pudo conectar con el servidor.'
@@ -24,13 +26,21 @@ export class ApiError extends Error {
   readonly status: number
   readonly mensaje: string
   readonly errores: ErroresPorCampo
+  /** Campo opcional `estado` del cuerpo de error (contrato P2), si viene. */
+  readonly estado: string | undefined
 
-  constructor(status: number, mensaje: string, errores: ErroresPorCampo = {}) {
+  constructor(
+    status: number,
+    mensaje: string,
+    errores: ErroresPorCampo = {},
+    estado?: string,
+  ) {
     super(mensaje)
     this.name = 'ApiError'
     this.status = status
     this.mensaje = mensaje
     this.errores = errores
+    this.estado = estado
   }
 }
 
@@ -120,7 +130,11 @@ export async function peticion(
       respuesta.status < 500 && typeof cuerpo.error === 'string' && cuerpo.error.trim() !== ''
         ? cuerpo.error
         : mensajePorDefecto(respuesta.status, mensajesPorCodigo)
-    throw new ApiError(respuesta.status, mensaje, normalizarErrores(cuerpo.errores))
+    const estado =
+      typeof cuerpo.estado === 'string' && cuerpo.estado.trim() !== ''
+        ? cuerpo.estado.trim().toUpperCase()
+        : undefined
+    throw new ApiError(respuesta.status, mensaje, normalizarErrores(cuerpo.errores), estado)
   }
 
   return datos

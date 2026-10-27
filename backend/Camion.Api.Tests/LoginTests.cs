@@ -78,20 +78,50 @@ public sealed class LoginTests(CamionApiFactory factory) : IClassFixture<CamionA
         await AfirmarSinDatosSensibles(malaPassword, "Incorrecta2026");
     }
 
-    [Fact(DisplayName = "CA-059-05: cuenta no ACTIVA con contraseña correcta -> 401 con el mismo cuerpo")]
+    private async Task CambiarEstado(string email, string estado)
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CamionDbContext>();
+        var u = await db.Users.SingleAsync(x => x.Email == email);
+        u.EstadoCuenta = estado;
+        await db.SaveChangesAsync();
+    }
+
+    // P1 decía 401 para toda cuenta no ACTIVA. El contrato P2 (aclaración del coordinador, C-P2-3) lo cambia a 403
+    // para los estados del contrato; un estado fuera del contrato sigue sin revelarse (401).
+    [Fact(DisplayName = "CA-059-05, CA-062-04 (P2): estado desconocido con contraseña correcta -> 401 con el mismo cuerpo")]
     public async Task Cuenta_no_activa_da_401()
     {
         var email = await CrearComprador();
-        using (var scope = factory.Services.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<CamionDbContext>();
-            var u = await db.Users.SingleAsync(x => x.Email == email);
-            u.EstadoCuenta = "SUSPENDIDA";
-            await db.SaveChangesAsync();
-        }
+        await CambiarEstado(email, "SUSPENDIDA");
         var r = await Login(_c, email, PasswordValida);
         Assert.Equal(HttpStatusCode.Unauthorized, r.StatusCode);
-        Assert.Equal(MsgCredenciales, (await Json(r)).GetProperty("error").GetString());
+        var json = await Json(r);
+        Assert.Equal(MsgCredenciales, json.GetProperty("error").GetString());
+        Assert.False(json.TryGetProperty("estado", out _));
+    }
+
+    [Theory(DisplayName = "CA-059-05, CA-062-04 (P2), CA-045-01/04/05: estado del contrato con contraseña correcta -> 403 con estado; incorrecta -> 401")]
+    [InlineData("PENDIENTE", "Tu cuenta de asesor está pendiente de aprobación. Te avisaremos cuando el administrador la apruebe.")]
+    [InlineData("RECHAZADA", "Tu solicitud de asesor no fue aprobada. Comunícate con el administrador.")]
+    [InlineData("BLOQUEADA", "Tu cuenta está bloqueada. Comunícate con el administrador.")]
+    public async Task Cuenta_no_activa_con_estado_del_contrato_da_403(string estado, string mensaje)
+    {
+        var email = await CrearComprador();
+        await CambiarEstado(email, estado);
+
+        var r = await Login(_c, email, PasswordValida);
+        Assert.Equal(HttpStatusCode.Forbidden, r.StatusCode);
+        var json = await Json(r);
+        Assert.Equal(mensaje, json.GetProperty("error").GetString());
+        Assert.Equal(estado, json.GetProperty("estado").GetString());
+        Assert.False(json.TryGetProperty("accessToken", out _));
+
+        var mala = await Login(_c, email, "Incorrecta2026");
+        Assert.Equal(HttpStatusCode.Unauthorized, mala.StatusCode);
+        var jsonMala = await Json(mala);
+        Assert.Equal(MsgCredenciales, jsonMala.GetProperty("error").GetString());
+        Assert.False(jsonMala.TryGetProperty("estado", out _));
     }
 
     [Theory(DisplayName = "CA-059-06: faltan correo o contraseña -> 400 con el mensaje del contrato")]

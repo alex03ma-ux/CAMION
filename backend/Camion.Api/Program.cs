@@ -1,10 +1,13 @@
 using System.Security.Claims;
 using System.Text;
+using Camion.Api.Auth;
+using Camion.Api.Comandos;
 using Camion.Api.Contracts;
 using Camion.Api.Data;
 using Camion.Api.Endpoints;
 using Camion.Api.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -66,10 +69,49 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             }
         };
     });
-builder.Services.AddAuthorization();
+// RN-SE-006: políticas con nombre; el 403 se escribe con el formato común { error }.
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(Roles.PoliticaSoloAdministrador, policy => policy.RequireAuthenticatedUser().RequireRole(Roles.Administrador));
+    options.AddPolicy(Roles.PoliticaSoloAsesor, policy => policy.RequireAuthenticatedUser().RequireRole(Roles.Asesor));
+    options.AddPolicy(Roles.PoliticaAutenticado, policy => policy.RequireAuthenticatedUser());
+});
+builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, RespuestaAutorizacion>();
 // JSON malformado o con tipos incorrectos: el framework lanza BadHttpRequestException y se responde con el formato común.
 builder.Services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = true);
 var app = builder.Build();
+
+// D-13 (opción A): `dotnet run --project backend/Camion.Api -- promover-admin <correo>` no arranca el servidor web.
+if (args.Length > 0 && args[0] == PromoverAdmin.NombreComando)
+{
+    using var scope = app.Services.CreateScope();
+    var resultado = await PromoverAdmin.EjecutarAsync(
+        args.Length > 1 ? args[1] : null,
+        scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>(),
+        scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>(),
+        scope.ServiceProvider.GetRequiredService<CamionDbContext>());
+    (resultado.CodigoSalida == 0 ? Console.Out : Console.Error).WriteLine(resultado.Mensaje);
+    Environment.ExitCode = resultado.CodigoSalida;
+    return;
+}
+
+// RN-SE-006: los tres roles existen desde el arranque. Si la base no responde, la API arranca igual
+// (los registros vuelven a asegurar su rol) y /health/database informa del problema.
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+        var db = scope.ServiceProvider.GetRequiredService<CamionDbContext>();
+        foreach (var rol in Roles.Todos)
+            await Roles.AsegurarAsync(roles, db, rol);
+    }
+    catch (Exception ex)
+    {
+        // Sin el mensaje de la excepción (podría incluir datos de conexión).
+        app.Logger.LogWarning("No se pudieron asegurar los roles al iniciar: {Tipo}", ex.GetType().FullName);
+    }
+}
 
 app.Use(async (context, next) =>
 {
@@ -120,6 +162,7 @@ app.MapGet("/health/database", async (IConfiguration configuration, Cancellation
 });
 
 app.MapAuthEndpoints(jwtKey);
+app.MapAdminUsuariosEndpoints();
 
 app.Run();
 

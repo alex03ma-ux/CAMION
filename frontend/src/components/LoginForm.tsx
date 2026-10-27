@@ -4,6 +4,22 @@ import { ApiError, MENSAJE_INESPERADO } from '../api/http'
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo } from './Campo'
 
+/**
+ * P2: un 403 con `estado` (contraseña correcta, cuenta no activa) se muestra con
+ * el mensaje del servidor en un aviso propio: PENDIENTE como información y
+ * RECHAZADA o BLOQUEADA como advertencia. 401 y 423 siguen como error.
+ */
+function avisoDeError(error: unknown): DatosAviso {
+  if (!(error instanceof ApiError)) return { tipo: 'error', texto: MENSAJE_INESPERADO }
+  if (error.status === 403 && error.estado) {
+    return {
+      tipo: error.estado === 'PENDIENTE' ? 'info' : 'advertencia',
+      texto: error.mensaje,
+    }
+  }
+  return { tipo: 'error', texto: error.mensaje }
+}
+
 type LoginFormProps = {
   /** Aviso que trae la pantalla anterior (registro exitoso, sesión terminada...). */
   avisoInicial?: DatosAviso | null
@@ -61,10 +77,7 @@ export function LoginForm({
       await onSesionIniciada(respuesta)
     } catch (error) {
       setPassword('')
-      setAviso({
-        tipo: 'error',
-        texto: error instanceof ApiError ? error.mensaje : MENSAJE_INESPERADO,
-      })
+      setAviso(avisoDeError(error))
       refPassword.current?.focus()
     } finally {
       setEnviando(false)

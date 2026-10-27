@@ -15,6 +15,14 @@ public static partial class ValidacionAuth
     public const string MensajePasswordMinuscula = "Debe tener al menos una letra minúscula.";
     public const string MensajePasswordNumero = "Debe tener al menos un número.";
     public const string MensajePasswordMaximo = "No puede tener más de 128 caracteres.";
+    public const string MensajeTipoDocumento = "Elige un tipo de documento válido.";
+    public const string MensajeNumeroDocumento = "Escribe un número de documento válido (4 a 30 letras, números o guiones).";
+    public const string MensajeNombreComercial = "El nombre comercial no puede tener más de 150 caracteres.";
+    public const string MensajeMotivo = "Escribe el motivo (5 a 500 caracteres).";
+    public const string MensajeMotivoLargo = "El motivo no puede tener más de 500 caracteres.";
+
+    // PROPUESTO en el contrato P2.
+    public static readonly string[] TiposDocumento = ["CC", "CE", "NIT", "PAS"];
 
     [GeneratedRegex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.CultureInvariant, 1000)]
     private static partial Regex FormatoEmail();
@@ -22,29 +30,78 @@ public static partial class ValidacionAuth
     [GeneratedRegex(@"^[0-9 +\-()]+$", RegexOptions.CultureInvariant, 1000)]
     private static partial Regex FormatoTelefono();
 
+    // Documento: solo letras ASCII, dígitos y guiones.
+    [GeneratedRegex(@"^[A-Za-z0-9\-]+$", RegexOptions.CultureInvariant, 1000)]
+    private static partial Regex FormatoDocumento();
+
     public static string NormalizarEmail(string? email) => (email ?? "").Trim().ToLowerInvariant();
 
-    public static Dictionary<string, string[]> ValidarRegistro(RegistroCompradorRequest request)
+    public static Dictionary<string, string[]> ValidarRegistro(RegistroCompradorRequest request) =>
+        ValidarDatosBasicos(request.NombreCompleto, request.Email, request.Telefono, request.Password);
+
+    // P2: mismas reglas de P1 para los datos básicos, más el documento y el nombre comercial.
+    public static Dictionary<string, string[]> ValidarRegistroAsesor(RegistroAsesorRequest request)
+    {
+        var errores = ValidarDatosBasicos(request.NombreCompleto, request.Email, request.Telefono, request.Password);
+
+        if (!TiposDocumento.Contains(NormalizarTipoDocumento(request.TipoDocumento)))
+            errores["tipoDocumento"] = [MensajeTipoDocumento];
+
+        var numero = NormalizarNumeroDocumento(request.NumeroDocumento);
+        if (numero.Length is < 4 or > 30 || !FormatoDocumento().IsMatch(numero))
+            errores["numeroDocumento"] = [MensajeNumeroDocumento];
+
+        if ((request.NombreComercial ?? "").Trim().Length > 150)
+            errores["nombreComercial"] = [MensajeNombreComercial];
+
+        return errores;
+    }
+
+    public static string NormalizarTipoDocumento(string? tipo) => (tipo ?? "").Trim().ToUpperInvariant();
+
+    // En mayúsculas para que el índice único (tipo, número) se comporte igual con cualquier intercalación.
+    public static string NormalizarNumeroDocumento(string? numero) => (numero ?? "").Trim().ToUpperInvariant();
+
+    public static string? NormalizarOpcional(string? valor)
+    {
+        var limpio = (valor ?? "").Trim();
+        return limpio.Length == 0 ? null : limpio;
+    }
+
+    // Motivo de las acciones del administrador: obligatorio (5 a 500) para rechazar, bloquear y reconsiderar, opcional (hasta 500) en las demás.
+    public static Dictionary<string, string[]> ValidarMotivo(string? motivo, bool obligatorio)
+    {
+        var errores = new Dictionary<string, string[]>();
+        var limpio = (motivo ?? "").Trim();
+        if (obligatorio && limpio.Length is < 5 or > 500)
+            errores["motivo"] = [MensajeMotivo];
+        else if (!obligatorio && limpio.Length > 500)
+            errores["motivo"] = [MensajeMotivoLargo];
+        return errores;
+    }
+
+    private static Dictionary<string, string[]> ValidarDatosBasicos(string? nombreCompleto, string? emailBruto,
+        string? telefonoBruto, string? passwordBruto)
     {
         var errores = new Dictionary<string, string[]>();
 
-        var nombre = (request.NombreCompleto ?? "").Trim();
+        var nombre = (nombreCompleto ?? "").Trim();
         if (nombre.Length is < 2 or > 150)
             errores["nombreCompleto"] = [MensajeNombre];
 
-        var email = NormalizarEmail(request.Email);
+        var email = NormalizarEmail(emailBruto);
         if (email.Length > 254)
             errores["email"] = [MensajeEmailLargo];
         else if (email.Length == 0 || !FormatoEmail().IsMatch(email))
             errores["email"] = [MensajeEmail];
 
-        var telefono = (request.Telefono ?? "").Trim();
+        var telefono = (telefonoBruto ?? "").Trim();
         if (telefono.Length is < 7 or > 25 ||
             !FormatoTelefono().IsMatch(telefono) ||
             telefono.Count(char.IsAsciiDigit) < 7)
             errores["telefono"] = [MensajeTelefono];
 
-        var password = ErroresPassword(request.Password ?? "");
+        var password = ErroresPassword(passwordBruto ?? "");
         if (password.Count > 0)
             errores["password"] = password.ToArray();
 

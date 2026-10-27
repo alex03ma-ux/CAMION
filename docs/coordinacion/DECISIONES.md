@@ -82,3 +82,56 @@ Las decisiones D-1 a D-5 se detectaron al comparar los documentos fuente el 2026
 ## D-12 — Cierre de sesión por inactividad y alcance de "Cerrar sesión" · TOMADA (2026-10-26)
 - Contexto: RN-SE-002 pide cerrar sesiones inactivas sin fijar el tiempo (detectada en P1).
 - **Decisión: la sesión se cierra tras 30 minutos sin actividad, y "Cerrar sesión" la cierra en todos los equipos del usuario** (invalida todos sus tokens mediante `SessionVersion`). Es el comportamiento implementado y probado en P1.
+
+## D-13 — ¿Cómo se crea el primer administrador? · TOMADA (2026-10-26)
+- Contexto: el panel de administración (P2) solo funciona con una cuenta de rol ADMINISTRADOR, y hoy no existe ninguna. Es una decisión de seguridad: nunca debe haber contraseñas en el repositorio.
+- Opciones:
+  - A) **Comando local de promoción**:
+    - La persona se registra en la web con su propia contraseña.
+    - En el equipo del servidor se ejecuta `dotnet run --project backend/Camion.Api -- promover-admin <correo>`. El comando usa la conexión de `dotnet user-secrets`, añade el rol ADMINISTRADOR, quita COMPRADOR y deja el evento en `auditoria_eventos`.
+    - Ventaja: el comando nunca maneja contraseñas.
+    - Impacto: requiere acceso al equipo del servidor, lo que es correcto para una acción así.
+  - B) **Comando local que crea el administrador**: correo y contraseña se piden por teclado, sin quedar en el historial ni en archivos.
+    - Impacto: maneja una contraseña en la consola.
+  - C) **Script SQL manual**.
+    - Impacto: hay que calcular el hash de Identity a mano; propenso a errores. No se recomienda.
+- Recomendación del coordinador: A.
+- Bloquea: el uso real del panel de administración contra `camion_ventas` (en pruebas automáticas el administrador se crea en la base en memoria).
+- **Decisión: A. "Registrarme y luego promoverme"** (respuesta de la responsable, transmitida por el coordinador principal). Se implementa el comando local `promover-admin <correo>`, que no maneja contraseñas y queda auditado. Lo ejecutará la responsable, guiada, durante la prueba manual; los agentes no lo ejecutan contra `camion_ventas`.
+
+## D-14 — Aplicar la migración 003 (estados del asesor) a `camion_ventas` · TOMADA (2026-10-26)
+- Contexto: D-10 fijó los estados Pendiente / Aprobado / Rechazado / Bloqueado, pero la tabla `perfiles_asesor` tiene una restricción que solo admite PENDIENTE / AUTORIZADO / DESAUTORIZADO.
+- La migración `database/migraciones/003_p2_estados_asesor.sql`:
+  - Cambia esa restricción y convierte los valores antiguos.
+  - Tiene vuelta atrás (sección BAJAR).
+  - Indica cómo hacer el respaldo previo en `C:\Respaldo_CAMION\`.
+- Hasta que se aplique, el registro de asesor sí funciona (estado PENDIENTE). Fallan aprobar, rechazar y bloquear asesores contra la base real.
+- Opciones:
+  - A) Aplicarla ahora, con el respaldo previo y comprobando los conteos antes y después.
+    - Impacto: el panel funciona completo con la base real.
+  - B) Esperar a P4 y agruparla con los demás cambios de esquema (placa, estados del vehículo).
+    - Impacto: la aprobación de asesores no se puede usar con la base real hasta entonces.
+- Recomendación del coordinador: A. La tabla `perfiles_asesor` está vacía o casi vacía, porque hasta hoy no existía el registro de asesor.
+- Bloquea: el uso real de la aprobación de asesores.
+- **Decisión: A. "Ahora, con respaldo previo"** (respuesta de la responsable, transmitida por el coordinador principal). Condiciones:
+  1. Antes de nada, un respaldo completo de la base en un archivo **nuevo**, con fecha y hora, dentro de `C:\Respaldo_CAMION\`. Nunca se sobrescriben los existentes. Se comprueba que el archivo existe y no está vacío.
+  2. Se cuentan las filas de `AspNetUsers`, `perfiles_asesor`, `perfiles_comprador` y `AspNetUserRoles` antes y después; los conteos deben coincidir.
+  3. Se aplica solo la sección SUBIR. Si algo falla, se ejecuta BAJAR y se avisa.
+  4. Se aplica solo cuando el código de P2 compile y pase sus pruebas.
+  5. En la bitácora quedan la ruta del respaldo, los conteos y el resultado.
+
+## D-15 — ¿Qué pasa con un asesor rechazado y con un comprador que quiere ser asesor? · TOMADA (2026-10-26)
+- Contexto: con el contrato de P2, un asesor rechazado no tiene salida. No puede volver a pedir el alta, porque su correo y su documento ya existen (409). Un comprador tampoco puede pasar a asesor con el mismo correo. La v3.0 no dice nada sobre ninguno de los dos casos (C-P2-2 y C-P2-5 de `docs/criterios/P2.md`).
+- Opciones:
+  - A) El administrador puede **reconsiderar**: aprobar a un asesor rechazado (paso de Rechazado a Aprobado, con motivo y auditoría). Un comprador que quiere ser asesor usa por ahora otro correo; más adelante se añade "Solicitar ser asesor" desde su cuenta.
+    - Impacto: es un cambio pequeño.
+  - B) Un rechazo es definitivo. Para volver a intentarlo hay que hablar con el administrador, sin cambios en el sistema.
+    - Impacto: no hay trabajo nuevo, pero no hay salida dentro del sistema.
+- Recomendación del coordinador: A.
+- **Decisión: A. "El admin puede reconsiderar"** (respuesta de la responsable, transmitida por el coordinador principal). El administrador puede pasar a un asesor de Rechazado a Aprobado, con motivo obligatorio y auditoría; se incluye en P2. Un comprador que quiera ser asesor usa, por ahora, otro correo. "Solicitar ser asesor" desde la cuenta del comprador queda como ítem futuro del backlog.
+- Nota de trazabilidad (C-P2-1): la matriz asocia HU-047 "Bloquear usuario" a RN-US-005, pero en la v3.0 esa regla es "Notificación de acceso". Se mantiene HU-047 como referencia del bloqueo.
+
+## D-16 — ¿Quién aplica la migración 003 en `camion_ventas`? · TOMADA (2026-10-26)
+- Contexto: el sistema de permisos impidió que el agente escribiera en `camion_ventas` (detectada en el cierre de P2).
+- **Decisión: la aplica la responsable, guiada, desde phpMyAdmin.** Los agentes no reciben permiso de escritura en la base real.
+- Nota práctica: la ventana de confirmación de phpMyAdmin no funciona en el navegador integrado de Claude; los cambios en la base se ejecutan desde Chrome/Edge.

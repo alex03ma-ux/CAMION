@@ -42,3 +42,37 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
 - `gh` no está instalado: la rama se publica y el PR lo abre la responsable.
 - PR [#3](https://github.com/alex03ma-ux/CAMION/pull/3) abierto para P1. Pruebas verificadas de nuevo por el coordinador principal: 76/76 backend, 42/42 frontend. La responsable resolvió D-12: 30 minutos de inactividad; "Cerrar sesión" en todos los equipos.
 - Prueba manual de P1 hecha por la responsable con la app arrancada contra MariaDB `camion_ventas` (2026-10-26): registro de comprador con acceso inmediato, sesión conservada al recargar, cierre de sesión, contraseña incorrecta con mensaje claro, bloqueo de 15 minutos al 5.º intento fallido (los intentos durante el bloqueo se rechazan) e inicio de sesión correcto pasado el bloqueo. Todo según lo esperado; evidencia en el registro de auditoría del servidor. Queda una cuenta de prueba en la base de datos.
+
+## 2026-10-26 — P2 Asesores y administración
+- Rama `feature/p2-asesores` desde `main` (`b0a9506`). Contrato `docs/criterios/P2-contrato-api.md`, 109 criterios en `docs/criterios/P2.md`, D-13 y D-14 TOMADAS, D-15 PENDIENTE.
+- IMPLEMENTADO (sin pruebas P2 todavía):
+  - Backend: registro de asesor, login con 403 por estado, roles y políticas, panel `/api/admin/usuarios`, auditoría, `promover-admin` y migración 003 (sin aplicar). `dotnet build` sin errores; 75 de 76 pruebas de P1 pasan. La que falla es el inventario de endpoints, que hay que actualizar por las rutas nuevas.
+  - Frontend: registro de asesor, avisos de estado en el login y panel de administración. `npm run build` correcto; las 42 pruebas de P1 pasan.
+- Pendiente:
+  - Pruebas de API y de componentes de P2 (los agentes de QA se detuvieron antes de terminar).
+  - Revisión de `devops-seguridad`.
+  - Documentación (README, guía de autenticación, `docs/GUIA-ADMINISTRACION.md`).
+  - **Migración 003 NO aplicada**: la condición 4 de D-14 exige que antes pasen las pruebas de P2.
+
+### P2 — continuación
+- D-15 TOMADA (A): reconsiderar asesor rechazado (RECHAZADA → ACTIVA, motivo obligatorio, auditoría RECONSIDERAR), incluido en P2. Añadido P2b ("Solicitar ser asesor") al backlog.
+- Pruebas ejecutadas: `dotnet test` 223/223 (147 nuevas de P2; actualizadas `Inventario_de_endpoints` y la de cuenta no activa); `npm test` 93/93 (51 nuevas); `npm run build` correcto; sin defectos de la app.
+- `devops-seguridad`: sin bloqueantes; 0 vulnerabilidades (npm y NuGet); recomendaciones aplicadas en la migración 003 (detener la API, ejecutar sin `--force`, alcance de BAJAR). Pendiente: CI (INF-1).
+- Documentación: README, `backend/GUIA-AUTENTICACION.md`, nueva `docs/GUIA-ADMINISTRACION.md`.
+- Migración 003 (D-14):
+  - Respaldo completo nuevo: `C:\Respaldo_CAMION\camion_ventas_completo_antes_migracion003_20261026_191015.sql` (51.366 bytes, 39 tablas, "Dump completed").
+  - Conteos antes: AspNetUsers 4, perfiles_asesor 0, perfiles_comprador 4, AspNetUserRoles 4 (historial_autorizaciones 0). La restricción `CK_Asesor_Estado` tiene todavía los valores antiguos.
+  - **SUBIR NO aplicado**: el sistema de permisos de esta sesión bloqueó la escritura en `camion_ventas`. Se comprobó que la base sigue sin cambios. Queda para la responsable (pasos en `docs/GUIA-ADMINISTRACION.md`, sección 4) o para una sesión con permiso.
+- PR [#4](https://github.com/alex03ma-ux/CAMION/pull/4) abierto para P2. El coordinador principal volvió a ejecutar las pruebas: 223/223 API y 93/93 pantallas.
+- D-16: la responsable aplicó la migración 003 (sección SUBIR) en `camion_ventas` desde phpMyAdmin (2026-10-26).
+  - Respaldo previo: `C:\Respaldo_CAMION\camion_ventas_completo_antes_migracion003_20261026_191015.sql` (51 KB).
+  - Conteos antes y después, iguales: AspNetUsers 4, perfiles_asesor 0, perfiles_comprador 4, AspNetUserRoles 4.
+  - `CK_Asesor_Estado` admite ahora PENDIENTE/APROBADO/RECHAZADO/BLOQUEADO; `valores_fuera_de_d10` = 0. Las 7 instrucciones, sin errores.
+
+- Prueba manual de P2 hecha por la responsable contra `camion_ventas` (2026-10-26), confirmada en el registro de auditoría del servidor:
+  - Registro como comprador y `promover-admin` (D-13): la cuenta pasó a ADMINISTRADOR, con evento en `auditoria_eventos`.
+  - Login de administradora con el botón "Administrar usuarios".
+  - Registro de asesor de prueba (`registro_asesor`), aprobación (`admin_aprobar`) y bloqueo (`admin_bloquear`).
+  - Login del asesor bloqueado rechazado (`cuenta_no_activa estado=BLOQUEADA`).
+  - Sin errores. El registro no muestra el intento de login del asesor en estado Pendiente (cubierto por las pruebas automáticas).
+  - Quedan en la base la cuenta de administradora y un asesor de prueba bloqueado.
