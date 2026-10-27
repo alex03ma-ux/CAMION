@@ -243,6 +243,12 @@ export default function App() {
     <>
       <Encabezado ruta={ruta} tipos={tipos} conSesion={conSesion} />
       <main id="contenido" ref={principal} tabIndex={-1} className="cat-principal">
+        {/* Si la sesión termina mientras se navega el catálogo, también se avisa aquí (CA-REG-05). */}
+        {ruta.nombre !== 'cuenta' && vista.tipo === 'login' && vista.aviso === AVISO_SESION_TERMINADA && (
+          <div className="container">
+            <Aviso aviso={AVISO_SESION_TERMINADA} />
+          </div>
+        )}
         {ruta.nombre === 'inicio' && <Inicio tipos={tipos} />}
         {ruta.nombre === 'buscar' && (
           <Resultados
