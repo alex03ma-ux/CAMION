@@ -7,7 +7,7 @@ El estado funcional de cada módulo se toma de `ESTADO-REAL.md`, no de este arch
 |---|---|---|---|---|
 | P0 | Auditoría inicial de repositorio y requisitos | Mapa real de endpoints, tablas, HU y cobertura; diferencias documentadas (`ESTADO-REAL.md`) | EN REVISIÓN | `feature/p0-auditoria` |
 | P1 | Robustecer autenticación | Duplicados, errores HTTP claros, contraseñas inválidas, permisos, expiración, persistencia de sesión, registro de comprador inmediato y de solo lectura (D-3), pruebas y UX | EN REVISIÓN (rama publicada, PR por abrir; HU-063 BLOQUEADO sin servicio de correo) | `feature/p1-autenticacion` |
-| P2 | Seguridad de usuarios y aprobación de asesores (D-3) | Asesor registrado en estado Pendiente; aprobación/rechazo/bloqueo por el administrador protegidos en API; comprador sin permisos de edición; auditoría | PENDIENTE (estados D-10) | — |
+| P2 | Seguridad de usuarios y aprobación de asesores (D-3) | Asesor registrado en estado Pendiente; aprobación/rechazo/bloqueo por el administrador protegidos en API; comprador sin permisos de edición; auditoría | EN REVISIÓN (rama publicada; migración 003 por aplicar, D-14) | `feature/p2-asesores` |
 | P3 | Catálogo público de vehículos | Listado, detalle, filtros, búsqueda y visibilidad por estado | PENDIENTE | — |
 | P4 | Inventario y publicaciones | CRUD seguro, imágenes, plan/cupo, vigencia y propietario | PENDIENTE (placa opcional y única D-2; estado Reservado D-11) | — |
 | P5 | Leads y contactos | Captura anónima; asignación al asesor dueño solo con plan vigente, si no al administrador (D-7); seguimiento trazable | PENDIENTE (nombre y teléfono, D-9) | — |

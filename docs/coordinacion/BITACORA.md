@@ -43,7 +43,7 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
 - PR [#3](https://github.com/alex03ma-ux/CAMION/pull/3) abierto para P1. Pruebas verificadas de nuevo por el coordinador principal: 76/76 backend, 42/42 frontend. La responsable resolvió D-12: 30 minutos de inactividad; "Cerrar sesión" en todos los equipos.
 - Prueba manual de P1 hecha por la responsable con la app arrancada contra MariaDB `camion_ventas` (2026-10-26): registro de comprador con acceso inmediato, sesión conservada al recargar, cierre de sesión, contraseña incorrecta con mensaje claro, bloqueo de 15 minutos al 5.º intento fallido (los intentos durante el bloqueo se rechazan) e inicio de sesión correcto pasado el bloqueo. Todo según lo esperado; evidencia en el registro de auditoría del servidor. Queda una cuenta de prueba en la base de datos.
 
-## 2026-10-26 — P2 Asesores y administración (EN CURSO, interrumpido por límite de uso)
+## 2026-10-26 — P2 Asesores y administración
 - Rama `feature/p2-asesores` desde `main` (`b0a9506`). Contrato `docs/criterios/P2-contrato-api.md`, 109 criterios en `docs/criterios/P2.md`, D-13 y D-14 TOMADAS, D-15 PENDIENTE.
 - IMPLEMENTADO (sin pruebas P2 todavía):
   - Backend: registro de asesor, login con 403 por estado, roles y políticas, panel `/api/admin/usuarios`, auditoría, `promover-admin` y migración 003 (sin aplicar). `dotnet build` sin errores; 75 de 76 pruebas de P1 pasan. La que falla es el inventario de endpoints, que hay que actualizar por las rutas nuevas.
@@ -53,3 +53,13 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - Revisión de `devops-seguridad`.
   - Documentación (README, guía de autenticación, `docs/GUIA-ADMINISTRACION.md`).
   - **Migración 003 NO aplicada**: la condición 4 de D-14 exige que antes pasen las pruebas de P2.
+
+### P2 — continuación
+- D-15 TOMADA (A): reconsiderar asesor rechazado (RECHAZADA → ACTIVA, motivo obligatorio, auditoría RECONSIDERAR), incluido en P2. Añadido P2b ("Solicitar ser asesor") al backlog.
+- Pruebas ejecutadas: `dotnet test` 223/223 (147 nuevas de P2; actualizadas `Inventario_de_endpoints` y la de cuenta no activa); `npm test` 93/93 (51 nuevas); `npm run build` correcto; sin defectos de la app.
+- `devops-seguridad`: sin bloqueantes; 0 vulnerabilidades (npm y NuGet); recomendaciones aplicadas en la migración 003 (detener la API, ejecutar sin `--force`, alcance de BAJAR). Pendiente: CI (INF-1).
+- Documentación: README, `backend/GUIA-AUTENTICACION.md`, nueva `docs/GUIA-ADMINISTRACION.md`.
+- Migración 003 (D-14):
+  - Respaldo completo nuevo: `C:\Respaldo_CAMION\camion_ventas_completo_antes_migracion003_20261026_191015.sql` (51.366 bytes, 39 tablas, "Dump completed").
+  - Conteos antes: AspNetUsers 4, perfiles_asesor 0, perfiles_comprador 4, AspNetUserRoles 4 (historial_autorizaciones 0). La restricción `CK_Asesor_Estado` tiene todavía los valores antiguos.
+  - **SUBIR NO aplicado**: el sistema de permisos de esta sesión bloqueó la escritura en `camion_ventas`. Se comprobó que la base sigue sin cambios. Queda para la responsable (pasos en `docs/GUIA-ADMINISTRACION.md`, sección 4) o para una sesión con permiso.
