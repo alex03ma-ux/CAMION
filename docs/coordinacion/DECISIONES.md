@@ -151,7 +151,8 @@ Las decisiones D-1 a D-5 se detectaron al comparar los documentos fuente el 2026
   - B) Más categorías (por ejemplo Motos o Maquinaria), o "modelo" = año.
     - Impacto: se añaden filas al catálogo o se ajusta un filtro.
 - Recomendación: A.
-- Bloquea: nada. Si se elige B, el cambio es pequeño.
+- Bloquea: nada.
+- **Decisión: A** (respuesta de la responsable, transmitida por el coordinador principal): el DEMO se quita (BAJAR) cuando P4b esté fusionado y antes de cargar el primer vehículo real. Si se elige B, el cambio es pequeño.
 - **Decisión: B modificada** (respuesta de la responsable, transmitida por el coordinador principal). Hay **cuatro categorías principales: Carros, Camiones, Carrocerías y Maquinaria**.
   - Motivo: si el camión es nuevo, la carrocería se vende aparte, o se puede vender una carrocería usada. Por eso es también un artículo a la venta.
   - (a) "Carrocerías" es una categoría de producto: una carrocería sola se publica, se filtra y se muestra como cualquier otro artículo.
@@ -212,7 +213,7 @@ Las decisiones D-1 a D-5 se detectaron al comparar los documentos fuente el 2026
   - Hacen falta catálogos nuevos para los materiales y los tipos de máquina.
 - P3 no puede mostrar esos campos porque todavía no existen en el esquema. Lo único que ya hace P3 es ocultar el kilometraje de las carrocerías (y el de las máquinas con 0 km). El resto queda para P4.
 
-## D-20 — ¿Dónde y cómo se guardan las fotos? · PENDIENTE (detectada en P4a, 2026-10-27)
+## D-20 — ¿Dónde y cómo se guardan las fotos? · TOMADA (2026-10-27)
 - Contexto: HU-014 y RN-VE-001 permiten hasta 10 fotos por vehículo. Las fotos no pueden ir al repositorio ni a la base de datos.
 - Propuesta (ya usada en el contrato de P4a, `docs/criterios/P4a-contrato-api.md`):
   - Carpeta local **fuera del repositorio**, `C:\CAMION_media`, configurable con `Media:Ruta`.
@@ -229,8 +230,9 @@ Las decisiones D-1 a D-5 se detectaron al comparar los documentos fuente el 2026
     - Impacto: costo e integración externa; se haría más adelante.
 - Recomendación: A.
 - Bloquea: la subida de fotos con la base y la carpeta reales (no bloquea las pruebas automáticas).
+- **Decisión: A** (respuesta de la responsable, transmitida por el coordinador principal): las fotos se guardan en `C:\CAMION_media`, en JPG, PNG o WebP, con un máximo de 5 MB cada una y 10 por vehículo.
 
-## D-21 — ¿Cómo obtiene un asesor un plan activo antes de P7? · PENDIENTE (detectada en P4a, 2026-10-27)
+## D-21 — ¿Cómo obtiene un asesor un plan activo antes de P7? · TOMADA (2026-10-27)
 - Contexto: publicar exige un plan activo con cupo (RN-CO-001), y la gestión de planes y pagos llega en P7.
 - Opciones:
   - A) En P4b, el administrador asigna o renueva a mano un plan a un asesor, desde el panel y con auditoría. Los planes se crean con un script inicial que aplica la responsable.
@@ -238,16 +240,22 @@ Las decisiones D-1 a D-5 se detectaron al comparar los documentos fuente el 2026
   - C) Un plan de prueba automático para todo asesor aprobado.
 - Recomendación: A.
 - Bloquea: P4b. **No bloquea P4a**, porque registrar vehículos en el inventario no exige plan.
+- **Decisión: B, "Esperar a P7"** (respuesta de la responsable, transmitida por el coordinador principal).
+  - No hay asignación manual de planes por el administrador, así que nadie puede publicar hasta que existan los planes.
+  - En P4b, crear o renovar una publicación exige un plan activo. Si no lo hay, falla con un mensaje claro.
+  - Queda pendiente decidir si se adelanta la parte de planes de P7 (D-26).
 
-## D-22 — ¿"Marcar como vendido" (HU-064) entra ya o espera a P7? · PENDIENTE (detectada en P4a, 2026-10-27)
+## D-22 — ¿"Marcar como vendido" (HU-064) entra ya o espera a P7? · TOMADA (2026-10-27)
 - Contexto: la venta registra la fecha, el precio final, el origen y observaciones, y se puede revertir con un motivo (§15). Es gestión comercial.
 - Opciones:
   - A) Esperar a P7. En P4a el estado VENDIDO existe en la base, pero no hay botón para marcarlo.
   - B) Incluirlo en P4b, junto con la publicación (vender oculta la publicación, RN-VE-014).
 - Recomendación: B. Cerrar el ciclo del vehículo junto con sus publicaciones evita estados a medias.
 - Bloquea: nada de P4a.
+- **Decisión: "Marcar como vendido" entra en P4b** (respuesta de la responsable, transmitida por el coordinador principal).
+  - Nota: el mensaje decía "A", pero describía la opción B (en P4b). Se registra lo que dice el texto. Si la responsable quería esperar a P7, que lo confirme.
 
-## D-23 — Aplicar la migración 004 de P4a a `camion_ventas` · PENDIENTE (detectada en P4a, 2026-10-27)
+## D-23 — Aplicar la migración 004 de P4a a `camion_ventas` · TOMADA (2026-10-27)
 - Contexto: P4a necesita cambiar el esquema; el detalle está en el contrato.
   - En `vehiculos`: placa única opcional, estado, precio y precio anterior, campos de carrocería y máquina; la marca y el año pasan a ser opcionales.
   - Tablas nuevas: materiales, tipos de máquina y fotos del vehículo.
@@ -260,8 +268,12 @@ Las decisiones D-1 a D-5 se detectaron al comparar los documentos fuente el 2026
   - B) Esperar y aplicarla junto con la de P4b.
 - Recomendación: A, para poder hacer la prueba manual de P4a.
 - Bloquea: la prueba manual de P4a con la base real. Sin la migración, la API nueva fallaría contra `camion_ventas`.
+- **Decisión: A** (respuesta de la responsable, transmitida por el coordinador principal).
+  - La migración 004 se aplica cuando pasen las pruebas de P4a.
+  - El coordinador principal hace el respaldo previo y la responsable la aplica desde phpMyAdmin en Chrome.
+  - Los agentes no la aplican.
 
-## D-24 — ¿Cuándo se retiran los datos DEMO? · PENDIENTE (detectada en P4a, 2026-10-27)
+## D-24 — ¿Cuándo se retiran los datos DEMO? · TOMADA (2026-10-27)
 - Contexto: hay 12 publicaciones DEMO de un asesor que no puede iniciar sesión, y su vigencia termina 30 días después de la carga. La sección BAJAR del script solo borra filas DEMO.
 - Opciones:
   - A) Retirarlas cuando P4b esté fusionado y antes de cargar el primer vehículo real.
@@ -284,3 +296,20 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
    - ¿Las carrocerías necesitan capacidad? D-19 no la incluía, y hoy es opcional.
 
 - Recomendación: 1A; en 2, ampliar a 8 caracteres solo si hace falta; en 3, mantener kg y la capacidad opcional en las carrocerías.
+
+## D-26 — ¿Se adelanta la parte de planes y suscripciones de P7? · PENDIENTE (detectada en P4a, 2026-10-27)
+- Contexto: por D-21 (B), nadie puede publicar sin un plan activo, y los planes llegan en P7. Si no se adelantan, P4b (publicaciones) se podrá probar con pruebas automáticas, pero **no se podrá usar con datos reales hasta P7**.
+- Alcance mínimo que habría que adelantar:
+  - HU-049 a HU-051: planes. El administrador crea y edita planes con nombre, precio, duración y cupo de publicaciones.
+  - HU-066 a HU-069: suscripciones. El asesor consulta su suscripción; el administrador la activa o renueva, la suspende y la reactiva, con auditoría.
+  - Pagos y comprobantes no entran: el administrador activa la suscripción a mano cuando confirma el pago.
+- Opciones:
+  - A) Hacer un ítem **P4p "Planes y suscripciones"** justo después de P4a y antes de P4b.
+    - Impacto: P4b sale ya utilizable. Añade una entrega de tamaño mediano.
+  - B) Incluir planes y suscripciones **dentro de P4b**.
+    - Impacto: un PR más grande y más difícil de revisar.
+  - C) Mantener el orden actual.
+    - Impacto: P4b queda probada pero sin uso real hasta P7.
+- Recomendación: A. Separado es más fácil de revisar, y el orden P4a → P4p → P4b deja cada entrega usable.
+- Bloquea: el uso real de P4b. No bloquea P4a.
+- El backlog no se reordena hasta tener la respuesta.
