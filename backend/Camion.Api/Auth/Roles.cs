@@ -17,6 +17,8 @@ public static class Roles
     public const string PoliticaSoloAdministrador = "SoloAdministrador";
     public const string PoliticaSoloAsesor = "SoloAsesor";
     public const string PoliticaAutenticado = "Autenticado";
+    // P4a (RN-SE-006, D-7): inventario de vehículos; el asesor solo ve y modifica lo suyo.
+    public const string PoliticaAsesorOAdministrador = "AsesorOAdministrador";
 
     // Crea el rol una sola vez si aún no existe; tolera que otra petición simultánea lo cree.
     public static async Task<bool> AsegurarAsync(RoleManager<IdentityRole> roles, CamionDbContext db, string nombre)

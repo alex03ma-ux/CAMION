@@ -40,3 +40,18 @@ public sealed class Combustible
     public string Nombre { get; set; } = "";
     public bool Activo { get; set; } = true;
 }
+
+// P4a (D-19): tablas nuevas de la migración 004. La gestión de estos catálogos es P7.
+public sealed class MaterialCarroceria
+{
+    public long Id { get; set; }
+    public string Nombre { get; set; } = "";
+    public bool Activo { get; set; } = true;
+}
+
+public sealed class TipoMaquina
+{
+    public long Id { get; set; }
+    public string Nombre { get; set; } = "";
+    public bool Activo { get; set; } = true;
+}

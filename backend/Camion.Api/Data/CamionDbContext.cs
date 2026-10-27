@@ -29,6 +29,11 @@ public sealed class CamionDbContext : IdentityDbContext<ApplicationUser, Identit
     public DbSet<HistorialVigencia> HistorialVigencias => Set<HistorialVigencia>();
     public DbSet<PublicacionDestacada> PublicacionesDestacadas => Set<PublicacionDestacada>();
 
+    // P4a: tablas nuevas de la migración 004 (D-19, D-20).
+    public DbSet<MaterialCarroceria> MaterialesCarroceria => Set<MaterialCarroceria>();
+    public DbSet<TipoMaquina> TiposMaquina => Set<TipoMaquina>();
+    public DbSet<FotoInventario> FotosVehiculo => Set<FotoInventario>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -158,6 +163,9 @@ public sealed class CamionDbContext : IdentityDbContext<ApplicationUser, Identit
         Catalogo<TipoVehiculo>("tipos_vehiculo", "UX_TipoVehiculo_Nombre");
         Catalogo<TipoCarroceria>("tipos_carroceria", "UX_TipoCarroceria_Nombre");
         Catalogo<Combustible>("combustibles", "UX_Combustible_Nombre");
+        // P4a (migración 004).
+        Catalogo<MaterialCarroceria>("materiales_carroceria", "UX_Material_Nombre");
+        Catalogo<TipoMaquina>("tipos_maquina", "UX_TipoMaquina_Nombre");
 
         builder.Entity<Linea>(entity =>
         {
@@ -215,6 +223,35 @@ public sealed class CamionDbContext : IdentityDbContext<ApplicationUser, Identit
             entity.HasKey(x => x.Id);
             entity.Property(x => x.Id).HasColumnName("id").ValueGeneratedOnAdd();
             entity.Property(x => x.AsesorId).HasColumnName("asesor_id");
+            // P4a (migración 004): placa, estado, precios, medidas, material, horas de uso, tipo de máquina y motivo.
+            entity.Property(x => x.Placa).HasColumnName("placa").HasMaxLength(10);
+            entity.Property(x => x.Estado).HasColumnName("estado").HasMaxLength(20).IsRequired();
+            var precioVeh = entity.Property(x => x.PrecioCop).HasColumnName("precio_cop").HasPrecision(15, 2);
+            var precioAnterior = entity.Property(x => x.PrecioAnteriorCop).HasColumnName("precio_anterior_cop").HasPrecision(15, 2);
+            var largo = entity.Property(x => x.LargoM).HasColumnName("largo_m").HasPrecision(6, 2);
+            var ancho = entity.Property(x => x.AnchoM).HasColumnName("ancho_m").HasPrecision(6, 2);
+            var alto = entity.Property(x => x.AltoM).HasColumnName("alto_m").HasPrecision(6, 2);
+            if (esSqlite)
+            {
+                precioVeh.HasConversion<double?>();
+                precioAnterior.HasConversion<double?>();
+                largo.HasConversion<double?>();
+                ancho.HasConversion<double?>();
+                alto.HasConversion<double?>();
+            }
+            entity.Property(x => x.MaterialId).HasColumnName("material_id");
+            entity.Property(x => x.HorasUso).HasColumnName("horas_uso");
+            entity.Property(x => x.TipoMaquinaId).HasColumnName("tipo_maquina_id");
+            entity.Property(x => x.MotivoInactivacion).HasColumnName("motivo_inactivacion").HasMaxLength(500);
+            entity.HasIndex(x => x.Placa).IsUnique().HasDatabaseName("UX_Veh_Placa");
+            entity.HasIndex(x => new { x.AsesorId, x.Estado }).HasDatabaseName("IX_Veh_AsesorEstado");
+            entity.ToTable("vehiculos", t =>
+            {
+                t.HasCheckConstraint("CK_Veh_Estado", "estado IN ('ACTIVO','RESERVADO','INACTIVO','VENDIDO')");
+                t.HasCheckConstraint("CK_Veh_Precio", "precio_cop IS NULL OR precio_cop > 0");
+            });
+            entity.HasOne(x => x.Material).WithMany().HasForeignKey(x => x.MaterialId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(x => x.TipoMaquina).WithMany().HasForeignKey(x => x.TipoMaquinaId).OnDelete(DeleteBehavior.Restrict);
             entity.Property(x => x.MarcaId).HasColumnName("marca_id");
             entity.Property(x => x.LineaId).HasColumnName("linea_id");
             entity.Property(x => x.TipoVehiculoId).HasColumnName("tipo_vehiculo_id");
@@ -243,6 +280,20 @@ public sealed class CamionDbContext : IdentityDbContext<ApplicationUser, Identit
             entity.HasOne(x => x.Carroceria).WithMany().HasForeignKey(x => x.CarroceriaId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(x => x.Combustible).WithMany().HasForeignKey(x => x.CombustibleId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(x => x.Municipio).WithMany().HasForeignKey(x => x.MunicipioId).OnDelete(DeleteBehavior.Restrict);
+        });
+        // P4a (HU-014, D-20): fotos del vehículo, hasta 10, orden único por vehículo.
+        builder.Entity<FotoInventario>(entity =>
+        {
+            entity.ToTable("fotos_vehiculo", t => t.HasCheckConstraint("CK_FotoVeh_Orden", "orden BETWEEN 1 AND 10"));
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(x => x.VehiculoId).HasColumnName("vehiculo_id");
+            entity.Property(x => x.ArchivoClave).HasColumnName("archivo_clave").HasMaxLength(500).IsRequired();
+            entity.Property(x => x.Orden).HasColumnName("orden");
+            entity.Property(x => x.EsPortada).HasColumnName("es_portada");
+            entity.Property(x => x.CreadoEn).HasColumnName("creado_en");
+            entity.HasIndex(x => new { x.VehiculoId, x.Orden }).IsUnique().HasDatabaseName("UX_FotoVeh_Orden");
+            entity.HasOne<Vehiculo>().WithMany(x => x.Fotos).HasForeignKey(x => x.VehiculoId).OnDelete(DeleteBehavior.Restrict);
         });
         builder.Entity<Publicacion>(entity =>
         {

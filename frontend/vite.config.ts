@@ -13,6 +13,10 @@ export default defineConfig({
         target: 'http://localhost:5080',
         changeOrigin: true,
       },
+      '/media': {
+        target: 'http://localhost:5080',
+        changeOrigin: true,
+      },
     },
   },
 })

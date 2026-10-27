@@ -101,7 +101,7 @@ public static class CatalogoEndpoints
                 var minusculas = texto.ToLowerInvariant();
                 consulta = consulta.Where(x =>
                     x.Publicacion.Titulo!.ToLower().Contains(minusculas) ||
-                    x.Publicacion.Vehiculo!.Marca!.Nombre.ToLower().Contains(minusculas) ||
+                    (x.Publicacion.Vehiculo!.Marca != null && x.Publicacion.Vehiculo.Marca.Nombre.ToLower().Contains(minusculas)) ||
                     (x.Publicacion.Vehiculo.Linea != null && x.Publicacion.Vehiculo.Linea.Nombre.ToLower().Contains(minusculas)));
             }
             if (tipo is not null) consulta = consulta.Where(x => x.Publicacion.Vehiculo!.TipoVehiculoId == tipo);
@@ -199,8 +199,9 @@ public static class CatalogoEndpoints
 
             var porTipo = await datos.GroupBy(x => x.TipoVehiculoId)
                 .Select(g => new { Id = g.Key, Total = g.Count() }).ToListAsync(ct);
-            var porMarca = await datos.GroupBy(x => x.MarcaId)
-                .Select(g => new { Id = g.Key, Total = g.Count() }).ToListAsync(ct);
+            // P4a (D-19): un vehículo sin marca no aporta opción de marca.
+            var porMarca = await datos.Where(x => x.MarcaId != null).GroupBy(x => x.MarcaId)
+                .Select(g => new { Id = g.Key!.Value, Total = g.Count() }).ToListAsync(ct);
             var porLinea = await datos.Where(x => x.LineaId != null).GroupBy(x => x.LineaId)
                 .Select(g => new { Id = g.Key!.Value, Total = g.Count() }).ToListAsync(ct);
 

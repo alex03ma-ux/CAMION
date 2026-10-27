@@ -14,7 +14,8 @@ public static class ConsultasCatalogo
     /// 1. PUBLICADA; 2. DISPONIBLE o RESERVADO (un vendido nunca se ve); 3. vigente (historial_vigencias con
     /// inicio &lt;= ahora &lt; fin); 4. asesor dueño con cuenta ACTIVA; 5. precio &gt; 0 y título no vacío
     /// (y publicada_en con valor, que la CHECK CK_Pub_Publicable ya exige); 6. la suscripción de la fila
-    /// vigente está ACTIVA con fin_vigencia nula o posterior a ahora.
+    /// vigente está ACTIVA con fin_vigencia nula o posterior a ahora; 7 (P4a, D-4/D-11): el vehículo está
+    /// ACTIVO o RESERVADO (un vehículo INACTIVO o VENDIDO nunca se ve, aunque su publicación siga PUBLICADA).
     /// </summary>
     public static IQueryable<Publicacion> Visibles(CamionDbContext db, DateTime ahora) =>
         db.Publicaciones.AsNoTracking().Where(p =>
@@ -28,7 +29,8 @@ public static class ConsultasCatalogo
                 db.Users.Any(u => u.Id == a.UsuarioId && u.EstadoCuenta == EstadosCuenta.Activa)) &&
             p.PrecioCop != null && p.PrecioCop > 0 &&
             p.Titulo != null && p.Titulo.Trim() != "" &&
-            p.PublicadaEn != null);
+            p.PublicadaEn != null &&
+            (p.Vehiculo!.Estado == Vehiculo.Activo || p.Vehiculo.Estado == Vehiculo.Reservado));
 
     /// <summary>Visibles con la marca de destacado: fila ACTIVA en publicaciones_destacadas con inicio &lt;= ahora &lt; fin.</summary>
     public static IQueryable<PublicacionCatalogo> VisiblesConDestacado(CamionDbContext db, DateTime ahora) =>
@@ -47,10 +49,14 @@ public static class ConsultasCatalogo
             Titulo = x.Publicacion.Titulo!,
             PrecioCop = (decimal)x.Publicacion.PrecioCop!,
             Negociable = x.Publicacion.Negociable,
-            EstadoComercial = x.Publicacion.EstadoComercial,
+            // P4a: un vehículo RESERVADO se muestra como reservado aunque la publicación diga DISPONIBLE.
+            EstadoComercial = x.Publicacion.Vehiculo!.Estado == Vehiculo.Reservado
+                ? Publicacion.Reservado
+                : x.Publicacion.EstadoComercial,
             Destacado = x.Destacado,
-            Tipo = x.Publicacion.Vehiculo!.TipoVehiculo!.Nombre,
-            Marca = x.Publicacion.Vehiculo.Marca!.Nombre,
+            Tipo = x.Publicacion.Vehiculo.TipoVehiculo!.Nombre,
+            // P4a (D-19): una carrocería puede no tener marca ni año; la placa nunca sale en el catálogo.
+            Marca = x.Publicacion.Vehiculo.Marca == null ? null : x.Publicacion.Vehiculo.Marca.Nombre,
             Linea = x.Publicacion.Vehiculo.Linea!.Nombre,
             ModeloAnio = x.Publicacion.Vehiculo.ModeloAnio,
             Kilometraje = x.Publicacion.Vehiculo.Kilometraje,
@@ -97,9 +103,9 @@ public sealed class FilaTarjeta
     public string EstadoComercial { get; init; } = "";
     public bool Destacado { get; init; }
     public string Tipo { get; init; } = "";
-    public string Marca { get; init; } = "";
+    public string? Marca { get; init; }
     public string? Linea { get; init; }
-    public int ModeloAnio { get; init; }
+    public int? ModeloAnio { get; init; }
     public int Kilometraje { get; init; }
     public string Municipio { get; init; } = "";
     public string Departamento { get; init; } = "";

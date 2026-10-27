@@ -1,7 +1,8 @@
 namespace Camion.Api.Contracts;
 
 // P3 (HU-001 a HU-012, RN-VE-011 a RN-VE-014, RN-SE-005): catálogo público, anónimo y de solo lectura.
-// Ninguna respuesta incluye datos del asesor, ids internos de vehículo/asesor ni datos personales.
+// Ninguna respuesta incluye datos del asesor, ids internos de vehículo/asesor, la placa ni datos personales.
+// P4a (D-19): marca y modeloAnio pueden ser null (carrocería sin marca ni año).
 public sealed record TarjetaVehiculo(
     string Slug,
     string Titulo,
@@ -10,9 +11,9 @@ public sealed record TarjetaVehiculo(
     string EstadoComercial,
     bool Destacado,
     string Tipo,
-    string Marca,
+    string? Marca,
     string? Linea,
-    int ModeloAnio,
+    int? ModeloAnio,
     int Kilometraje,
     string Municipio,
     string Departamento,
@@ -30,9 +31,9 @@ public sealed record DetalleVehiculo(
     string EstadoComercial,
     bool Destacado,
     string Tipo,
-    string Marca,
+    string? Marca,
     string? Linea,
-    int ModeloAnio,
+    int? ModeloAnio,
     int Kilometraje,
     string Municipio,
     string Departamento,
