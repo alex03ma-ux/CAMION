@@ -76,3 +76,45 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - Login del asesor bloqueado rechazado (`cuenta_no_activa estado=BLOQUEADA`).
   - Sin errores. El registro no muestra el intento de login del asesor en estado Pendiente (cubierto por las pruebas automáticas).
   - Quedan en la base la cuenta de administradora y un asesor de prueba bloqueado.
+
+## 2026-10-26/27 — P3 Catálogo público
+- Rama `feature/p3-catalogo` desde `main` (`6a5266f`).
+- Contrato `docs/criterios/P3-contrato-api.md`, con aclaraciones. Criterios: 162 en `docs/criterios/P3.md`.
+- D-17 (cuatro categorías), D-18 (DEMO autorizado) y D-19 (campos de carrocería y máquina para P4) quedan TOMADAS.
+- Sin cambios de esquema: mapeo de solo lectura de las tablas de vehículos, publicaciones y catálogos.
+- Regla de visibilidad única (`ConsultasCatalogo.Visibles`). Una publicación se muestra si cumple todo esto:
+  - está publicada;
+  - está disponible o reservada;
+  - está dentro de su vigencia;
+  - el plan está ACTIVO y vigente;
+  - el asesor está ACTIVO;
+  - tiene precio y título.
+- Endpoints anónimos GET `/api/catalogo/{inicio, publicaciones, publicaciones/{slug}, filtros}`.
+- Frontend: portal con rutas hash (`#/`, `#/buscar`, `#/vehiculo/<slug>`, `#/cuenta`), filtros, tarjetas, detalle con galería y 4 categorías.
+- Script `database/demo/demo_p3_catalogo.sql` sin aplicar: 12 publicaciones, de las que 10 son visibles. Lo aplica la responsable (D-16, D-18).
+- Los agentes de pruebas se cortaron dos veces (límite de uso y bloqueo de 600 s). El coordinador terminó las pruebas directamente:
+  - Defecto corregido (CA-REG-05): si la sesión terminaba por inactividad en el catálogo, no se avisaba.
+  - Ajustes de prueba:
+    - CA-FIL-08 esperaba un texto genérico; la app muestra "No se pudieron cargar las opciones de los filtros.".
+    - CA-DET-08 con `%00` falla en el propio TestHost, no en la API.
+- Resultados ejecutados:
+  - `dotnet test`: 382/382.
+  - `npm test`: 191/191.
+  - `npm run build`: correcto.
+- Revisión de seguridad (coordinador; no se lanzaron agentes, para evitar otro bloqueo):
+  - sin secretos;
+  - el catálogo solo tiene GET anónimos sin escrituras;
+  - el DEMO solo inserta, en una transacción, y su BAJAR está acotado a las filas DEMO;
+  - sin dependencias nuevas.
+- Limitaciones conocidas:
+  - SQLite no reproduce la intercalación de MariaDB: tildes y mayúsculas en la búsqueda, y mayúsculas en el slug.
+  - Las fotos devuelven URL `/media/…`, pero el servicio de archivos llega en P4.
+  - Sin E2E en navegador ni CI (INF-1).
+- PR [#5](https://github.com/alex03ma-ux/CAMION/pull/5) abierto para P3. El coordinador principal volvió a ejecutar las pruebas: 382/382 API y 191/191 pantallas.
+- D-18 aplicada (2026-10-27):
+  - El coordinador principal hizo el respaldo completo previo `C:\Respaldo_CAMION\camion_ventas_antes_demo_p3_20261027_102121.sql` (39 tablas).
+  - Conteos antes: 6 usuarios, 0 publicaciones, 0 vehículos y catálogos vacíos; existe el rol ASESOR.
+  - La responsable importó `database/demo/demo_p3_catalogo.sql` desde phpMyAdmin (Importar, en Chrome): "140 consultas", sin errores.
+  - Conteos después: 7 usuarios (+1 asesor DEMO), 12 publicaciones DEMO, 12 vehículos y 2 destacadas. Por categoría: Camión 5, Carro 3, Carrocería 2, Maquinaria 2. Tildes guardadas en UTF-8 correcto.
+- Prueba manual de P3 hecha por la responsable con los datos DEMO: inicio con destacados y recientes, las cuatro categorías, filtros con "Limpiar", búsqueda, detalle, etiqueta "Reservado" y carrocería sin kilometraje. Todo según lo esperado.
+- Pendiente: ejecutar la sección BAJAR del script DEMO (con respaldo nuevo) antes de cargar datos reales en P4. Las publicaciones DEMO dejan de verse solas a los 30 días.

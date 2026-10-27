@@ -1,10 +1,10 @@
 // P2 — Registro de asesor (CA-043R-17 a CA-043R-22) y no regresión del registro de comprador.
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../src/App'
 import { RegistroForm } from '../src/components/RegistroForm'
-import { simularFetch } from './helpers'
+import { irACuenta, simularFetch } from './helpers'
 
 const RUTA_ASESOR = '/api/auth/registro/asesor'
 const RUTA_COMPRADOR = '/api/auth/registro/comprador'
@@ -47,6 +47,9 @@ function errorDe(id: string) {
 function cuerpo(api: ReturnType<typeof simularFetch>, ruta: string, i = 0) {
   return JSON.parse(String(api.llamadasA(ruta)[i].init?.body))
 }
+
+// P3: la app abre en el catálogo; estas pruebas usan la pantalla de cuenta.
+beforeEach(irACuenta)
 
 describe('Registro de asesor', () => {
   it('CA-043R-17 selector comprador/asesor: por defecto comprador; asesor añade los campos de documento', async () => {

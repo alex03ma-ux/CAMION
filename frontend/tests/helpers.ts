@@ -11,7 +11,15 @@ export type Llamada = { url: string; init: RequestInit | undefined }
  * Sustituye `fetch` por un simulador. `rutas` asocia una ruta a una respuesta
  * o a una lista (se consume una por llamada; la última se repite).
  */
-export function simularFetch(rutas: Record<string, RespuestaSimulada | RespuestaSimulada[]>) {
+export function simularFetch(
+  rutasPropias: Record<string, RespuestaSimulada | RespuestaSimulada[]>,
+) {
+  // P3: el encabezado pide siempre (sin token) las opciones del catálogo; si la
+  // prueba no la define, se responde con un catálogo sin categorías.
+  const rutas: Record<string, RespuestaSimulada | RespuestaSimulada[]> = {
+    [RUTA_FILTROS]: FILTROS_SIN_DATOS,
+    ...rutasPropias,
+  }
   const llamadas: Llamada[] = []
   const contadores: Record<string, number> = {}
   const fn = vi.fn(async (entrada: RequestInfo | URL, init?: RequestInit) => {
@@ -35,7 +43,30 @@ export function simularFetch(rutas: Record<string, RespuestaSimulada | Respuesta
     fn,
     llamadas,
     llamadasA: (ruta: string) => llamadas.filter((l) => l.url === ruta),
+    /** Llamadas a /api/auth/* (login, me, logout, registro). */
+    llamadasAuth: () => llamadas.filter((l) => l.url.startsWith('/api/auth/')),
   }
+}
+
+/** Ruta del GET anónimo de opciones del catálogo que hace el encabezado (P3). */
+export const RUTA_FILTROS = '/api/catalogo/filtros'
+
+/** Respuesta de /api/catalogo/filtros sin categorías ni marcas. */
+export const FILTROS_SIN_DATOS: RespuestaSimulada = {
+  status: 200,
+  body: {
+    tipos: [],
+    marcas: [],
+    rangos: { precioMin: null, precioMax: null, anioMin: null, anioMax: null, kmMax: null },
+  },
+}
+
+/**
+ * P3: la app abre en el catálogo; las pruebas de P1/P2 abren la pantalla de
+ * cuenta (`#/cuenta`) antes de renderizar <App />.
+ */
+export function irACuenta() {
+  window.location.hash = '#/cuenta'
 }
 
 /** Token ficticio: no es un JWT real. */

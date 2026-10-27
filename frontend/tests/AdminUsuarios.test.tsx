@@ -1,11 +1,17 @@
 // P2 — Panel de administración de usuarios (CA-048-09 a CA-048-16, CA-N03-R07, D-15).
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../src/App'
 import type { UsuarioAdmin } from '../src/api/admin'
 import { AdminUsuarios } from '../src/components/AdminUsuarios'
-import { cabecera, simularFetch, TOKEN_FICTICIO, type RespuestaSimulada } from './helpers'
+import {
+  cabecera,
+  irACuenta,
+  simularFetch,
+  TOKEN_FICTICIO,
+  type RespuestaSimulada,
+} from './helpers'
 
 const ID_ADMIN = 'a-0001'
 const PERFIL_ADMIN = {
@@ -107,6 +113,9 @@ async function fila(nombre: string) {
 function cuerpo(api: ReturnType<typeof simularFetch>, ruta: string, i = 0) {
   return JSON.parse(String(api.llamadasA(ruta)[i].init?.body))
 }
+
+// P3: la app abre en el catálogo; estas pruebas usan la pantalla de cuenta.
+beforeEach(irACuenta)
 
 describe('Panel de administración: visibilidad por rol', () => {
   it('CA-048-09 el administrador (según /me) ve el acceso y abre el panel', async () => {

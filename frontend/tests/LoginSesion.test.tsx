@@ -1,11 +1,12 @@
 // Login, sesión persistente y cierre de sesión (CA-059-13 a 20, CA-060-08, 09, 12, CA-062-06 a 08).
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import App from '../src/App'
 import {
   cabecera,
   guardarSesionFicticia,
+  irACuenta,
   PERFIL_FICTICIO,
   simularFetch,
   TOKEN_FICTICIO,
@@ -41,6 +42,9 @@ async function iniciarSesionUI(email = PERFIL_FICTICIO.email, password = PASSWOR
   await user.click(screen.getByRole('button', { name: 'Iniciar sesión' }))
   return user
 }
+
+// P3: la app abre en el catálogo; estas pruebas usan la pantalla de cuenta.
+beforeEach(irACuenta)
 
 describe('Login', () => {
   it('CA-059-17 un 401 muestra "Correo o contraseña incorrectos.", conserva el correo y vacía la contraseña', async () => {
@@ -85,7 +89,8 @@ describe('Login', () => {
     expect(screen.getByLabelText('Correo electrónico')).toHaveAttribute('aria-invalid', 'true')
     expect(screen.getByLabelText('Contraseña')).toHaveAttribute('aria-invalid', 'true')
     expect(screen.getByRole('alert')).toHaveTextContent('Escribe tu correo y tu contraseña.')
-    expect(api.fn).not.toHaveBeenCalled()
+    // P3: el encabezado hace un GET anónimo a /api/catalogo/filtros; no cuenta.
+    expect(api.llamadasAuth()).toHaveLength(0)
   })
 
   it('CA-059-20 el campo contraseña es de tipo password', () => {
@@ -149,7 +154,8 @@ describe('Sesión persistente', () => {
     render(<App />)
     expect(screen.getByRole('heading', { name: 'Iniciar sesión' })).toBeInTheDocument()
     expect(window.localStorage.getItem('camion.sesion')).toBeNull()
-    expect(api.fn).not.toHaveBeenCalled()
+    // P3: el encabezado hace un GET anónimo a /api/catalogo/filtros; no cuenta.
+    expect(api.llamadasAuth()).toHaveLength(0)
   })
 })
 

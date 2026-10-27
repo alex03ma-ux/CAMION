@@ -77,6 +77,8 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(Roles.PoliticaAutenticado, policy => policy.RequireAuthenticatedUser());
 });
 builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, RespuestaAutorizacion>();
+// P3: hora inyectable para la regla de vigencia del catálogo (las pruebas la fijan).
+builder.Services.AddSingleton(TimeProvider.System);
 // JSON malformado o con tipos incorrectos: el framework lanza BadHttpRequestException y se responde con el formato común.
 builder.Services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = true);
 var app = builder.Build();
@@ -163,6 +165,7 @@ app.MapGet("/health/database", async (IConfiguration configuration, Cancellation
 
 app.MapAuthEndpoints(jwtKey);
 app.MapAdminUsuariosEndpoints();
+app.MapCatalogoEndpoints();
 
 app.Run();
 

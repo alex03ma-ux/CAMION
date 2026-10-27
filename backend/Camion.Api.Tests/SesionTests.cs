@@ -183,18 +183,30 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
         }
     }
 
-    [Fact(DisplayName = "CA-SE006-03/05/13, CA-061-15, CA-N03-R04: anónimos solo registros, login y /health; /api/admin exige SoloAdministrador; ninguna ruta edita auditoría")]
+    [Fact(DisplayName = "CA-SE006-03/05/13, CA-061-15, CA-N03-R04, CA-SE005-06 (C-P3-8), CA-D03-05: anónimos solo registros, login, /health y los 4 GET del catálogo; /api/admin exige SoloAdministrador; ninguna ruta edita auditoría")]
     public async Task Inventario_de_endpoints()
     {
         var todos = Endpoints(factory.Services).ToList();
         var anonimos = todos.Where(e => e.Metadata.GetMetadata<IAuthorizeData>() is null)
             .Select(e => $"{Metodo(e)} /{e.RoutePattern.RawText!.TrimStart('/')}").OrderBy(x => x, StringComparer.Ordinal).ToArray();
-        // P2: se añade el registro de asesor (anónimo, D-3).
+        // P2: se añade el registro de asesor (anónimo, D-3). P3 (C-P3-8): las 4 rutas GET anónimas del catálogo público.
         Assert.Equal(new[]
         {
+            "GET /api/catalogo/filtros", "GET /api/catalogo/inicio", "GET /api/catalogo/publicaciones",
+            "GET /api/catalogo/publicaciones/{slug}",
             "GET /health", "GET /health/database", "POST /api/auth/login",
             "POST /api/auth/registro/asesor", "POST /api/auth/registro/comprador"
         }, anonimos);
+
+        // P3: todo /api/catalogo es GET, permite anónimos de forma explícita y no exige ninguna política.
+        var catalogo = todos.Where(e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/catalogo", StringComparison.Ordinal)).ToList();
+        Assert.Equal(4, catalogo.Count);
+        foreach (var e in catalogo)
+        {
+            Assert.Equal("GET", Metodo(e));
+            Assert.NotNull(e.Metadata.GetMetadata<IAllowAnonymous>());
+            Assert.Empty(e.Metadata.GetOrderedMetadata<IAuthorizeData>());
+        }
 
         var modifican = todos.Where(e => Metodo(e) is "POST" or "PUT" or "PATCH" or "DELETE")
             .Select(e => "/" + e.RoutePattern.RawText!.TrimStart('/')).OrderBy(x => x, StringComparer.Ordinal).ToArray();

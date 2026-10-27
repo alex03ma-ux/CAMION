@@ -14,6 +14,21 @@ public sealed class CamionDbContext : IdentityDbContext<ApplicationUser, Identit
     public DbSet<HistorialAutorizacion> HistorialAutorizaciones => Set<HistorialAutorizacion>();
     public DbSet<AuditoriaEvento> AuditoriaEventos => Set<AuditoriaEvento>();
 
+    // P3: tablas existentes del script 002; la API pública solo las lee.
+    public DbSet<Marca> Marcas => Set<Marca>();
+    public DbSet<Linea> Lineas => Set<Linea>();
+    public DbSet<TipoVehiculo> TiposVehiculo => Set<TipoVehiculo>();
+    public DbSet<TipoCarroceria> TiposCarroceria => Set<TipoCarroceria>();
+    public DbSet<Combustible> Combustibles => Set<Combustible>();
+    public DbSet<Departamento> Departamentos => Set<Departamento>();
+    public DbSet<Municipio> Municipios => Set<Municipio>();
+    public DbSet<Suscripcion> Suscripciones => Set<Suscripcion>();
+    public DbSet<Vehiculo> Vehiculos => Set<Vehiculo>();
+    public DbSet<Publicacion> Publicaciones => Set<Publicacion>();
+    public DbSet<FotoPublicacion> FotosPublicacion => Set<FotoPublicacion>();
+    public DbSet<HistorialVigencia> HistorialVigencias => Set<HistorialVigencia>();
+    public DbSet<PublicacionDestacada> PublicacionesDestacadas => Set<PublicacionDestacada>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -116,6 +131,186 @@ public sealed class CamionDbContext : IdentityDbContext<ApplicationUser, Identit
             entity.HasIndex(x => new { x.Entidad, x.EntidadId, x.CreadoEn }).HasDatabaseName("IX_Audit_Entidad");
             entity.HasIndex(x => new { x.UsuarioId, x.CreadoEn }).HasDatabaseName("IX_Audit_Usuario");
             entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.UsuarioId).OnDelete(DeleteBehavior.SetNull);
+        });
+        MapearCatalogo(builder);
+    }
+
+    // P3 (HU-001 a HU-012): tablas existentes del script 002 con sus nombres de columna exactos. Sin cambio de esquema.
+    private void MapearCatalogo(ModelBuilder builder)
+    {
+        // SQLite (solo en las pruebas) no ordena ni agrega DECIMAL: allí esas columnas se guardan como REAL.
+        // En MariaDB se mantiene DECIMAL sin conversión. Cada proceso usa un único proveedor (caché del modelo).
+        var esSqlite = Database.ProviderName == "Microsoft.EntityFrameworkCore.Sqlite";
+
+        void Catalogo<T>(string tabla, string indice) where T : class
+        {
+            builder.Entity<T>(entity =>
+            {
+                entity.ToTable(tabla);
+                entity.HasKey("Id");
+                entity.Property<long>("Id").HasColumnName("id").ValueGeneratedOnAdd();
+                entity.Property<string>("Nombre").HasColumnName("nombre").HasMaxLength(100).IsRequired();
+                entity.Property<bool>("Activo").HasColumnName("activo");
+                entity.HasIndex("Nombre").IsUnique().HasDatabaseName(indice);
+            });
+        }
+        Catalogo<Marca>("marcas", "UX_Marca_Nombre");
+        Catalogo<TipoVehiculo>("tipos_vehiculo", "UX_TipoVehiculo_Nombre");
+        Catalogo<TipoCarroceria>("tipos_carroceria", "UX_TipoCarroceria_Nombre");
+        Catalogo<Combustible>("combustibles", "UX_Combustible_Nombre");
+
+        builder.Entity<Linea>(entity =>
+        {
+            entity.ToTable("lineas");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(x => x.MarcaId).HasColumnName("marca_id");
+            entity.Property(x => x.Nombre).HasColumnName("nombre").HasMaxLength(100).IsRequired();
+            entity.Property(x => x.Activo).HasColumnName("activo");
+            entity.HasIndex(x => new { x.MarcaId, x.Nombre }).IsUnique().HasDatabaseName("UX_Linea_Marca");
+            entity.HasOne(x => x.Marca).WithMany(x => x.Lineas).HasForeignKey(x => x.MarcaId).OnDelete(DeleteBehavior.Restrict);
+        });
+        builder.Entity<Departamento>(entity =>
+        {
+            entity.ToTable("departamentos");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(x => x.Codigo).HasColumnName("codigo").HasMaxLength(10).IsRequired();
+            entity.Property(x => x.Nombre).HasColumnName("nombre").HasMaxLength(100).IsRequired();
+            entity.HasIndex(x => x.Codigo).IsUnique().HasDatabaseName("UX_Departamento_Codigo");
+        });
+        builder.Entity<Municipio>(entity =>
+        {
+            entity.ToTable("municipios");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(x => x.DepartamentoId).HasColumnName("departamento_id");
+            entity.Property(x => x.Codigo).HasColumnName("codigo").HasMaxLength(15).IsRequired();
+            entity.Property(x => x.Nombre).HasColumnName("nombre").HasMaxLength(100).IsRequired();
+            entity.HasIndex(x => x.Codigo).IsUnique().HasDatabaseName("UX_Municipio_Codigo");
+            entity.HasIndex(x => x.DepartamentoId).HasDatabaseName("IX_Municipio_Departamento");
+            entity.HasOne(x => x.Departamento).WithMany().HasForeignKey(x => x.DepartamentoId).OnDelete(DeleteBehavior.Restrict);
+        });
+        builder.Entity<Suscripcion>(entity =>
+        {
+            entity.ToTable("suscripciones");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(x => x.AsesorId).HasColumnName("asesor_id");
+            // En la base es FK a planes; la tabla planes todavía no se mapea (fuera de P3).
+            entity.Property(x => x.PlanId).HasColumnName("plan_id");
+            entity.Property(x => x.Estado).HasColumnName("estado").HasMaxLength(25).IsRequired();
+            entity.Property(x => x.InicioVigencia).HasColumnName("inicio_vigencia");
+            entity.Property(x => x.FinVigencia).HasColumnName("fin_vigencia");
+            entity.Property(x => x.AprobadoPor).HasColumnName("aprobado_por").HasMaxLength(255);
+            entity.Property(x => x.AprobadoEn).HasColumnName("aprobado_en");
+            entity.Property(x => x.CreadoEn).HasColumnName("creado_en");
+            entity.HasIndex(x => new { x.AsesorId, x.Estado, x.FinVigencia }).HasDatabaseName("IX_Sus_AsesorEstado");
+            entity.HasOne<PerfilAsesor>().WithMany().HasForeignKey(x => x.AsesorId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.AprobadoPor).OnDelete(DeleteBehavior.SetNull);
+        });
+        builder.Entity<Vehiculo>(entity =>
+        {
+            entity.ToTable("vehiculos");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(x => x.AsesorId).HasColumnName("asesor_id");
+            entity.Property(x => x.MarcaId).HasColumnName("marca_id");
+            entity.Property(x => x.LineaId).HasColumnName("linea_id");
+            entity.Property(x => x.TipoVehiculoId).HasColumnName("tipo_vehiculo_id");
+            entity.Property(x => x.CarroceriaId).HasColumnName("carroceria_id");
+            entity.Property(x => x.CombustibleId).HasColumnName("combustible_id");
+            entity.Property(x => x.ModeloAnio).HasColumnName("modelo_anio");
+            entity.Property(x => x.Kilometraje).HasColumnName("kilometraje");
+            var capacidad = entity.Property(x => x.CapacidadCargaKg).HasColumnName("capacidad_carga_kg").HasPrecision(12, 2);
+            var peso = entity.Property(x => x.PesoBrutoKg).HasColumnName("peso_bruto_kg").HasPrecision(12, 2);
+            if (esSqlite)
+            {
+                capacidad.HasConversion<double?>();
+                peso.HasConversion<double?>();
+            }
+            entity.Property(x => x.CilindrajeCc).HasColumnName("cilindraje_cc");
+            entity.Property(x => x.MunicipioId).HasColumnName("municipio_id");
+            entity.Property(x => x.DescripcionTecnica).HasColumnName("descripcion_tecnica");
+            entity.Property(x => x.CreadoEn).HasColumnName("creado_en");
+            entity.Property(x => x.ActualizadoEn).HasColumnName("actualizado_en");
+            entity.HasIndex(x => x.AsesorId).HasDatabaseName("IX_Veh_Asesor");
+            entity.HasIndex(x => new { x.MarcaId, x.ModeloAnio, x.MunicipioId }).HasDatabaseName("IX_Veh_Busqueda");
+            entity.HasOne<PerfilAsesor>().WithMany().HasForeignKey(x => x.AsesorId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(x => x.Marca).WithMany().HasForeignKey(x => x.MarcaId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(x => x.Linea).WithMany().HasForeignKey(x => x.LineaId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(x => x.TipoVehiculo).WithMany().HasForeignKey(x => x.TipoVehiculoId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(x => x.Carroceria).WithMany().HasForeignKey(x => x.CarroceriaId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(x => x.Combustible).WithMany().HasForeignKey(x => x.CombustibleId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(x => x.Municipio).WithMany().HasForeignKey(x => x.MunicipioId).OnDelete(DeleteBehavior.Restrict);
+        });
+        builder.Entity<Publicacion>(entity =>
+        {
+            entity.ToTable("publicaciones");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(x => x.VehiculoId).HasColumnName("vehiculo_id");
+            entity.Property(x => x.AsesorId).HasColumnName("asesor_id");
+            entity.Property(x => x.SlugPublico).HasColumnName("slug_publico").HasMaxLength(200).IsRequired();
+            entity.Property(x => x.Titulo).HasColumnName("titulo").HasMaxLength(180);
+            entity.Property(x => x.DescripcionComercial).HasColumnName("descripcion_comercial");
+            var precio = entity.Property(x => x.PrecioCop).HasColumnName("precio_cop").HasPrecision(15, 2);
+            if (esSqlite) precio.HasConversion<double?>();
+            entity.Property(x => x.Negociable).HasColumnName("negociable");
+            entity.Property(x => x.EstadoComercial).HasColumnName("estado_comercial").HasMaxLength(20).IsRequired();
+            entity.Property(x => x.EstadoPublicacion).HasColumnName("estado_publicacion").HasMaxLength(25).IsRequired();
+            entity.Property(x => x.MotivoOcultamiento).HasColumnName("motivo_ocultamiento").HasMaxLength(40);
+            entity.Property(x => x.PublicadaEn).HasColumnName("publicada_en");
+            entity.Property(x => x.OcultadaEn).HasColumnName("ocultada_en");
+            entity.Property(x => x.EliminadaEn).HasColumnName("eliminada_en");
+            entity.Property(x => x.CreadoEn).HasColumnName("creado_en");
+            entity.Property(x => x.ActualizadoEn).HasColumnName("actualizado_en");
+            entity.HasIndex(x => x.SlugPublico).IsUnique().HasDatabaseName("UX_Pub_Slug");
+            entity.HasIndex(x => x.VehiculoId).HasDatabaseName("IX_Pub_Vehiculo");
+            entity.HasIndex(x => new { x.AsesorId, x.EstadoPublicacion }).HasDatabaseName("IX_Pub_AsesorEstado");
+            entity.HasIndex(x => new { x.EstadoPublicacion, x.EstadoComercial, x.PublicadaEn }).HasDatabaseName("IX_Pub_Catalogo");
+            entity.HasOne(x => x.Vehiculo).WithMany().HasForeignKey(x => x.VehiculoId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<PerfilAsesor>().WithMany().HasForeignKey(x => x.AsesorId).OnDelete(DeleteBehavior.Restrict);
+        });
+        builder.Entity<FotoPublicacion>(entity =>
+        {
+            entity.ToTable("fotos_publicacion");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(x => x.PublicacionId).HasColumnName("publicacion_id");
+            entity.Property(x => x.ArchivoClave).HasColumnName("archivo_clave").HasMaxLength(500).IsRequired();
+            entity.Property(x => x.Orden).HasColumnName("orden");
+            entity.Property(x => x.EsPortada).HasColumnName("es_portada");
+            entity.Property(x => x.CreadoEn).HasColumnName("creado_en");
+            entity.HasIndex(x => new { x.PublicacionId, x.Orden }).IsUnique().HasDatabaseName("UX_Foto_Orden");
+            entity.HasOne<Publicacion>().WithMany(x => x.Fotos).HasForeignKey(x => x.PublicacionId).OnDelete(DeleteBehavior.Restrict);
+        });
+        builder.Entity<HistorialVigencia>(entity =>
+        {
+            entity.ToTable("historial_vigencias");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(x => x.PublicacionId).HasColumnName("publicacion_id");
+            entity.Property(x => x.SuscripcionId).HasColumnName("suscripcion_id");
+            entity.Property(x => x.Inicio).HasColumnName("inicio");
+            entity.Property(x => x.Fin).HasColumnName("fin");
+            entity.Property(x => x.Motivo).HasColumnName("motivo").HasMaxLength(30).IsRequired();
+            entity.HasIndex(x => new { x.PublicacionId, x.Inicio }).HasDatabaseName("IX_HistVig_Pub");
+            entity.HasOne<Publicacion>().WithMany(x => x.Vigencias).HasForeignKey(x => x.PublicacionId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<Suscripcion>().WithMany().HasForeignKey(x => x.SuscripcionId).OnDelete(DeleteBehavior.Restrict);
+        });
+        builder.Entity<PublicacionDestacada>(entity =>
+        {
+            entity.ToTable("publicaciones_destacadas");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(x => x.PublicacionId).HasColumnName("publicacion_id");
+            entity.Property(x => x.Inicio).HasColumnName("inicio");
+            entity.Property(x => x.Fin).HasColumnName("fin");
+            entity.Property(x => x.Estado).HasColumnName("estado").HasMaxLength(20).IsRequired();
+            entity.Property(x => x.CreadoPor).HasColumnName("creado_por").HasMaxLength(255);
+            entity.HasOne<Publicacion>().WithMany(x => x.Destacados).HasForeignKey(x => x.PublicacionId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.CreadoPor).OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

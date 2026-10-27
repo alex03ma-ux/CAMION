@@ -1,9 +1,9 @@
 // P2 — Avisos del login por estado de la cuenta (CA-045-11, CA-045-12) y CA-D12-02.
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import App from '../src/App'
-import { guardarSesionFicticia, simularFetch } from './helpers'
+import { guardarSesionFicticia, irACuenta, simularFetch } from './helpers'
 
 const LOGIN = '/api/auth/login'
 const EMAIL = 'asesor.ficticio@ejemplo.test'
@@ -37,6 +37,9 @@ async function entrar(user: Usuario, email = EMAIL) {
   await user.type(screen.getByLabelText('Contraseña'), PASS)
   await user.click(screen.getByRole('button', { name: 'Iniciar sesión' }))
 }
+
+// P3: la app abre en el catálogo; estas pruebas usan la pantalla de cuenta.
+beforeEach(irACuenta)
 
 describe('Login con cuenta no activa (P2)', () => {
   it('CA-045-11 403 PENDIENTE: aviso informativo (role=status), sin alerta ni sesión guardada', async () => {

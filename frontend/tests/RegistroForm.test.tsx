@@ -1,10 +1,10 @@
 // Formulario de registro de comprador (CA-N03-20 a CA-N03-27).
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../src/App'
 import { RegistroForm } from '../src/components/RegistroForm'
-import { simularFetch } from './helpers'
+import { irACuenta, simularFetch } from './helpers'
 
 const RUTA = '/api/auth/registro/comprador'
 
@@ -27,6 +27,9 @@ function errorDe(id: string) {
 }
 
 const ETIQUETAS = ['Nombre completo', 'Correo electrónico', 'Teléfono', 'Contraseña']
+
+// P3: la app abre en el catálogo; estas pruebas usan la pantalla de cuenta.
+beforeEach(irACuenta)
 
 describe('RegistroForm', () => {
   it('CA-N03-20 las 4 reglas de contraseña se ven antes de enviar', () => {
