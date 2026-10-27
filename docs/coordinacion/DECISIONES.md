@@ -178,7 +178,7 @@ Las decisiones D-1 a D-5 se detectaron al comparar los documentos fuente el 2026
 - Bloquea: solo la prueba manual completa de P3.
 - **Decisión: A** (respuesta de la responsable, transmitida por el coordinador principal). El script DEMO está autorizado e incluye ejemplos de las cuatro categorías. Lo aplicará la responsable desde phpMyAdmin en Chrome, guiada, con respaldo previo y conteos. Los agentes no lo aplican.
 
-## D-19 — ¿Qué datos debe tener una carrocería y una máquina a la venta? · PENDIENTE (detectada en P3, 2026-10-26)
+## D-19 — ¿Qué datos debe tener una carrocería y una máquina a la venta? · TOMADA (2026-10-26)
 - Contexto: por D-17, Carrocerías y Maquinaria son categorías de venta.
   - Hoy el esquema solo tiene los campos de un vehículo: marca, línea, año, kilometraje, carrocería, combustible, carga, peso, cilindraje y ciudad.
   - Una carrocería no tiene placa ni kilometraje. Quizá necesite medidas (largo, ancho, alto), material (aluminio, acero, madera) o el tipo de camión al que se adapta.
@@ -192,3 +192,22 @@ Las decisiones D-1 a D-5 se detectaron al comparar los documentos fuente el 2026
   - B) Empezar solo con los campos actuales y la descripción libre, y añadir los campos propios más adelante.
 - Recomendación: A, para P4. P3 funciona con los campos actuales: muestra lo que exista y oculta el kilometraje de las carrocerías.
 - Bloquea: el formulario de alta de carrocerías y máquinas (P4). No bloquea P3.
+- **Decisión: A** (respuesta de la responsable, transmitida por el coordinador principal). Los campos se definen ahora y se preparan en la migración de P4.
+  - **Carrocería** (publicación suelta):
+    - marca **opcional**;
+    - medidas: largo, ancho y alto;
+    - material: aluminio, acero, madera, fibra…;
+    - tipo de carrocería: furgón, estacas, volco, platón, tanque, refrigerada…;
+    - sin placa ni kilometraje;
+    - no se incluye "para qué camión sirve".
+  - **Máquina:**
+    - horas de uso (horómetro), en lugar del kilometraje;
+    - tipo de máquina: retroexcavadora, montacargas, minicargador, excavadora…;
+    - capacidad;
+    - marca, modelo y año.
+  - Los valores de las listas (materiales, tipos de máquina y tipos de carrocería) son PROPUESTOS y los podrá editar el administrador (parametrización, HU-081 a HU-087). Se confirman en los criterios de P4.
+- Efecto en el esquema (para la migración de P4, junto con la placa D-2):
+  - `vehiculos.marca_id` hoy es obligatorio y deberá admitir nulos para las carrocerías.
+  - Hacen falta columnas nuevas para las medidas, el material, las horas de uso, el tipo de máquina y la capacidad.
+  - Hacen falta catálogos nuevos para los materiales y los tipos de máquina.
+- P3 no puede mostrar esos campos porque todavía no existen en el esquema. Lo único que ya hace P3 es ocultar el kilometraje de las carrocerías (y el de las máquinas con 0 km). El resto queda para P4.
