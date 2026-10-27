@@ -246,3 +246,15 @@ Respuesta 200:
 - Subida y servicio de fotos, placa (D-2) y gestión de vehículos (P4).
 - Marcar destacados desde el panel (P7).
 - Datos de demostración en `camion_ventas` (D-18).
+
+## Aclaraciones del coordinador (respuesta a C-P3-1 a C-P3-9 de `P3.md`)
+
+- **C-P3-2, vigencia y plan:** a la regla de visibilidad se añade la **condición 6**: la suscripción de la fila de `historial_vigencias` vigente debe estar `ACTIVA` y con `fin_vigencia` nula o posterior a la hora actual. Si el plan venció, la publicación deja de verse (§15 "Vence al finalizar vigencia"; D-7). Es una decisión técnica conservadora: oculta, nunca muestra de más.
+- **C-P3-1, destacados en el inicio:** la sección "Destacados" va primero. En "Recientes" todo se ordena por fecha, con los destacados marcados. En la búsqueda, los destacados van primero (RN-VE-012).
+- **C-P3-3, trazabilidad del detalle:** el detalle se traza a HU-004 / RN-CA-003. Es el resultado de una búsqueda.
+- **C-P3-4, `lineaId`:**
+  - Con `marcaId`: si no existe ninguna línea con ese id **en esa marca**, responde 400 `lineaId` "El modelo no corresponde a la marca elegida." Esto incluye una línea que no existe.
+  - Sin `marcaId`: un `lineaId` que no existe da 200 con 0 resultados.
+- **C-P3-5, enlaces de categoría:** se aceptan. Solo aparecen las categorías que tienen al menos una publicación visible, porque así lo devuelve `/filtros`.
+- **C-P3-6, kilometraje 0:** se acepta que `kmMax` y `km_asc` incluyan las carrocerías y las máquinas con 0 km. La búsqueda ignora tildes según la intercalación de MariaDB; en SQLite solo ignora mayúsculas. Esa diferencia queda como limitación de las pruebas.
+- **C-P3-8:** el inventario de endpoints de P2 se amplía con las 4 rutas anónimas del catálogo.
