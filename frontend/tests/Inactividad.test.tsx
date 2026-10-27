@@ -2,7 +2,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../src/App'
-import { guardarSesionFicticia, PERFIL_FICTICIO, simularFetch } from './helpers'
+import { guardarSesionFicticia, irACuenta, PERFIL_FICTICIO, simularFetch } from './helpers'
 
 const ME = '/api/auth/me'
 const LOGOUT = '/api/auth/logout'
@@ -30,6 +30,9 @@ async function montarConPerfil() {
   expect(screen.getByRole('heading', { name: BIENVENIDA })).toBeInTheDocument()
   return api
 }
+
+// P3: la app abre en el catálogo; estas pruebas usan la pantalla de cuenta.
+beforeEach(irACuenta)
 
 describe('Inactividad', () => {
   beforeEach(() => {
@@ -89,7 +92,8 @@ describe('Inactividad', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(MSG_TERMINADA)
     expect(window.localStorage.getItem('camion.sesion')).toBeNull()
     expect(window.localStorage.getItem('camion.ultimaActividad')).toBeNull()
-    expect(api.fn).not.toHaveBeenCalled()
+    // P3: el encabezado hace un GET anónimo a /api/catalogo/filtros; no cuenta.
+    expect(api.llamadasAuth()).toHaveLength(0)
   })
 
   it('CA-060-13 camion.ultimaActividad de hace menos de 30 min al cargar mantiene la sesión', async () => {

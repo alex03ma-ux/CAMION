@@ -31,6 +31,8 @@ class AlmacenEnMemoria implements Storage {
 }
 
 beforeEach(() => {
+  // P3: cada prueba empieza sin hash (la ruta vive en location.hash).
+  window.history.replaceState(null, '', '/')
   const almacen = new AlmacenEnMemoria()
   Object.defineProperty(window, 'localStorage', { value: almacen, configurable: true })
   Object.defineProperty(globalThis, 'localStorage', { value: almacen, configurable: true })
