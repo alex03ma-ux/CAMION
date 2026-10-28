@@ -383,7 +383,7 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
   - El asterisco se dibuja con CSS (clase `campo-obligatorio`).
   - Los campos obligatorios llevan `aria-required="true"`. No se usa el atributo `required`, para que la validación sea la propia del formulario y no la del navegador.
 
-## D-32 — ¿Cómo se limita la lista de modelos a la categoría elegida? · PENDIENTE (detectada en la prueba manual de P4a, 2026-10-28)
+## D-32 — ¿Cómo se limita la lista de modelos a la categoría elegida? · TOMADA (2026-10-28)
 - Contexto:
   - Hoy cada modelo (`lineas`) pertenece a una marca, pero no a una categoría. Por eso una máquina se pudo registrar como "Isuzu ELF 100", que es un camión (vehículo 17).
   - Algunas marcas venden varias categorías: Chevrolet carros y camiones; Hyundai carros, camiones y maquinaria; Volvo camiones y maquinaria; Toyota carros y montacargas.
@@ -400,3 +400,9 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
 - Recomendación: A. El administrador podrá editar la clasificación cuando exista la pantalla de marcas y modelos (P4p).
 - Bloquea: nada de P4a. Los vehículos mal clasificados, como el 17, se corrigen editándolos.
 - No se implementa sin respuesta.
+- **Decisión: A, "cada modelo con sus categorías"** (respuesta de la responsable, transmitida por el coordinador principal). Se incluye en P4a.
+  - Migración `database/migraciones/009_p4a_lineas_tipos*.sql`: tabla `lineas_tipos`.
+  - Script `database/catalogos/010_clasificacion_lineas*.sql`: clasifica las 393 líneas actuales. La lista para revisar, con 56 dudosas marcadas PROPUESTO, está en `docs/catalogos-010-clasificacion.md`.
+  - El formulario solo ofrece los modelos de la categoría elegida.
+  - La API rechaza un modelo clasificado en otra categoría. Uno sin clasificar se acepta, para que no se bloquee nada mientras no esté clasificado.
+  - La pantalla de marcas y modelos de P4p permitirá editar las categorías de cada modelo.

@@ -199,3 +199,10 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
     - el servidor registra `placaRecibida=si/no` al crear;
     - siguen el aviso "La placa no se guardó" y el log `placa_no_guardada`.
 - D-31 TOMADA (asterisco en los campos obligatorios). D-32 PENDIENTE (modelos por categoría).
+- D-32 TOMADA (A), modelos por categoría.
+  - Migración 009 (`lineas_tipos`) y script 010: las 393 líneas reales, leídas en solo lectura, quedan clasificadas en 170 de Maquinaria, 113 de Carro y el resto de Camión y Carrocería. Hay 56 dudosas, marcadas PROPUESTO en `docs/catalogos-010-clasificacion.md`. Ambos están sin aplicar.
+  - API: rechaza un modelo de otra categoría (400 en `lineaId`) y los catálogos traen `tipoIds` por modelo.
+  - Formulario: filtra los modelos por categoría y limpia el modelo al cambiar de categoría.
+  - Tres vehículos de prueba usan un modelo de otra categoría y se corrigen editándolos: la máquina 17 (ELF 100), un camión con Kia Picanto y otro con Mazda CX-5.
+- Un commit con `git add frontend` habría incluido `frontend/respaldos/`. El sistema de permisos lo bloqueó y desde entonces se añaden los archivos uno a uno.
+- Resultados: `dotnet test` 693/693; `npm test` 338/338; tipos y `npm run build` correctos.
