@@ -340,3 +340,26 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
     - Lo aplica la responsable vía phpMyAdmin junto con la migración 004, tras el respaldo previo.
   - La pantalla de marcas y modelos (HU-082/HU-083: crear, renombrar, desactivar) entra en P4p.
 - Nota: D-22 queda confirmada por la responsable: "Marcar como vendido" va en P4b.
+
+## D-28 — Proceso de reserva del vehículo · TOMADA (2026-10-27)
+- Contexto: aclara lo PROPUESTO de D-11. La responsable lo pidió durante la prueba manual de P4a, transmitido por el coordinador principal.
+- **Decisión:**
+  - Reservan y liberan el **asesor dueño** y el **administrador**.
+  - Al reservar se pide una **nota obligatoria** de 5 a 500 caracteres, por ejemplo "pagó anticipo" o "esperando crédito". No se piden datos del cliente.
+  - La nota se guarda en el vehículo, se ve en el inventario y en el detalle del asesor y del administrador (**no** en el portal público) y queda en la auditoría.
+  - La reserva **no vence**: dura hasta que alguien la libere o el vehículo se venda (P4b). Al liberar o inactivar, la nota se borra; en la auditoría sigue.
+- Implementación: columna `vehiculos.nota_reserva`, añadida por la migración 006 (`database/migraciones/006_p4a_nota_reserva*.sql`), que está sin aplicar.
+
+## D-29 — Catálogos de datos reales · TOMADA (2026-10-27)
+- Contexto: la responsable lo pidió durante la prueba manual de P4a, transmitido por el coordinador principal.
+- **Decisión:**
+  1. Combustibles: Gasolina, Gas (GNV), Eléctrico e Híbrido, además de Diésel.
+  2. Departamentos y municipios completos según la **DIVIPOLA del DANE**, con el código DANE.
+     - Se genera un script **una vez** desde el conjunto oficial publicado en datos.gov.co, indicando la fuente y las fechas, y se documenta cómo actualizarlo (`docs/GUIA-CATALOGOS.md`).
+     - No hay consulta en vivo al DANE: la app no depende de que su servicio esté en línea.
+     - Datos actualizados por el DANE el 2025-01-24 y descargados el 2026-10-27: 33 entidades (32 departamentos más Bogotá, D.C.; no 33 más Bogotá) y 1.122 municipios y áreas.
+  3. Modelos recientes del mercado colombiano por marca, verificados en fuentes y marcados como PROPUESTO para que la responsable los revise antes de aplicarlos.
+- Scripts:
+  - `database/catalogos/007_catalogos_reales_*` (combustibles y DIVIPOLA);
+  - `database/catalogos/008_modelos_recientes_*` (modelos).
+  - Solo hacen INSERT con NOT EXISTS, y su BAJAR (comentado) está acotado.
