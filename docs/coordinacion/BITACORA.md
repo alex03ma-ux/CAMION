@@ -159,3 +159,8 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - Se importó la sección SUBIR (líneas 80-185, idéntica) en un archivo aparte y luego `005_marcas_lineas_iniciales.sql`, ambos sin errores.
   - Verificación posterior hecha por el coordinador principal: 12 vehículos, 12 publicaciones y 3 fotos (sin cambios); 12 vehículos ACTIVO, todos con precio; los CHECK, UNIQUE y FK de la 004 presentes; 4 materiales, 6 tipos de máquina, 7 tipos de carrocería, 34 marcas y 139 líneas.
   - Lección para próximas migraciones: en phpMyAdmin, importar solo la sección SUBIR; las verificaciones las hace el coordinador con el cliente mysql.
+- Mejora de UX pedida en la prueba manual de P4a:
+  - botón final "Listo, volver a mi inventario" (o "Listo, volver al inventario" para el administrador), debajo de las fotos;
+  - mensajes de éxito que dicen el siguiente paso al crear, guardar y subir fotos;
+  - el vehículo recién creado o guardado aparece resaltado en la lista, con el texto "Recién guardado".
+  - `npm test`: 315/315. `npm run build`: correcto.
