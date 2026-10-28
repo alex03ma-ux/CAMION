@@ -36,6 +36,14 @@ beforeEach(() => {
   const almacen = new AlmacenEnMemoria()
   Object.defineProperty(window, 'localStorage', { value: almacen, configurable: true })
   Object.defineProperty(globalThis, 'localStorage', { value: almacen, configurable: true })
+  // D-30: jsdom no implementa las URL de objeto (vistas previas de las fotos elegidas).
+  let siguiente = 1
+  Object.defineProperty(URL, 'createObjectURL', {
+    value: vi.fn(() => `blob:prueba/${siguiente++}`),
+    configurable: true,
+    writable: true,
+  })
+  Object.defineProperty(URL, 'revokeObjectURL', { value: vi.fn(), configurable: true, writable: true })
 })
 
 afterEach(() => {

@@ -343,3 +343,51 @@ export function repartirErroresServidor(
   }
   return { porCampo, otros }
 }
+
+// ---- Salvaguarda de la placa (D-30, defecto de la prueba manual) ----
+
+export const MENSAJE_PLACA_NO_GUARDADA = 'La placa no se guardó. Revísala y vuelve a guardar.'
+
+export type ResultadoPlaca =
+  /** La categoría no usa placa (Carrocería): no se dice nada. */
+  | { estado: 'noAplica' }
+  | { estado: 'coincide'; texto: string }
+  | { estado: 'difiere'; texto: string }
+
+/**
+ * Compara la placa enviada (ya normalizada en el cuerpo; null = sin placa;
+ * undefined = la categoría no la usa) con la que devolvió el servidor.
+ */
+export function compararPlaca(
+  enviada: string | null | undefined,
+  devuelta: string | null,
+): ResultadoPlaca {
+  if (enviada === undefined) return { estado: 'noAplica' }
+  const esperada = enviada === null ? '' : normalizarPlaca(enviada)
+  const guardada = devuelta === null ? '' : normalizarPlaca(devuelta)
+  if (esperada !== guardada) return { estado: 'difiere', texto: MENSAJE_PLACA_NO_GUARDADA }
+  return { estado: 'coincide', texto: guardada === '' ? 'Sin placa.' : `Placa: ${guardada}.` }
+}
+
+/** "1 foto" o "N fotos". */
+export function textoFotos(n: number): string {
+  return n === 1 ? '1 foto' : `${n} fotos`
+}
+
+/**
+ * Error del servidor para la sección de fotos: el campo `fotos` (sin distinguir
+ * mayúsculas) se separa del resto para mostrarlo junto a las fotos.
+ */
+export function separarErroresFotos(errores: ErroresPorCampo): {
+  fotos: string[]
+  resto: ErroresPorCampo
+} {
+  const fotos: string[] = []
+  const resto: ErroresPorCampo = {}
+  for (const [clave, mensajes] of Object.entries(errores)) {
+    if (/^fotos($|\[|\.)/i.test(clave)) {
+      for (const m of mensajes) if (!fotos.includes(m)) fotos.push(m)
+    } else resto[clave] = mensajes
+  }
+  return { fotos, resto }
+}

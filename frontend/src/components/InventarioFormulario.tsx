@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } 
 import {
   crearVehiculo,
   editarVehiculo,
+  MENSAJE_EDITAR_SIN_FOTOS,
   MENSAJE_VEHICULO_NO_ENCONTRADO,
   obtenerVehiculoInventario,
   type CatalogosInventario,
@@ -17,12 +18,15 @@ import { formatoCop, mostrarConMiles, soloDigitos } from '../catalogo/formato'
 import { esEditable, nombreEstado, tituloVehiculo } from '../inventario/estados'
 import {
   anioMaximo,
+  compararPlaca,
   construirCuerpo,
   DESCRIPCION_MAX,
   formularioDesdeDetalle,
   formularioVacio,
   MENSAJE_REVISA_VEHICULO,
   repartirErroresServidor,
+  separarErroresFotos,
+  textoFotos,
   validarFormulario,
   type CampoFormulario,
   type ErroresFormulario,
@@ -46,6 +50,7 @@ import {
 } from '../inventario/avisoPendiente'
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo, CampoSelect } from './Campo'
+import { FotosNuevas, ID_INPUT_FOTOS_NUEVAS, type FotoElegida } from './FotosNuevas'
 import { FotosVehiculo } from './FotosVehiculo'
 
 type InventarioFormularioProps = {
@@ -56,8 +61,11 @@ type InventarioFormularioProps = {
   vehiculoId: number | null
   avisoInicial: DatosAviso | null
   onSesionTerminada: () => void
-  /** Tras crear: la página navega a la edición del vehículo nuevo (para subir fotos). */
-  onCreado: (detalle: DetalleInventario) => void
+  /**
+   * Tras crear (con sus fotos, D-30): la página navega a la edición del vehículo
+   * nuevo y muestra allí `aviso` (éxito, o advertencia si la placa no se guardó).
+   */
+  onCreado: (detalle: DetalleInventario, aviso: DatosAviso) => void
 }
 
 /** Orden de los grupos del formulario; cada campo aparece solo si aplica a la categoría. */
@@ -140,6 +148,9 @@ export function InventarioFormulario({
   const [errores, setErrores] = useState<ErroresFormulario>({})
   const [aviso, setAviso] = useState<DatosAviso | null>(avisoInicial)
   const [enviando, setEnviando] = useState(false)
+  // D-30: fotos elegidas al registrar (viajan con los datos) y errores del servidor sobre ellas.
+  const [fotosNuevas, setFotosNuevas] = useState<FotoElegida[]>([])
+  const [erroresFotos, setErroresFotos] = useState<string[]>([])
   const refAviso = useRef<HTMLDivElement>(null)
 
   const anioActual = useMemo(() => new Date().getFullYear(), [])
@@ -188,6 +199,8 @@ export function InventarioFormulario({
       : null
 
   const editable = creando || (detalle !== null && esEditable(detalle.estado))
+  // D-30: sin fotos no se registra ni se guardan cambios (la API responde 400/409).
+  const faltanFotos = creando ? fotosNuevas.length === 0 : detalle !== null && detalle.fotos.length === 0
   const pedirAsesor = creando && esAdmin
 
   const tiposDisponibles = catalogos.tipos.filter((t) => categoriaDeTipo(t.nombre) !== null)
@@ -224,18 +237,25 @@ export function InventarioFormulario({
     }
   }
 
-  function enfocarPrimerError(lista: ErroresFormulario) {
+  function enfocarPrimerError(lista: ErroresFormulario, irAFotos = false) {
     const primero = ORDEN_FOCO.find((c) => (lista[c]?.length ?? 0) > 0 && visible(c))
     window.setTimeout(() => {
       if (primero) document.getElementById(idCampo(primero))?.focus()
+      else if (irAFotos) document.getElementById(ID_INPUT_FOTOS_NUEVAS)?.focus()
       else refAviso.current?.focus()
     }, 0)
   }
 
+  function cambiarFotosNuevas(lista: FotoElegida[]) {
+    setFotosNuevas(lista)
+    setErroresFotos([])
+  }
+
   async function enviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault()
-    if (enviando || !editable) return
+    if (enviando || !editable || faltanFotos) return
     setAviso(null)
+    setErroresFotos([])
     const validacion = validarFormulario(form, categoria, { pedirAsesor, anioActual, catalogos })
     setErrores(validacion)
     if (Object.keys(validacion).length > 0 || categoria === null) {
@@ -247,8 +267,28 @@ export function InventarioFormulario({
     setEnviando(true)
     try {
       if (vehiculoId === null) {
-        const creado = await crearVehiculo(token, cuerpo)
-        onCreado(creado)
+        const creado = await crearVehiculo(
+          token,
+          cuerpo,
+          fotosNuevas.map((f) => f.archivo),
+        )
+        const placa = compararPlaca(cuerpo.placa, creado.placa)
+        const guardado = `Vehículo guardado con ${textoFotos(creado.fotos.length)}.`
+        onCreado(
+          creado,
+          placa.estado === 'difiere'
+            ? { tipo: 'advertencia', texto: `${guardado} ${placa.texto}` }
+            : {
+                tipo: 'exito',
+                texto: [
+                  guardado,
+                  placa.estado === 'coincide' ? placa.texto : null,
+                  `Puedes agregar más o pulsar «${textoListo(esAdmin)}».`,
+                ]
+                  .filter(Boolean)
+                  .join(' '),
+              },
+        )
         return
       }
       const actualizado = await editarVehiculo(token, vehiculoId, cuerpo)
@@ -256,24 +296,48 @@ export function InventarioFormulario({
       setForm(formularioDesdeDetalle(actualizado, catalogos))
       setErrores({})
       marcarVehiculoReciente(actualizado.id)
-      setAviso({
-        tipo: 'exito',
-        texto: `Cambios guardados. Puedes agregar o reordenar fotos abajo; cuando termines, pulsa «${textoListo(esAdmin)}».`,
-      })
+      const placa = compararPlaca(cuerpo.placa, actualizado.placa)
+      setAviso(
+        placa.estado === 'difiere'
+          ? { tipo: 'advertencia', texto: `Cambios guardados. ${placa.texto}` }
+          : {
+              tipo: 'exito',
+              texto: [
+                'Cambios guardados.',
+                placa.estado === 'coincide' ? placa.texto : null,
+                `Puedes agregar o reordenar fotos abajo; cuando termines, pulsa «${textoListo(esAdmin)}».`,
+              ]
+                .filter(Boolean)
+                .join(' '),
+            },
+      )
+      if (placa.estado === 'difiere') {
+        window.setTimeout(() => {
+          const campo = document.getElementById(idCampo('placa'))
+          if (campo) campo.focus()
+          else refAviso.current?.focus()
+        }, 0)
+      }
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         onSesionTerminada()
         return
       }
       if (error instanceof ApiError && (error.status === 400 || error.status === 409)) {
-        const { porCampo, otros } = repartirErroresServidor(error.errores, visible)
+        // D-30: al registrar, los errores de `fotos` van a la sección de fotos.
+        const { fotos: deFotos, resto } = creando
+          ? separarErroresFotos(error.errores)
+          : { fotos: [], resto: error.errores }
+        setErroresFotos(deFotos)
+        const { porCampo, otros } = repartirErroresServidor(resto, visible)
         setErrores(porCampo)
         const tienePorCampo = Object.keys(porCampo).length > 0
-        const texto = tienePorCampo
-          ? [MENSAJE_REVISA_VEHICULO, ...otros].join(' ')
-          : [error.mensaje, ...otros.filter((m) => m !== error.mensaje)].join(' ')
+        const texto =
+          tienePorCampo || deFotos.length > 0
+            ? [MENSAJE_REVISA_VEHICULO, ...otros].join(' ')
+            : [error.mensaje, ...otros.filter((m) => m !== error.mensaje)].join(' ')
         setAviso({ tipo: 'error', texto })
-        enfocarPrimerError(porCampo)
+        enfocarPrimerError(porCampo, deFotos.length > 0)
         return
       }
       setAviso({ tipo: 'error', texto: error instanceof ApiError ? error.mensaje : MENSAJE_INESPERADO })
@@ -639,6 +703,15 @@ export function InventarioFormulario({
                   )
                 })}
 
+              {creando && (
+                <FotosNuevas
+                  fotos={fotosNuevas}
+                  onCambio={cambiarFotosNuevas}
+                  erroresServidor={erroresFotos}
+                  deshabilitado={enviando}
+                />
+              )}
+
               {!creando && categoria === null && detalle && (
                 <Aviso
                   aviso={{
@@ -653,9 +726,17 @@ export function InventarioFormulario({
               <Aviso aviso={aviso} />
             </div>
 
+            {editable && !creando && faltanFotos && (
+              <Aviso aviso={{ tipo: 'advertencia', texto: MENSAJE_EDITAR_SIN_FOTOS }} />
+            )}
+
             {editable && (
               <div className="inv-botones">
-                <button type="submit" disabled={enviando || categoria === null}>
+                <button
+                  type="submit"
+                  disabled={enviando || categoria === null || faltanFotos}
+                  aria-describedby={faltanFotos ? 'inv-ayuda-guardar' : undefined}
+                >
                   {enviando
                     ? creando
                       ? 'Registrando...'
@@ -669,11 +750,14 @@ export function InventarioFormulario({
                 </a>
               </div>
             )}
+            {editable && faltanFotos && (
+              <p id="inv-ayuda-guardar" className="campo-ayuda inv-ayuda-guardar">
+                {creando
+                  ? 'Agrega al menos una foto para poder guardar.'
+                  : 'Sube una foto en la sección "Fotos" de abajo para poder guardar los cambios.'}
+              </p>
+            )}
           </form>
-
-          {creando && (
-            <p className="campo-ayuda">Podrás agregar las fotos después de registrar el vehículo.</p>
-          )}
 
           {detalle && (
             <FotosVehiculo

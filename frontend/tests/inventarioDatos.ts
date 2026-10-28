@@ -111,7 +111,15 @@ export function lista(items: ItemPrueba[], total = items.length, pagina = 1): Re
 
 export const VACIA = lista([])
 
-/** Detalle de un Camión (V1 ficticio) con precio anterior y dos fotos. */
+/** Foto ficticia del vehículo 9 tal como la devuelve la API. */
+export function fotoDetalle(id: number, orden: number) {
+  return { id, url: `/media/vehiculos/9/f${id}.jpg`, orden, esPortada: orden === 1 }
+}
+
+/**
+ * Detalle de un Camión (V1 ficticio) con precio anterior y una foto (D-30: todo
+ * vehículo tiene al menos una). Para un vehículo sin fotos, pasa `{ fotos: [] }`.
+ */
 export function detalleCamion(extra: Record<string, unknown> = {}) {
   return {
     id: 9,
@@ -139,7 +147,7 @@ export function detalleCamion(extra: Record<string, unknown> = {}) {
     descripcionTecnica: null,
     estado: 'ACTIVO',
     motivoInactivacion: null,
-    fotos: [],
+    fotos: [fotoDetalle(1, 1)],
     ...extra,
   }
 }
@@ -163,4 +171,27 @@ export function abrirSinSesion(hash: string) {
 
 export function cuerpoJson(init: RequestInit | undefined): unknown {
   return JSON.parse(String(init?.body))
+}
+
+// ---- D-30: registrar con fotos (multipart) ----
+
+/** Archivo PNG ficticio (bytes en cero; la validación real por firma es de la API). */
+export function png(nombre: string, bytes = 10): File {
+  return new File([new Uint8Array(bytes)], nombre, { type: 'image/png' })
+}
+
+/** El POST de registro es multipart: devuelve el JSON del campo `datos`. */
+export function datosCreacion(init: RequestInit | undefined): Record<string, unknown> {
+  const cuerpo = init?.body
+  if (!(cuerpo instanceof FormData)) throw new Error('El registro debe enviarse como FormData.')
+  const datos = cuerpo.get('datos')
+  if (typeof datos !== 'string') throw new Error('Falta el campo "datos" como texto JSON.')
+  return JSON.parse(datos) as Record<string, unknown>
+}
+
+/** Nombres de los archivos del campo `fotos`, en el orden enviado. */
+export function fotosCreacion(init: RequestInit | undefined): string[] {
+  const cuerpo = init?.body
+  if (!(cuerpo instanceof FormData)) throw new Error('El registro debe enviarse como FormData.')
+  return cuerpo.getAll('fotos').map((f) => (f instanceof File ? f.name : String(f)))
 }

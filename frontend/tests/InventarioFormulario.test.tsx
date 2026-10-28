@@ -3,16 +3,20 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
-import { simularFetch } from './helpers'
+import { cabecera, simularFetch } from './helpers'
 import {
   abrirConSesion,
   CAT,
   CAT_ADMIN,
   CATALOGOS,
   cuerpoJson,
+  datosCreacion,
   detalleCamion,
+  fotoDetalle,
+  fotosCreacion,
   ME,
   me,
+  png,
   VEHICULOS,
 } from './inventarioDatos'
 
@@ -35,6 +39,11 @@ function formulario(): HTMLFormElement {
 
 function etiquetas(): string[] {
   return Array.from(formulario().querySelectorAll('label')).map((l) => l.textContent ?? '')
+}
+
+/** D-30: elige fotos en la sección "Fotos (1 a 10)" del registro (por defecto, una). */
+async function agregarFotos(u: U, archivos: File[] = [png('frente.png')]) {
+  await u.upload(screen.getByLabelText('Elegir fotos'), archivos)
 }
 
 async function llenarCamion(u: U) {
@@ -64,7 +73,9 @@ describe('Categoría primero y campos por categoría (CA-UI-05)', () => {
     expect(screen.queryByLabelText('Precio de venta (COP)')).toBeNull()
     expect(screen.getByRole('button', { name: 'Registrar vehículo' })).toBeDisabled()
     expect(screen.queryByLabelText('Asesor propietario')).toBeNull()
-    expect(screen.getByText('Podrás agregar las fotos después de registrar el vehículo.')).toBeInTheDocument()
+    // D-30: la sección de fotos está dentro del formulario y sin fotos no se puede registrar.
+    expect(screen.getByRole('heading', { level: 2, name: /^Fotos \(1 a 10\)/ })).toBeInTheDocument()
+    expect(screen.getByText('Agrega al menos una foto para poder guardar.')).toBeInTheDocument()
   })
 
   const ESPERADO: Record<string, string[]> = {
@@ -83,6 +94,7 @@ describe('Categoría primero y campos por categoría (CA-UI-05)', () => {
       'Municipio',
       'Precio de venta (COP)',
       'Descripción técnica (opcional)',
+      'Elegir fotos',
     ],
     '2': [
       'Categoría',
@@ -100,6 +112,7 @@ describe('Categoría primero y campos por categoría (CA-UI-05)', () => {
       'Municipio',
       'Precio de venta (COP)',
       'Descripción técnica (opcional)',
+      'Elegir fotos',
     ],
     '3': [
       'Categoría',
@@ -116,6 +129,7 @@ describe('Categoría primero y campos por categoría (CA-UI-05)', () => {
       'Municipio',
       'Precio de venta (COP)',
       'Descripción técnica (opcional)',
+      'Elegir fotos',
     ],
     '4': [
       'Categoría',
@@ -133,6 +147,7 @@ describe('Categoría primero y campos por categoría (CA-UI-05)', () => {
       'Municipio',
       'Precio de venta (COP)',
       'Descripción técnica (opcional)',
+      'Elegir fotos',
     ],
   }
   const NOMBRE: Record<string, string> = { '1': 'Carro', '2': 'Camión', '3': 'Carrocería', '4': 'Maquinaria' }
@@ -195,6 +210,7 @@ describe('Precio con miles (CA-UI-08)', () => {
     const api = abrirNuevo(['ASESOR'], { [VEHICULOS]: { status: 400, body: { error: 'x' } } })
     const u = userEvent.setup()
     await u.selectOptions(await screen.findByLabelText('Categoría'), '2')
+    await agregarFotos(u)
     await llenarCamion(u)
     const precio = screen.getByLabelText('Precio de venta (COP)')
     expect(precio).toHaveValue('120.000.000')
@@ -202,7 +218,7 @@ describe('Precio con miles (CA-UI-08)', () => {
     expect(precio).toHaveValue('120.000.000')
     await u.click(screen.getByRole('button', { name: 'Registrar vehículo' }))
     await waitFor(() => expect(api.llamadasA(VEHICULOS)).toHaveLength(1))
-    expect((cuerpoJson(api.llamadasA(VEHICULOS)[0].init) as { precioCop: number }).precioCop).toBe(120000000)
+    expect((datosCreacion(api.llamadasA(VEHICULOS)[0].init) as { precioCop: number }).precioCop).toBe(120000000)
   })
 })
 
@@ -211,6 +227,7 @@ describe('Validación en cliente', () => {
     const api = abrirNuevo(['ASESOR'])
     const u = userEvent.setup()
     await u.selectOptions(await screen.findByLabelText('Categoría'), '2')
+    await agregarFotos(u)
     await u.click(screen.getByRole('button', { name: 'Registrar vehículo' }))
     expect(screen.getByText('Revisa los datos marcados.')).toBeInTheDocument()
     expect(screen.getByText('Elige la marca.')).toBeInTheDocument()
@@ -230,6 +247,7 @@ describe('Validación en cliente', () => {
     const api = abrirNuevo(['ASESOR'])
     const u = userEvent.setup()
     await u.selectOptions(await screen.findByLabelText('Categoría'), '2')
+    await agregarFotos(u)
     await llenarCamion(u)
     await u.clear(screen.getByLabelText('Placa (opcional)'))
     await u.type(screen.getByLabelText('Placa (opcional)'), 'AB@1')
@@ -245,6 +263,7 @@ describe('Validación en cliente', () => {
     abrirNuevo(['ASESOR'])
     const u = userEvent.setup()
     await u.selectOptions(await screen.findByLabelText('Categoría'), '3')
+    await agregarFotos(u)
     await u.click(screen.getByRole('button', { name: 'Registrar vehículo' }))
     expect(screen.getByText('Elige el tipo de carrocería.')).toBeInTheDocument()
     expect(screen.queryByText('Elige la marca.')).toBeNull()
@@ -254,6 +273,7 @@ describe('Validación en cliente', () => {
     abrirNuevo(['ASESOR'])
     const u = userEvent.setup()
     await u.selectOptions(await screen.findByLabelText('Categoría'), '4')
+    await agregarFotos(u)
     await u.click(screen.getByRole('button', { name: 'Registrar vehículo' }))
     expect(screen.getByText('Elige el tipo de máquina.')).toBeInTheDocument()
     expect(screen.getByText('Elige la marca.')).toBeInTheDocument()
@@ -277,6 +297,7 @@ describe('Errores del servidor (CA-UI-09)', () => {
     })
     const u = userEvent.setup()
     await u.selectOptions(await screen.findByLabelText('Categoría'), '2')
+    await agregarFotos(u)
     await llenarCamion(u)
     await u.click(screen.getByRole('button', { name: 'Registrar vehículo' }))
     const error = await screen.findByText('El modelo no corresponde a la marca elegida.')
@@ -300,6 +321,7 @@ describe('Errores del servidor (CA-UI-09)', () => {
     })
     const u = userEvent.setup()
     await u.selectOptions(await screen.findByLabelText('Categoría'), '2')
+    await agregarFotos(u)
     await llenarCamion(u)
     await u.click(screen.getByRole('button', { name: 'Registrar vehículo' }))
     const msg = await screen.findByText('Esta placa ya está registrada en otro vehículo.')
@@ -313,6 +335,7 @@ describe('Errores del servidor (CA-UI-09)', () => {
     abrirNuevo(['ASESOR'], { [VEHICULOS]: { status: 500 } })
     const u = userEvent.setup()
     await u.selectOptions(await screen.findByLabelText('Categoría'), '2')
+    await agregarFotos(u)
     await llenarCamion(u)
     await u.click(screen.getByRole('button', { name: 'Registrar vehículo' }))
     expect(await screen.findByText(/No se pudo conectar con el servidor/)).toBeInTheDocument()
@@ -325,6 +348,7 @@ describe('Cuerpo enviado (CA-UI-06)', () => {
     const api = abrirNuevo(['ASESOR'], { [VEHICULOS]: { status: 400, body: { error: 'Detenido.' } } })
     const u = userEvent.setup()
     await u.selectOptions(await screen.findByLabelText('Categoría'), '2')
+    await agregarFotos(u)
     await llenarCamion(u)
     await u.selectOptions(screen.getByLabelText('Combustible (opcional)'), '8')
     await u.type(screen.getByLabelText('Cilindraje (cc) (opcional)'), '4500')
@@ -334,7 +358,7 @@ describe('Cuerpo enviado (CA-UI-06)', () => {
     await u.selectOptions(screen.getByLabelText('Material (opcional)'), '6')
     await u.click(screen.getByRole('button', { name: 'Registrar vehículo' }))
     await waitFor(() => expect(api.llamadasA(VEHICULOS)).toHaveLength(1))
-    const cuerpo = cuerpoJson(api.llamadasA(VEHICULOS)[0].init) as Record<string, unknown>
+    const cuerpo = datosCreacion(api.llamadasA(VEHICULOS)[0].init) as Record<string, unknown>
     for (const campo of ['kilometraje', 'placa', 'combustibleId', 'cilindrajeCc', 'pesoBrutoKg', 'horasUso', 'tipoMaquinaId', 'asesorId']) {
       expect(campo in cuerpo, campo).toBe(false)
     }
@@ -353,10 +377,11 @@ describe('Cuerpo enviado (CA-UI-06)', () => {
     const api = abrirNuevo(['ASESOR'], { [VEHICULOS]: { status: 400, body: { error: 'Detenido.' } } })
     const u = userEvent.setup()
     await u.selectOptions(await screen.findByLabelText('Categoría'), '1')
+    await agregarFotos(u)
     await llenarCamion(u)
     await u.click(screen.getByRole('button', { name: 'Registrar vehículo' }))
     await waitFor(() => expect(api.llamadasA(VEHICULOS)).toHaveLength(1))
-    const cuerpo = cuerpoJson(api.llamadasA(VEHICULOS)[0].init) as Record<string, unknown>
+    const cuerpo = datosCreacion(api.llamadasA(VEHICULOS)[0].init) as Record<string, unknown>
     expect(Object.keys(cuerpo).sort()).toEqual(
       [
         'tipoId', 'municipioId', 'precioCop', 'marcaId', 'lineaId', 'modeloAnio', 'kilometraje', 'placa',
@@ -378,6 +403,7 @@ describe('Propietario (RN-VE-007)', () => {
       'Asesor Dos Ficticio',
     ])
     await u.selectOptions(screen.getByLabelText('Categoría'), '2')
+    await agregarFotos(u)
     await llenarCamion(u)
     await u.click(screen.getByRole('button', { name: 'Registrar vehículo' }))
     expect(screen.getByText('Elige el asesor propietario del vehículo.')).toBeInTheDocument()
@@ -385,18 +411,19 @@ describe('Propietario (RN-VE-007)', () => {
     await u.selectOptions(asesor, '6')
     await u.click(screen.getByRole('button', { name: 'Registrar vehículo' }))
     await waitFor(() => expect(api.llamadasA(VEHICULOS)).toHaveLength(1))
-    expect((cuerpoJson(api.llamadasA(VEHICULOS)[0].init) as { asesorId: number }).asesorId).toBe(6)
+    expect((datosCreacion(api.llamadasA(VEHICULOS)[0].init) as { asesorId: number }).asesorId).toBe(6)
   })
 
   it('asesor no ve el selector y el cuerpo no lleva asesorId', async () => {
     const api = abrirNuevo(['ASESOR'], { [VEHICULOS]: { status: 400, body: { error: 'Detenido.' } } })
     const u = userEvent.setup()
     await u.selectOptions(await screen.findByLabelText('Categoría'), '2')
+    await agregarFotos(u)
     expect(screen.queryByLabelText('Asesor propietario')).toBeNull()
     await llenarCamion(u)
     await u.click(screen.getByRole('button', { name: 'Registrar vehículo' }))
     await waitFor(() => expect(api.llamadasA(VEHICULOS)).toHaveLength(1))
-    expect('asesorId' in (cuerpoJson(api.llamadasA(VEHICULOS)[0].init) as object)).toBe(false)
+    expect('asesorId' in (datosCreacion(api.llamadasA(VEHICULOS)[0].init) as object)).toBe(false)
   })
 })
 
@@ -409,11 +436,18 @@ describe('Tras crear (HU-013)', () => {
     })
     const u = userEvent.setup()
     await u.selectOptions(await screen.findByLabelText('Categoría'), '2')
+    await agregarFotos(u)
     await llenarCamion(u)
     await u.click(screen.getByRole('button', { name: 'Registrar vehículo' }))
     await waitFor(() => expect(window.location.hash).toBe('#/inventario/31'))
-    expect(await screen.findByText('Vehículo guardado. Siguiente paso: agrega sus fotos abajo (hasta 10). Cuando termines, pulsa «Listo, volver a mi inventario».')).toBeInTheDocument()
-    expect(await screen.findByText('Este vehículo aún no tiene fotos.')).toBeInTheDocument()
+    expect(
+      await screen.findByText(
+        'Vehículo guardado con 1 foto. Placa: ABC123. Puedes agregar más o pulsar «Listo, volver a mi inventario».',
+      ),
+    ).toBeInTheDocument()
+    // La foto enviada con el registro ya está en la sección de fotos de la edición.
+    expect(await screen.findByAltText('Foto 1 de 1 (portada)')).toHaveAttribute('src', '/media/vehiculos/9/f1.jpg')
+    expect(screen.queryByText(/Este vehículo aún no tiene fotos/)).toBeNull()
     expect(screen.getByRole('heading', { level: 1, name: 'Editar vehículo' })).toBeInTheDocument()
     // Mejora de la prueba manual: al final, debajo de las fotos, un botón claro para terminar.
     const listo = screen.getByRole('link', { name: 'Listo, volver a mi inventario' })
@@ -449,7 +483,7 @@ describe('Edición (CA-UI-10, HU-019, RN-VE-003)', () => {
     await u.clear(km)
     await u.type(km, '90000')
     await u.click(screen.getByRole('button', { name: 'Guardar cambios' }))
-    expect(await screen.findByText(/^Cambios guardados\. Puedes agregar o reordenar fotos abajo; cuando termines, pulsa «Listo, volver al inventario»\./)).toBeInTheDocument()
+    expect(await screen.findByText(/^Cambios guardados\. Placa: ABC123\. Puedes agregar o reordenar fotos abajo; cuando termines, pulsa «Listo, volver al inventario»\./)).toBeInTheDocument()
     // Mejora de la prueba manual: botón final visible para el administrador.
     expect(screen.getByRole('link', { name: 'Listo, volver al inventario' })).toHaveAttribute('href', '#/inventario')
     const put = api.llamadasA(DETALLE_9)[1]
@@ -515,5 +549,226 @@ describe('Edición (CA-UI-10, HU-019, RN-VE-003)', () => {
     expect(document.querySelector('script')).toBeNull()
     expect(document.querySelector('img[src="x"]')).toBeNull()
     expect((window as unknown as { __xss?: number }).__xss).toBeUndefined()
+  })
+})
+
+describe('D-30: registrar con al menos una foto', () => {
+  const FORMATO = 'Sube una imagen JPG, PNG o WebP de hasta 5 MB.'
+
+  function seccionFotos(): HTMLElement {
+    return screen.getByRole('region', { name: /^Fotos \(1 a 10\)/ })
+  }
+
+  it('sin fotos el botón está desactivado con la ayuda visible; con una se activa y al quitarla vuelve a desactivarse', async () => {
+    const api = abrirNuevo(['ASESOR'])
+    const u = userEvent.setup()
+    await u.selectOptions(await screen.findByLabelText('Categoría'), '2')
+    await llenarCamion(u)
+    const boton = screen.getByRole('button', { name: 'Registrar vehículo' })
+    expect(boton).toBeDisabled()
+    expect(screen.getByText('Agrega al menos una foto para poder guardar.')).toBeVisible()
+    expect(boton.getAttribute('aria-describedby')).toBe('inv-ayuda-guardar')
+    expect(within(seccionFotos()).getByText('(0 de 10)')).toBeInTheDocument()
+
+    await agregarFotos(u)
+    expect(boton).toBeEnabled()
+    expect(screen.queryByText('Agrega al menos una foto para poder guardar.')).toBeNull()
+    expect(within(seccionFotos()).getByText('(1 de 10)')).toBeInTheDocument()
+    const vista = screen.getByAltText('Vista previa de la foto 1 de 1 (portada)')
+    expect(vista.getAttribute('src')).toMatch(/^blob:/)
+
+    await u.click(screen.getByRole('button', { name: 'Quitar foto 1' }))
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith(vista.getAttribute('src'))
+    expect(boton).toBeDisabled()
+    expect(screen.getByText('Agrega al menos una foto para poder guardar.')).toBeInTheDocument()
+    expect(api.llamadasA(VEHICULOS)).toHaveLength(0)
+  })
+
+  it('archivo de otro tipo o de más de 5 MB: se rechaza antes de enviar y no cuenta como foto', async () => {
+    const api = abrirNuevo(['ASESOR'])
+    const u = userEvent.setup({ applyAccept: false })
+    await u.selectOptions(await screen.findByLabelText('Categoría'), '2')
+    await llenarCamion(u)
+    await u.upload(screen.getByLabelText('Elegir fotos'), [
+      new File(['%PDF'], 'contrato.pdf', { type: 'application/pdf' }),
+      png('grande.png', 5 * 1024 * 1024 + 1),
+    ])
+    const seccion = seccionFotos()
+    expect(within(seccion).getByText(`contrato.pdf: ${FORMATO}`)).toBeInTheDocument()
+    expect(within(seccion).getByText(`grande.png: ${FORMATO}`)).toBeInTheDocument()
+    expect(screen.getByLabelText('Elegir fotos')).toHaveAttribute('aria-invalid', 'true')
+    expect(within(seccion).getByText('(0 de 10)')).toBeInTheDocument()
+    expect(URL.createObjectURL).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Registrar vehículo' })).toBeDisabled()
+    expect(api.llamadasA(VEHICULOS)).toHaveLength(0)
+  })
+
+  it('envía multipart con "datos" (JSON) y "fotos" en el orden elegido; la primera es la portada', async () => {
+    const api = abrirNuevo(['ASESOR'], { [VEHICULOS]: { status: 400, body: { error: 'Detenido.' } } })
+    const u = userEvent.setup()
+    await u.selectOptions(await screen.findByLabelText('Categoría'), '2')
+    await llenarCamion(u)
+    await agregarFotos(u, [png('a.png'), png('b.png'), png('c.png')])
+    // c pasa a portada (c, a, b) y luego la foto 2 baja una posición (c, b, a).
+    await u.click(screen.getByRole('button', { name: 'Hacer portada la foto 3' }))
+    expect(screen.getByText('La foto ahora es la portada.')).toBeInTheDocument()
+    await u.click(screen.getByRole('button', { name: 'Bajar foto 2' }))
+    expect(screen.getByAltText('Vista previa de la foto 1 de 3 (portada)')).toBeInTheDocument()
+    await u.click(screen.getByRole('button', { name: 'Registrar vehículo' }))
+    await waitFor(() => expect(api.llamadasA(VEHICULOS)).toHaveLength(1))
+    const post = api.llamadasA(VEHICULOS)[0]
+    expect(post.init?.method).toBe('POST')
+    const cuerpo = post.init?.body as FormData
+    expect(cuerpo).toBeInstanceOf(FormData)
+    expect(Array.from(new Set(cuerpo.keys()))).toEqual(['datos', 'fotos'])
+    expect(fotosCreacion(post.init)).toEqual(['c.png', 'b.png', 'a.png'])
+    expect(datosCreacion(post.init)).toMatchObject({ tipoId: 2, marcaId: 10, placa: 'ABC123', precioCop: 120000000 })
+    expect(cabecera(post.init, 'Content-Type')).toBeUndefined()
+    expect(cabecera(post.init, 'Authorization')).toMatch(/^Bearer /)
+  })
+
+  it('400 en "fotos" del servidor: el mensaje aparece en la sección de fotos y el foco va al selector', async () => {
+    abrirNuevo(['ASESOR'], {
+      [VEHICULOS]: { status: 400, body: { errores: { fotos: [`Foto 2: ${FORMATO}`] } } },
+    })
+    const u = userEvent.setup()
+    await u.selectOptions(await screen.findByLabelText('Categoría'), '2')
+    await llenarCamion(u)
+    await agregarFotos(u, [png('a.png'), png('b.png')])
+    await u.click(screen.getByRole('button', { name: 'Registrar vehículo' }))
+    const msg = await within(seccionFotos()).findByText(`Foto 2: ${FORMATO}`)
+    const input = screen.getByLabelText('Elegir fotos')
+    expect(input).toHaveAttribute('aria-invalid', 'true')
+    expect(input.getAttribute('aria-describedby')).toContain(msg.closest('ul')?.id)
+    expect(screen.getByText('Revisa los datos marcados.')).toBeInTheDocument()
+    await waitFor(() => expect(input).toHaveFocus())
+    // Las fotos y los datos se conservan para corregir y reintentar.
+    expect(within(seccionFotos()).getByText('(2 de 10)')).toBeInTheDocument()
+    expect(screen.getByLabelText('Kilometraje (km)')).toHaveValue('85000')
+  })
+
+  it('el servidor devuelve el vehículo sin la placa enviada: advertencia "La placa no se guardó..."', async () => {
+    const creado = detalleCamion({ id: 32, placa: null, precioAnteriorCop: null })
+    abrirNuevo(['ASESOR'], {
+      [VEHICULOS]: { status: 201, body: creado },
+      '/api/inventario/vehiculos/32': { status: 200, body: creado },
+    })
+    const u = userEvent.setup()
+    await u.selectOptions(await screen.findByLabelText('Categoría'), '2')
+    await agregarFotos(u)
+    await llenarCamion(u)
+    await u.click(screen.getByRole('button', { name: 'Registrar vehículo' }))
+    await waitFor(() => expect(window.location.hash).toBe('#/inventario/32'))
+    const aviso = await screen.findByText(
+      'Vehículo guardado con 1 foto. La placa no se guardó. Revísala y vuelve a guardar.',
+    )
+    expect(aviso).toHaveAttribute('role', 'alert')
+    expect(screen.queryByText(/Placa: /)).toBeNull()
+  })
+
+  it('Carrocería (sin placa en su categoría): el éxito no habla de la placa', async () => {
+    const creado = detalleCamion({
+      id: 33,
+      tipoId: 3,
+      tipo: 'Carrocería',
+      placa: null,
+      carroceriaId: 5,
+      kilometraje: null,
+      fotos: [fotoDetalle(1, 1), fotoDetalle(2, 2)],
+    })
+    abrirNuevo(['ASESOR'], {
+      [VEHICULOS]: { status: 201, body: creado },
+      '/api/inventario/vehiculos/33': { status: 200, body: creado },
+    })
+    const u = userEvent.setup()
+    await u.selectOptions(await screen.findByLabelText('Categoría'), '3')
+    await agregarFotos(u, [png('a.png'), png('b.png')])
+    await u.selectOptions(screen.getByLabelText('Tipo de carrocería'), '5')
+    await u.selectOptions(screen.getByLabelText('Departamento'), '20')
+    await u.selectOptions(screen.getByLabelText('Municipio'), '200')
+    await u.type(screen.getByLabelText('Precio de venta (COP)'), '30000000')
+    await u.click(screen.getByRole('button', { name: 'Registrar vehículo' }))
+    expect(
+      await screen.findByText('Vehículo guardado con 2 fotos. Puedes agregar más o pulsar «Listo, volver a mi inventario».'),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('D-30: edición y placa', () => {
+  it('vehículo sin fotos: aviso, "Guardar cambios" desactivado hasta subir una; luego se guarda', async () => {
+    const api = simularFetch({
+      [ME]: me(['ASESOR']),
+      [CATALOGOS]: { status: 200, body: CAT },
+      [DETALLE_9]: [{ status: 200, body: detalleCamion({ fotos: [] }) }, { status: 200, body: detalleCamion() }],
+      [`${DETALLE_9}/fotos`]: { status: 201, body: fotoDetalle(1, 1) },
+    })
+    const u = userEvent.setup()
+    abrirConSesion('#/inventario/9')
+    const aviso = await screen.findByText(
+      'Este vehículo no tiene fotos. Agrega al menos una para poder guardar cambios.',
+    )
+    expect(aviso).toHaveAttribute('role', 'alert')
+    const guardar = screen.getByRole('button', { name: 'Guardar cambios' })
+    expect(guardar).toBeDisabled()
+    await u.click(guardar)
+    expect(api.llamadasA(DETALLE_9)).toHaveLength(1)
+
+    await u.upload(screen.getByLabelText('Agregar fotos'), png('frente.png'))
+    expect(await screen.findByText(/^Se subió 1 foto\./)).toBeInTheDocument()
+    expect(guardar).toBeEnabled()
+    expect(screen.queryByText(/Este vehículo no tiene fotos/)).toBeNull()
+    await u.click(guardar)
+    await waitFor(() => expect(api.llamadasA(DETALLE_9)).toHaveLength(2))
+    expect(api.llamadasA(DETALLE_9)[1].init?.method).toBe('PUT')
+    expect(await screen.findByText(/^Cambios guardados\. Placa: ABC123\./)).toBeInTheDocument()
+  })
+
+  it('409 de fotos al guardar (el servidor no ve fotos): se muestra el mensaje', async () => {
+    simularFetch({
+      [ME]: me(['ASESOR']),
+      [CATALOGOS]: { status: 200, body: CAT },
+      [DETALLE_9]: [
+        { status: 200, body: detalleCamion() },
+        {
+          status: 409,
+          body: {
+            error: 'Agrega al menos una foto antes de guardar los cambios.',
+            errores: { fotos: ['Agrega al menos una foto del vehículo.'] },
+          },
+        },
+      ],
+    })
+    const u = userEvent.setup()
+    abrirConSesion('#/inventario/9')
+    await u.click(await screen.findByRole('button', { name: 'Guardar cambios' }))
+    expect(await screen.findByText(/^Agrega al menos una foto antes de guardar los cambios\./)).toBeInTheDocument()
+  })
+
+  it('la placa enviada no vuelve en la respuesta: advertencia y el foco va a la placa', async () => {
+    simularFetch({
+      [ME]: me(['ASESOR']),
+      [CATALOGOS]: { status: 200, body: CAT },
+      [DETALLE_9]: [{ status: 200, body: detalleCamion() }, { status: 200, body: detalleCamion({ placa: null }) }],
+    })
+    const u = userEvent.setup()
+    abrirConSesion('#/inventario/9')
+    await u.click(await screen.findByRole('button', { name: 'Guardar cambios' }))
+    const aviso = await screen.findByText('Cambios guardados. La placa no se guardó. Revísala y vuelve a guardar.')
+    expect(aviso).toHaveAttribute('role', 'alert')
+    await waitFor(() => expect(screen.getByLabelText('Placa (opcional)')).toHaveFocus())
+  })
+
+  it('placa borrada y devuelta vacía: "Sin placa." en el éxito; el PUT lleva placa null', async () => {
+    const api = simularFetch({
+      [ME]: me(['ASESOR']),
+      [CATALOGOS]: { status: 200, body: CAT },
+      [DETALLE_9]: [{ status: 200, body: detalleCamion() }, { status: 200, body: detalleCamion({ placa: null }) }],
+    })
+    const u = userEvent.setup()
+    abrirConSesion('#/inventario/9')
+    await u.clear(await screen.findByLabelText('Placa (opcional)'))
+    await u.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    expect(await screen.findByText(/^Cambios guardados\. Sin placa\. Puedes agregar/)).toBeInTheDocument()
+    expect((cuerpoJson(api.llamadasA(DETALLE_9)[1].init) as { placa: unknown }).placa).toBeNull()
   })
 })

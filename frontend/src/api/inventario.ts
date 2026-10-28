@@ -156,6 +156,15 @@ export const MENSAJE_FOTO_FORMATO = 'Sube una imagen JPG, PNG o WebP de hasta 5 
 export const MENSAJE_FOTOS_LLENAS = 'Ya hay 10 fotos; elimina alguna para subir otra.'
 export const MENSAJE_FOTO_NO_ENCONTRADA = 'Foto no encontrada.'
 export const MENSAJE_PLACA_REPETIDA = 'Esta placa ya está registrada en otro vehículo.'
+/** D-30: mensajes de las fotos al registrar y al editar. */
+export const MENSAJE_SIN_FOTOS = 'Agrega al menos una foto del vehículo.'
+export const MENSAJE_MAX_FOTOS = 'Puedes subir hasta 10 fotos.'
+export const MENSAJE_FOTOS_PESADAS =
+  'Las fotos pesan demasiado en total. Quita alguna o usa imágenes más livianas e intenta de nuevo.'
+export const MENSAJE_ULTIMA_FOTO =
+  'El vehículo debe tener al menos una foto. Sube otra antes de eliminar esta.'
+export const MENSAJE_EDITAR_SIN_FOTOS =
+  'Este vehículo no tiene fotos. Agrega al menos una para poder guardar cambios.'
 
 const MENSAJES_INVENTARIO: Partial<Record<number, string>> = {
   401: MENSAJE_SESION_TERMINADA,
@@ -366,15 +375,24 @@ export async function obtenerVehiculoInventario(
   return detalleOError(respuesta)
 }
 
+/**
+ * D-30: el vehículo se crea junto con sus fotos (1 a 10) en un solo
+ * `multipart/form-data`: `datos` lleva el JSON de `VehiculoRequest` como texto
+ * y `fotos`, los archivos en orden (la primera es la portada).
+ */
 export async function crearVehiculo(
   token: string,
   datos: VehiculoRequest,
+  fotos: readonly File[],
 ): Promise<DetalleInventario> {
+  const formulario = new FormData()
+  formulario.append('datos', JSON.stringify(datos))
+  for (const foto of fotos) formulario.append('fotos', foto, foto.name)
   const respuesta = await peticion(`${BASE}/vehiculos`, {
     method: 'POST',
     token,
-    body: datos,
-    mensajesPorCodigo: MENSAJES_INVENTARIO,
+    formulario,
+    mensajesPorCodigo: { ...MENSAJES_INVENTARIO, 413: MENSAJE_FOTOS_PESADAS },
   })
   return detalleOError(respuesta)
 }

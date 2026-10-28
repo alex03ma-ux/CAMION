@@ -81,7 +81,9 @@ describe('Selector y contador (CA-UI-12)', () => {
 
   it('sin fotos: mensaje de vacío', () => {
     montar([])
-    expect(screen.getByText('Este vehículo aún no tiene fotos.')).toBeInTheDocument()
+    expect(
+      screen.getByText('Este vehículo aún no tiene fotos. Agrega al menos una para poder guardar cambios.'),
+    ).toBeInTheDocument()
     expect(contador('0 de 10')).toBeInTheDocument()
   })
 })
@@ -284,6 +286,41 @@ describe('Bloqueado (VENDIDO, CA-014-11)', () => {
     montar(fotos(2), true)
     expect(screen.queryByLabelText('Agregar fotos')).toBeNull()
     expect(screen.queryAllByRole('button')).toHaveLength(0)
+    expect(contador('2 de 10')).toBeInTheDocument()
+  })
+})
+
+describe('D-30: debe quedar al menos una foto', () => {
+  const ULTIMA = 'El vehículo debe tener al menos una foto. Sube otra antes de eliminar esta.'
+
+  it('con una sola foto, "Eliminar" está desactivado con la explicación y no se llama a la API', async () => {
+    const api = simularFetch({})
+    const { u } = montar(fotos(1))
+    const eliminar = screen.getByRole('button', { name: 'Eliminar foto 1' })
+    expect(eliminar).toBeDisabled()
+    const ayuda = screen.getByText('Debe quedar al menos una foto. Sube otra antes de eliminar esta.')
+    expect(eliminar.getAttribute('aria-describedby')).toBe(ayuda.id)
+    await u.click(eliminar)
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(api.llamadas.filter((l) => l.init?.method === 'DELETE')).toHaveLength(0)
+  })
+
+  it('con dos fotos se puede eliminar una; la que queda ya no se puede eliminar', async () => {
+    simularFetch({ [`${BASE}/2`]: { status: 204 } })
+    const { u } = montar(fotos(2))
+    expect(screen.getByRole('button', { name: 'Eliminar foto 1' })).toBeEnabled()
+    await u.click(screen.getByRole('button', { name: 'Eliminar foto 2' }))
+    await u.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Eliminar' }))
+    expect(await screen.findByText('Foto eliminada.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Eliminar foto 1' })).toBeDisabled()
+  })
+
+  it('409 del servidor al eliminar (no quedaría ninguna): se muestra el mensaje y la foto sigue', async () => {
+    simularFetch({ [`${BASE}/2`]: { status: 409, body: { error: ULTIMA } } })
+    const { u } = montar(fotos(2))
+    await u.click(screen.getByRole('button', { name: 'Eliminar foto 2' }))
+    await u.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Eliminar' }))
+    expect(await screen.findByText(ULTIMA)).toBeInTheDocument()
     expect(contador('2 de 10')).toBeInTheDocument()
   })
 })

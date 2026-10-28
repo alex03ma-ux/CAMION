@@ -1660,3 +1660,22 @@ button.cat-miniatura[aria-current="true"] {
   font-weight: 700;
   font-size: 0.85rem;
 }
+
+/* D-30: fotos elegidas dentro del formulario de registro (aún sin subir) */
+.inv-fotos.inv-fotos-nuevas {
+  margin: 24px 0 0;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.inv-fotos-nuevas figcaption .dato-secundario {
+  overflow-wrap: anywhere;
+  font-weight: 400;
+}
+
+.inv-ayuda-guardar {
+  margin: 8px 0 0;
+  font-weight: 600;
+}

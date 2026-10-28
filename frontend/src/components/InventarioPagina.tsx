@@ -12,9 +12,8 @@ import {
   dejarAvisoPendiente,
   leerAvisoPendiente,
   marcarVehiculoReciente,
-  textoListo,
 } from '../inventario/avisoPendiente'
-import { Aviso } from './Aviso'
+import { Aviso, type DatosAviso } from './Aviso'
 import { InventarioFormulario } from './InventarioFormulario'
 import { InventarioLista } from './InventarioLista'
 
@@ -93,15 +92,12 @@ function InventarioConAcceso({
   }, [error, onSesionTerminada])
 
   const alCrear = useCallback(
-    (detalle: DetalleInventario) => {
+    (detalle: DetalleInventario, aviso: DatosAviso) => {
       marcarVehiculoReciente(detalle.id)
-      dejarAvisoPendiente({
-        tipo: 'exito',
-        texto: `Vehículo guardado. Siguiente paso: agrega sus fotos abajo (hasta 10). Cuando termines, pulsa «${textoListo(esAdmin)}».`,
-      })
+      dejarAvisoPendiente(aviso)
       navegar(hashInventarioVehiculo(detalle.id))
     },
-    [esAdmin],
+    [],
   )
 
   const tituloLista = esAdmin ? 'Inventario' : 'Mi inventario'

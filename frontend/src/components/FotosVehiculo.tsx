@@ -1,5 +1,6 @@
 // Fotos del vehículo en el inventario (HU-014, RN-VE-001, D-20): hasta 10, JPG/PNG/WebP
 // de hasta 5 MB, una por petición. La API valida de nuevo por la firma de los bytes.
+// D-30: debe quedar al menos una; "Eliminar" de la única foto está desactivado.
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import {
   ACEPTA_FOTOS,
@@ -67,6 +68,9 @@ export function FotosVehiculo({
   }, [fotos])
 
   const llenas = fotos.length >= MAX_FOTOS
+  // D-30: la última foto no se puede eliminar (la API responde 409).
+  const unica = fotos.length === 1
+  const idUnica = 'inv-fotos-unica'
   const trabajando = subida !== null || ocupado || dialogo !== null
   const idAyuda = 'inv-fotos-ayuda'
   const idErrores = 'inv-fotos-errores'
@@ -191,6 +195,7 @@ export function FotosVehiculo({
   }
 
   function abrirEliminar(foto: FotoInventario, posicion: number, boton: HTMLButtonElement) {
+    if (refFotos.current.length <= 1) return
     origenDialogo.current = boton
     setAviso(null)
     setDialogo({ foto, posicion, enviando: false, error: null })
@@ -294,7 +299,9 @@ export function FotosVehiculo({
       <Aviso aviso={aviso} />
 
       {fotos.length === 0 ? (
-        <p className="admin-vacio">Este vehículo aún no tiene fotos.</p>
+        <p className="admin-vacio">
+          Este vehículo aún no tiene fotos.{!bloqueado && ' Agrega al menos una para poder guardar cambios.'}
+        </p>
       ) : (
         <ol className="inv-fotos-lista">
           {fotos.map((foto, i) => {
@@ -348,12 +355,18 @@ export function FotosVehiculo({
                       id={`foto-${foto.id}-eliminar`}
                       type="button"
                       className="boton-peligro"
-                      disabled={trabajando}
+                      disabled={trabajando || unica}
+                      aria-describedby={unica ? idUnica : undefined}
                       onClick={(e) => abrirEliminar(foto, n, e.currentTarget)}
                     >
                       Eliminar{' '}<span className="sr-only">{nombre}</span>
                     </button>
                   </div>
+                )}
+                {!bloqueado && unica && (
+                  <p id={idUnica} className="campo-ayuda">
+                    Debe quedar al menos una foto. Sube otra antes de eliminar esta.
+                  </p>
                 )}
               </li>
             )
