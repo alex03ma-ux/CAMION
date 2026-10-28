@@ -152,3 +152,10 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - El portal sigue mostrando el precio y las fotos de la publicación hasta P4b.
   - Prueba manual pendiente de la migración 004 y de D-27.
 - D-27 TOMADA (C): añadido `database/catalogos/005_marcas_lineas_iniciales.sql`, sin aplicar. Tiene 33 marcas y 137 modelos, solo INSERT idempotente, y su BAJAR (comentado) solo borra lo que el script añadió y ningún vehículo usa. La pantalla de marcas y modelos pasa a P4p. D-22 confirmada.
+- D-23 y D-27 aplicadas en `camion_ventas` (2026-10-27):
+  - Respaldo previo hecho por el coordinador principal: `C:\Respaldo_CAMION\camion_ventas_antes_004_005_20261027_193917.sql` (39 tablas), con la API apagada.
+  - Conteos antes: 7 usuarios, 12 vehículos, 12 publicaciones, 3 fotos_publicacion, 7 marcas, 12 líneas, 2 tipos de carrocería.
+  - Primer intento: importar `004_p4a_inventario.sql` completo en phpMyAdmin falló en una consulta de VERIFICACIÓN ANTES (#1109 "Tabla desconocida 'vehiculos' in information_schema": phpMyAdmin cambia la base activa después de consultar information_schema). No se aplicó nada; comprobado.
+  - Se importó la sección SUBIR (líneas 80-185, idéntica) en un archivo aparte y luego `005_marcas_lineas_iniciales.sql`, ambos sin errores.
+  - Verificación posterior hecha por el coordinador principal: 12 vehículos, 12 publicaciones y 3 fotos (sin cambios); 12 vehículos ACTIVO, todos con precio; los CHECK, UNIQUE y FK de la 004 presentes; 4 materiales, 6 tipos de máquina, 7 tipos de carrocería, 34 marcas y 139 líneas.
+  - Lección para próximas migraciones: en phpMyAdmin, importar solo la sección SUBIR; las verificaciones las hace el coordinador con el cliente mysql.
