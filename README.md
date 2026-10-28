@@ -90,7 +90,12 @@ Mientras la base no tenga publicaciones, el inicio muestra "Pronto tendremos veh
 
 ## Qué NO existe todavía
 
-- Alta y edición de vehículos y publicaciones por el asesor, subida de fotos reales y placa (P4). Hoy el catálogo solo muestra lo que ya está en la base; las fotos todavía no se sirven, por eso se ve "Sin foto".
+- Publicaciones (P4b). El inventario de P4a ya está en la rama `feature/p4a-inventario`:
+  - alta y edición de vehículos, con al menos 1 foto obligatoria (D-30) y hasta 10;
+  - placa única;
+  - reserva con nota (D-28).
+
+  Mientras no exista P4b, el portal sigue mostrando el precio y las fotos de la publicación.
 - Contactar al vendedor desde el detalle del vehículo (P5).
 - Planes y pagos.
 - Contactos (leads), créditos, búsquedas personalizadas y favoritos.
