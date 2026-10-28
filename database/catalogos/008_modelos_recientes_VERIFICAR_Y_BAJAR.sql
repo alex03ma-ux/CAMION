@@ -1,0 +1,277 @@
+-- =====================================================================
+-- 008 — Modelos recientes (D-29): VERIFICACIÓN y BAJAR. Cliente mysql del coordinador; no se importa en phpMyAdmin.
+-- =====================================================================
+USE camion_ventas;
+
+-- VERIFICACIÓN ANTES y DESPUÉS. Esperado después: marcas +1 como máximo (Develon),
+-- lineas +254 como máximo, vehiculos sin cambios.
+SELECT (SELECT COUNT(*) FROM marcas) AS marcas, (SELECT COUNT(*) FROM lineas) AS lineas,
+       (SELECT COUNT(*) FROM vehiculos) AS vehiculos;
+
+-- =====================================================================
+-- BAJAR (comentada): quita SOLO los 254 modelos que añade este script (no los del 005 ni del DEMO)
+-- y que ningún vehículo usa; luego las marcas nuevas sin modelos ni vehículos.
+-- =====================================================================
+-- START TRANSACTION;
+-- DELETE l FROM lineas l JOIN marcas m ON m.id = l.marca_id
+-- JOIN (
+--       SELECT 'Chevrolet' AS marca, 'NLR' AS nombre
+--       UNION ALL SELECT 'Chevrolet' AS marca, 'NRR' AS nombre
+--       UNION ALL SELECT 'Chevrolet' AS marca, 'NPS' AS nombre
+--       UNION ALL SELECT 'Chevrolet' AS marca, 'FVZ' AS nombre
+--       UNION ALL SELECT 'Chevrolet' AS marca, 'N400' AS nombre
+--       UNION ALL SELECT 'Chevrolet' AS marca, 'Montana' AS nombre
+--       UNION ALL SELECT 'Chevrolet' AS marca, 'Silverado' AS nombre
+--       UNION ALL SELECT 'Hino' AS marca, 'Dutro 300' AS nombre
+--       UNION ALL SELECT 'Hino' AS marca, 'Dutro City' AS nombre
+--       UNION ALL SELECT 'Hino' AS marca, 'SG1A' AS nombre
+--       UNION ALL SELECT 'JAC' AS marca, 'JHR' AS nombre
+--       UNION ALL SELECT 'JAC' AS marca, 'JKR' AS nombre
+--       UNION ALL SELECT 'JAC' AS marca, 'JKRD' AS nombre
+--       UNION ALL SELECT 'JAC' AS marca, 'JPR' AS nombre
+--       UNION ALL SELECT 'JAC' AS marca, 'JQR' AS nombre
+--       UNION ALL SELECT 'JAC' AS marca, 'JRR' AS nombre
+--       UNION ALL SELECT 'JAC' AS marca, 'T8' AS nombre
+--       UNION ALL SELECT 'JAC' AS marca, 'JS2' AS nombre
+--       UNION ALL SELECT 'JAC' AS marca, 'JS3' AS nombre
+--       UNION ALL SELECT 'Foton' AS marca, 'Tunland G7' AS nombre
+--       UNION ALL SELECT 'Foton' AS marca, 'Tunland G9' AS nombre
+--       UNION ALL SELECT 'Foton' AS marca, 'Tunland V7' AS nombre
+--       UNION ALL SELECT 'Foton' AS marca, 'Tunland V9' AS nombre
+--       UNION ALL SELECT 'Foton' AS marca, 'Wonder' AS nombre
+--       UNION ALL SELECT 'Foton' AS marca, 'Minitruck' AS nombre
+--       UNION ALL SELECT 'Foton' AS marca, 'Miler' AS nombre
+--       UNION ALL SELECT 'Foton' AS marca, 'FHR' AS nombre
+--       UNION ALL SELECT 'Foton' AS marca, 'FKR' AS nombre
+--       UNION ALL SELECT 'Foton' AS marca, 'FPR' AS nombre
+--       UNION ALL SELECT 'Foton' AS marca, 'FQR' AS nombre
+--       UNION ALL SELECT 'Foton' AS marca, 'FRR' AS nombre
+--       UNION ALL SELECT 'Foton' AS marca, 'Toano' AS nombre
+--       UNION ALL SELECT 'Foton' AS marca, 'Auman EST' AS nombre
+--       UNION ALL SELECT 'Foton' AS marca, 'Galaxy' AS nombre
+--       UNION ALL SELECT 'International' AS marca, 'HV' AS nombre
+--       UNION ALL SELECT 'International' AS marca, 'HX' AS nombre
+--       UNION ALL SELECT 'International' AS marca, 'MV' AS nombre
+--       UNION ALL SELECT 'Freightliner' AS marca, '114SD' AS nombre
+--       UNION ALL SELECT 'Mercedes-Benz' AS marca, 'Arocs' AS nombre
+--       UNION ALL SELECT 'Volvo' AS marca, 'FMX' AS nombre
+--       UNION ALL SELECT 'Scania' AS marca, 'Serie S' AS nombre
+--       UNION ALL SELECT 'Scania' AS marca, 'XT' AS nombre
+--       UNION ALL SELECT 'Hyundai' AS marca, 'Grand i10' AS nombre
+--       UNION ALL SELECT 'Hyundai' AS marca, 'HB20' AS nombre
+--       UNION ALL SELECT 'Hyundai' AS marca, 'Venue' AS nombre
+--       UNION ALL SELECT 'Hyundai' AS marca, 'Kona' AS nombre
+--       UNION ALL SELECT 'Hyundai' AS marca, 'Santa Fe' AS nombre
+--       UNION ALL SELECT 'Hyundai' AS marca, 'Palisade' AS nombre
+--       UNION ALL SELECT 'Hyundai' AS marca, 'Staria' AS nombre
+--       UNION ALL SELECT 'Hyundai' AS marca, 'HX140' AS nombre
+--       UNION ALL SELECT 'Hyundai' AS marca, 'HX210' AS nombre
+--       UNION ALL SELECT 'Hyundai' AS marca, 'HX350' AS nombre
+--       UNION ALL SELECT 'Hyundai' AS marca, 'HX17AZ' AS nombre
+--       UNION ALL SELECT 'Hyundai' AS marca, 'HL757' AS nombre
+--       UNION ALL SELECT 'Hyundai' AS marca, 'HL960A' AS nombre
+--       UNION ALL SELECT 'Hyundai' AS marca, 'H940C' AS nombre
+--       UNION ALL SELECT 'Fuso' AS marca, 'FA' AS nombre
+--       UNION ALL SELECT 'Volkswagen' AS marca, 'Polo' AS nombre
+--       UNION ALL SELECT 'Volkswagen' AS marca, 'Polo Track' AS nombre
+--       UNION ALL SELECT 'Volkswagen' AS marca, 'Virtus' AS nombre
+--       UNION ALL SELECT 'Volkswagen' AS marca, 'Jetta' AS nombre
+--       UNION ALL SELECT 'Volkswagen' AS marca, 'T-Cross' AS nombre
+--       UNION ALL SELECT 'Volkswagen' AS marca, 'Nivus' AS nombre
+--       UNION ALL SELECT 'Volkswagen' AS marca, 'Tera' AS nombre
+--       UNION ALL SELECT 'Volkswagen' AS marca, 'Taos' AS nombre
+--       UNION ALL SELECT 'Volkswagen' AS marca, 'Saveiro' AS nombre
+--       UNION ALL SELECT 'Dongfeng' AS marca, 'DHR' AS nombre
+--       UNION ALL SELECT 'Dongfeng' AS marca, 'DKR' AS nombre
+--       UNION ALL SELECT 'Dongfeng' AS marca, 'DPR' AS nombre
+--       UNION ALL SELECT 'Dongfeng' AS marca, 'DQR' AS nombre
+--       UNION ALL SELECT 'Dongfeng' AS marca, 'DRR' AS nombre
+--       UNION ALL SELECT 'Dongfeng' AS marca, 'Captain T' AS nombre
+--       UNION ALL SELECT 'Renault' AS marca, 'Kardian' AS nombre
+--       UNION ALL SELECT 'Renault' AS marca, 'Arkana' AS nombre
+--       UNION ALL SELECT 'Renault' AS marca, 'Captur' AS nombre
+--       UNION ALL SELECT 'Renault' AS marca, 'Alaskan' AS nombre
+--       UNION ALL SELECT 'Renault' AS marca, 'Boreal' AS nombre
+--       UNION ALL SELECT 'Renault' AS marca, 'Niagara' AS nombre
+--       UNION ALL SELECT 'Renault' AS marca, 'Kangoo' AS nombre
+--       UNION ALL SELECT 'Renault' AS marca, 'Master' AS nombre
+--       UNION ALL SELECT 'Renault' AS marca, 'Trafic' AS nombre
+--       UNION ALL SELECT 'Mazda' AS marca, 'CX-30' AS nombre
+--       UNION ALL SELECT 'Mazda' AS marca, 'CX-50' AS nombre
+--       UNION ALL SELECT 'Mazda' AS marca, 'CX-60' AS nombre
+--       UNION ALL SELECT 'Mazda' AS marca, 'CX-90' AS nombre
+--       UNION ALL SELECT 'Mazda' AS marca, 'MX-5' AS nombre
+--       UNION ALL SELECT 'Kia' AS marca, 'Soluto' AS nombre
+--       UNION ALL SELECT 'Kia' AS marca, 'K3' AS nombre
+--       UNION ALL SELECT 'Kia' AS marca, 'K4' AS nombre
+--       UNION ALL SELECT 'Kia' AS marca, 'Sonet' AS nombre
+--       UNION ALL SELECT 'Kia' AS marca, 'Stonic' AS nombre
+--       UNION ALL SELECT 'Kia' AS marca, 'Seltos' AS nombre
+--       UNION ALL SELECT 'Kia' AS marca, 'Carnival' AS nombre
+--       UNION ALL SELECT 'Kia' AS marca, 'Niro' AS nombre
+--       UNION ALL SELECT 'Kia' AS marca, 'Tasman' AS nombre
+--       UNION ALL SELECT 'Kia' AS marca, 'EV3' AS nombre
+--       UNION ALL SELECT 'Kia' AS marca, 'EV5' AS nombre
+--       UNION ALL SELECT 'Kia' AS marca, 'EV9' AS nombre
+--       UNION ALL SELECT 'Toyota' AS marca, 'Land Cruiser 300' AS nombre
+--       UNION ALL SELECT 'Toyota' AS marca, 'Yaris' AS nombre
+--       UNION ALL SELECT 'Toyota' AS marca, 'bZ4X' AS nombre
+--       UNION ALL SELECT 'Nissan' AS marca, 'Sentra' AS nombre
+--       UNION ALL SELECT 'Nissan' AS marca, 'Qashqai' AS nombre
+--       UNION ALL SELECT 'Nissan' AS marca, 'Pathfinder' AS nombre
+--       UNION ALL SELECT 'Ford' AS marca, 'Territory' AS nombre
+--       UNION ALL SELECT 'Ford' AS marca, 'Maverick' AS nombre
+--       UNION ALL SELECT 'Ford' AS marca, 'Bronco Sport' AS nombre
+--       UNION ALL SELECT 'Suzuki' AS marca, 'Alto' AS nombre
+--       UNION ALL SELECT 'Suzuki' AS marca, 'S-Presso' AS nombre
+--       UNION ALL SELECT 'Suzuki' AS marca, 'Baleno' AS nombre
+--       UNION ALL SELECT 'Suzuki' AS marca, 'Ertiga' AS nombre
+--       UNION ALL SELECT 'Suzuki' AS marca, 'XL7' AS nombre
+--       UNION ALL SELECT 'Caterpillar' AS marca, '301' AS nombre
+--       UNION ALL SELECT 'Caterpillar' AS marca, '305' AS nombre
+--       UNION ALL SELECT 'Caterpillar' AS marca, '307' AS nombre
+--       UNION ALL SELECT 'Caterpillar' AS marca, '313' AS nombre
+--       UNION ALL SELECT 'Caterpillar' AS marca, '416' AS nombre
+--       UNION ALL SELECT 'Caterpillar' AS marca, '420' AS nombre
+--       UNION ALL SELECT 'Caterpillar' AS marca, '426' AS nombre
+--       UNION ALL SELECT 'Caterpillar' AS marca, '938' AS nombre
+--       UNION ALL SELECT 'Caterpillar' AS marca, '950' AS nombre
+--       UNION ALL SELECT 'Caterpillar' AS marca, 'D4' AS nombre
+--       UNION ALL SELECT 'Caterpillar' AS marca, 'D8' AS nombre
+--       UNION ALL SELECT 'Caterpillar' AS marca, '120' AS nombre
+--       UNION ALL SELECT 'JCB' AS marca, '1CX' AS nombre
+--       UNION ALL SELECT 'JCB' AS marca, '19C-1' AS nombre
+--       UNION ALL SELECT 'JCB' AS marca, '35Z-1' AS nombre
+--       UNION ALL SELECT 'JCB' AS marca, '85Z-2' AS nombre
+--       UNION ALL SELECT 'JCB' AS marca, '155' AS nombre
+--       UNION ALL SELECT 'JCB' AS marca, '215' AS nombre
+--       UNION ALL SELECT 'JCB' AS marca, '270' AS nombre
+--       UNION ALL SELECT 'JCB' AS marca, '417' AS nombre
+--       UNION ALL SELECT 'JCB' AS marca, '427' AS nombre
+--       UNION ALL SELECT 'JCB' AS marca, '437' AS nombre
+--       UNION ALL SELECT 'JCB' AS marca, '531-70' AS nombre
+--       UNION ALL SELECT 'JCB' AS marca, '542-70' AS nombre
+--       UNION ALL SELECT 'JCB' AS marca, '560-80' AS nombre
+--       UNION ALL SELECT 'John Deere' AS marca, '310P' AS nombre
+--       UNION ALL SELECT 'John Deere' AS marca, '320P' AS nombre
+--       UNION ALL SELECT 'John Deere' AS marca, '210P' AS nombre
+--       UNION ALL SELECT 'John Deere' AS marca, '350P' AS nombre
+--       UNION ALL SELECT 'John Deere' AS marca, '544P' AS nombre
+--       UNION ALL SELECT 'John Deere' AS marca, '624P' AS nombre
+--       UNION ALL SELECT 'John Deere' AS marca, '450P' AS nombre
+--       UNION ALL SELECT 'John Deere' AS marca, '650P' AS nombre
+--       UNION ALL SELECT 'John Deere' AS marca, '850P' AS nombre
+--       UNION ALL SELECT 'John Deere' AS marca, '318P' AS nombre
+--       UNION ALL SELECT 'John Deere' AS marca, '325G' AS nombre
+--       UNION ALL SELECT 'John Deere' AS marca, '5045D' AS nombre
+--       UNION ALL SELECT 'John Deere' AS marca, '5075E' AS nombre
+--       UNION ALL SELECT 'John Deere' AS marca, '5090E' AS nombre
+--       UNION ALL SELECT 'John Deere' AS marca, '8270R' AS nombre
+--       UNION ALL SELECT 'Komatsu' AS marca, 'PC35MR' AS nombre
+--       UNION ALL SELECT 'Komatsu' AS marca, 'PC130' AS nombre
+--       UNION ALL SELECT 'Komatsu' AS marca, 'PC210' AS nombre
+--       UNION ALL SELECT 'Komatsu' AS marca, 'PC240' AS nombre
+--       UNION ALL SELECT 'Komatsu' AS marca, 'PC290' AS nombre
+--       UNION ALL SELECT 'Komatsu' AS marca, 'PC360' AS nombre
+--       UNION ALL SELECT 'Komatsu' AS marca, 'PC490' AS nombre
+--       UNION ALL SELECT 'Komatsu' AS marca, 'WA200' AS nombre
+--       UNION ALL SELECT 'Komatsu' AS marca, 'WA320' AS nombre
+--       UNION ALL SELECT 'Komatsu' AS marca, 'WA380' AS nombre
+--       UNION ALL SELECT 'Komatsu' AS marca, 'D65' AS nombre
+--       UNION ALL SELECT 'Komatsu' AS marca, 'D155' AS nombre
+--       UNION ALL SELECT 'Komatsu' AS marca, 'GD675' AS nombre
+--       UNION ALL SELECT 'Komatsu' AS marca, 'WB93R' AS nombre
+--       UNION ALL SELECT 'Komatsu' AS marca, 'HD465' AS nombre
+--       UNION ALL SELECT 'Bobcat' AS marca, 'S70' AS nombre
+--       UNION ALL SELECT 'Bobcat' AS marca, 'S510' AS nombre
+--       UNION ALL SELECT 'Bobcat' AS marca, 'S530' AS nombre
+--       UNION ALL SELECT 'Bobcat' AS marca, 'S590' AS nombre
+--       UNION ALL SELECT 'Bobcat' AS marca, 'S650' AS nombre
+--       UNION ALL SELECT 'Bobcat' AS marca, 'S770' AS nombre
+--       UNION ALL SELECT 'Bobcat' AS marca, 'T590' AS nombre
+--       UNION ALL SELECT 'Bobcat' AS marca, 'T770' AS nombre
+--       UNION ALL SELECT 'Bobcat' AS marca, 'T870' AS nombre
+--       UNION ALL SELECT 'Bobcat' AS marca, 'B760' AS nombre
+--       UNION ALL SELECT 'Bobcat' AS marca, 'E26' AS nombre
+--       UNION ALL SELECT 'Bobcat' AS marca, 'E35z' AS nombre
+--       UNION ALL SELECT 'Bobcat' AS marca, 'E50z' AS nombre
+--       UNION ALL SELECT 'Case' AS marca, '570SV' AS nombre
+--       UNION ALL SELECT 'Case' AS marca, '580SV' AS nombre
+--       UNION ALL SELECT 'Case' AS marca, '590SV' AS nombre
+--       UNION ALL SELECT 'Case' AS marca, '851FX' AS nombre
+--       UNION ALL SELECT 'Case' AS marca, 'CX130' AS nombre
+--       UNION ALL SELECT 'Case' AS marca, 'CX220' AS nombre
+--       UNION ALL SELECT 'Case' AS marca, 'CX250' AS nombre
+--       UNION ALL SELECT 'Case' AS marca, 'CX350' AS nombre
+--       UNION ALL SELECT 'Case' AS marca, '621G' AS nombre
+--       UNION ALL SELECT 'Case' AS marca, '721G' AS nombre
+--       UNION ALL SELECT 'Case' AS marca, 'SR175B' AS nombre
+--       UNION ALL SELECT 'Case' AS marca, 'SV185B' AS nombre
+--       UNION ALL SELECT 'Case' AS marca, '845C' AS nombre
+--       UNION ALL SELECT 'Case' AS marca, '1150L' AS nombre
+--       UNION ALL SELECT 'Develon' AS marca, 'DX27Z' AS nombre
+--       UNION ALL SELECT 'Develon' AS marca, 'DX35Z' AS nombre
+--       UNION ALL SELECT 'Develon' AS marca, 'DX55R' AS nombre
+--       UNION ALL SELECT 'Develon' AS marca, 'DX140W' AS nombre
+--       UNION ALL SELECT 'Develon' AS marca, 'DX225LC' AS nombre
+--       UNION ALL SELECT 'Develon' AS marca, 'DX360LC' AS nombre
+--       UNION ALL SELECT 'Develon' AS marca, 'DX490LC' AS nombre
+--       UNION ALL SELECT 'Develon' AS marca, 'DX530LC' AS nombre
+--       UNION ALL SELECT 'Develon' AS marca, 'DL200' AS nombre
+--       UNION ALL SELECT 'Develon' AS marca, 'DL250' AS nombre
+--       UNION ALL SELECT 'Develon' AS marca, 'DL320' AS nombre
+--       UNION ALL SELECT 'Develon' AS marca, 'DL420' AS nombre
+--       UNION ALL SELECT 'Develon' AS marca, 'DL580' AS nombre
+--       UNION ALL SELECT 'New Holland' AS marca, 'B95D' AS nombre
+--       UNION ALL SELECT 'New Holland' AS marca, 'B110D' AS nombre
+--       UNION ALL SELECT 'New Holland' AS marca, 'E145D' AS nombre
+--       UNION ALL SELECT 'New Holland' AS marca, 'E215D' AS nombre
+--       UNION ALL SELECT 'New Holland' AS marca, 'E385D' AS nombre
+--       UNION ALL SELECT 'New Holland' AS marca, 'W130D' AS nombre
+--       UNION ALL SELECT 'New Holland' AS marca, 'W170D' AS nombre
+--       UNION ALL SELECT 'New Holland' AS marca, 'L318' AS nombre
+--       UNION ALL SELECT 'New Holland' AS marca, 'RG140B' AS nombre
+--       UNION ALL SELECT 'New Holland' AS marca, 'D140B' AS nombre
+--       UNION ALL SELECT 'New Holland' AS marca, 'TT4' AS nombre
+--       UNION ALL SELECT 'New Holland' AS marca, 'TL5' AS nombre
+--       UNION ALL SELECT 'New Holland' AS marca, 'T6' AS nombre
+--       UNION ALL SELECT 'New Holland' AS marca, 'T7' AS nombre
+--       UNION ALL SELECT 'New Holland' AS marca, 'T8' AS nombre
+--       UNION ALL SELECT 'Yale' AS marca, 'GP15-35MX' AS nombre
+--       UNION ALL SELECT 'Yale' AS marca, 'GP20-35UX' AS nombre
+--       UNION ALL SELECT 'Yale' AS marca, 'GDP40-50UX' AS nombre
+--       UNION ALL SELECT 'Yale' AS marca, 'GP40-70N' AS nombre
+--       UNION ALL SELECT 'Yale' AS marca, 'GP080-120VX' AS nombre
+--       UNION ALL SELECT 'Yale' AS marca, 'ERP030-040VT' AS nombre
+--       UNION ALL SELECT 'Yale' AS marca, 'ERC030-040VA' AS nombre
+--       UNION ALL SELECT 'Yale' AS marca, 'ERP030-040VF' AS nombre
+--       UNION ALL SELECT 'Yale' AS marca, 'MR14-25' AS nombre
+--       UNION ALL SELECT 'Yale' AS marca, 'MP20UX' AS nombre
+--       UNION ALL SELECT 'Hyster' AS marca, 'H30-40A' AS nombre
+--       UNION ALL SELECT 'Hyster' AS marca, 'H40-70A' AS nombre
+--       UNION ALL SELECT 'Hyster' AS marca, 'H80-120FT' AS nombre
+--       UNION ALL SELECT 'Hyster' AS marca, 'H135-155FT' AS nombre
+--       UNION ALL SELECT 'Hyster' AS marca, 'H190-280XD' AS nombre
+--       UNION ALL SELECT 'Hyster' AS marca, 'H400-450XD' AS nombre
+--       UNION ALL SELECT 'Hyster' AS marca, 'J30-40XN' AS nombre
+--       UNION ALL SELECT 'Hyster' AS marca, 'E30-40XN' AS nombre
+--       UNION ALL SELECT 'Hyster' AS marca, 'J30-40XNT' AS nombre
+--       UNION ALL SELECT 'Hyster' AS marca, 'W45ZHD' AS nombre
+--       UNION ALL SELECT 'Randon' AS marca, 'Granelero' AS nombre
+--       UNION ALL SELECT 'Randon' AS marca, 'Cañero' AS nombre
+--       UNION ALL SELECT 'Randon' AS marca, 'Carga Todo' AS nombre
+--       UNION ALL SELECT 'Randon' AS marca, 'Forestal' AS nombre
+--       UNION ALL SELECT 'Randon' AS marca, 'Frigorífico' AS nombre
+--       UNION ALL SELECT 'Randon' AS marca, 'Furgón' AS nombre
+--       UNION ALL SELECT 'Randon' AS marca, 'Sider' AS nombre
+--       UNION ALL SELECT 'Randon' AS marca, 'Silo' AS nombre
+--       UNION ALL SELECT 'Randon' AS marca, 'Tanque' AS nombre
+--       UNION ALL SELECT 'Randon' AS marca, 'Volquete' AS nombre
+--       UNION ALL SELECT 'Randon' AS marca, 'Basculante' AS nombre
+--       UNION ALL SELECT 'Randon' AS marca, 'Base de contenedor' AS nombre
+-- ) x ON x.marca = m.nombre AND x.nombre = l.nombre
+-- WHERE NOT EXISTS (SELECT 1 FROM vehiculos v WHERE v.linea_id = l.id);
+-- DELETE FROM marcas WHERE nombre IN ('Develon')
+--   AND NOT EXISTS (SELECT 1 FROM vehiculos v WHERE v.marca_id = marcas.id)
+--   AND NOT EXISTS (SELECT 1 FROM lineas l WHERE l.marca_id = marcas.id);
+-- COMMIT;

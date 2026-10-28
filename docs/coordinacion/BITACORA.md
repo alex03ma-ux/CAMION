@@ -164,3 +164,9 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - mensajes de éxito que dicen el siguiente paso al crear, guardar y subir fotos;
   - el vehículo recién creado o guardado aparece resaltado en la lista, con el texto "Recién guardado".
   - `npm test`: 315/315. `npm run build`: correcto.
+- D-28 y D-29 TOMADAS:
+  - Reserva con nota obligatoria. Migración `006_p4a_nota_reserva` sin aplicar, con la parte SUBIR en un archivo aparte.
+  - Combustibles y DIVIPOLA del DANE (script 007: 33 entidades y 1.122 municipios, desde datos.gov.co `gdxc-w37w`, datos del 2025-01-24).
+  - Modelos recientes (script 008, PROPUESTO): 254 modelos nuevos y la marca Develon, con fuentes por marca. Kenworth e Isuzu se omiten por falta de fuente verificable.
+- La API estaba en marcha (prueba manual) y bloqueaba el build. No se detuvo: las pruebas se compilaron en una carpeta aparte (`--artifacts-path`).
+- Resultados: `dotnet test` 655/655; `npm test` 316/316; `npm run build` correcto.

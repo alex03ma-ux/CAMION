@@ -31,3 +31,9 @@ Los scripts solo hacen INSERT ... WHERE NOT EXISTS, así que se pueden ejecutar 
 ## Combustibles
 
 Diésel (ya existía por el DEMO), Gasolina, Gas (GNV), Eléctrico e Híbrido.
+
+## Modelos recientes (script 008, PROPUESTO)
+
+Tiene 254 modelos nuevos y 1 marca nueva (Develon, el nombre actual de la maquinaria Doosan). Salen de una investigación web del 2026-10-27, con las fuentes indicadas por marca en el script.
+- Kenworth e Isuzu se omiten porque no hubo fuente verificable.
+- La lista para revisar está en `docs/catalogos-008-modelos-propuestos.md`.
