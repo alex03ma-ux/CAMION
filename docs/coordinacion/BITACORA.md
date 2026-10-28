@@ -211,3 +211,10 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - Respaldo previo: `C:\Respaldo_CAMION\camion_ventas_antes_009_010_20261027_230515.sql` (42 tablas), con la API apagada.
   - La responsable importó en phpMyAdmin `009_p4a_lineas_tipos_SUBIR.sql` y `010_clasificacion_lineas_SUBIR.sql`, sin errores.
   - Verificación del coordinador principal: 19 vehículos, 393 líneas, 35 marcas y 7 fotos (sin cambios); 393 filas en `lineas_tipos` y 0 líneas sin categoría (Camión 96, Carro 113, Carrocería 14, Maquinaria 170).
+- D-33 TOMADA: el dueño y el administrador pueden cambiar la categoría (409 si hay una publicación activa).
+  - Cuando la marca no tiene modelos de la categoría, el mensaje explica qué hacer.
+  - Las pruebas de componente encontraron un fallo y se corrigió: al editar, la categoría salía del detalle y no del formulario.
+- Revisión de otros campos bloqueados al editar:
+  - un **VENDIDO** queda en solo lectura (regla D-22/HU-064);
+  - el **asesor propietario** no se puede cambiar al editar (se elige solo al crear). Ninguna regla escrita lo exige: se pregunta a la responsable (D-34).
+- Resultados: `dotnet test` 696/696; `npm test` 340/340, con `--testTimeout=30000` porque el equipo estaba cargado (con el límite normal fallaban algunas por tiempo y pasaban al repetirlas); tipos y `npm run build` correctos.

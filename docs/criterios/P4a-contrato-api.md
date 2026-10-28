@@ -272,3 +272,11 @@ Las fotos de un vehículo VENDIDO no se pueden modificar (409).
 - **Edición:**
   - El botón "Eliminar" de la última foto está desactivado y lleva la explicación.
   - Si el vehículo no tiene fotos, se muestra el aviso "Este vehículo no tiene fotos. Agrega al menos una para poder guardar cambios." y el botón "Guardar cambios" queda desactivado hasta que se suba una.
+
+## Cambios por D-33 (2026-10-28)
+
+- `PUT /api/inventario/vehiculos/{id}` **acepta** un `tipoId` distinto del actual. La validación usa las reglas de la nueva categoría, así que un campo que ya no aplica y llega con valor da 400.
+- Si el vehículo tiene una publicación con `estado_publicacion = PUBLICADA` y se cambia la categoría, responde 409:
+  `{ error: "Este vehículo tiene una publicación activa: no se puede cambiar la categoría mientras esté publicado.", errores: { tipoId: [...] } }`
+- La auditoría EDITAR incluye `tipoId` en `datos_anteriores` y en `datos_nuevos`.
+- Se elimina el mensaje "La categoría de un vehículo no se puede cambiar."

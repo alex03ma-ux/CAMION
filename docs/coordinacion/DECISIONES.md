@@ -406,3 +406,23 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
   - El formulario solo ofrece los modelos de la categoría elegida.
   - La API rechaza un modelo clasificado en otra categoría. Uno sin clasificar se acepta, para que no se bloquee nada mientras no esté clasificado.
   - La pantalla de marcas y modelos de P4p permitirá editar las categorías de cada modelo.
+
+## D-33 — El dueño puede cambiar la categoría de su vehículo · TOMADA (2026-10-28)
+- Contexto: en la prueba final de P4a, un vehículo con un modelo de otra categoría ("Kia Picanto 2008" como Camión) quedaba sin salida. La categoría decía "(no se puede cambiar)" y el selector de modelo no ofrecía ninguno.
+- Palabras de la responsable: "recordemos que cada usuario debe poder hacer cambios sobre sus publicaciones". Opción elegida: "Asesor también la corrige".
+- **Decisión:** el asesor dueño y el administrador pueden cambiar la **categoría** de un vehículo mientras no tenga una publicación activa. Al cambiarla:
+  - el formulario muestra los campos de la nueva categoría;
+  - se vacían el modelo y los campos que ya no aplican;
+  - se valida todo con las reglas de la nueva categoría (placa, modelo de esa categoría según D-32, foto…);
+  - la auditoría EDITAR registra la categoría anterior y la nueva.
+- Con una publicación activa, la API responde 409 con un mensaje claro. P4b definirá qué pasa en ese caso.
+- Si la marca no tiene modelos de esa categoría, el mensaje lo explica: "Kia no tiene modelos de Camión. Elige otra marca o cambia la categoría."
+- Regla general recalcada por la responsable: **el dueño puede modificar todo lo suyo**, salvo lo que una regla de negocio impida expresamente.
+
+## D-34 — ¿El administrador puede cambiar el asesor dueño de un vehículo? · PENDIENTE (detectada en la revisión de D-33, 2026-10-28)
+- Contexto: hoy el asesor propietario se elige al crear el vehículo (solo el administrador) y no se puede cambiar después. Ninguna regla escrita lo prohíbe, pero tampoco hay HU que lo pida. D-7 habla de reasignar solicitudes, no vehículos.
+- Opciones:
+  - A) El administrador puede reasignar el vehículo a otro asesor activo, con auditoría (quién, cuándo, de quién a quién).
+  - B) Se mantiene fijo, y para cambiarlo se crea un vehículo nuevo.
+- Recomendación: A, coherente con "el dueño puede modificar todo lo suyo" y con la reasignación de D-7. Mejor junto con P4b, porque afecta a las publicaciones del vehículo.
+- Bloquea: nada de P4a.
