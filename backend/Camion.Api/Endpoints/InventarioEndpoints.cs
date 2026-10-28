@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Security.Claims;
+using System.Text.Json;
 using Camion.Api.Auth;
 using Camion.Api.Catalogo;
 using Camion.Api.Contracts;
@@ -8,8 +9,10 @@ using Camion.Api.Inventario;
 using Camion.Api.Media;
 using Camion.Api.Models;
 using Microsoft.AspNetCore.Http.Features;
+using JsonOptionsHttp = Microsoft.AspNetCore.Http.Json.JsonOptions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Camion.Api.Endpoints;
 
@@ -31,6 +34,15 @@ public static class InventarioEndpoints
     private const string MensajeFotosVendido = "Las fotos de un vehículo vendido no se pueden modificar.";
     private const string MensajeOrdenFotos = "Incluye todas las fotos del vehículo, cada una una sola vez.";
     private const string MensajeEditarVendido = "No se puede editar un vehículo en estado vendido.";
+    // D-30: el vehículo nace con fotos y nunca se queda sin ellas.
+    private const string MensajeSinFotos = "Agrega al menos una foto del vehículo.";
+    private const string MensajeDemasiadasFotos = "Puedes subir hasta 10 fotos.";
+    private const string MensajeUltimaFoto = "El vehículo debe tener al menos una foto. Sube otra antes de eliminar esta.";
+    private const string MensajeEditarSinFotos = "Agrega al menos una foto antes de guardar los cambios.";
+    private const string MensajeMultipart = "Envía los datos y las fotos del vehículo como multipart/form-data.";
+    private const string CampoDatos = "datos";
+    private const string CampoFotos = "fotos";
+    private const string CategoriaMedia = "Camion.Api.Media";
 
     private const int MaxBusqueda = 100;
     private const int TamanoPorDefecto = 20;
@@ -143,13 +155,48 @@ public static class InventarioEndpoints
             return detalle is null ? NoEncontrado() : Results.Ok(detalle);
         });
 
-        // HU-013, HU-015 a HU-018 (RN-VE-002, RN-VE-003, RN-VE-005, RN-VE-007, RN-VE-010).
+        // HU-013, HU-014, HU-015 a HU-018 (RN-VE-001, RN-VE-002, RN-VE-003, RN-VE-005, RN-VE-007, RN-VE-010, D-30).
+        // multipart/form-data: campo "datos" (JSON VehiculoInventarioRequest) y campo "fotos" (1 a 10 archivos).
+        // Se valida todo antes de escribir; vehículo, fotos y auditoría van en una transacción y, si algo falla después
+        // de escribir archivos, esos archivos se borran.
         inventario.MapPost("/vehiculos", async (
-            VehiculoInventarioRequest? request, ClaimsPrincipal principal, CamionDbContext db, TimeProvider reloj,
-            ILoggerFactory loggerFactory, CancellationToken ct) =>
+            HttpRequest http, ClaimsPrincipal principal, CamionDbContext db, IAlmacenFotos almacen, TimeProvider reloj,
+            IOptions<JsonOptionsHttp> opcionesJson, ILoggerFactory loggerFactory, CancellationToken ct) =>
         {
+            // Límite del cuerpo: 52 MB (además del metadato RequestSizeLimit del endpoint).
+            var limite = http.HttpContext.Features.Get<IHttpMaxRequestBodySizeFeature>();
+            if (limite is { IsReadOnly: false }) limite.MaxRequestBodySize = FormatoImagen.CuerpoMaximoCreacion;
+
             var actor = await ActorAsync(principal, db, ct);
             if (actor is null) return SinPermiso();
+            // D-30: ya no se acepta crear con un JSON simple (sin fotos).
+            if (!http.HasFormContentType)
+                return Results.Json(new ErrorResponse(MensajeMultipart), statusCode: StatusCodes.Status415UnsupportedMediaType);
+            if (http.ContentLength > FormatoImagen.CuerpoMaximoCreacion) return FotosNoValidas(MensajeFoto);
+
+            IFormCollection form;
+            try
+            {
+                form = await http.ReadFormAsync(ct);
+            }
+            catch (InvalidDataException)
+            {
+                return Results.BadRequest(new ErrorResponse(MensajesError.FormatoInvalido));
+            }
+
+            // Campo "datos": exactamente un valor con el JSON de antes; si falta o no es JSON, 400 con el formato común.
+            var textoDatos = form[CampoDatos];
+            if (textoDatos.Count != 1 || string.IsNullOrWhiteSpace(textoDatos[0]))
+                return Results.BadRequest(new ErrorResponse(MensajesError.FormatoInvalido));
+            VehiculoInventarioRequest? request;
+            try
+            {
+                request = JsonSerializer.Deserialize<VehiculoInventarioRequest>(textoDatos[0]!, opcionesJson.Value.SerializerOptions);
+            }
+            catch (JsonException)
+            {
+                return Results.BadRequest(new ErrorResponse(MensajesError.FormatoInvalido));
+            }
             if (request is null) return Results.BadRequest(new ErrorResponse(MensajesError.FormatoInvalido));
 
             var ahora = reloj.GetUtcNow().UtcDateTime;
@@ -163,6 +210,24 @@ public static class InventarioEndpoints
                 if (asesorId is null || !await AsesorActivoAsync(db, asesorId.Value, ct))
                     errores["asesorId"] = [ReglasInventario.MensajeAsesor];
             }
+
+            // D-30, RN-VE-001: de 1 a 10 fotos, con las mismas reglas que la subida de una foto. Se indica cuál falla.
+            var archivos = form.Files.GetFiles(CampoFotos);
+            var extensiones = new List<string>();
+            if (archivos.Count == 0) errores[CampoFotos] = [MensajeSinFotos];
+            else if (archivos.Count > FotoInventario.Maximo) errores[CampoFotos] = [MensajeDemasiadasFotos];
+            else
+            {
+                var malas = new List<string>();
+                for (var i = 0; i < archivos.Count; i++)
+                {
+                    var extension = await ExtensionValidaAsync(archivos[i], ct);
+                    if (extension is null) malas.Add($"Foto {i + 1}: {MensajeFoto}");
+                    else extensiones.Add(extension);
+                }
+                if (malas.Count > 0) errores[CampoFotos] = malas.ToArray();
+            }
+
             if (errores.Count > 0 || datos is null)
                 return Results.BadRequest(new ErrorResponse(ReglasInventario.MensajeRevisar, errores));
 
@@ -179,14 +244,14 @@ public static class InventarioEndpoints
             Aplicar(vehiculo, datos);
             db.Vehiculos.Add(vehiculo);
 
-            await using (var tx = await db.Database.BeginTransactionAsync(ct))
+            var escritas = new List<string>();
+            var confirmado = false;
+            try
             {
+                await using var tx = await db.Database.BeginTransactionAsync(ct);
                 try
                 {
                     await db.SaveChangesAsync(ct);
-                    Auditoria.AgregarVehiculo(db, actor.UsuarioId, vehiculo.Id, Auditoria.Crear, null, Instantanea(vehiculo), ahora);
-                    await db.SaveChangesAsync(ct);
-                    await tx.CommitAsync(ct);
                 }
                 catch (DbUpdateException) when (datos.Placa is not null)
                 {
@@ -196,18 +261,49 @@ public static class InventarioEndpoints
                     if (await PlacaOcupadaAsync(db, datos.Placa, null, ct)) return PlacaDuplicada();
                     throw;
                 }
+
+                // Orden 1..n en el orden recibido; la primera es la portada. La clave lleva el id del vehículo.
+                for (var i = 0; i < archivos.Count; i++)
+                {
+                    var clave = ClaveFoto(vehiculo.Id, extensiones[i]);
+                    escritas.Add(clave);
+                    await using (var contenido = archivos[i].OpenReadStream())
+                        await almacen.GuardarAsync(clave, contenido, ct);
+                    db.FotosVehiculo.Add(new FotoInventario
+                    {
+                        VehiculoId = vehiculo.Id,
+                        ArchivoClave = clave,
+                        Orden = (byte)(i + 1),
+                        EsPortada = i == 0,
+                        CreadoEn = ahora
+                    });
+                }
+                Auditoria.AgregarVehiculo(db, actor.UsuarioId, vehiculo.Id, Auditoria.Crear, null, Instantanea(vehiculo), ahora);
+                await db.SaveChangesAsync(ct);
+                await tx.CommitAsync(ct);
+                confirmado = true;
+            }
+            finally
+            {
+                // Sin vehículo no quedan archivos sueltos (la transacción ya se deshizo al salir del using).
+                if (!confirmado)
+                    foreach (var clave in escritas)
+                        EliminarArchivo(almacen, clave, loggerFactory, vehiculo.Id);
             }
 
-            loggerFactory.CreateLogger(AuthEndpoints.CategoriaAuditoria).LogInformation(
-                "Auditoria vehiculo_crear vehiculoId={VehiculoId} usuarioId={UsuarioId}", vehiculo.Id, actor.UsuarioId);
+            var auditoria = loggerFactory.CreateLogger(AuthEndpoints.CategoriaAuditoria);
+            auditoria.LogInformation(
+                "Auditoria vehiculo_crear vehiculoId={VehiculoId} usuarioId={UsuarioId} fotos={Fotos}",
+                vehiculo.Id, actor.UsuarioId, archivos.Count);
             var detalle = await DetalleAsync(db, actor, vehiculo.Id, ct);
+            AdvertirPlacaPerdida(auditoria, request, detalle, actor, "crear");
             return Results.Created($"/api/inventario/vehiculos/{vehiculo.Id}", detalle);
-        });
+        }).WithMetadata(new RequestSizeLimitAttribute(FormatoImagen.CuerpoMaximoCreacion));
 
         // HU-019 (RN-VE-009: auditoría solo de los campos que cambiaron; RN-VE-003: se conserva el precio anterior).
         inventario.MapPut("/vehiculos/{id}", async (
             long id, VehiculoInventarioRequest? request, ClaimsPrincipal principal, CamionDbContext db, TimeProvider reloj,
-            CancellationToken ct) =>
+            ILoggerFactory loggerFactory, CancellationToken ct) =>
         {
             var actor = await ActorAsync(principal, db, ct);
             if (actor is null) return SinPermiso();
@@ -215,6 +311,10 @@ public static class InventarioEndpoints
             if (vehiculo is null) return NoEncontrado();
             if (request is null) return Results.BadRequest(new ErrorResponse(MensajesError.FormatoInvalido));
             if (vehiculo.Estado == Vehiculo.Vendido) return Results.Conflict(new ErrorResponse(MensajeEditarVendido));
+            // D-30: un vehículo sin fotos (DEMO o anterior a D-30) no se guarda hasta que se le suba una.
+            if (!await db.FotosVehiculo.AsNoTracking().AnyAsync(f => f.VehiculoId == id, ct))
+                return Results.Conflict(new ErrorResponse(MensajeEditarSinFotos,
+                    new Dictionary<string, string[]> { [CampoFotos] = [MensajeEditarSinFotos] }));
 
             var ahora = reloj.GetUtcNow().UtcDateTime;
             var (errores, datos) = await ReglasInventario.ValidarAsync(db, request, vehiculo.TipoVehiculoId, ahora.Year, ct);
@@ -246,7 +346,9 @@ public static class InventarioEndpoints
                     throw;
                 }
             }
-            return Results.Ok(await DetalleAsync(db, actor, id, ct));
+            var detalle = await DetalleAsync(db, actor, id, ct);
+            AdvertirPlacaPerdida(loggerFactory.CreateLogger(AuthEndpoints.CategoriaAuditoria), request, detalle, actor, "editar");
+            return Results.Ok(detalle);
         });
 
         foreach (var accion in Acciones)
@@ -393,18 +495,11 @@ public static class InventarioEndpoints
             {
                 return FotoNoValida();
             }
-            if (archivo is null || archivo.Length == 0 || archivo.Length > FormatoImagen.TamanoMaximo) return FotoNoValida();
-
-            // Formato por la firma de los bytes; el nombre y el Content-Type del cliente no se usan.
-            var cabecera = new byte[12];
-            int leidos;
-            await using (var lectura = archivo.OpenReadStream())
-                leidos = await lectura.ReadAtLeastAsync(cabecera, cabecera.Length, throwOnEndOfStream: false, ct);
-            var extension = FormatoImagen.Detectar(cabecera.AsSpan(0, leidos));
+            var extension = await ExtensionValidaAsync(archivo, ct);
             if (extension is null) return FotoNoValida();
 
-            var clave = $"vehiculos/{id}/{Guid.NewGuid():N}.{extension}";
-            await using (var contenido = archivo.OpenReadStream())
+            var clave = ClaveFoto(id, extension);
+            await using (var contenido = archivo!.OpenReadStream())
                 await almacen.GuardarAsync(clave, contenido, ct);
 
             FotoInventario foto;
@@ -474,25 +569,18 @@ public static class InventarioEndpoints
                     await tx.RollbackAsync(ct);
                     return Results.NotFound(new ErrorResponse(MensajeFotoNoEncontrada));
                 }
+                // D-30: el vehículo nunca se queda sin fotos.
+                if (fotos.Count == 1)
+                {
+                    await tx.RollbackAsync(ct);
+                    return Results.Conflict(new ErrorResponse(MensajeUltimaFoto));
+                }
                 clave = borrada.ArchivoClave;
                 // Renumera 1..n y la primera pasa a ser la portada.
                 await ReescribirAsync(db, id, fotos.Where(f => f.Id != fotoId).ToList(), ct);
                 await tx.CommitAsync(ct);
             }
-            try
-            {
-                almacen.Eliminar(clave);
-            }
-            catch (IOException)
-            {
-                loggerFactory.CreateLogger("Camion.Api.Media").LogWarning(
-                    "No se pudo borrar el archivo de la foto {FotoId} del vehículo {VehiculoId}", fotoId, id);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                loggerFactory.CreateLogger("Camion.Api.Media").LogWarning(
-                    "No se pudo borrar el archivo de la foto {FotoId} del vehículo {VehiculoId}", fotoId, id);
-            }
+            EliminarArchivo(almacen, clave, loggerFactory, id);
             return Results.NoContent();
         });
 
@@ -714,6 +802,46 @@ public static class InventarioEndpoints
             actor.EsAdmin ? new AsesorInventario(d.AsesorId, d.AsesorNombre ?? "") : null);
     }
 
+    // HU-014, D-20: tamaño (1 byte a 5 MB) y formato por la firma de los bytes; el nombre y el Content-Type del cliente
+    // no se usan. Devuelve la extensión (jpg, png o webp) o null si la foto no es válida. Sirve a la subida y a la creación.
+    private static async Task<string?> ExtensionValidaAsync(IFormFile? archivo, CancellationToken ct)
+    {
+        if (archivo is null || archivo.Length == 0 || archivo.Length > FormatoImagen.TamanoMaximo) return null;
+        var cabecera = new byte[12];
+        int leidos;
+        await using (var lectura = archivo.OpenReadStream())
+            leidos = await lectura.ReadAtLeastAsync(cabecera, cabecera.Length, throwOnEndOfStream: false, ct);
+        return FormatoImagen.Detectar(cabecera.AsSpan(0, leidos));
+    }
+
+    // D-20: nombre aleatorio; el nombre original nunca se usa.
+    private static string ClaveFoto(long vehiculoId, string extension) => $"vehiculos/{vehiculoId}/{Guid.NewGuid():N}.{extension}";
+
+    // Borra el archivo sin interrumpir la respuesta: si el sistema de archivos falla, solo se registra (sin rutas).
+    private static void EliminarArchivo(IAlmacenFotos almacen, string clave, ILoggerFactory loggerFactory, long vehiculoId)
+    {
+        try
+        {
+            almacen.Eliminar(clave);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            loggerFactory.CreateLogger(CategoriaMedia).LogWarning(
+                "No se pudo borrar un archivo de foto del vehículo {VehiculoId} ({Tipo})", vehiculoId, ex.GetType().Name);
+        }
+    }
+
+    // Salvaguarda de la placa (prueba manual P4a): si la petición traía una placa y el vehículo guardado quedó sin ella,
+    // se registra como advertencia. No debería pasar nunca. Sin datos personales (ni la placa).
+    private static void AdvertirPlacaPerdida(ILogger logger, VehiculoInventarioRequest request, DetalleInventario? detalle,
+        Actor actor, string operacion)
+    {
+        if (detalle is null || ReglasInventario.NormalizarPlaca(request.Placa) is null || detalle.Placa is not null) return;
+        logger.LogWarning(
+            "Inventario placa_no_guardada operacion={Operacion} vehiculoId={VehiculoId} usuarioId={UsuarioId}",
+            operacion, detalle.Id, actor.UsuarioId);
+    }
+
     private static FotoInventarioResponse Foto(FotoInventario f) =>
         new(f.Id, ConsultasCatalogo.UrlFoto(f.ArchivoClave)!, f.Orden, f.EsPortada);
 
@@ -723,6 +851,9 @@ public static class InventarioEndpoints
         Results.Json(new ErrorResponse(MensajesError.SinPermiso), statusCode: StatusCodes.Status403Forbidden);
 
     private static IResult FotoNoValida() => Results.BadRequest(new ErrorResponse(MensajeFoto));
+
+    private static IResult FotosNoValidas(string mensaje) => Results.BadRequest(new ErrorResponse(ReglasInventario.MensajeRevisar,
+        new Dictionary<string, string[]> { [CampoFotos] = [mensaje] }));
 
     private static IResult PlacaDuplicada() => Results.Conflict(new ErrorResponse(ReglasInventario.MensajePlacaDuplicada,
         new Dictionary<string, string[]> { ["placa"] = [ReglasInventario.MensajePlacaDuplicada] }));

@@ -23,14 +23,15 @@ public sealed class InventarioFotosTests(InventarioFixture fx) : IClassFixture<I
     [InlineData("webp")]
     public async Task Subir_formato_valido(string formato)
     {
+        // D-30: el vehículo nace con una foto (la portada); la subida toma el orden 2.
         var id = await _api.CrearId(_api.A);
         var bytes = formato switch { "jpg" => Jpeg(2048), "png" => Png(2048), _ => Webp(2048) };
         // Nombre y Content-Type del cliente engañosos a propósito: no se usan.
         var r = await _api.SubirFoto(_api.A.Token, id, bytes, nombre: "mi-foto-secreta.gif", tipo: "application/octet-stream");
         var json = await Json(r, HttpStatusCode.Created);
         Assert.Equal(new[] { "esPortada", "id", "orden", "url" }, CatalogoJson.Claves(json));
-        Assert.Equal(1, json.GetProperty("orden").GetInt32());
-        Assert.True(json.GetProperty("esPortada").GetBoolean());
+        Assert.Equal(2, json.GetProperty("orden").GetInt32());
+        Assert.False(json.GetProperty("esPortada").GetBoolean());
         var url = json.GetProperty("url").GetString()!;
         Assert.Matches($"^/media/vehiculos/{id}/[0-9a-f]{{32}}\\.{formato}$", url);
         Assert.DoesNotContain("secreta", url);
@@ -39,7 +40,17 @@ public sealed class InventarioFotosTests(InventarioFixture fx) : IClassFixture<I
         var ruta = _api.RutaFisica(url);
         Assert.StartsWith(Path.GetFullPath(_api.F.CarpetaMedia), Path.GetFullPath(ruta));
         Assert.Equal(bytes, await File.ReadAllBytesAsync(ruta));
-        Assert.Single(await FotosDetalle(id));
+        Assert.Equal(2, (await FotosDetalle(id)).Length);
+    }
+
+    [Fact(DisplayName = "HU-014, D-20: en un vehículo sin fotos (anterior a D-30) la primera subida es la portada con orden 1")]
+    public async Task Subir_primera_en_vehiculo_sin_fotos()
+    {
+        var id = await _api.CrearId(_api.A);
+        await _api.QuitarFotosDb(id);
+        var json = await _api.FotoSubida(_api.A.Token, id, Png());
+        Assert.Equal(1, json.GetProperty("orden").GetInt32());
+        Assert.True(json.GetProperty("esPortada").GetBoolean());
     }
 
     [Theory(DisplayName = "HU-014, D-20: archivo que no es imagen aunque tenga extensión/Content-Type de imagen -> 400 y no se guarda nada")]
@@ -63,8 +74,9 @@ public sealed class InventarioFotosTests(InventarioFixture fx) : IClassFixture<I
         };
         var r = await _api.SubirFoto(_api.A.Token, id, bytes, nombre: "foto.jpg", tipo: "image/jpeg");
         await AyudasP2.AfirmarError(r, HttpStatusCode.BadRequest, MsgFoto);
-        Assert.Equal(0, _api.ArchivosDe(id));
-        Assert.Empty(await FotosDetalle(id));
+        // Solo queda la foto con la que nació el vehículo (D-30).
+        Assert.Equal(1, _api.ArchivosDe(id));
+        Assert.Single(await FotosDetalle(id));
     }
 
     [Fact(DisplayName = "HU-014, D-20: exactamente 5 MB se acepta; 5 MB + 1 byte -> 400; cuerpo de más de 6 MB -> rechazado sin guardar")]
@@ -78,8 +90,9 @@ public sealed class InventarioFotosTests(InventarioFixture fx) : IClassFixture<I
         var r = await _api.SubirFoto(_api.A.Token, id, Jpeg(7 * 1024 * 1024));
         Assert.True(r.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.RequestEntityTooLarge,
             $"Se esperaba 400 (o 413) y llegó {(int)r.StatusCode}");
-        Assert.Equal(1, _api.ArchivosDe(id));
-        Assert.Single(await FotosDetalle(id));
+        // La foto inicial (D-30) y la de 5 MB.
+        Assert.Equal(2, _api.ArchivosDe(id));
+        Assert.Equal(2, (await FotosDetalle(id)).Length);
     }
 
     [Fact(DisplayName = "HU-014: sin campo 'archivo', con otro nombre de campo o sin multipart -> 400")]
@@ -89,15 +102,16 @@ public sealed class InventarioFotosTests(InventarioFixture fx) : IClassFixture<I
         await AyudasP2.AfirmarError(await _api.SubirFoto(_api.A.Token, id, Jpeg(), campo: "foto"), HttpStatusCode.BadRequest, MsgFoto);
         var json = await _api.Enviar(HttpMethod.Post, $"/api/inventario/vehiculos/{id}/fotos", _api.A.Token, new { archivo = "abc" });
         await AyudasP2.AfirmarError(json, HttpStatusCode.BadRequest, MsgFoto);
-        Assert.Equal(0, _api.ArchivosDe(id));
+        Assert.Equal(1, _api.ArchivosDe(id));
     }
 
     [Fact(DisplayName = "RN-VE-001, D-20: hasta 10 fotos (orden 1..10, solo la primera es portada); la 11.ª -> 409 y no deja archivo")]
     public async Task Maximo_diez()
     {
-        var id = await _api.CrearId(_api.A);
-        var fotos = new List<JsonElement>();
-        for (var i = 0; i < 10; i++) fotos.Add(await _api.FotoSubida(_api.A.Token, id, i % 3 == 0 ? Jpeg() : i % 3 == 1 ? Png() : Webp()));
+        // D-30: la foto con la que nace el vehículo es la 1.ª; se suben 9 más.
+        var (id, inicial) = await _api.CrearConFoto(_api.A);
+        var fotos = new List<JsonElement> { inicial };
+        for (var i = 1; i < 10; i++) fotos.Add(await _api.FotoSubida(_api.A.Token, id, i % 3 == 0 ? Jpeg() : i % 3 == 1 ? Png() : Webp()));
         Assert.Equal(Enumerable.Range(1, 10), fotos.Select(f => f.GetProperty("orden").GetInt32()));
         Assert.Equal(new[] { true }.Concat(Enumerable.Repeat(false, 9)), fotos.Select(f => f.GetProperty("esPortada").GetBoolean()));
 
@@ -115,9 +129,9 @@ public sealed class InventarioFotosTests(InventarioFixture fx) : IClassFixture<I
     [Fact(DisplayName = "HU-014: borrar renumera 1..n, conserva los id, borra el archivo y, si era la portada, la nueva portada es la primera")]
     public async Task Borrar_renumera()
     {
-        var id = await _api.CrearId(_api.A);
-        var f = new List<JsonElement>();
-        for (var i = 0; i < 4; i++) f.Add(await _api.FotoSubida(_api.A.Token, id));
+        var (id, inicial) = await _api.CrearConFoto(_api.A);
+        var f = new List<JsonElement> { inicial };
+        for (var i = 1; i < 4; i++) f.Add(await _api.FotoSubida(_api.A.Token, id));
         long Id(int i) => f[i].GetProperty("id").GetInt64();
         string Ruta(int i) => _api.RutaFisica(f[i].GetProperty("url").GetString()!);
 
@@ -151,22 +165,34 @@ public sealed class InventarioFotosTests(InventarioFixture fx) : IClassFixture<I
         await AyudasP2.AfirmarError(await _api.BorrarFoto(_api.A.Token, 987_654, Id(1)), HttpStatusCode.NotFound, MsgNoEncontrado);
     }
 
-    [Fact(DisplayName = "HU-014: borrar la única foto deja el vehículo sin fotos ni portada")]
-    public async Task Borrar_unica()
+    [Fact(DisplayName = "D-30: borrar la única foto -> 409 \"El vehículo debe tener al menos una foto...\"; la foto y el archivo siguen")]
+    public async Task Borrar_unica_409()
     {
-        var id = await _api.CrearId(_api.A);
-        var foto = await _api.FotoSubida(_api.A.Token, id);
-        Assert.Equal(HttpStatusCode.NoContent, (await _api.BorrarFoto(_api.A.Token, id, foto.GetProperty("id").GetInt64())).StatusCode);
-        Assert.Empty(await FotosDetalle(id));
-        Assert.Equal(0, _api.ArchivosDe(id));
+        var (id, foto) = await _api.CrearConFoto(_api.A);
+        var fotoId = foto.GetProperty("id").GetInt64();
+        await AyudasP2.AfirmarError(await _api.BorrarFoto(_api.A.Token, id, fotoId), HttpStatusCode.Conflict, MsgUltimaFoto);
+        await AyudasP2.AfirmarError(await _api.BorrarFoto(_api.Admin.Token, id, fotoId), HttpStatusCode.Conflict, MsgUltimaFoto);
+        Assert.Equal(new[] { fotoId }, (await FotosDetalle(id)).Select(x => x.GetProperty("id").GetInt64()));
+        Assert.True(File.Exists(_api.RutaFisica(foto.GetProperty("url").GetString()!)));
+        Assert.Equal(1, _api.ArchivosDe(id));
+
+        // Con una segunda foto, la primera sí se puede borrar; la que queda pasa a ser la portada y ya no se puede borrar.
+        var segunda = await _api.FotoSubida(_api.A.Token, id);
+        Assert.Equal(HttpStatusCode.NoContent, (await _api.BorrarFoto(_api.A.Token, id, fotoId)).StatusCode);
+        var quedan = await FotosDetalle(id);
+        Assert.Equal(segunda.GetProperty("id").GetInt64(), Assert.Single(quedan).GetProperty("id").GetInt64());
+        Assert.True(quedan[0].GetProperty("esPortada").GetBoolean());
+        await AyudasP2.AfirmarError(await _api.BorrarFoto(_api.A.Token, id, segunda.GetProperty("id").GetInt64()),
+            HttpStatusCode.Conflict, MsgUltimaFoto);
+        Assert.Equal(1, _api.ArchivosDe(id));
     }
 
     [Fact(DisplayName = "HU-014: reordenar -> 200 con la lista en el orden nuevo (1..n, conserva id y URL); la primera pasa a ser la portada")]
     public async Task Reordenar()
     {
-        var id = await _api.CrearId(_api.A);
-        var f = new List<JsonElement>();
-        for (var i = 0; i < 3; i++) f.Add(await _api.FotoSubida(_api.A.Token, id));
+        var (id, inicial) = await _api.CrearConFoto(_api.A);
+        var f = new List<JsonElement> { inicial };
+        for (var i = 1; i < 3; i++) f.Add(await _api.FotoSubida(_api.A.Token, id));
         var ids = f.Select(x => x.GetProperty("id").GetInt64()).ToArray();
         var urls = f.ToDictionary(x => x.GetProperty("id").GetInt64(), x => x.GetProperty("url").GetString());
         var nuevo = new[] { ids[2], ids[0], ids[1] };
@@ -198,11 +224,11 @@ public sealed class InventarioFotosTests(InventarioFixture fx) : IClassFixture<I
     [InlineData("nulo")]
     public async Task Reordenar_invalido(string caso)
     {
-        var id = await _api.CrearId(_api.A);
-        var ids = new List<long>();
-        for (var i = 0; i < 3; i++) ids.Add((await _api.FotoSubida(_api.A.Token, id)).GetProperty("id").GetInt64());
-        var otro = await _api.CrearId(_api.A);
-        var ajena = (await _api.FotoSubida(_api.A.Token, otro)).GetProperty("id").GetInt64();
+        var (id, inicial) = await _api.CrearConFoto(_api.A);
+        var ids = new List<long> { inicial.GetProperty("id").GetInt64() };
+        for (var i = 1; i < 3; i++) ids.Add((await _api.FotoSubida(_api.A.Token, id)).GetProperty("id").GetInt64());
+        var (_, fotoOtro) = await _api.CrearConFoto(_api.A);
+        var ajena = fotoOtro.GetProperty("id").GetInt64();
         object cuerpo = caso switch
         {
             "incompleto" => new { fotoIds = new[] { ids[1], ids[0] } },
@@ -217,10 +243,11 @@ public sealed class InventarioFotosTests(InventarioFixture fx) : IClassFixture<I
         Assert.Equal(new[] { true, false, false }, (await FotosDetalle(id)).Select(x => x.GetProperty("esPortada").GetBoolean()));
     }
 
-    [Fact(DisplayName = "HU-014: reordenar un vehículo sin fotos con una lista vacía -> 200 []; vehículo inexistente -> 404")]
+    [Fact(DisplayName = "HU-014: reordenar un vehículo sin fotos (anterior a D-30) con una lista vacía -> 200 []; vehículo inexistente -> 404")]
     public async Task Reordenar_sin_fotos()
     {
         var id = await _api.CrearId(_api.A);
+        await _api.QuitarFotosDb(id);
         var json = await Json(await _api.Ordenar(_api.A.Token, id, new { fotoIds = Array.Empty<long>() }), HttpStatusCode.OK);
         Assert.Equal(0, json.GetArrayLength());
         await AyudasP2.AfirmarError(await _api.Ordenar(_api.A.Token, 987_654, new { fotoIds = Array.Empty<long>() }),

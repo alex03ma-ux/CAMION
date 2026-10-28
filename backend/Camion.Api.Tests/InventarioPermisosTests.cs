@@ -35,13 +35,16 @@ public sealed class InventarioPermisosTests(InventarioFixture fx) : IClassFixtur
     {
         if (ruta.Url.EndsWith("/fotos", StringComparison.Ordinal))
             return await _api.SubirFoto(token, long.Parse(ruta.Url.Split('/')[4]), Jpeg());
+        // D-30: crear es multipart (datos + una foto).
+        if (ruta.Metodo == HttpMethod.Post && ruta.Url == "/api/inventario/vehiculos")
+            return await _api.Crear(token, ruta.Cuerpo!);
         return await _api.Enviar(ruta.Metodo, ruta.Url, token, ruta.Cuerpo);
     }
 
+    // D-30: el vehículo nace con una foto; esa es la que usan las rutas de fotos.
     private async Task<(long Id, long FotoId)> VehiculoDeAConFoto()
     {
-        var id = await _api.CrearId(_api.A);
-        var foto = await _api.FotoSubida(_api.A.Token, id);
+        var (id, foto) = await _api.CrearConFoto(_api.A);
         return (id, foto.GetProperty("id").GetInt64());
     }
 
@@ -98,8 +101,8 @@ public sealed class InventarioPermisosTests(InventarioFixture fx) : IClassFixtur
     public async Task Foto_de_otro_vehiculo()
     {
         var (idA, fotoA) = await VehiculoDeAConFoto();
-        var idB = await _api.CrearId(_api.B);
-        var fotoB = (await _api.FotoSubida(_api.B.Token, idB)).GetProperty("id").GetInt64();
+        var (idB, fotoInicialB) = await _api.CrearConFoto(_api.B);
+        var fotoB = fotoInicialB.GetProperty("id").GetInt64();
         await AyudasP2.AfirmarError(await _api.BorrarFoto(_api.B.Token, idB, fotoA), HttpStatusCode.NotFound, MsgFotoNoEncontrada);
         await Afirmar400(await _api.Ordenar(_api.B.Token, idB, new { fotoIds = new[] { fotoA } }), "fotoIds", MsgOrdenFotos);
         Assert.Equal(1, _api.ArchivosDe(idA));

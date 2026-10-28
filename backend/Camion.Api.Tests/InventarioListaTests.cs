@@ -63,8 +63,12 @@ public sealed class InventarioListaTests : IAsyncLifetime
     [Fact(DisplayName = "HU-021/HU-022: forma de ItemInventario; 'asesor' solo para el administrador; kilometraje null en carrocería y maquinaria")]
     public async Task Forma_del_item()
     {
-        var foto = await _api.FotoSubida(_api.A.Token, _camionA);
+        // D-30: el camión nace con una foto (la portada) y se le suben dos más.
+        var foto = (await Json(await _api.Detalle(_api.A.Token, _camionA), HttpStatusCode.OK)).GetProperty("fotos")[0];
+        await _api.FotoSubida(_api.A.Token, _camionA);
         await _api.FotoSubida(_api.A.Token, _camionA, Png());
+        // El carro se deja sin fotos, como un vehículo anterior a D-30 (DEMO): portada null y 0 fotos.
+        await _api.QuitarFotosDb(_carroA);
 
         var a = await Json(await _api.Lista(_api.A.Token), HttpStatusCode.OK);
         var items = a.GetProperty("items").EnumerateArray().ToDictionary(x => x.GetProperty("id").GetInt64());
@@ -81,7 +85,7 @@ public sealed class InventarioListaTests : IAsyncLifetime
         Assert.Equal(120_000, camion.GetProperty("kilometraje").GetInt32());
         Assert.Equal("Medellín", camion.GetProperty("municipio").GetString());
         Assert.Equal(foto.GetProperty("url").GetString(), camion.GetProperty("fotoPortada").GetString());
-        Assert.Equal(2, camion.GetProperty("totalFotos").GetInt32());
+        Assert.Equal(3, camion.GetProperty("totalFotos").GetInt32());
 
         Assert.True(EsNulo(items[_maquinaA], "kilometraje"));
         Assert.Equal(3400, items[_maquinaA].GetProperty("horasUso").GetInt32());

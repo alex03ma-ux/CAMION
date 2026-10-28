@@ -38,7 +38,10 @@ public sealed class InventarioCrearEditarTests(InventarioFixture fx) : IClassFix
         Assert.Equal("ACTIVO", json.GetProperty("estado").GetString());
         Assert.True(EsNulo(json, "precioAnteriorCop"));
         Assert.True(EsNulo(json, "motivoInactivacion"));
-        Assert.Empty(json.GetProperty("fotos").EnumerateArray());
+        // D-30: nace con la foto enviada, que es la portada.
+        var foto = Assert.Single(json.GetProperty("fotos").EnumerateArray());
+        Assert.Equal(1, foto.GetProperty("orden").GetInt32());
+        Assert.True(foto.GetProperty("esPortada").GetBoolean());
         Assert.False(json.TryGetProperty("asesor", out _), "El asesor no debe recibir el bloque 'asesor'.");
 
         var v = await _api.VehiculoDb(id);
@@ -293,12 +296,11 @@ public sealed class InventarioCrearEditarTests(InventarioFixture fx) : IClassFix
         var campos = json.GetProperty("errores").EnumerateObject().Select(p => p.Name).ToHashSet();
         Assert.Superset(new HashSet<string> { "marcaId", "modeloAnio", "kilometraje", "municipioId", "precioCop" }, campos);
 
-        var req = Ayudas.ConToken(HttpMethod.Post, "/api/inventario/vehiculos", _api.A.Token);
-        req.Content = new StringContent("{ no es json", System.Text.Encoding.UTF8, "application/json");
-        Assert.Equal(HttpStatusCode.BadRequest, (await _api.C.SendAsync(req)).StatusCode);
-        var req2 = Ayudas.ConToken(HttpMethod.Post, "/api/inventario/vehiculos", _api.A.Token);
-        req2.Content = new StringContent("{\"tipoId\":\"abc\"}", System.Text.Encoding.UTF8, "application/json");
-        Assert.Equal(HttpStatusCode.BadRequest, (await _api.C.SendAsync(req2)).StatusCode);
+        // D-30: el JSON va en el campo "datos" del multipart; mal formado o con tipos incorrectos -> 400 formato común.
+        await AyudasP2.AfirmarError(await _api.CrearMultipart(_api.A.Token, "{ no es json", [Jpeg()]),
+            HttpStatusCode.BadRequest, MsgFormato);
+        await AyudasP2.AfirmarError(await _api.CrearMultipart(_api.A.Token, "{\"tipoId\":\"abc\"}", [Jpeg()]),
+            HttpStatusCode.BadRequest, MsgFormato);
     }
 
     // ---------------------------------------------------------------- placa (D-2, RN-VE-002)

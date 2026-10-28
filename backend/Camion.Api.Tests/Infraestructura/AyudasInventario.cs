@@ -35,6 +35,12 @@ public sealed class InventarioApi : IDisposable
     public const string MsgTipoCambio = "La categoría de un vehículo no se puede cambiar.";
     public const string MsgAsesor = "Elige un asesor activo.";
     public const string MsgArchivoNoEncontrado = "Archivo no encontrado.";
+    // D-30
+    public const string MsgSinFotos = "Agrega al menos una foto del vehículo.";
+    public const string MsgDemasiadasFotos = "Puedes subir hasta 10 fotos.";
+    public const string MsgUltimaFoto = "El vehículo debe tener al menos una foto. Sube otra antes de eliminar esta.";
+    public const string MsgEditarSinFotos = "Agrega al menos una foto antes de guardar los cambios.";
+    public const string MsgFormato = "La solicitud no tiene un formato válido.";
 
     public static readonly int Anio = DateTime.UtcNow.Year;
 
@@ -182,8 +188,33 @@ public sealed class InventarioApi : IDisposable
         return C.SendAsync(req);
     }
 
-    public Task<HttpResponseMessage> Crear(string? token, object cuerpo) =>
-        Enviar(HttpMethod.Post, "/api/inventario/vehiculos", token, cuerpo);
+    private static readonly JsonSerializerOptions OpcionesWeb = new(JsonSerializerDefaults.Web);
+
+    /// <summary>
+    /// D-30: POST /api/inventario/vehiculos es multipart/form-data con el campo "datos" (JSON) y 1 a 10 "fotos".
+    /// Esta ayuda envía el cuerpo con una foto JPEG mínima válida, de modo que las pruebas de datos no cambian.
+    /// </summary>
+    public Task<HttpResponseMessage> Crear(string? token, object cuerpo) => CrearConFotos(token, cuerpo, [Jpeg()]);
+
+    public Task<HttpResponseMessage> CrearConFotos(string? token, object cuerpo, IEnumerable<byte[]> fotos) =>
+        CrearMultipart(token, JsonSerializer.Serialize(cuerpo, OpcionesWeb), fotos);
+
+    /// <summary>Multipart crudo: <paramref name="datos"/> null omite el campo; las fotos van en el campo indicado.</summary>
+    public Task<HttpResponseMessage> CrearMultipart(string? token, string? datos, IEnumerable<byte[]> fotos, string campoFotos = "fotos")
+    {
+        var form = new MultipartFormDataContent();
+        if (datos is not null) form.Add(new StringContent(datos, System.Text.Encoding.UTF8, "application/json"), "datos");
+        var i = 0;
+        foreach (var bytes in fotos)
+        {
+            var archivo = new ByteArrayContent(bytes);
+            archivo.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
+            form.Add(archivo, campoFotos, $"foto{++i}.jpg");
+        }
+        var req = ConToken(HttpMethod.Post, "/api/inventario/vehiculos", token);
+        req.Content = form;
+        return C.SendAsync(req);
+    }
 
     public Task<HttpResponseMessage> Editar(string? token, long id, object cuerpo) =>
         Enviar(HttpMethod.Put, $"/api/inventario/vehiculos/{id}", token, cuerpo);
@@ -212,6 +243,22 @@ public sealed class InventarioApi : IDisposable
 
     public async Task<long> CrearId(AsesorPrueba asesor, string categoria = "camion", params (string, object?)[] cambios) =>
         (await Creado(asesor.Token, Con(Cuerpo(categoria), cambios))).GetProperty("id").GetInt64();
+
+    /// <summary>D-30: crea un vehículo (nace con una foto) y devuelve su id y esa foto ({ id, url, orden, esPortada }).</summary>
+    public async Task<(long Id, JsonElement Foto)> CrearConFoto(AsesorPrueba asesor, string categoria = "camion",
+        params (string, object?)[] cambios)
+    {
+        var json = await Creado(asesor.Token, Con(Cuerpo(categoria), cambios));
+        return (json.GetProperty("id").GetInt64(), json.GetProperty("fotos").EnumerateArray().Single());
+    }
+
+    /// <summary>Simula un vehículo anterior a D-30 (o DEMO) quitando sus fotos directamente en la base de prueba (SQLite).</summary>
+    public Task QuitarFotosDb(long id) =>
+        Db(db => db.FotosVehiculo.Where(f => f.VehiculoId == id).ExecuteDeleteAsync());
+
+    /// <summary>Total de archivos en toda la carpeta temporal de fotos.</summary>
+    public int ArchivosEnMedia() =>
+        Directory.Exists(F.CarpetaMedia) ? Directory.GetFiles(F.CarpetaMedia, "*", SearchOption.AllDirectories).Length : 0;
 
     // ---------------------------------------------------------------- fotos
 

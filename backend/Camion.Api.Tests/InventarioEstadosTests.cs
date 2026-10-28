@@ -134,8 +134,7 @@ public sealed class InventarioEstadosTests(InventarioFixture fx) : IClassFixture
     [Fact(DisplayName = "D-22: VENDIDO no se edita (409); sus fotos no se modifican (409); el detalle sigue disponible")]
     public async Task Vendido_bloqueado()
     {
-        var id = await _api.CrearId(_api.A);
-        var foto = await _api.FotoSubida(_api.A.Token, id);
+        var (id, foto) = await _api.CrearConFoto(_api.A); // D-30: nace con su foto
         await _api.MarcarVendido(id);
 
         await AyudasP2.AfirmarError(await _api.Editar(_api.A.Token, id, Con(_api.CuerpoCamion(), ("kilometraje", 1))),

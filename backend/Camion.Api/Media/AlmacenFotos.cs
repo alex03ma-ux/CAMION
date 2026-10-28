@@ -72,6 +72,9 @@ public static class FormatoImagen
     public const long TamanoMaximo = 5 * 1024 * 1024;
     public const long CuerpoMaximo = 6 * 1024 * 1024;
 
+    /// <summary>D-30: límite del cuerpo al crear el vehículo con sus fotos (datos + hasta 10 fotos de 5 MB).</summary>
+    public const long CuerpoMaximoCreacion = 52 * 1024 * 1024;
+
     public static readonly string[] Extensiones = ["jpg", "jpeg", "png", "webp"];
 
     /// <summary>Extensión que corresponde a la firma (jpg, png o webp), o null si no es un formato admitido.</summary>
