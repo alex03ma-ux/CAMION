@@ -178,3 +178,15 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - 008: la responsable aprobó la lista completa, PROPUESTO → aprobado.
     - Respaldo previo: `C:\Respaldo_CAMION\camion_ventas_antes_008_20261027_211123.sql`.
     - Antes: 34 marcas y 139 líneas. Después: 35 marcas (+Develon) y 393 líneas (+254); 14 vehículos y 4 fotos, sin cambios.
+- Defecto de la prueba manual: los camiones 13 a 16 quedaron con `placa` NULL en `camion_ventas`.
+  - **No se pudo reproducir.** Con pruebas automáticas, el frontend sí envía la placa del camión, como asesor y como administrador, y la API la guarda al crear y al editar en Carro, Camión y Maquinaria. También rechaza la misma placa entre categorías distintas.
+  - Pista: si en un camión se escribió `MAQ12345` (8 caracteres), el formulario lo habría rechazado. Que se guardara sin aviso indica que el campo llegó vacío al enviar.
+  - Salvaguardas añadidas:
+    - el frontend compara la placa enviada con la devuelta y avisa si no coinciden; si coinciden, el éxito dice "Placa: …";
+    - el servidor registra `placa_no_guardada` en el log.
+  - Pruebas añadidas para cada categoría.
+- D-30 TOMADA (al menos una foto):
+  - Creación atómica en multipart con 1 a 10 fotos.
+  - La última foto no se puede borrar.
+  - Un PUT sobre un vehículo sin fotos da 409; en la interfaz se pide subir una foto antes.
+- Resultados: `dotnet test` 684/684; `npm test` 329/329; `npm run build` correcto. La API en marcha no se detuvo: las pruebas se compilaron en una carpeta aparte.

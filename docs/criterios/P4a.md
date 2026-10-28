@@ -295,3 +295,18 @@ No se ha modificado el contrato ni `DECISIONES.md` (indicación del coordinador)
 **C-P4a-7. Huecos del contrato (para el coordinador).** (a) `asesorId` enviado por un asesor en la creación, o en el `PUT`: ¿se ignora o 400? (CA-013-02). (b) `PUT` sin cambios: ¿evento `EDITAR` vacío o ninguno? (CA-019-04). (c) Auditoría de subir, borrar y reordenar fotos no especificada, aunque RN-VE-009 pide registrar cambios (CA-014-12). (d) Código del cuerpo > 6 MB (400 o 413, CA-014-04). (e) Mensaje exacto del 400 del motivo y del reordenado.
 
 **C-P4a-8. Dos precios hasta P4b y ESTADO-REAL desactualizado.** Tras P4a el vehículo tiene su `precio_cop`, pero el catálogo público sigue mostrando el de la publicación: un cambio de precio en el inventario no se verá en el portal hasta P4b. Conviene avisarlo a la responsable antes de la prueba manual. Además `ESTADO-REAL.md` sigue siendo la auditoría de P0; se recomienda que `auditor-codigo` lo actualice antes de cerrar P4a.
+
+## Criterios añadidos tras la prueba manual (2026-10-28)
+
+| Id | Dado | Cuando | Entonces | Marca | Prueba |
+|---|---|---|---|---|---|
+| CA-D30-01 | Un asesor en "Registrar vehículo" | No ha elegido ninguna foto | El botón "Registrar vehículo" está desactivado y se ve "Agrega al menos una foto para poder guardar." | CONFIRMADO (D-30) | COMP |
+| CA-D30-02 | — | Se envía a la API una creación sin fotos, con más de 10 o con una foto inválida | 400 en `fotos`; no se crea el vehículo ni quedan archivos | CONFIRMADO (D-30) | API |
+| CA-D30-03 | Datos válidos y de 1 a 10 fotos válidas | Se registra | 201: el vehículo, las fotos (la primera es portada) y la auditoría se guardan juntos; si la base falla, no queda nada | CONFIRMADO (D-30) | API |
+| CA-D30-04 | Un vehículo con una sola foto | Se intenta eliminarla | El botón está desactivado en la interfaz; la API responde 409 | CONFIRMADO (D-30) | API + COMP |
+| CA-D30-05 | Un vehículo sin fotos (DEMO o creado antes de D-30) | Se intenta "Guardar cambios" | En la interfaz aparece el aviso y el botón está desactivado; la API responde 409; después de subir una foto, guardar da 200 | CONFIRMADO (D-30) | API + COMP |
+| CA-PLA-01 | Carro, Camión o Maquinaria | Se crea o se edita con placa | La placa se guarda y vuelve en la respuesta | CONFIRMADO (D-2; defecto de la prueba manual) | API |
+| CA-PLA-02 | Una placa ya usada en otra categoría | Se crea otro vehículo con la misma placa, en mayúsculas o minúsculas | 409 | CONFIRMADO (D-2) | API |
+| CA-PLA-03 | Se envió una placa | La respuesta trae otra placa, o ninguna | Advertencia "La placa no se guardó…" en la interfaz y advertencia `placa_no_guardada` en el log; si coinciden, el éxito dice "Placa: …" | PROPUESTO | COMP + API |
+| CA-D28-01 | Un vehículo ACTIVO | Se reserva sin nota o con menos de 5 caracteres | 400; en la interfaz, el diálogo pide la nota | CONFIRMADO (D-28) | API + COMP |
+| CA-D28-02 | Un vehículo reservado con nota | Se consulta el inventario o el detalle | La nota se ve en el inventario y en la auditoría, no en el portal; al liberar o inactivar se borra | CONFIRMADO (D-28) | API + COMP |
