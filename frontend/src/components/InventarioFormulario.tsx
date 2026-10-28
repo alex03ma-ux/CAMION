@@ -35,6 +35,7 @@ import {
 } from '../inventario/formulario'
 import {
   aplica,
+  CAMPOS_VEHICULO,
   categoriaDeTipo,
   esObligatorio,
   etiquetaConObligatoriedad,
@@ -211,10 +212,11 @@ export function InventarioFormulario({
 
   const detalle = carga.estado === 'ok' ? carga.detalle : null
 
+  // D-33: también al editar manda la categoría elegida en el formulario; la del detalle es el respaldo.
   const categoria: Categoria | null = creando
     ? categoriaPorTipoId(catalogos, form.tipoId)
     : detalle
-      ? (categoriaDeTipo(detalle.tipo) ?? categoriaPorTipoId(catalogos, form.tipoId))
+      ? (categoriaPorTipoId(catalogos, form.tipoId) ?? categoriaDeTipo(detalle.tipo))
       : null
 
   const editable = creando || (detalle !== null && esEditable(detalle.estado))
@@ -227,7 +229,8 @@ export function InventarioFormulario({
   const departamento = catalogos.departamentos.find((d) => String(d.id) === form.departamentoId)
 
   function visible(campo: CampoFormulario): boolean {
-    if (campo === 'tipoId') return creando
+    // D-33: la categoría también se puede cambiar al editar (la API lo impide si hay una publicación activa).
+    if (campo === 'tipoId') return true
     if (campo === 'asesorId') return pedirAsesor
     if (campo === 'departamentoId') return categoria !== null
     return categoria !== null && aplica(categoria, campo)
@@ -245,6 +248,11 @@ export function InventarioFormulario({
       if (campo === 'tipoId' && f.lineaId !== '') {
         const m = catalogos.marcas.find((x) => String(x.id) === f.marcaId)
         if (!lineasDeCategoria(m, valor).some((l) => String(l.id) === f.lineaId)) nuevo.lineaId = ''
+      }
+      // D-33: y se vacían los datos que la nueva categoría no admite (p. ej. placa y kilometraje en Carrocería).
+      if (campo === 'tipoId') {
+        const nuevaCategoria = categoriaDeTipo(catalogos.tipos.find((t) => String(t.id) === valor)?.nombre)
+        if (nuevaCategoria) for (const c of CAMPOS_VEHICULO) if (!aplica(nuevaCategoria, c)) nuevo[c] = ''
       }
       if (campo === 'departamentoId') {
         const d = catalogos.departamentos.find((x) => String(x.id) === valor)
@@ -440,7 +448,7 @@ export function InventarioFormulario({
             textoVacio: !marca
               ? 'Elige primero la marca'
               : lineas.length === 0
-                ? 'Esta marca no tiene modelos de esta categoría'
+                ? `${marca.nombre} no tiene modelos de ${NOMBRES_CATEGORIA[cat]}. Elige otra marca o cambia la categoría.`
                 : requerido
                   ? 'Elige el modelo'
                   : 'Sin línea',
@@ -634,8 +642,7 @@ export function InventarioFormulario({
                 <div>
                   <dt>Categoría</dt>
                   <dd>
-                    {categoria ? NOMBRES_CATEGORIA[categoria] : detalle.tipo || '—'}{' '}
-                    <span className="dato-secundario">(no se puede cambiar)</span>
+                    {categoria ? NOMBRES_CATEGORIA[categoria] : detalle.tipo || '—'}
                   </dd>
                 </div>
                 <div>
@@ -686,12 +693,13 @@ export function InventarioFormulario({
             <fieldset className="inv-fieldset" disabled={!editable || enviando}>
               <legend className="sr-only">{titulo}</legend>
               <NotaObligatorio />
-              {creando && (
+              {(creando || editable) && (
                 <div className="inv-grupo">
                   <h2>Categoría</h2>
                   <p className="campo-ayuda">
-                    Elige primero la categoría: según ella se muestran los datos que aplican. Después
-                    de registrar no se puede cambiar.
+                    {creando
+                      ? 'Elige primero la categoría: según ella se muestran los datos que aplican.'
+                      : 'Puedes cambiar la categoría: se mostrarán los datos de la nueva y se vaciarán los que ya no apliquen.'}
                   </p>
                   <div className="inv-rejilla">
                     {pedirAsesor && (

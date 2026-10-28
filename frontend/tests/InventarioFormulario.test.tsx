@@ -471,8 +471,8 @@ describe('Edición (CA-UI-10, HU-019, RN-VE-003)', () => {
     abrirConSesion('#/inventario/9')
     expect(await screen.findByText(/Precio anterior: \$ 120\.000\.000/)).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1, name: 'Editar vehículo' })).toBeInTheDocument()
-    expect(screen.getByText('(no se puede cambiar)')).toBeInTheDocument()
-    expect(screen.queryByLabelText('Categoría')).toBeNull()
+    // D-33: la categoría se puede cambiar también al editar.
+    expect(screen.getByLabelText('Categoría')).toHaveValue('2')
     expect(screen.queryByLabelText('Asesor propietario')).toBeNull()
     expect(screen.getByText('Asesor Uno Ficticio')).toBeInTheDocument()
     expect(screen.getByLabelText('Precio de venta (COP)')).toHaveValue('115.000.000')
@@ -902,5 +902,45 @@ describe('D-32: los modelos se filtran por la categoría elegida', () => {
     await llenarCamion(u)
     await u.click(screen.getByRole('button', { name: 'Registrar vehículo' }))
     expect(await screen.findByText('Este modelo no corresponde a la categoría elegida.')).toBeInTheDocument()
+  })
+})
+
+describe('D-33: el dueño puede cambiar la categoría al editar', () => {
+  it('Camión -> Carrocería: aparecen sus campos, se vacían placa y kilometraje y el PUT no los envía', async () => {
+    const api = simularFetch({
+      [ME]: me(['ASESOR']),
+      [CATALOGOS]: { status: 200, body: CAT },
+      [DETALLE_9]: [
+        { status: 200, body: detalleCamion() },
+        { status: 200, body: detalleCamion({ tipoId: 3, tipo: 'Carrocería', placa: null, kilometraje: null }) },
+      ],
+    })
+    const u = userEvent.setup()
+    abrirConSesion('#/inventario/9')
+    const categoria = await screen.findByLabelText('Categoría')
+    expect(screen.getByLabelText('Placa (opcional)')).toHaveValue('ABC123')
+    await u.selectOptions(categoria, '3')
+    expect(screen.queryByLabelText('Placa (opcional)')).toBeNull()
+    expect(screen.queryByLabelText('Kilometraje (km)')).toBeNull()
+    await u.selectOptions(screen.getAllByLabelText(/^Tipo de carrocería|^Carrocería/)[0], '5')
+    await u.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    await waitFor(() => expect(api.llamadasA(DETALLE_9)).toHaveLength(2))
+    const cuerpo = cuerpoJson(api.llamadasA(DETALLE_9)[1].init) as Record<string, unknown>
+    expect(cuerpo.tipoId).toBe(3)
+    expect('placa' in cuerpo).toBe(false)
+    expect('kilometraje' in cuerpo).toBe(false)
+  })
+
+  it('si la marca no tiene modelos de la categoría, el mensaje dice qué hacer', async () => {
+    const cat = {
+      ...CAT,
+      marcas: [{ id: 30, nombre: 'Kia', lineas: [{ id: 300, nombre: 'Picanto', tipoIds: [1] }] }],
+    }
+    simularFetch({ [ME]: me(['ASESOR']), [CATALOGOS]: { status: 200, body: cat } })
+    abrirConSesion('#/inventario/nuevo')
+    const u = userEvent.setup()
+    await u.selectOptions(await screen.findByLabelText('Categoría'), '2')
+    await u.selectOptions(screen.getByLabelText('Marca'), '30')
+    expect(screen.getByRole('option', { name: 'Kia no tiene modelos de Camión. Elige otra marca o cambia la categoría.' })).toBeInTheDocument()
   })
 })
