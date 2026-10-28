@@ -176,12 +176,12 @@ describe('Listas dependientes (CA-UI-07)', () => {
     expect(linea).toBeDisabled()
     await u.selectOptions(screen.getByLabelText('Marca'), '10')
     expect(linea).toBeEnabled()
-    expect(within(linea).getAllByRole('option').map((o) => o.textContent)).toEqual(['Sin línea', 'NPR', 'NHR'])
+    expect(within(linea).getAllByRole('option').map((o) => o.textContent)).toEqual(['Elige el modelo', 'NPR', 'NHR'])
     await u.selectOptions(linea, '100')
     expect(linea).toHaveValue('100')
     await u.selectOptions(screen.getByLabelText('Marca'), '11')
     expect(linea).toHaveValue('')
-    expect(within(linea).getAllByRole('option').map((o) => o.textContent)).toEqual(['Sin línea', 'T800'])
+    expect(within(linea).getAllByRole('option').map((o) => o.textContent)).toEqual(['Elige el modelo', 'T800'])
   })
 
   it('municipio filtrado por departamento y se vacía al cambiar de departamento', async () => {
@@ -851,5 +851,56 @@ describe('D-31: asterisco en los campos obligatorios según la categoría', () =
     expect(etiquetaMarca.classList.contains('campo-obligatorio')).toBe(false)
     const carroceria = screen.getAllByText(/carrocería/i, { selector: 'label' }).find((l) => !/opcional/.test(l.textContent ?? '')) as HTMLElement
     expect(carroceria.classList.contains('campo-obligatorio')).toBe(true)
+  })
+})
+
+describe('D-32: los modelos se filtran por la categoría elegida', () => {
+  const CAT_D32 = {
+    ...CAT,
+    marcas: [
+      {
+        id: 10,
+        nombre: 'Chevrolet',
+        lineas: [
+          { id: 100, nombre: 'NPR', tipoIds: [2] },
+          { id: 102, nombre: 'Onix', tipoIds: [1] },
+          { id: 103, nombre: 'Sin clasificar', tipoIds: [] },
+        ],
+      },
+    ],
+  }
+  const opciones = () =>
+    within(screen.getByLabelText('Línea (modelo)')).getAllByRole('option').map((o) => o.textContent)
+
+  it('Camión solo ofrece modelos de camión (y los sin clasificar); Carro solo los de carro', async () => {
+    simularFetch({ [ME]: me(['ASESOR']), [CATALOGOS]: { status: 200, body: CAT_D32 } })
+    abrirConSesion('#/inventario/nuevo')
+    const u = userEvent.setup()
+    await u.selectOptions(await screen.findByLabelText('Categoría'), '2')
+    await u.selectOptions(screen.getByLabelText('Marca'), '10')
+    expect(opciones()).toEqual(['Elige el modelo', 'NPR', 'Sin clasificar'])
+    await u.selectOptions(screen.getByLabelText('Línea (modelo)'), '100')
+    // Al cambiar a Carro, NPR deja de valer y se limpia.
+    await u.selectOptions(screen.getByLabelText('Categoría'), '1')
+    expect(opciones()).toEqual(['Elige el modelo', 'Onix', 'Sin clasificar'])
+    expect(screen.getByLabelText('Línea (modelo)')).toHaveValue('')
+  })
+
+  it('la API rechaza un modelo de otra categoría: el mensaje queda bajo el modelo', async () => {
+    simularFetch({
+      [ME]: me(['ASESOR']),
+      [CATALOGOS]: { status: 200, body: CAT_D32 },
+      [VEHICULOS]: {
+        status: 400,
+        body: { error: 'Revisa los datos marcados.', errores: { lineaId: ['Este modelo no corresponde a la categoría elegida.'] } },
+      },
+    })
+    abrirConSesion('#/inventario/nuevo')
+    const u = userEvent.setup()
+    await u.selectOptions(await screen.findByLabelText('Categoría'), '2')
+    await agregarFotos(u)
+    await llenarCamion(u)
+    await u.click(screen.getByRole('button', { name: 'Registrar vehículo' }))
+    expect(await screen.findByText('Este modelo no corresponde a la categoría elegida.')).toBeInTheDocument()
   })
 })

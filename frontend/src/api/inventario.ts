@@ -127,7 +127,16 @@ export type VehiculoRequest = {
   asesorId?: number | string
 }
 
-export type MarcaInventario = Opcion & { lineas: Opcion[] }
+/** D-32: categorías (ids de tipos) del modelo; vacía = sin clasificar (se ofrece en todas). */
+export type LineaInventario = Opcion & { tipoIds?: number[] }
+export type MarcaInventario = Opcion & { lineas: LineaInventario[] }
+
+/** D-32: modelos de la marca que corresponden a la categoría elegida. */
+export function lineasDeCategoria(marca: MarcaInventario | undefined, tipoId: string): LineaInventario[] {
+  if (!marca) return []
+  const tipo = Number(tipoId)
+  return marca.lineas.filter((l) => !l.tipoIds?.length || l.tipoIds.includes(tipo))
+}
 export type DepartamentoInventario = Opcion & { municipios: Opcion[] }
 
 export type CatalogosInventario = {
@@ -211,6 +220,16 @@ function leerOpcion(valor: unknown): Opcion | null {
   const nombre = texto(valor.nombre)
   if (id === null || nombre === '') return null
   return { id, nombre }
+}
+
+function listaLineas(valor: unknown): LineaInventario[] {
+  if (!Array.isArray(valor)) return []
+  return valor.flatMap((l: unknown) => {
+    const opcion = leerOpcion(l)
+    if (!opcion || !esObjetoJson(l)) return []
+    const tipoIds = Array.isArray(l.tipoIds) ? l.tipoIds.filter((t: unknown): t is number => typeof t === 'number') : []
+    return [{ ...opcion, tipoIds }]
+  })
 }
 
 function listaOpciones(valor: unknown): Opcion[] {
@@ -445,7 +464,7 @@ export async function obtenerCatalogosInventario(
     ? respuesta.marcas.flatMap((m: unknown) => {
         const opcion = leerOpcion(m)
         if (!opcion || !esObjetoJson(m)) return []
-        return [{ ...opcion, lineas: listaOpciones(m.lineas) }]
+        return [{ ...opcion, lineas: listaLineas(m.lineas) }]
       })
     : []
   const departamentos: DepartamentoInventario[] = Array.isArray(respuesta.departamentos)

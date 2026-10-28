@@ -6,6 +6,7 @@ import type {
   DetalleInventario,
   VehiculoRequest,
 } from '../api/inventario'
+import { lineasDeCategoria } from '../api/inventario'
 import type { ErroresPorCampo } from '../api/http'
 import {
   aplica,
@@ -43,6 +44,7 @@ export const MENSAJES_CAMPO = {
   marcaId: 'Elige la marca.',
   lineaId: 'Elige el modelo.',
   lineaMarca: 'La línea no corresponde a la marca elegida.',
+  lineaCategoria: 'Este modelo no corresponde a la categoría elegida.',
   modeloAnio: (max: number) => `Escribe un año entre ${ANIO_MIN_VEHICULO} y ${max}.`,
   kilometraje: 'Escribe el kilometraje (número entero mayor o igual a 0).',
   horasUso: 'Escribe las horas de uso (número entero mayor o igual a 0).',
@@ -212,6 +214,8 @@ export function validarFormulario(
     const marca = catalogos.marcas.find((m) => String(m.id) === f.marcaId)
     if (!marca || !marca.lineas.some((l) => String(l.id) === f.lineaId)) {
       poner('lineaId', MENSAJES_CAMPO.lineaMarca)
+    } else if (!lineasDeCategoria(marca, f.tipoId).some((l) => String(l.id) === f.lineaId)) {
+      poner('lineaId', MENSAJES_CAMPO.lineaCategoria)
     }
   }
 

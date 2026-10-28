@@ -12,6 +12,7 @@ import {
   type DetalleInventario,
   type FotoInventario,
   type Opcion,
+  lineasDeCategoria,
 } from '../api/inventario'
 import { ApiError, MENSAJE_INESPERADO } from '../api/http'
 import { formatoCop, mostrarConMiles, soloDigitos } from '../catalogo/formato'
@@ -238,7 +239,12 @@ export function InventarioFormulario({
       // Marca → línea y departamento → municipio: se limpia el dependiente si ya no corresponde.
       if (campo === 'marcaId') {
         const m = catalogos.marcas.find((x) => String(x.id) === valor)
-        if (!m || !m.lineas.some((l) => String(l.id) === f.lineaId)) nuevo.lineaId = ''
+        if (!m || !lineasDeCategoria(m, f.tipoId).some((l) => String(l.id) === f.lineaId)) nuevo.lineaId = ''
+      }
+      // D-32: al cambiar de categoría se limpia el modelo si no pertenece a ella.
+      if (campo === 'tipoId' && f.lineaId !== '') {
+        const m = catalogos.marcas.find((x) => String(x.id) === f.marcaId)
+        if (!lineasDeCategoria(m, valor).some((l) => String(l.id) === f.lineaId)) nuevo.lineaId = ''
       }
       if (campo === 'departamentoId') {
         const d = catalogos.departamentos.find((x) => String(x.id) === valor)
@@ -425,11 +431,21 @@ export function InventarioFormulario({
           textoVacio: requerido ? 'Elige la marca' : 'Sin marca',
         })
       case 'lineaId':
-        return select(campo, etiqueta, marca?.lineas ?? [], {
-          requerido,
-          deshabilitado: !marca,
-          textoVacio: marca ? 'Sin línea' : 'Elige primero la marca',
-        })
+        {
+          // D-32: solo los modelos de la marca que corresponden a la categoría elegida.
+          const lineas = lineasDeCategoria(marca, form.tipoId)
+          return select(campo, etiqueta, lineas, {
+            requerido,
+            deshabilitado: !marca,
+            textoVacio: !marca
+              ? 'Elige primero la marca'
+              : lineas.length === 0
+                ? 'Esta marca no tiene modelos de esta categoría'
+                : requerido
+                  ? 'Elige el modelo'
+                  : 'Sin línea',
+          })
+        }
       case 'modeloAnio':
         return (
           <Campo
