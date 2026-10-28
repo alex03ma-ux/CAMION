@@ -1,4 +1,5 @@
 using System.Net;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using Camion.Api.Tests.Infraestructura;
 using static Camion.Api.Tests.Infraestructura.InventarioApi;
@@ -435,18 +436,64 @@ public sealed class InventarioCrearEditarTests(InventarioFixture fx) : IClassFix
         Assert.Null(v.PrecioAnteriorCop);
     }
 
-    [Fact(DisplayName = "HU-019: el tipo no se puede cambiar (400); sin tipoId en el cuerpo se usa el actual")]
-    public async Task Tipo_no_editable()
+    [Fact(DisplayName = "D-33: el dueño cambia la categoría (camión -> carro) y se valida con la nueva; sin tipoId se usa la actual")]
+    public async Task Cambiar_categoria()
     {
         var id = await _api.CrearId(_api.A, "camion");
-        await Afirmar400(await _api.Editar(_api.A.Token, id, Con(_api.CuerpoCamion(), ("tipoId", _api.Carro))), "tipoId", MsgTipoCambio);
-        Assert.Equal(_api.Camion, (await _api.VehiculoDb(id)).TipoVehiculoId);
+        var json = await Json(await _api.Editar(_api.A.Token, id, Sin(_api.CuerpoCarro(), "asesorId")), HttpStatusCode.OK);
+        Assert.Equal(_api.Carro, json.GetProperty("tipoId").GetInt64());
+        Assert.Equal(_api.Carro, (await _api.VehiculoDb(id)).TipoVehiculoId);
+        var auditoria = await _api.Leer(db => db.AuditoriaEventos.AsNoTracking()
+            .Where(a => a.Entidad == "Vehiculo" && a.EntidadId == id.ToString() && a.Accion == "EDITAR")
+            .Select(a => new { a.DatosAnteriores, a.DatosNuevos }).SingleAsync());
+        Assert.Equal(_api.Camion, JsonDocument.Parse(auditoria.DatosAnteriores!).RootElement.GetProperty("tipoId").GetInt64());
+        Assert.Equal(_api.Carro, JsonDocument.Parse(auditoria.DatosNuevos!).RootElement.GetProperty("tipoId").GetInt64());
 
-        var sinTipo = await Json(await _api.Editar(_api.A.Token, id, Sin(Con(_api.CuerpoCamion(), ("kilometraje", 7)), "tipoId")),
+        var sinTipo = await Json(await _api.Editar(_api.A.Token, id, Sin(Con(_api.CuerpoCarro(), ("kilometraje", 7)), "tipoId", "asesorId")),
             HttpStatusCode.OK);
-        Assert.Equal(_api.Camion, sinTipo.GetProperty("tipoId").GetInt64());
+        Assert.Equal(_api.Carro, sinTipo.GetProperty("tipoId").GetInt64());
         Assert.Equal(7, sinTipo.GetProperty("kilometraje").GetInt32());
     }
+
+    [Fact(DisplayName = "D-33: al pasar a carrocería se validan sus reglas (la placa y el kilometraje no se admiten) y quedan vacíos")]
+    public async Task Cambiar_a_carroceria()
+    {
+        var id = await _api.CrearId(_api.A, "camion", ("placa", "CAM" + Random.Shared.Next(100, 999)));
+        await Afirmar400(await _api.Editar(_api.A.Token, id, Con(Sin(_api.CuerpoCarroceria(), "asesorId"), ("placa", "XYZ123"))),
+            "placa", "Este dato no aplica a carrocería.");
+        await Json(await _api.Editar(_api.A.Token, id, Sin(_api.CuerpoCarroceria(), "asesorId")), HttpStatusCode.OK);
+        var v = await _api.VehiculoDb(id);
+        Assert.Equal(_api.Carroceria, v.TipoVehiculoId);
+        Assert.Null(v.Placa);
+        Assert.Equal(0, v.Kilometraje);
+        Assert.Null(v.MarcaId);
+    }
+
+    [Fact(DisplayName = "D-33: con una publicación activa no se puede cambiar la categoría (409); sí se edita lo demás")]
+    public async Task Cambiar_categoria_con_publicacion_activa_409()
+    {
+        var id = await _api.CrearId(_api.A, "camion");
+        await _api.Leer(async db =>
+        {
+            var v = await db.Vehiculos.SingleAsync(x => x.Id == id);
+            db.Publicaciones.Add(new Camion.Api.Models.Publicacion
+            {
+                VehiculoId = id, AsesorId = v.AsesorId, SlugPublico = "pub-" + id, Titulo = "Camión de prueba",
+                PrecioCop = 100_000_000m, EstadoPublicacion = Camion.Api.Models.Publicacion.Publicada, PublicadaEn = DateTime.UtcNow
+            });
+            return await db.SaveChangesAsync();
+        });
+        var r = await _api.Editar(_api.A.Token, id, Sin(_api.CuerpoCarro(), "asesorId"));
+        Assert.Equal(HttpStatusCode.Conflict, r.StatusCode);
+        Assert.Contains("publicación activa", await r.Content.ReadAsStringAsync());
+        Assert.Equal(_api.Camion, (await _api.VehiculoDb(id)).TipoVehiculoId);
+        await Json(await _api.Editar(_api.A.Token, id, Sin(Con(_api.CuerpoCamion(), ("kilometraje", 9)), "asesorId")), HttpStatusCode.OK);
+    }
+
+    [Fact(DisplayName = "D-33: el administrador también puede cambiar la categoría de un vehículo ajeno")]
+    public async Task Admin_cambia_categoria() =>
+        await Json(await _api.Editar(_api.Admin.Token, await _api.CrearId(_api.A, "camion"), Sin(_api.CuerpoCarro(), "asesorId")),
+            HttpStatusCode.OK);
 
     [Fact(DisplayName = "HU-019: las reglas por categoría también valen al editar (campo no admitido, obligatorio ausente)")]
     public async Task Reglas_al_editar()
@@ -521,7 +568,7 @@ public sealed class InventarioCrearEditarTests(InventarioFixture fx) : IClassFix
         var placa = PlacaUnica();
         var id = await _api.CrearId(_api.A, "camion", ("placa", placa));
         await _api.Crear(_api.A.Token, Con(_api.CuerpoCamion(), ("placa", placa)));
-        await _api.Editar(_api.A.Token, id, Con(_api.CuerpoCamion(), ("tipoId", _api.Carro)));
+        await _api.Editar(_api.A.Token, id, Con(_api.CuerpoCamion(), ("precioCop", 0)));
         Assert.Equal(antes + 1, await _api.Leer(db => Task.FromResult(db.AuditoriaEventos.Count(a => a.Entidad == "Vehiculo"))));
     }
 

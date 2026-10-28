@@ -46,7 +46,6 @@ public static partial class ReglasInventario
     public const string MensajeRevisar = "Revisa los datos marcados.";
     public const string MensajeTipo = "Elige la categoría.";
     public const string MensajeTipoInvalido = "Categoría no válida.";
-    public const string MensajeTipoCambio = "La categoría de un vehículo no se puede cambiar.";
     public const string MensajeMarca = "Elige la marca.";
     public const string MensajeMarcaInvalida = "Marca no válida.";
     public const string MensajeLinea = "Elige el modelo.";
@@ -151,9 +150,9 @@ public static partial class ReglasInventario
         var tipoId = r.TipoId ?? tipoActual;
         Categoria? categoria = null;
         string nombreTipo = "";
-        if (tipoActual is not null && r.TipoId is not null && r.TipoId != tipoActual)
-            Error("tipoId", MensajeTipoCambio);
-        else if (tipoId is null)
+        // D-33: el dueño (y el administrador) puede cambiar la categoría; se valida todo con la nueva.
+        // El bloqueo por publicación activa lo hace el endpoint de edición.
+        if (tipoId is null)
             Error("tipoId", MensajeTipo);
         else
         {

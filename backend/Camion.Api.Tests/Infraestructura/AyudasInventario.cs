@@ -32,7 +32,6 @@ public sealed class InventarioApi : IDisposable
     public const string MsgFotosVendido = "Las fotos de un vehículo vendido no se pueden modificar.";
     public const string MsgEditarVendido = "No se puede editar un vehículo en estado vendido.";
     public const string MsgOrdenFotos = "Incluye todas las fotos del vehículo, cada una una sola vez.";
-    public const string MsgTipoCambio = "La categoría de un vehículo no se puede cambiar.";
     public const string MsgAsesor = "Elige un asesor activo.";
     public const string MsgArchivoNoEncontrado = "Archivo no encontrado.";
     // D-30

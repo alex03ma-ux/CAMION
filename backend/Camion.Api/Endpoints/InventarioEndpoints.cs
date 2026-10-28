@@ -34,6 +34,8 @@ public static class InventarioEndpoints
     private const string MensajeFotosVendido = "Las fotos de un vehículo vendido no se pueden modificar.";
     private const string MensajeOrdenFotos = "Incluye todas las fotos del vehículo, cada una una sola vez.";
     private const string MensajeEditarVendido = "No se puede editar un vehículo en estado vendido.";
+    private const string MensajeCambioCategoriaPublicado =
+        "Este vehículo tiene una publicación activa: no se puede cambiar la categoría mientras esté publicado.";
     // D-30: el vehículo nace con fotos y nunca se queda sin ellas.
     private const string MensajeSinFotos = "Agrega al menos una foto del vehículo.";
     private const string MensajeDemasiadasFotos = "Puedes subir hasta 10 fotos.";
@@ -319,6 +321,12 @@ public static class InventarioEndpoints
                     new Dictionary<string, string[]> { [CampoFotos] = [MensajeEditarSinFotos] }));
 
             var ahora = reloj.GetUtcNow().UtcDateTime;
+            // D-33: se puede cambiar la categoría salvo que el vehículo tenga una publicación activa (P4b decidirá qué pasa entonces).
+            if (request.TipoId is not null && request.TipoId != vehiculo.TipoVehiculoId &&
+                await db.Publicaciones.AsNoTracking().AnyAsync(p => p.VehiculoId == id && p.EstadoPublicacion == Publicacion.Publicada, ct))
+                return Results.Conflict(new ErrorResponse(MensajeCambioCategoriaPublicado,
+                    new Dictionary<string, string[]> { ["tipoId"] = [MensajeCambioCategoriaPublicado] }));
+
             var (errores, datos) = await ReglasInventario.ValidarAsync(db, request, vehiculo.TipoVehiculoId, ahora.Year, ct);
             if (errores.Count > 0 || datos is null)
                 return Results.BadRequest(new ErrorResponse(ReglasInventario.MensajeRevisar, errores));
