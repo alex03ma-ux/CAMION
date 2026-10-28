@@ -534,4 +534,35 @@ public sealed class InventarioCrearEditarTests(InventarioFixture fx) : IClassFix
         if (valida) Assert.Equal(HttpStatusCode.Created, r.StatusCode);
         else await Afirmar400(r, "placa", "Escribe una placa válida (letras y números).");
     }
+
+    [Theory(DisplayName = "Defecto P4a: la placa se guarda al crear y al editar en carro, camión y maquinaria")]
+    [InlineData("carro", "CAR123")]
+    [InlineData("camion", "ABC123")]
+    [InlineData("maquinaria", "MAQ12345")]
+    public async Task Placa_se_guarda_por_categoria(string categoria, string placaBase)
+    {
+        var placa = placaBase[..3] + Random.Shared.Next(100, 999) + placaBase[6..];
+        var creado = await _api.Creado(_api.A.Token, Con(_api.Cuerpo(categoria), ("placa", placa)));
+        var id = creado.GetProperty("id").GetInt64();
+        Assert.Equal(placa, creado.GetProperty("placa").GetString());
+        Assert.Equal(placa, (await _api.VehiculoDb(id)).Placa);
+
+        var otra = placaBase[..3] + Random.Shared.Next(100, 999) + placaBase[6..];
+        var editado = await _api.Enviar(HttpMethod.Put, $"/api/inventario/vehiculos/{id}", _api.A.Token,
+            Sin(Con(_api.Cuerpo(categoria), ("placa", otra)), "asesorId"));
+        Assert.Equal(HttpStatusCode.OK, editado.StatusCode);
+        Assert.Equal(otra, (await _api.VehiculoDb(id)).Placa);
+    }
+
+    [Theory(DisplayName = "Defecto P4a: la misma placa no se puede repetir entre categorías distintas")]
+    [InlineData("maquinaria", "camion")]
+    [InlineData("camion", "carro")]
+    [InlineData("carro", "maquinaria")]
+    public async Task Placa_repetida_entre_categorias_409(string primera, string segunda)
+    {
+        var placa = "PL" + Random.Shared.Next(10000, 99999);
+        await _api.Creado(_api.A.Token, Con(_api.Cuerpo(primera), ("placa", placa)));
+        var repetida = await _api.Crear(_api.A.Token, Con(_api.Cuerpo(segunda), ("placa", placa.ToLowerInvariant())));
+        Assert.Equal(HttpStatusCode.Conflict, repetida.StatusCode);
+    }
 }

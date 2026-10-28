@@ -223,3 +223,52 @@ Las fotos de un vehículo VENDIDO no se pueden modificar (409).
 - El modelo (línea) es obligatorio en Carro, Camión y Maquinaria: si falta, 400 en `lineaId` con "Elige el modelo.". En Carrocería sigue siendo opcional.
 - La placa de Maquinaria admite de 5 a 8 caracteres. En las demás categorías se mantiene de 5 a 7. La columna `placa` VARCHAR(10) de la migración 004 ya sirve, así que el esquema no cambia.
 - La capacidad se guarda en kg en camiones y máquinas, y es opcional en las carrocerías. Así estaba ya.
+
+## Cambios por D-30 (al menos una foto) y salvaguardas de la placa (2026-10-28)
+
+### Crear el vehículo y sus fotos en una sola operación (D-30)
+
+`POST /api/inventario/vehiculos` pasa a recibir **`multipart/form-data`**:
+
+- Campo `datos`: el mismo JSON de antes (`VehiculoRequest`).
+- Campo `fotos`: entre **1 y 10 archivos**, con las mismas reglas que la subida de una foto (JPG, PNG o WebP según su contenido, 5 MB cada uno).
+- El límite del cuerpo de la petición pasa a 52 MB.
+
+**Respuestas:**
+
+| Caso | Respuesta |
+|---|---|
+| Sin fotos | 400 `{ errores: { fotos: ["Agrega al menos una foto del vehículo."] } }` |
+| Foto no válida | 400 en `fotos` con el mensaje de foto de P4a; se indica cuál es (por ejemplo "Foto 2: …") |
+| Más de 10 fotos | 400 "Puedes subir hasta 10 fotos." |
+| `datos` falta o no es JSON | 400 con el formato común |
+| JSON enviado como antes | 415 o 400. Ya no se acepta crear sin fotos |
+| Todo correcto | 201 con el detalle, que incluye las fotos |
+
+**Atomicidad.** Se valida todo antes de escribir. El vehículo, sus fotos y la auditoría se guardan en una sola transacción. Si algo falla después de escribir archivos, esos archivos se borran, de modo que nunca queda un vehículo sin fotos ni archivos sueltos. La primera foto es la portada.
+
+**Por qué es la opción más robusta.** No necesita un estado "incompleto" nuevo ni deja filas a medias. La regla vale igual para la web y para cualquier otro cliente de la API.
+
+### Reglas de fotos en vehículos que ya existen
+
+- `DELETE /api/inventario/vehiculos/{id}/fotos/{fotoId}` sobre **la única foto** responde 409 "El vehículo debe tener al menos una foto. Sube otra antes de eliminar esta."
+- `PUT /api/inventario/vehiculos/{id}` sobre un vehículo **sin fotos** (DEMO o creados antes de D-30) responde 409 `{ error: "Agrega al menos una foto antes de guardar los cambios.", errores: { fotos: [...] } }`. Primero se sube la foto (el endpoint de subida no cambia) y después se guarda.
+- Las acciones de estado (reservar, liberar, inactivar, reactivar) no exigen fotos.
+- El catálogo público no cambia.
+
+### Salvaguardas de la placa (defecto de la prueba manual)
+
+- Si la petición trae `placa` con texto y el vehículo guardado queda sin placa, el servidor lo registra en el log como advertencia (`Camion.Api.Auditoria`, sin datos personales). No debería pasar nunca.
+- El frontend compara la placa que envió con la que devuelve el servidor:
+  - Si no coinciden, muestra la advertencia "La placa no se guardó. Revísala y vuelve a guardar."
+  - Si coinciden, el mensaje de éxito incluye "Placa: ABC123", o "Sin placa" si no se escribió ninguna.
+
+### Interfaz (D-30)
+
+- **"Registrar vehículo":**
+  - La sección "Fotos (1 a 10)" está **dentro del formulario**, antes del botón.
+  - Se eligen las fotos (con vista previa, quitar y orden de portada), sin subirlas todavía.
+  - El botón "Registrar vehículo" está desactivado hasta que haya al menos una foto válida, con la ayuda visible "Agrega al menos una foto para poder guardar." Al pulsarlo se envía todo junto.
+- **Edición:**
+  - El botón "Eliminar" de la última foto está desactivado y lleva la explicación.
+  - Si el vehículo no tiene fotos, se muestra el aviso "Este vehículo no tiene fotos. Agrega al menos una para poder guardar cambios." y el botón "Guardar cambios" queda desactivado hasta que se suba una.
