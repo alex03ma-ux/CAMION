@@ -170,3 +170,11 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - Modelos recientes (script 008, PROPUESTO): 254 modelos nuevos y la marca Develon, con fuentes por marca. Kenworth e Isuzu se omiten por falta de fuente verificable.
 - La API estaba en marcha (prueba manual) y bloqueaba el build. No se detuvo: las pruebas se compilaron en una carpeta aparte (`--artifacts-path`).
 - Resultados: `dotnet test` 655/655; `npm test` 316/316; `npm run build` correcto.
+- D-28 y D-29 aplicadas en `camion_ventas` (2026-10-27). La responsable importó las secciones SUBIR en phpMyAdmin (Chrome), sin errores.
+  - 006 y 007:
+    - Respaldo previo hecho por el coordinador principal, con la API apagada: `C:\Respaldo_CAMION\camion_ventas_antes_006_007_20261027_210736.sql` (42 tablas).
+    - Conteos antes: 14 vehículos, 4 fotos_vehiculo, 1 combustible, 1 departamento y 2 municipios.
+    - Después: 14 vehículos y 4 fotos (sin cambios); existe `vehiculos.nota_reserva` VARCHAR(500) NULL; 5 combustibles (Diésel, Eléctrico, Gas (GNV), Gasolina, Híbrido); 33 departamentos y 1122 municipios de la DIVIPOLA (Medellín 05001 y Envigado 05266 del DEMO conservados).
+  - 008: la responsable aprobó la lista completa, PROPUESTO → aprobado.
+    - Respaldo previo: `C:\Respaldo_CAMION\camion_ventas_antes_008_20261027_211123.sql`.
+    - Antes: 34 marcas y 139 líneas. Después: 35 marcas (+Develon) y 393 líneas (+254); 14 vehículos y 4 fotos, sin cambios.
