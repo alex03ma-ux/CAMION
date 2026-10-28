@@ -52,6 +52,7 @@ import { Aviso, type DatosAviso } from './Aviso'
 import { Campo, CampoSelect } from './Campo'
 import { FotosNuevas, ID_INPUT_FOTOS_NUEVAS, type FotoElegida } from './FotosNuevas'
 import { FotosVehiculo } from './FotosVehiculo'
+import { NotaObligatorio } from './NotaObligatorio'
 
 type InventarioFormularioProps = {
   token: string
@@ -103,6 +104,23 @@ const ORDEN_FOCO: readonly CampoFormulario[] = [
 
 function idCampo(campo: CampoFormulario): string {
   return `inv-${campo}`
+}
+
+/** Cajas de texto cuyo valor se relee de la pantalla al guardar (las listas no lo necesitan). */
+const CAMPOS_TEXTO = [
+  'modeloAnio', 'placa', 'kilometraje', 'horasUso', 'largoM', 'anchoM', 'altoM',
+  'cilindrajeCc', 'pesoBrutoKg', 'capacidadCargaKg', 'descripcionTecnica',
+] as const
+
+function sincronizarConPantalla(f: FormularioVehiculo): FormularioVehiculo {
+  let resultado = f
+  for (const campo of CAMPOS_TEXTO) {
+    const el = document.getElementById(idCampo(campo)) as HTMLInputElement | HTMLTextAreaElement | null
+    if (!el) continue
+    const enPantalla = campo === 'placa' ? el.value.toUpperCase() : el.value
+    if (enPantalla !== f[campo]) resultado = { ...resultado, [campo]: enPantalla }
+  }
+  return resultado
 }
 
 function opciones(lista: readonly Opcion[]) {
@@ -256,14 +274,18 @@ export function InventarioFormulario({
     if (enviando || !editable || faltanFotos) return
     setAviso(null)
     setErroresFotos([])
-    const validacion = validarFormulario(form, categoria, { pedirAsesor, anioActual, catalogos })
+    // Defecto de la prueba manual (placa de camiones): se toma lo que está escrito en pantalla
+    // por si el navegador (p. ej. su autocompletado) llenó una caja sin avisar a React.
+    const vigente = sincronizarConPantalla(form)
+    if (vigente !== form) setForm(vigente)
+    const validacion = validarFormulario(vigente, categoria, { pedirAsesor, anioActual, catalogos })
     setErrores(validacion)
     if (Object.keys(validacion).length > 0 || categoria === null) {
       setAviso({ tipo: 'error', texto: MENSAJE_REVISA_VEHICULO })
       enfocarPrimerError(validacion)
       return
     }
-    const cuerpo = construirCuerpo(form, categoria, pedirAsesor)
+    const cuerpo = construirCuerpo(vigente, categoria, pedirAsesor)
     setEnviando(true)
     try {
       if (vehiculoId === null) {
@@ -647,6 +669,7 @@ export function InventarioFormulario({
           <form className="inv-form" onSubmit={(e) => void enviar(e)} noValidate aria-busy={enviando}>
             <fieldset className="inv-fieldset" disabled={!editable || enviando}>
               <legend className="sr-only">{titulo}</legend>
+              <NotaObligatorio />
               {creando && (
                 <div className="inv-grupo">
                   <h2>Categoría</h2>

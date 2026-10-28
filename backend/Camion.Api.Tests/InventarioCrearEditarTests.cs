@@ -567,4 +567,19 @@ public sealed class InventarioCrearEditarTests(InventarioFixture fx) : IClassFix
         var repetida = await _api.Crear(_api.A.Token, Con(_api.Cuerpo(segunda), ("placa", placa.ToLowerInvariant())));
         Assert.Equal(HttpStatusCode.Conflict, repetida.StatusCode);
     }
+
+    [Theory(DisplayName = "Defecto P4a (reproducción): camión con carrocería, combustible y placa conserva la placa")]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public async Task Camion_con_carroceria_conserva_placa(bool conCarroceria, bool conMecanica)
+    {
+        var placa = "ABC" + Random.Shared.Next(100, 999);
+        var cuerpo = Con(_api.CuerpoCamion(), ("placa", placa));
+        if (conCarroceria) cuerpo = Con(cuerpo, ("carroceriaId", _api.Furgon));
+        if (conMecanica) cuerpo = Con(cuerpo, ("pesoBrutoKg", 10500), ("capacidadCargaKg", 6500));
+        var creado = await _api.Creado(_api.A.Token, cuerpo);
+        Assert.Equal(placa, creado.GetProperty("placa").GetString());
+        Assert.Equal(placa, (await _api.VehiculoDb(creado.GetProperty("id").GetInt64())).Placa);
+    }
 }

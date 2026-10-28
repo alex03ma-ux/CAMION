@@ -293,8 +293,10 @@ public static class InventarioEndpoints
 
             var auditoria = loggerFactory.CreateLogger(AuthEndpoints.CategoriaAuditoria);
             auditoria.LogInformation(
-                "Auditoria vehiculo_crear vehiculoId={VehiculoId} usuarioId={UsuarioId} fotos={Fotos}",
-                vehiculo.Id, actor.UsuarioId, archivos.Count);
+                "Auditoria vehiculo_crear vehiculoId={VehiculoId} usuarioId={UsuarioId} fotos={Fotos} placaRecibida={PlacaRecibida}",
+                vehiculo.Id, actor.UsuarioId, archivos.Count,
+                // Diagnóstico del defecto de placa: solo si llegó o no, nunca el valor.
+                string.IsNullOrWhiteSpace(request.Placa) ? "no" : "si");
             var detalle = await DetalleAsync(db, actor, vehiculo.Id, ct);
             AdvertirPlacaPerdida(auditoria, request, detalle, actor, "crear");
             return Results.Created($"/api/inventario/vehiculos/{vehiculo.Id}", detalle);
