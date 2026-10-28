@@ -206,3 +206,8 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - Tres vehículos de prueba usan un modelo de otra categoría y se corrigen editándolos: la máquina 17 (ELF 100), un camión con Kia Picanto y otro con Mazda CX-5.
 - Un commit con `git add frontend` habría incluido `frontend/respaldos/`. El sistema de permisos lo bloqueó y desde entonces se añaden los archivos uno a uno.
 - Resultados: `dotnet test` 693/693; `npm test` 338/338; tipos y `npm run build` correctos.
+- D-32 aplicada en `camion_ventas` (2026-10-27).
+  - La responsable aceptó la clasificación propuesta, incluidas las 56 dudosas.
+  - Respaldo previo: `C:\Respaldo_CAMION\camion_ventas_antes_009_010_20261027_230515.sql` (42 tablas), con la API apagada.
+  - La responsable importó en phpMyAdmin `009_p4a_lineas_tipos_SUBIR.sql` y `010_clasificacion_lineas_SUBIR.sql`, sin errores.
+  - Verificación del coordinador principal: 19 vehículos, 393 líneas, 35 marcas y 7 fotos (sin cambios); 393 filas en `lineas_tipos` y 0 líneas sin categoría (Camión 96, Carro 113, Carrocería 14, Maquinaria 170).
