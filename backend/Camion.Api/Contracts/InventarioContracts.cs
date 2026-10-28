@@ -29,7 +29,7 @@ public sealed record VehiculoInventarioRequest(
     string? DescripcionTecnica,
     long? AsesorId);
 
-// Cuerpo de reservar / liberar / inactivar / reactivar. El motivo es obligatorio para inactivar (5 a 500).
+// Cuerpo de reservar / liberar / inactivar / reactivar. El motivo es obligatorio para reservar (nota, D-28) e inactivar (5 a 500).
 public sealed record AccionVehiculoRequest(string? Motivo);
 
 public sealed record OrdenFotosRequest(IReadOnlyList<long>? FotoIds);
@@ -54,6 +54,7 @@ public sealed record ItemInventario(
     string? FotoPortada,
     int TotalFotos,
     DateTime ActualizadoEn,
+    string? NotaReserva,
     // Solo para el administrador.
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     AsesorInventario? Asesor);
@@ -99,6 +100,7 @@ public sealed record DetalleInventario(
     string? DescripcionTecnica,
     string Estado,
     string? MotivoInactivacion,
+    string? NotaReserva,
     DateTime CreadoEn,
     DateTime ActualizadoEn,
     IReadOnlyList<FotoInventarioResponse> Fotos,

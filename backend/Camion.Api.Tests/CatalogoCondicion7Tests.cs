@@ -112,7 +112,7 @@ public sealed class CatalogoCondicion7Tests
         Task<HttpResponseMessage> Accion(string accion, string? motivo = null)
         {
             var req = ConToken(HttpMethod.Post, $"/api/inventario/vehiculos/{v3.VehiculoId}/{accion}", token);
-            req.Content = JsonContent.Create(new { motivo });
+            req.Content = JsonContent.Create(new { motivo = motivo ?? (accion == "reservar" ? InventarioApi.NotaReservaPrueba : null) });
             return api.Cliente.SendAsync(req);
         }
 

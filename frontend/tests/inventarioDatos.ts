@@ -82,6 +82,7 @@ export type ItemPrueba = {
   fotoPortada: string | null
   totalFotos: number
   actualizadoEn: string
+  notaReserva?: string | null
   asesor?: { id: number; nombre: string }
 }
 

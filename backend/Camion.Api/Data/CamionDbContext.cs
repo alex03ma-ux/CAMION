@@ -243,6 +243,7 @@ public sealed class CamionDbContext : IdentityDbContext<ApplicationUser, Identit
             entity.Property(x => x.HorasUso).HasColumnName("horas_uso");
             entity.Property(x => x.TipoMaquinaId).HasColumnName("tipo_maquina_id");
             entity.Property(x => x.MotivoInactivacion).HasColumnName("motivo_inactivacion").HasMaxLength(500);
+            entity.Property(x => x.NotaReserva).HasColumnName("nota_reserva").HasMaxLength(500);
             entity.HasIndex(x => x.Placa).IsUnique().HasDatabaseName("UX_Veh_Placa");
             entity.HasIndex(x => new { x.AsesorId, x.Estado }).HasDatabaseName("IX_Veh_AsesorEstado");
             entity.ToTable("vehiculos", t =>

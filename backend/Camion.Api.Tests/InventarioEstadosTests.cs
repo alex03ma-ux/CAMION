@@ -119,7 +119,7 @@ public sealed class InventarioEstadosTests(InventarioFixture fx) : IClassFixture
     public async Task Motivo_opcional_largo_400()
     {
         var id = await VehiculoEn("ACTIVO");
-        await Afirmar400(await _api.Accion(_api.A.Token, id, "reservar", new string('m', 501)), "motivo",
+        await Afirmar400(await _api.Accion(_api.A.Token, id, "liberar", new string('m', 501)), "motivo",
             "El motivo no puede tener más de 500 caracteres.");
         Assert.Equal("ACTIVO", (await _api.VehiculoDb(id)).Estado);
     }
@@ -174,5 +174,47 @@ public sealed class InventarioEstadosTests(InventarioFixture fx) : IClassFixture
         var codigos = respuestas.Select(r => (int)r.StatusCode).OrderBy(x => x).ToArray();
         Assert.True(codigos.Count(c => c == 200) == 1 && codigos.Count(c => c == 409) == 3, $"Códigos: {string.Join(",", codigos)}");
         Assert.Single(await _api.AuditoriaVehiculo(id), a => a.Accion == "RESERVAR");
+    }
+
+    [Theory(DisplayName = "D-28: reservar sin nota o con menos de 5 / más de 500 caracteres -> 400 en motivo; no cambia nada")]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("abcd")]
+    public async Task Reservar_sin_nota_400(string nota)
+    {
+        var id = await VehiculoEn("ACTIVO");
+        var r = await _api.Accion(_api.A.Token, id, "reservar", nota);
+        Assert.Equal(HttpStatusCode.BadRequest, r.StatusCode);
+        Assert.Contains("\"motivo\"", await r.Content.ReadAsStringAsync());
+        var v = await _api.VehiculoDb(id);
+        Assert.Equal("ACTIVO", v.Estado);
+        Assert.Null(v.NotaReserva);
+    }
+
+    [Fact(DisplayName = "D-28: la nota de reserva se guarda, sale en el detalle y en la lista, queda en la auditoría y se borra al liberar")]
+    public async Task Nota_reserva_ciclo()
+    {
+        var id = await VehiculoEn("ACTIVO");
+        var json = await Json(await _api.Accion(_api.A.Token, id, "reservar", "  Esperando crédito  "), HttpStatusCode.OK);
+        Assert.Equal("Esperando crédito", json.GetProperty("notaReserva").GetString());
+        Assert.Equal("Esperando crédito", (await _api.VehiculoDb(id)).NotaReserva);
+        var lista = await Json(await _api.Lista(_api.A.Token), HttpStatusCode.OK);
+        var item = lista.GetProperty("items").EnumerateArray().Single(x => x.GetProperty("id").GetInt64() == id);
+        Assert.Equal("Esperando crédito", item.GetProperty("notaReserva").GetString());
+        var auditoria = await _api.Leer(db => Task.FromResult(db.AuditoriaEventos
+            .Where(a => a.Entidad == "Vehiculo" && a.EntidadId == id.ToString() && a.Accion == "RESERVAR").Select(a => a.DatosNuevos).Single()));
+        Assert.Equal("Esperando crédito", JsonDocument.Parse(auditoria!).RootElement.GetProperty("motivo").GetString());
+
+        json = await Json(await _api.Accion(_api.A.Token, id, "liberar"), HttpStatusCode.OK);
+        Assert.True(EsNulo(json, "notaReserva"));
+        Assert.Null((await _api.VehiculoDb(id)).NotaReserva);
+    }
+
+    [Fact(DisplayName = "D-28: inactivar un vehículo reservado borra la nota de reserva (queda en la auditoría)")]
+    public async Task Inactivar_borra_nota()
+    {
+        var id = await VehiculoEn("RESERVADO");
+        await Json(await _api.Accion(_api.A.Token, id, "inactivar", Motivo), HttpStatusCode.OK);
+        Assert.Null((await _api.VehiculoDb(id)).NotaReserva);
     }
 }

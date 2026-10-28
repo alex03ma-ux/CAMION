@@ -37,6 +37,8 @@ export type ItemInventario = {
   fotoPortada: string | null
   totalFotos: number
   actualizadoEn: string
+  /** D-28: nota de la reserva (solo inventario, nunca el portal). */
+  notaReserva: string | null
   /** Solo lo envía la API al administrador. */
   asesor: ResumenAsesor | null
 }
@@ -94,6 +96,7 @@ export type DetalleInventario = {
   descripcionTecnica: string | null
   estado: string
   motivoInactivacion: string | null
+  notaReserva: string | null
   fotos: FotoInventario[]
   asesor: ResumenAsesor | null
 }
@@ -255,6 +258,7 @@ function leerItem(valor: unknown): ItemInventario | null {
     fotoPortada: textoONulo(valor.fotoPortada),
     totalFotos: numero(valor.totalFotos, 0),
     actualizadoEn: texto(valor.actualizadoEn),
+    notaReserva: textoONulo(valor.notaReserva),
     asesor: leerAsesor(valor.asesor),
   }
 }
@@ -290,6 +294,7 @@ export function leerDetalle(valor: unknown): DetalleInventario | null {
     descripcionTecnica: textoONulo(valor.descripcionTecnica),
     estado: texto(valor.estado).toUpperCase(),
     motivoInactivacion: textoONulo(valor.motivoInactivacion),
+    notaReserva: textoONulo(valor.notaReserva),
     fotos: leerFotos(valor.fotos),
     asesor: leerAsesor(valor.asesor),
   }

@@ -70,7 +70,7 @@ public sealed class InventarioListaTests : IAsyncLifetime
         var items = a.GetProperty("items").EnumerateArray().ToDictionary(x => x.GetProperty("id").GetInt64());
         var camion = items[_camionA];
         Assert.Equal(new[] { "actualizadoEn", "estado", "fotoPortada", "horasUso", "id", "kilometraje", "linea", "marca",
-            "modeloAnio", "municipio", "placa", "precioCop", "tipo", "totalFotos" }, CatalogoJson.Claves(camion));
+            "modeloAnio", "municipio", "notaReserva", "placa", "precioCop", "tipo", "totalFotos" }, CatalogoJson.Claves(camion));
         Assert.Equal("Camión", camion.GetProperty("tipo").GetString());
         Assert.Equal("Chevrolet", camion.GetProperty("marca").GetString());
         Assert.Equal("NPR", camion.GetProperty("linea").GetString());

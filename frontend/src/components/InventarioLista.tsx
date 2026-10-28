@@ -94,7 +94,11 @@ function datoUso(item: ItemInventario): string | null {
   return item.kilometraje !== null ? `${formatoMiles(item.kilometraje)} km` : null
 }
 
+/** D-28: reservar e inactivar piden un texto obligatorio en un diálogo. */
+type AccionConMotivo = 'inactivar' | 'reservar'
+
 type DialogoInactivar = {
+  accion: AccionConMotivo
   item: ItemInventario
   enviando: boolean
   erroresMotivo: string[]
@@ -227,10 +231,10 @@ export function InventarioLista({
     }
   }
 
-  function abrirInactivar(item: ItemInventario, boton: HTMLButtonElement) {
+  function abrirDialogoMotivo(accion: AccionConMotivo, item: ItemInventario, boton: HTMLButtonElement) {
     origenDialogo.current = boton
     setResultado(null)
-    setDialogo({ item, enviando: false, erroresMotivo: [], error: null })
+    setDialogo({ accion, item, enviando: false, erroresMotivo: [], error: null })
   }
 
   function cancelarDialogo() {
@@ -242,13 +246,13 @@ export function InventarioLista({
 
   async function confirmarInactivar(motivo: string) {
     if (!dialogo || dialogo.enviando) return
-    const { item } = dialogo
+    const { item, accion } = dialogo
     setDialogo({ ...dialogo, enviando: true, erroresMotivo: [], error: null })
     try {
-      await cambiarEstadoVehiculo(token, item.id, 'inactivar', motivo)
+      await cambiarEstadoVehiculo(token, item.id, accion, motivo)
       setDialogo(null)
       origenDialogo.current = null
-      terminarAccion({ tipo: 'exito', texto: TEXTOS_ACCION_ESTADO.inactivar.exito(tituloVehiculo(item)) })
+      terminarAccion({ tipo: 'exito', texto: TEXTOS_ACCION_ESTADO[accion].exito(tituloVehiculo(item)) })
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         setDialogo(null)
@@ -416,6 +420,12 @@ export function InventarioLista({
                       <dt>Ubicación</dt>
                       <dd>{item.municipio ?? '—'}</dd>
                     </div>
+                    {item.estado === 'RESERVADO' && item.notaReserva && (
+                      <div>
+                        <dt>Nota de la reserva</dt>
+                        <dd className="inv-texto-largo">{item.notaReserva}</dd>
+                      </div>
+                    )}
                     <div>
                       <dt>Fotos</dt>
                       <dd>{item.totalFotos} de 10</dd>
@@ -446,8 +456,8 @@ export function InventarioLista({
                           className={accion === 'inactivar' ? 'boton-peligro' : 'secondary-button'}
                           disabled={ocupado}
                           onClick={(e) =>
-                            accion === 'inactivar'
-                              ? abrirInactivar(item, e.currentTarget)
+                            accion === 'inactivar' || accion === 'reservar'
+                              ? abrirDialogoMotivo(accion, item, e.currentTarget)
                               : void accionDirecta(item, accion)
                           }
                         >
@@ -495,11 +505,15 @@ export function InventarioLista({
 
       {dialogo && (
         <DialogoConfirmacion
-          titulo="Inactivar vehículo"
-          descripcion={`¿Inactivar ${tituloVehiculo(dialogo.item)}? Dejará de mostrarse en el catálogo hasta que lo reactives.`}
-          textoBoton={TEXTOS_ACCION_ESTADO.inactivar.boton}
-          textoEnviando={TEXTOS_ACCION_ESTADO.inactivar.enviando}
-          peligro
+          titulo={dialogo.accion === 'reservar' ? 'Reservar vehículo' : 'Inactivar vehículo'}
+          descripcion={
+            dialogo.accion === 'reservar'
+              ? `¿Reservar ${tituloVehiculo(dialogo.item)}? Escribe una nota, por ejemplo «pagó anticipo» o «esperando crédito» (no escribas datos personales del cliente). La reserva no vence: queda hasta que la liberes.`
+              : `¿Inactivar ${tituloVehiculo(dialogo.item)}? Dejará de mostrarse en el catálogo hasta que lo reactives.`
+          }
+          textoBoton={TEXTOS_ACCION_ESTADO[dialogo.accion].boton}
+          textoEnviando={TEXTOS_ACCION_ESTADO[dialogo.accion].enviando}
+          peligro={dialogo.accion === 'inactivar'}
           motivo="obligatorio"
           validarMotivo={validarMotivoInactivar}
           enviando={dialogo.enviando}

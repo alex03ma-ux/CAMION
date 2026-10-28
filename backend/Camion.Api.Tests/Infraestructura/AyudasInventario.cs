@@ -194,8 +194,12 @@ public sealed class InventarioApi : IDisposable
     public Task<HttpResponseMessage> Lista(string? token, string query = "") =>
         Enviar(HttpMethod.Get, "/api/inventario/vehiculos" + query, token);
 
+    /// <summary>D-28: reservar exige nota; si la prueba no la da, se usa NotaReservaPrueba (pasar "" para probar su ausencia).</summary>
+    public const string NotaReservaPrueba = "Pagó anticipo (prueba)";
+
     public Task<HttpResponseMessage> Accion(string? token, long id, string accion, string? motivo = null) =>
-        Enviar(HttpMethod.Post, $"/api/inventario/vehiculos/{id}/{accion}", token, new { motivo });
+        Enviar(HttpMethod.Post, $"/api/inventario/vehiculos/{id}/{accion}", token,
+            new { motivo = motivo ?? (accion == "reservar" ? NotaReservaPrueba : null) });
 
     /// <summary>Crea un vehículo y devuelve su detalle (201).</summary>
     public async Task<JsonElement> Creado(string token, object cuerpo)

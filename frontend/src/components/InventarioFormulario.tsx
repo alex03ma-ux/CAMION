@@ -560,6 +560,12 @@ export function InventarioFormulario({
                     <dd>{detalle.asesor.nombre || '—'}</dd>
                   </div>
                 )}
+                {detalle.estado === 'RESERVADO' && detalle.notaReserva && (
+                  <div>
+                    <dt>Nota de la reserva</dt>
+                    <dd className="inv-texto-largo">{detalle.notaReserva}</dd>
+                  </div>
+                )}
                 {detalle.estado === 'INACTIVO' && detalle.motivoInactivacion && (
                   <div>
                     <dt>Motivo de inactivación</dt>

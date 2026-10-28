@@ -41,7 +41,7 @@ public static class InventarioEndpoints
 
     private static readonly AccionEstado[] Acciones =
     [
-        new("reservar", Auditoria.Reservar, [Vehiculo.Activo], Vehiculo.Reservado, false),
+        new("reservar", Auditoria.Reservar, [Vehiculo.Activo], Vehiculo.Reservado, true),  // D-28: nota obligatoria
         new("liberar", Auditoria.Liberar, [Vehiculo.Reservado], Vehiculo.Activo, false),
         new("inactivar", Auditoria.Inactivar, [Vehiculo.Activo, Vehiculo.Reservado], Vehiculo.Inactivo, true),
         new("reactivar", Auditoria.Reactivar, [Vehiculo.Inactivo], Vehiculo.Activo, false),
@@ -113,6 +113,7 @@ public static class InventarioEndpoints
                             .Select(f => f.ArchivoClave).FirstOrDefault(),
                         TotalFotos = v.Fotos.Count,
                         v.ActualizadoEn,
+                        v.NotaReserva,
                         v.AsesorId,
                         AsesorNombre = db.PerfilesAsesor.Where(a => a.Id == v.AsesorId)
                             .Select(a => db.Users.Where(u => u.Id == a.UsuarioId).Select(u => u.NombreCompleto).FirstOrDefault())
@@ -128,7 +129,7 @@ public static class InventarioEndpoints
                     f.PrecioCop is null ? null : ConsultasCatalogo.Pesos(f.PrecioCop.Value), f.Estado,
                     categoria is null || ReglasInventario.AdmiteKilometraje(categoria.Value) ? f.Kilometraje : null,
                     f.HorasUso, f.Municipio, ConsultasCatalogo.UrlFoto(f.FotoClave), f.TotalFotos,
-                    ConsultasCatalogo.Utc(f.ActualizadoEn),
+                    ConsultasCatalogo.Utc(f.ActualizadoEn), f.NotaReserva,
                     actor.EsAdmin ? new AsesorInventario(f.AsesorId, f.AsesorNombre ?? "") : null);
             }).ToArray();
             return Results.Ok(new InventarioPaginaResponse(items, total, numeroPagina, tamanoPagina));
@@ -323,6 +324,18 @@ public static class InventarioEndpoints
                 filas = await db.Vehiculos.Where(v => v.Id == id && desde.Contains(v.Estado))
                     .ExecuteUpdateAsync(s => s.SetProperty(v => v.Estado, hacia)
                         .SetProperty(v => v.MotivoInactivacion, motivo)
+                        .SetProperty(v => v.NotaReserva, (string?)null)
+                        .SetProperty(v => v.ActualizadoEn, ahora), ct);
+            else if (accion.Ruta == "reservar")
+                // D-28: la nota se guarda en el vehículo y no vence; queda hasta liberar (o vender, P4b).
+                filas = await db.Vehiculos.Where(v => v.Id == id && desde.Contains(v.Estado))
+                    .ExecuteUpdateAsync(s => s.SetProperty(v => v.Estado, hacia)
+                        .SetProperty(v => v.NotaReserva, motivo)
+                        .SetProperty(v => v.ActualizadoEn, ahora), ct);
+            else if (accion.Ruta == "liberar")
+                filas = await db.Vehiculos.Where(v => v.Id == id && desde.Contains(v.Estado))
+                    .ExecuteUpdateAsync(s => s.SetProperty(v => v.Estado, hacia)
+                        .SetProperty(v => v.NotaReserva, (string?)null)
                         .SetProperty(v => v.ActualizadoEn, ahora), ct);
             else if (accion.Ruta == "reactivar")
                 filas = await db.Vehiculos.Where(v => v.Id == id && desde.Contains(v.Estado))
@@ -675,6 +688,7 @@ public static class InventarioEndpoints
             v.DescripcionTecnica,
             v.Estado,
             v.MotivoInactivacion,
+            v.NotaReserva,
             v.CreadoEn,
             v.ActualizadoEn,
             v.AsesorId,
@@ -694,7 +708,7 @@ public static class InventarioEndpoints
             d.TipoMaquinaId, d.TipoMaquina, d.MunicipioId, d.Municipio, d.DepartamentoId, d.Departamento,
             d.PrecioCop is null ? null : ConsultasCatalogo.Pesos(d.PrecioCop.Value),
             d.PrecioAnteriorCop is null ? null : ConsultasCatalogo.Pesos(d.PrecioAnteriorCop.Value),
-            d.DescripcionTecnica, d.Estado, d.MotivoInactivacion,
+            d.DescripcionTecnica, d.Estado, d.MotivoInactivacion, d.NotaReserva,
             ConsultasCatalogo.Utc(d.CreadoEn), ConsultasCatalogo.Utc(d.ActualizadoEn),
             fotos.Select(Foto).ToArray(),
             actor.EsAdmin ? new AsesorInventario(d.AsesorId, d.AsesorNombre ?? "") : null);

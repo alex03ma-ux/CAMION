@@ -37,6 +37,8 @@ public sealed class Vehiculo
     public long MunicipioId { get; set; }
     public string? DescripcionTecnica { get; set; }
     public string? MotivoInactivacion { get; set; }
+    // D-28: nota obligatoria al reservar (p. ej. "pagó anticipo"); se borra al liberar. Nunca va al portal público.
+    public string? NotaReserva { get; set; }
     public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
     public DateTime ActualizadoEn { get; set; } = DateTime.UtcNow;
 
