@@ -178,3 +178,15 @@ describe('RegistroForm', () => {
     expect(screen.getByLabelText('Nombre completo')).toHaveValue(VALIDOS.nombre)
   })
 })
+
+describe('D-31: asterisco en los campos obligatorios del registro', () => {
+  it('muestra la nota y marca nombre, correo, teléfono y contraseña como obligatorios', () => {
+    render(<RegistroForm onRegistrado={vi.fn()} onIrALogin={vi.fn()} />)
+    expect(screen.getByText('Campo obligatorio')).toBeInTheDocument()
+    for (const e of ['Nombre completo', 'Correo electrónico', 'Teléfono']) {
+      const label = screen.getByText(e, { selector: 'label' })
+      expect(label).toHaveClass('campo-obligatorio')
+      expect(screen.getByLabelText(e)).toHaveAttribute('aria-required', 'true')
+    }
+  })
+})

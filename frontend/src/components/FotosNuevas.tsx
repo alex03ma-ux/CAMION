@@ -171,7 +171,9 @@ export function FotosNuevas({ fotos, onCambio, erroresServidor, deshabilitado }:
       </p>
 
       <div className="campo">
-        <label htmlFor={ID_INPUT_FOTOS_NUEVAS}>Elegir fotos</label>
+        <label htmlFor={ID_INPUT_FOTOS_NUEVAS} className="campo-obligatorio">
+          Elegir fotos
+        </label>
         <input
           ref={refInput}
           id={ID_INPUT_FOTOS_NUEVAS}

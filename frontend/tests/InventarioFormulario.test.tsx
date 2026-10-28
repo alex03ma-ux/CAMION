@@ -772,3 +772,84 @@ describe('D-30: edición y placa', () => {
     expect((cuerpoJson(api.llamadasA(DETALLE_9)[1].init) as { placa: unknown }).placa).toBeNull()
   })
 })
+
+/** Simula un navegador que llena la caja (p. ej. su autocompletado) sin avisar a React. */
+function escribirSinEvento(etiqueta: string, valor: string) {
+  const el = screen.getByLabelText(etiqueta) as HTMLInputElement
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+  setter.call(el, valor)
+}
+
+describe('Defecto de la prueba manual: la placa del camión no se guardaba', () => {
+  it('Camión con carrocería: la placa llenada sin evento (autocompletado) viaja en el registro', async () => {
+    const api = abrirNuevo(['ASESOR'], { [VEHICULOS]: { status: 400, body: { error: 'x' } } })
+    const u = userEvent.setup()
+    await u.selectOptions(await screen.findByLabelText('Categoría'), '2')
+    await agregarFotos(u)
+    await llenarCamion(u)
+    await u.selectOptions(screen.getByLabelText('Carrocería (subtipo) (opcional)'), screen.getByLabelText('Carrocería (subtipo) (opcional)').querySelectorAll('option')[1] as HTMLOptionElement)
+    await u.clear(screen.getByLabelText('Placa (opcional)'))
+    escribirSinEvento('Placa (opcional)', 'xyz789')
+    await u.click(screen.getByRole('button', { name: 'Registrar vehículo' }))
+    await waitFor(() => expect(api.llamadasA(VEHICULOS)).toHaveLength(1))
+    expect(datosCreacion(api.llamadasA(VEHICULOS)[0].init)).toMatchObject({ tipoId: 2, placa: 'XYZ789' })
+  })
+
+  it('una placa de 8 caracteres llenada sin evento en un camión se rechaza (no se guarda en silencio)', async () => {
+    const api = abrirNuevo(['ASESOR'], { [VEHICULOS]: { status: 400, body: { error: 'x' } } })
+    const u = userEvent.setup()
+    await u.selectOptions(await screen.findByLabelText('Categoría'), '2')
+    await agregarFotos(u)
+    await llenarCamion(u)
+    await u.clear(screen.getByLabelText('Placa (opcional)'))
+    escribirSinEvento('Placa (opcional)', 'MAQ12345')
+    await u.click(screen.getByRole('button', { name: 'Registrar vehículo' }))
+    expect(await screen.findByText('Escribe una placa válida (letras y números).')).toBeInTheDocument()
+    expect(api.llamadasA(VEHICULOS)).toHaveLength(0)
+  })
+
+  it('al editar, la placa llenada sin evento viaja en el PUT', async () => {
+    const api = simularFetch({
+      [ME]: me(['ASESOR']),
+      [CATALOGOS]: { status: 200, body: CAT },
+      [DETALLE_9]: [
+        { status: 200, body: detalleCamion({ placa: null }) },
+        { status: 200, body: detalleCamion({ placa: 'NUE123' }) },
+      ],
+    })
+    const u = userEvent.setup()
+    abrirConSesion('#/inventario/9')
+    await screen.findByLabelText('Placa (opcional)')
+    escribirSinEvento('Placa (opcional)', 'nue123')
+    await u.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    await waitFor(() => expect(api.llamadasA(DETALLE_9)).toHaveLength(2))
+    expect(cuerpoJson(api.llamadasA(DETALLE_9)[1].init)).toMatchObject({ placa: 'NUE123' })
+  })
+})
+
+describe('D-31: asterisco en los campos obligatorios según la categoría', () => {
+  const obligatorio = (etiqueta: string) =>
+    (screen.getByText(etiqueta, { selector: 'label' }) as HTMLElement).classList.contains('campo-obligatorio')
+
+  it('Camión: marca, modelo, año, kilometraje, ubicación, precio y fotos llevan asterisco; la placa no', async () => {
+    abrirNuevo(['ASESOR'])
+    const u = userEvent.setup()
+    await u.selectOptions(await screen.findByLabelText('Categoría'), '2')
+    expect(screen.getByText('Campo obligatorio')).toBeInTheDocument()
+    for (const e of ['Marca', 'Línea (modelo)', 'Año', 'Kilometraje (km)', 'Departamento', 'Municipio', 'Precio de venta (COP)', 'Elegir fotos'])
+      expect(obligatorio(e)).toBe(true)
+    expect(obligatorio('Placa (opcional)')).toBe(false)
+    expect(screen.getByLabelText('Placa (opcional)')).not.toHaveAttribute('aria-required')
+    expect(screen.getByLabelText('Marca')).toHaveAttribute('aria-required', 'true')
+  })
+
+  it('Carrocería: la marca no lleva asterisco; el tipo de carrocería sí', async () => {
+    abrirNuevo(['ASESOR'])
+    const u = userEvent.setup()
+    await u.selectOptions(await screen.findByLabelText('Categoría'), '3')
+    const etiquetaMarca = screen.getAllByText(/^Marca/, { selector: 'label' })[0] as HTMLElement
+    expect(etiquetaMarca.classList.contains('campo-obligatorio')).toBe(false)
+    const carroceria = screen.getAllByText(/carrocería/i, { selector: 'label' }).find((l) => !/opcional/.test(l.textContent ?? '')) as HTMLElement
+    expect(carroceria.classList.contains('campo-obligatorio')).toBe(true)
+  })
+})

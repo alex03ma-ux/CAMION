@@ -53,7 +53,9 @@ export function Campo({
 
   return (
     <div className="campo">
-      <label htmlFor={id}>{etiqueta}</label>
+      <label htmlFor={id} className={requerido ? 'campo-obligatorio' : undefined}>
+        {etiqueta}
+      </label>
       <input
         ref={ref}
         id={id}
@@ -111,7 +113,9 @@ export function CampoSelect({
 
   return (
     <div className="campo">
-      <label htmlFor={id}>{etiqueta}</label>
+      <label htmlFor={id} className={requerido ? 'campo-obligatorio' : undefined}>
+        {etiqueta}
+      </label>
       <select
         ref={ref}
         id={id}

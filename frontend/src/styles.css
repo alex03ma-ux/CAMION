@@ -1679,3 +1679,21 @@ button.cat-miniatura[aria-current="true"] {
   margin: 8px 0 0;
   font-weight: 600;
 }
+
+/* D-31: asterisco en los campos obligatorios (se dibuja con CSS para no alterar el nombre accesible;
+   el campo lleva aria-required) y nota al inicio de cada formulario. */
+label.campo-obligatorio::after,
+.campo-obligatorio > legend::after {
+  content: ' *';
+  color: #b42318;
+  font-weight: 700;
+}
+.nota-obligatorio {
+  margin: 4px 0 12px;
+  font-size: 0.9rem;
+  color: #4a5565;
+}
+.nota-obligatorio .asterisco {
+  color: #b42318;
+  font-weight: 700;
+}

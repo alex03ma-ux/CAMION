@@ -7,6 +7,7 @@ import {
   type UsuarioAdmin,
 } from '../api/admin'
 import { Aviso, type DatosAviso } from './Aviso'
+import { NotaObligatorio } from './NotaObligatorio'
 
 /** Textos de cada acción del panel de administración (HU-043, HU-044, HU-047). */
 export const TEXTOS_ACCION: Record<
@@ -222,7 +223,10 @@ export function DialogoConfirmacion({
 
           {conMotivo && (
             <>
-              <label htmlFor="dialogo-motivo">{obligatorio ? 'Motivo' : 'Motivo (opcional)'}</label>
+              {obligatorio && <NotaObligatorio />}
+              <label htmlFor="dialogo-motivo" className={obligatorio ? 'campo-obligatorio' : undefined}>
+                {obligatorio ? 'Motivo' : 'Motivo (opcional)'}
+              </label>
               <textarea
                 ref={refMotivo}
                 id="dialogo-motivo"

@@ -423,3 +423,16 @@ describe('Nota de la reserva visible en el inventario (D-28)', () => {
     expect(within(tarjeta('Chevrolet NPR 2020')).queryByText('Nota de la reserva')).toBeNull()
   })
 })
+
+describe('D-31: el motivo obligatorio del diálogo lleva asterisco', () => {
+  it('reservar: nota "Campo obligatorio" y etiqueta Motivo con asterisco y aria-required', async () => {
+    abrirAsesor({ [LISTA]: lista([V_ACTIVO]) })
+    const u = userEvent.setup()
+    await screen.findByRole('heading', { level: 3, name: 'Chevrolet NPR 2020' })
+    await u.click(screen.getByRole('button', { name: /^Reservar/ }))
+    const dlg = await screen.findByRole('dialog', { name: 'Reservar vehículo' })
+    expect(within(dlg).getByText('Campo obligatorio')).toBeInTheDocument()
+    expect(within(dlg).getByText('Motivo', { selector: 'label' })).toHaveClass('campo-obligatorio')
+    expect(within(dlg).getByLabelText('Motivo')).toHaveAttribute('aria-required', 'true')
+  })
+})
