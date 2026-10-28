@@ -363,3 +363,13 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
   - `database/catalogos/007_catalogos_reales_*` (combustibles y DIVIPOLA);
   - `database/catalogos/008_modelos_recientes_*` (modelos).
   - Solo hacen INSERT con NOT EXISTS, y su BAJAR (comentado) está acotado.
+
+## D-30 — Un vehículo debe tener al menos una foto · TOMADA (2026-10-28)
+- Contexto: pedido de la responsable en la prueba manual de P4a, transmitido por el coordinador principal: "debería pedir al menos una foto para guardar".
+- **Decisión:** un vehículo no puede quedar guardado sin al menos **1 foto**.
+- Implementación elegida por el coordinador, la más robusta:
+  - **Creación atómica.** `POST /api/inventario/vehiculos` recibe los datos y de 1 a 10 fotos en una sola petición (multipart). Se valida todo antes de escribir, y el vehículo, las fotos y la auditoría se guardan juntos. Si algo falla, no queda nada a medias: ni el vehículo ni archivos sueltos. Así no hace falta un estado "incompleto" nuevo, y la regla vale para cualquier cliente de la API.
+  - **No se puede eliminar la última foto** (409).
+  - Los vehículos que ya existen sin fotos (DEMO y de prueba) siguen funcionando. Al editarlos se pide subir una foto antes de "Guardar cambios" (409 si no la tienen).
+  - El catálogo público no cambia.
+- Detalle en `docs/criterios/P4a-contrato-api.md`, sección "Cambios por D-30".
