@@ -17,6 +17,7 @@ public sealed class CamionDbContext : IdentityDbContext<ApplicationUser, Identit
     // P3: tablas existentes del script 002; la API pública solo las lee.
     public DbSet<Marca> Marcas => Set<Marca>();
     public DbSet<Linea> Lineas => Set<Linea>();
+    public DbSet<LineaTipo> LineasTipos => Set<LineaTipo>();
     public DbSet<TipoVehiculo> TiposVehiculo => Set<TipoVehiculo>();
     public DbSet<TipoCarroceria> TiposCarroceria => Set<TipoCarroceria>();
     public DbSet<Combustible> Combustibles => Set<Combustible>();
@@ -177,6 +178,16 @@ public sealed class CamionDbContext : IdentityDbContext<ApplicationUser, Identit
             entity.Property(x => x.Activo).HasColumnName("activo");
             entity.HasIndex(x => new { x.MarcaId, x.Nombre }).IsUnique().HasDatabaseName("UX_Linea_Marca");
             entity.HasOne(x => x.Marca).WithMany(x => x.Lineas).HasForeignKey(x => x.MarcaId).OnDelete(DeleteBehavior.Restrict);
+        });
+        builder.Entity<LineaTipo>(entity =>
+        {
+            entity.ToTable("lineas_tipos");
+            entity.HasKey(x => new { x.LineaId, x.TipoVehiculoId });
+            entity.Property(x => x.LineaId).HasColumnName("linea_id");
+            entity.Property(x => x.TipoVehiculoId).HasColumnName("tipo_vehiculo_id");
+            entity.HasIndex(x => x.TipoVehiculoId).HasDatabaseName("IX_LineaTipo_Tipo");
+            entity.HasOne<Linea>().WithMany().HasForeignKey(x => x.LineaId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<TipoVehiculo>().WithMany().HasForeignKey(x => x.TipoVehiculoId).OnDelete(DeleteBehavior.Restrict);
         });
         builder.Entity<Departamento>(entity =>
         {

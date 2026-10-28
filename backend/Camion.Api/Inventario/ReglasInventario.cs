@@ -52,6 +52,7 @@ public static partial class ReglasInventario
     public const string MensajeLinea = "Elige el modelo.";
     public const string MensajeLineaInvalida = "Modelo no válido.";
     public const string MensajeLineaMarca = "El modelo no corresponde a la marca elegida.";
+    public const string MensajeLineaCategoria = "Este modelo no corresponde a la categoría elegida.";
     public const string MensajeKilometraje = "Escribe el kilometraje (número entero mayor o igual a 0).";
     public const string MensajeHorasUso = "Escribe las horas de uso (número entero mayor o igual a 0).";
     public const string MensajePlaca = "Escribe una placa válida (letras y números).";
@@ -208,6 +209,11 @@ public static partial class ReglasInventario
                 .Select(l => new { l.MarcaId }).FirstOrDefaultAsync(ct);
             if (linea is null) Error("lineaId", MensajeLineaInvalida);
             else if (linea.MarcaId != r.MarcaId) Error("lineaId", MensajeLineaMarca);
+            // D-32: si el modelo está clasificado, debe pertenecer a la categoría del vehículo.
+            else if (tipoId is not null &&
+                     await db.LineasTipos.AsNoTracking().AnyAsync(lt => lt.LineaId == r.LineaId, ct) &&
+                     !await db.LineasTipos.AsNoTracking().AnyAsync(lt => lt.LineaId == r.LineaId && lt.TipoVehiculoId == tipoId, ct))
+                Error("lineaId", MensajeLineaCategoria);
         }
 
         // Año.

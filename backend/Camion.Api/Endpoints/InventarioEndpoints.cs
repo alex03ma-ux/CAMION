@@ -370,6 +370,8 @@ public static class InventarioEndpoints
             var tipos = await db.TiposVehiculo.AsNoTracking().Where(x => x.Activo).Select(x => new OpcionCatalogo(x.Id, x.Nombre)).ToListAsync(ct);
             var marcas = await db.Marcas.AsNoTracking().Where(x => x.Activo).Select(x => new { x.Id, x.Nombre }).ToListAsync(ct);
             var lineas = await db.Lineas.AsNoTracking().Where(x => x.Activo).Select(x => new { x.Id, x.MarcaId, x.Nombre }).ToListAsync(ct);
+            var tiposPorLinea = (await db.LineasTipos.AsNoTracking().ToListAsync(ct))
+                .GroupBy(x => x.LineaId).ToDictionary(g => g.Key, g => (IReadOnlyList<long>)g.Select(x => x.TipoVehiculoId).Order().ToArray());
             var carrocerias = await db.TiposCarroceria.AsNoTracking().Where(x => x.Activo).Select(x => new OpcionCatalogo(x.Id, x.Nombre)).ToListAsync(ct);
             var materiales = await db.MaterialesCarroceria.AsNoTracking().Where(x => x.Activo).Select(x => new OpcionCatalogo(x.Id, x.Nombre)).ToListAsync(ct);
             var maquinas = await db.TiposMaquina.AsNoTracking().Where(x => x.Activo).Select(x => new OpcionCatalogo(x.Id, x.Nombre)).ToListAsync(ct);
@@ -385,7 +387,9 @@ public static class InventarioEndpoints
             return Results.Ok(new CatalogosInventarioResponse(
                 Ordenar(tipos),
                 marcas.Select(m => new MarcaCatalogo(m.Id, m.Nombre,
-                        Ordenar(lineas.Where(l => l.MarcaId == m.Id).Select(l => new OpcionCatalogo(l.Id, l.Nombre)))))
+                        lineas.Where(l => l.MarcaId == m.Id)
+                            .Select(l => new LineaCatalogo(l.Id, l.Nombre, tiposPorLinea.GetValueOrDefault(l.Id) ?? Array.Empty<long>()))
+                            .OrderBy(l => l.Nombre, comparador).ThenBy(l => l.Id).ToArray()))
                     .OrderBy(m => m.Nombre, comparador).ThenBy(m => m.Id).ToArray(),
                 Ordenar(carrocerias),
                 Ordenar(materiales),

@@ -110,7 +110,10 @@ public sealed record DetalleInventario(
 
 public sealed record OpcionCatalogo(long Id, string Nombre);
 
-public sealed record MarcaCatalogo(long Id, string Nombre, IReadOnlyList<OpcionCatalogo> Lineas);
+// D-32: cada modelo trae sus categorías; vacía = sin clasificar (se ofrece en todas).
+public sealed record LineaCatalogo(long Id, string Nombre, IReadOnlyList<long> TipoIds);
+
+public sealed record MarcaCatalogo(long Id, string Nombre, IReadOnlyList<LineaCatalogo> Lineas);
 
 public sealed record DepartamentoCatalogo(long Id, string Nombre, IReadOnlyList<OpcionCatalogo> Municipios);
 

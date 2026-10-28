@@ -20,6 +20,13 @@ public sealed class Linea
     public Marca? Marca { get; set; }
 }
 
+// D-32: categorías (tipos_vehiculo) a las que pertenece cada modelo. Tabla lineas_tipos (migración 009).
+public sealed class LineaTipo
+{
+    public long LineaId { get; set; }
+    public long TipoVehiculoId { get; set; }
+}
+
 public sealed class TipoVehiculo
 {
     public long Id { get; set; }
