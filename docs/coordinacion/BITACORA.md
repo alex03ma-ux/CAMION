@@ -190,3 +190,12 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - La última foto no se puede borrar.
   - Un PUT sobre un vehículo sin fotos da 409; en la interfaz se pide subir una foto antes.
 - Resultados: `dotnet test` 684/684; `npm test` 329/329; `npm run build` correcto. La API en marcha no se detuvo: las pruebas se compilaron en una carpeta aparte.
+- La placa sigue faltando en el camión 19, creado con `f76121d`. Investigación hecha:
+  - En un **navegador real** (el integrado, con la API simulada en el propio navegador, sin tocar la base), el formulario envía `"placa":"ABC123"` en el multipart de un camión con carrocería, en dos órdenes de llenado distintos.
+  - La API guarda esa misma petición (pruebas con carrocería y con peso y capacidad).
+  - **Causa no confirmada.** Los indicios (en su equipo se "guardó" `MAQ12345` en un camión, cosa que el formulario rechaza) apuntan a que la caja mostraba un valor que el estado de React no tenía, por ejemplo por el autocompletado del navegador.
+  - Defensas añadidas:
+    - al guardar, el formulario lee de la pantalla los valores de las cajas de texto (hay una prueba que falla sin la defensa: la edición con un valor puesto sin evento);
+    - el servidor registra `placaRecibida=si/no` al crear;
+    - siguen el aviso "La placa no se guardó" y el log `placa_no_guardada`.
+- D-31 TOMADA (asterisco en los campos obligatorios). D-32 PENDIENTE (modelos por categoría).

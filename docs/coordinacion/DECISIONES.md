@@ -373,3 +373,30 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
   - Los vehículos que ya existen sin fotos (DEMO y de prueba) siguen funcionando. Al editarlos se pide subir una foto antes de "Guardar cambios" (409 si no la tienen).
   - El catálogo público no cambia.
 - Detalle en `docs/criterios/P4a-contrato-api.md`, sección "Cambios por D-30".
+
+## D-31 — Marcar siempre con asterisco (*) los campos obligatorios · TOMADA (2026-10-28)
+- Contexto: pedido de la responsable en la prueba manual de P4a, transmitido por el coordinador principal: que los asesores no tengan que adivinar qué es obligatorio.
+- **Decisión:** todo campo obligatorio lleva un asterisco (*), y cada formulario empieza con la nota "* Campo obligatorio".
+  - El asterisco depende de la categoría. Por ejemplo, la placa no lo lleva porque es opcional, y el modelo sí en Carro, Camión y Maquinaria.
+  - Se aplica en el inventario, en el registro de comprador y asesor, en el inicio de sesión y en los motivos de reserva e inactivación del panel.
+- Implementación:
+  - El asterisco se dibuja con CSS (clase `campo-obligatorio`).
+  - Los campos obligatorios llevan `aria-required="true"`. No se usa el atributo `required`, para que la validación sea la propia del formulario y no la del navegador.
+
+## D-32 — ¿Cómo se limita la lista de modelos a la categoría elegida? · PENDIENTE (detectada en la prueba manual de P4a, 2026-10-28)
+- Contexto:
+  - Hoy cada modelo (`lineas`) pertenece a una marca, pero no a una categoría. Por eso una máquina se pudo registrar como "Isuzu ELF 100", que es un camión (vehículo 17).
+  - Algunas marcas venden varias categorías: Chevrolet carros y camiones; Hyundai carros, camiones y maquinaria; Volvo camiones y maquinaria; Toyota carros y montacargas.
+- Opciones:
+  - A) **Cada modelo indica a qué categorías pertenece.**
+    - Una tabla nueva `lineas_tipos (linea_id, tipo_vehiculo_id)`, que permite que un modelo esté en varias categorías.
+    - Una migración reversible y un script que clasifica los modelos actuales (005 y 008), aplicados por la responsable vía phpMyAdmin (D-16).
+    - El formulario y la API solo ofrecen y aceptan los modelos de la categoría elegida.
+    - Impacto: es la solución precisa. Hay que revisar la clasificación una vez.
+  - B) **Cada modelo tiene una sola categoría** (columna `lineas.tipo_vehiculo_id`).
+    - Impacto: es más simple, pero un mismo nombre en dos categorías tendría que repetirse.
+  - C) **Filtrar por marca y categoría** (tabla `marcas_tipos`).
+    - Impacto: no resuelve el caso de Chevrolet, que tiene carros y camiones.
+- Recomendación: A. El administrador podrá editar la clasificación cuando exista la pantalla de marcas y modelos (P4p).
+- Bloquea: nada de P4a. Los vehículos mal clasificados, como el 17, se corrigen editándolos.
+- No se implementa sin respuesta.
