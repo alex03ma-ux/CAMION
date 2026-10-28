@@ -1,7 +1,8 @@
 // P4a: lista del inventario (CA-UI-03, CA-UI-04, CA-UI-11; HU-020, HU-021, HU-022).
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import { marcarVehiculoReciente, olvidarVehiculoReciente } from '../src/inventario/avisoPendiente'
 import { simularFetch } from './helpers'
 import {
   abrirConSesion,
@@ -368,5 +369,34 @@ describe('Inactivar con motivo (CA-UI-11, CA-020-02, CA-020-03)', () => {
     await u.keyboard('{Escape}')
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(api.llamadasA(INACTIVAR)).toHaveLength(0)
+  })
+})
+
+describe('Vehículo recién guardado (mejora de la prueba manual de P4a)', () => {
+  afterEach(() => olvidarVehiculoReciente())
+
+  it('asesor: el vehículo recién creado o editado se resalta con el texto "Recién guardado"', async () => {
+    marcarVehiculoReciente(2)
+    abrirAsesor({ [LISTA]: lista([V_ACTIVO, V_RESERVADO]) })
+    await screen.findByRole('heading', { level: 3, name: 'Chevrolet NPR 2020' })
+    const reciente = tarjeta('Kenworth T800 2018')
+    expect(reciente).toHaveClass('inv-tarjeta-reciente')
+    expect(within(reciente).getByText('Recién guardado')).toBeInTheDocument()
+    const otro = tarjeta('Chevrolet NPR 2020')
+    expect(otro).not.toHaveClass('inv-tarjeta-reciente')
+    expect(within(otro).queryByText('Recién guardado')).toBeNull()
+  })
+
+  it('administrador: también se resalta en el inventario general', async () => {
+    marcarVehiculoReciente(1)
+    abrirAdmin({ [LISTA]: lista([V_ACTIVO, V_RESERVADO]) })
+    await screen.findByRole('heading', { level: 3, name: 'Chevrolet NPR 2020' })
+    expect(within(tarjeta('Chevrolet NPR 2020')).getByText('Recién guardado')).toBeInTheDocument()
+  })
+
+  it('sin vehículo reciente no se resalta ninguno', async () => {
+    abrirAsesor({ [LISTA]: lista([V_ACTIVO, V_RESERVADO]) })
+    await screen.findByRole('heading', { level: 3, name: 'Chevrolet NPR 2020' })
+    expect(screen.queryByText('Recién guardado')).toBeNull()
   })
 })

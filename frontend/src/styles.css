@@ -1631,3 +1631,32 @@ button.cat-miniatura[aria-current="true"] {
     flex: 1 1 calc(50% - 6px);
   }
 }
+
+/* P4a (prueba manual): cierre claro del formulario y vehículo recién guardado resaltado */
+.inv-listo {
+  margin: 28px 0 8px;
+  padding-top: 20px;
+  border-top: 1px solid #d6dde6;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.inv-boton-listo {
+  font-size: 1.05rem;
+  padding: 12px 22px;
+}
+.inv-tarjeta-reciente {
+  outline: 3px solid #1f7a4d;
+  outline-offset: 2px;
+}
+.inv-etiqueta-reciente {
+  align-self: flex-start;
+  margin: 0 0 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #e3f4ea;
+  color: #14563a;
+  font-weight: 700;
+  font-size: 0.85rem;
+}

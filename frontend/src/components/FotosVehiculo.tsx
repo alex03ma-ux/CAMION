@@ -140,7 +140,7 @@ export function FotosVehiculo({
     if (subidas > 0) {
       setAviso({
         tipo: 'exito',
-        texto: subidas === 1 ? 'Se subió 1 foto.' : `Se subieron ${subidas} fotos.`,
+        texto: `${subidas === 1 ? 'Se subió 1 foto.' : `Se subieron ${subidas} fotos.`} Las fotos se guardan solas; cuando termines, pulsa «Listo» al final de la página.`,
       })
     }
     window.setTimeout(() => refInput.current?.focus(), 0)

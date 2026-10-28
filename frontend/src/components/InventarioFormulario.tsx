@@ -38,7 +38,12 @@ import {
   type CampoVehiculo,
 } from '../inventario/reglasCategoria'
 import { HASH_INVENTARIO } from '../rutas'
-import { descartarAvisoPendiente } from '../inventario/avisoPendiente'
+import {
+  descartarAvisoPendiente,
+  dejarAvisoPendiente,
+  marcarVehiculoReciente,
+  textoListo,
+} from '../inventario/avisoPendiente'
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo, CampoSelect } from './Campo'
 import { FotosVehiculo } from './FotosVehiculo'
@@ -250,7 +255,11 @@ export function InventarioFormulario({
       setCarga({ estado: 'ok', detalle: actualizado })
       setForm(formularioDesdeDetalle(actualizado, catalogos))
       setErrores({})
-      setAviso({ tipo: 'exito', texto: 'Cambios guardados.' })
+      marcarVehiculoReciente(actualizado.id)
+      setAviso({
+        tipo: 'exito',
+        texto: `Cambios guardados. Puedes agregar o reordenar fotos abajo; cuando termines, pulsa «${textoListo(esAdmin)}».`,
+      })
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         onSesionTerminada()
@@ -669,6 +678,22 @@ export function InventarioFormulario({
               onCambio={actualizarFotos}
               onSesionTerminada={onSesionTerminada}
             />
+          )}
+
+          {detalle && (
+            <div className="inv-listo">
+              <p className="campo-ayuda">Los datos y las fotos ya están guardados.</p>
+              <a
+                className="inv-boton-enlace inv-boton-listo"
+                href={HASH_INVENTARIO}
+                onClick={() => {
+                  marcarVehiculoReciente(detalle.id)
+                  dejarAvisoPendiente({ tipo: 'exito', texto: 'Listo. El vehículo quedó guardado; lo verás resaltado en la lista.' })
+                }}
+              >
+                {textoListo(esAdmin)}
+              </a>
+            </div>
           )}
         </>
       )}

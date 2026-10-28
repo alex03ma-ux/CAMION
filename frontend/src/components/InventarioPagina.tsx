@@ -8,7 +8,12 @@ import { obtenerCatalogosInventario, type DetalleInventario } from '../api/inven
 import { esAdministrador, ROL_ASESOR, tieneRol } from '../auth/roles'
 import { usePeticion } from '../catalogo/usePeticion'
 import { HASH_CUENTA, hashInventarioVehiculo, navegar, type Ruta } from '../rutas'
-import { dejarAvisoPendiente, leerAvisoPendiente } from '../inventario/avisoPendiente'
+import {
+  dejarAvisoPendiente,
+  leerAvisoPendiente,
+  marcarVehiculoReciente,
+  textoListo,
+} from '../inventario/avisoPendiente'
 import { Aviso } from './Aviso'
 import { InventarioFormulario } from './InventarioFormulario'
 import { InventarioLista } from './InventarioLista'
@@ -87,13 +92,17 @@ function InventarioConAcceso({
     if (error?.status === 401) onSesionTerminada()
   }, [error, onSesionTerminada])
 
-  const alCrear = useCallback((detalle: DetalleInventario) => {
-    dejarAvisoPendiente({
-      tipo: 'exito',
-      texto: 'Vehículo registrado. Ahora puedes agregar sus fotos.',
-    })
-    navegar(hashInventarioVehiculo(detalle.id))
-  }, [])
+  const alCrear = useCallback(
+    (detalle: DetalleInventario) => {
+      marcarVehiculoReciente(detalle.id)
+      dejarAvisoPendiente({
+        tipo: 'exito',
+        texto: `Vehículo guardado. Siguiente paso: agrega sus fotos abajo (hasta 10). Cuando termines, pulsa «${textoListo(esAdmin)}».`,
+      })
+      navegar(hashInventarioVehiculo(detalle.id))
+    },
+    [esAdmin],
+  )
 
   const tituloLista = esAdmin ? 'Inventario' : 'Mi inventario'
   const sinPermiso = error?.status === 403

@@ -412,9 +412,13 @@ describe('Tras crear (HU-013)', () => {
     await llenarCamion(u)
     await u.click(screen.getByRole('button', { name: 'Registrar vehículo' }))
     await waitFor(() => expect(window.location.hash).toBe('#/inventario/31'))
-    expect(await screen.findByText('Vehículo registrado. Ahora puedes agregar sus fotos.')).toBeInTheDocument()
+    expect(await screen.findByText('Vehículo guardado. Siguiente paso: agrega sus fotos abajo (hasta 10). Cuando termines, pulsa «Listo, volver a mi inventario».')).toBeInTheDocument()
     expect(await screen.findByText('Este vehículo aún no tiene fotos.')).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1, name: 'Editar vehículo' })).toBeInTheDocument()
+    // Mejora de la prueba manual: al final, debajo de las fotos, un botón claro para terminar.
+    const listo = screen.getByRole('link', { name: 'Listo, volver a mi inventario' })
+    expect(listo).toHaveAttribute('href', '#/inventario')
+    expect(screen.getByText('Los datos y las fotos ya están guardados.')).toBeInTheDocument()
   })
 })
 
@@ -445,7 +449,9 @@ describe('Edición (CA-UI-10, HU-019, RN-VE-003)', () => {
     await u.clear(km)
     await u.type(km, '90000')
     await u.click(screen.getByRole('button', { name: 'Guardar cambios' }))
-    expect(await screen.findByText('Cambios guardados.')).toBeInTheDocument()
+    expect(await screen.findByText(/^Cambios guardados\. Puedes agregar o reordenar fotos abajo; cuando termines, pulsa «Listo, volver al inventario»\./)).toBeInTheDocument()
+    // Mejora de la prueba manual: botón final visible para el administrador.
+    expect(screen.getByRole('link', { name: 'Listo, volver al inventario' })).toHaveAttribute('href', '#/inventario')
     const put = api.llamadasA(DETALLE_9)[1]
     expect(put.init?.method).toBe('PUT')
     const cuerpo = cuerpoJson(put.init) as Record<string, unknown>

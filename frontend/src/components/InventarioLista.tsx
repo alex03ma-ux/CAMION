@@ -26,7 +26,7 @@ import {
 } from '../inventario/estados'
 import { categoriaDeTipo } from '../inventario/reglasCategoria'
 import { HASH_INVENTARIO_NUEVO, hashInventarioVehiculo } from '../rutas'
-import { descartarAvisoPendiente } from '../inventario/avisoPendiente'
+import { descartarAvisoPendiente, leerVehiculoReciente } from '../inventario/avisoPendiente'
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo, CampoSelect } from './Campo'
 import { DialogoConfirmacion } from './DialogoAccion'
@@ -126,6 +126,7 @@ export function InventarioLista({
   const [dialogo, setDialogo] = useState<DialogoInactivar | null>(null)
 
   const tituloResultados = useRef<HTMLHeadingElement>(null)
+  const [recienteId] = useState<number | null>(() => leerVehiculoReciente())
   const origenDialogo = useRef<HTMLButtonElement | null>(null)
 
   useEffect(() => {
@@ -378,12 +379,14 @@ export function InventarioLista({
             const acciones = accionesEstado(item.estado)
             const uso = datoUso(item)
             const idTitulo = `inv-item-${item.id}`
+            const esReciente = item.id === recienteId
             return (
-              <li key={item.id} className="inv-tarjeta">
+              <li key={item.id} className={esReciente ? 'inv-tarjeta inv-tarjeta-reciente' : 'inv-tarjeta'}>
                 <div className="inv-tarjeta-foto">
                   <ImagenVehiculo src={item.fotoPortada} alt="" />
                 </div>
                 <div className="inv-tarjeta-cuerpo">
+                  {esReciente && <p className="inv-etiqueta-reciente">Recién guardado</p>}
                   <h3 id={idTitulo} className="inv-tarjeta-titulo">
                     {titulo}
                   </h3>

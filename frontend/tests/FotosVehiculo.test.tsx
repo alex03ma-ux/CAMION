@@ -108,7 +108,7 @@ describe('Rechazo antes de enviar (CA-UI-12)', () => {
     const api = simularFetch({ [BASE]: { status: 201, body: foto(1, 1) } })
     const { u } = montar([])
     await u.upload(screen.getByLabelText('Agregar fotos'), png('justa.png', 5 * 1024 * 1024))
-    expect(await screen.findByText('Se subió 1 foto.')).toBeInTheDocument()
+    expect(await screen.findByText(/^Se subió 1 foto\. Las fotos se guardan solas; cuando termines, pulsa «Listo»/)).toBeInTheDocument()
     expect(api.llamadasA(BASE)).toHaveLength(1)
   })
 
@@ -116,7 +116,7 @@ describe('Rechazo antes de enviar (CA-UI-12)', () => {
     const api = simularFetch({ [BASE]: { status: 201, body: foto(10, 10) } })
     const { u } = montar(fotos(9))
     await u.upload(screen.getByLabelText('Agregar fotos'), [png('a.png'), png('b.png')])
-    expect(await screen.findByText('Se subió 1 foto.')).toBeInTheDocument()
+    expect(await screen.findByText(/^Se subió 1 foto\. Las fotos se guardan solas; cuando termines, pulsa «Listo»/)).toBeInTheDocument()
     expect(screen.getByText('Solo caben 1 foto más; no se subieron: b.png.')).toBeInTheDocument()
     expect(api.llamadasA(BASE)).toHaveLength(1)
     expect(contador('10 de 10')).toBeInTheDocument()
@@ -130,7 +130,7 @@ describe('Subida (CA-014-01, CA-UI-12)', () => {
     const a = png('frente.png')
     const b = new File([new Uint8Array(10)], 'lado.webp', { type: 'image/webp' })
     await u.upload(screen.getByLabelText('Agregar fotos'), [a, b])
-    expect(await screen.findByText('Se subieron 2 fotos.')).toBeInTheDocument()
+    expect(await screen.findByText(/^Se subieron 2 fotos\. Las fotos se guardan solas/)).toBeInTheDocument()
     const [p1, p2] = api.llamadasA(BASE)
     expect(p1.init?.method).toBe('POST')
     const datos = p1.init?.body as FormData
@@ -154,7 +154,7 @@ describe('Subida (CA-014-01, CA-UI-12)', () => {
     expect(await screen.findByText('Subiendo foto 1 de 1...')).toBeInTheDocument()
     expect(screen.getByLabelText('Progreso de la subida')).toBeInTheDocument()
     soltar(new Response(JSON.stringify(foto(1, 1)), { status: 201, headers: { 'Content-Type': 'application/json' } }))
-    expect(await screen.findByText('Se subió 1 foto.')).toBeInTheDocument()
+    expect(await screen.findByText(/^Se subió 1 foto\. Las fotos se guardan solas; cuando termines, pulsa «Listo»/)).toBeInTheDocument()
     expect(screen.queryByText(/Subiendo foto/)).toBeNull()
   })
 
