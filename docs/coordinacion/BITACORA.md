@@ -151,3 +151,4 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - SQLite no reproduce los bloqueos de fila de MariaDB.
   - El portal sigue mostrando el precio y las fotos de la publicación hasta P4b.
   - Prueba manual pendiente de la migración 004 y de D-27.
+- D-27 TOMADA (C): añadido `database/catalogos/005_marcas_lineas_iniciales.sql`, sin aplicar. Tiene 33 marcas y 137 modelos, solo INSERT idempotente, y su BAJAR (comentado) solo borra lo que el script añadió y ningún vehículo usa. La pantalla de marcas y modelos pasa a P4p. D-22 confirmada.

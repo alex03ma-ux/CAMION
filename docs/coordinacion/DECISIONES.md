@@ -320,7 +320,7 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
 - El backlog no se reordena hasta tener la respuesta.
 - **Decisión: A** (respuesta de la responsable, transmitida por el coordinador principal). Se crea **P4p "Planes y suscripciones"** justo después de P4a y antes de P4b, con el alcance mínimo propuesto: sin pagos en línea; el administrador activa la suscripción a mano. El backlog queda reordenado.
 
-## D-27 — ¿Cómo se completa la lista de marcas y modelos ahora que el modelo es obligatorio? · PENDIENTE (detectada en P4a, 2026-10-27)
+## D-27 — ¿Cómo se completa la lista de marcas y modelos ahora que el modelo es obligatorio? · TOMADA (2026-10-27)
 - Contexto: por D-25, el modelo es obligatorio en Carro, Camión y Maquinaria.
   - En `camion_ventas` solo hay las marcas y líneas del DEMO.
   - El administrador no puede añadirlas hasta P7 (HU-082/HU-083).
@@ -333,3 +333,10 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
   - C) **Ambas**: el script para arrancar y la pantalla para el día a día.
 - Recomendación: C, con el script ahora y la pantalla dentro de P4p.
 - Bloquea: el uso real de P4a con vehículos de modelos que no estén en la lista. No bloquea las pruebas ni el merge.
+- **Decisión: C, "Lista inicial + pantalla"** (respuesta de la responsable, transmitida por el coordinador principal).
+  - El script `database/catalogos/005_marcas_lineas_iniciales.sql` añade 33 marcas y 137 modelos de camiones, carros y maquinaria comunes en Colombia.
+    - Solo usa INSERT con NOT EXISTS, así que se puede ejecutar dos veces sin duplicar.
+    - Su sección BAJAR, comentada, solo borra lo que añadió y que ningún vehículo usa. No toca lo del DEMO.
+    - Lo aplica la responsable vía phpMyAdmin junto con la migración 004, tras el respaldo previo.
+  - La pantalla de marcas y modelos (HU-082/HU-083: crear, renombrar, desactivar) entra en P4p.
+- Nota: D-22 queda confirmada por la responsable: "Marcar como vendido" va en P4b.
