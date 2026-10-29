@@ -13,6 +13,7 @@ import {
   type FotoInventario,
   type Opcion,
   lineasDeCategoria,
+  catalogosConValoresActuales,
 } from '../api/inventario'
 import { ApiError, MENSAJE_INESPERADO } from '../api/http'
 import { formatoCop, mostrarConMiles, soloDigitos } from '../catalogo/formato'
@@ -155,7 +156,7 @@ type Carga =
 export function InventarioFormulario({
   token,
   esAdmin,
-  catalogos,
+  catalogos: catalogosBase,
   vehiculoId,
   avisoInicial,
   onSesionTerminada,
@@ -188,7 +189,7 @@ export function InventarioFormulario({
     obtenerVehiculoInventario(token, vehiculoId, control.signal)
       .then((detalle) => {
         setCarga({ estado: 'ok', detalle })
-        setForm(formularioDesdeDetalle(detalle, catalogos))
+        setForm(formularioDesdeDetalle(detalle, catalogosConValoresActuales(catalogosBase, detalle)))
         setErrores({})
       })
       .catch((error: unknown) => {
@@ -208,9 +209,11 @@ export function InventarioFormulario({
         })
       })
     return () => control.abort()
-  }, [token, vehiculoId, catalogos, intento, onSesionTerminada])
+  }, [token, vehiculoId, catalogosBase, intento, onSesionTerminada])
 
   const detalle = carga.estado === 'ok' ? carga.detalle : null
+  // D-37: al editar, las listas incluyen los valores actuales del vehículo aunque estén desactivados.
+  const catalogos = useMemo(() => catalogosConValoresActuales(catalogosBase, detalle), [catalogosBase, detalle])
 
   // D-33: también al editar manda la categoría elegida en el formulario; la del detalle es el respaldo.
   const categoria: Categoria | null = creando
