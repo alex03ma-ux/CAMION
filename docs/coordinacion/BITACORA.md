@@ -292,3 +292,16 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - si se pasa a un plan con menos límite, lo que ya excede se mantiene;
   - "hoy" de la fecha de venta en hora de Colombia;
   - el inventario consulta las publicaciones aparte (se puede optimizar).
+- Prueba manual de P4b (2026-10-29), con la responsable:
+  - Respaldo `C:\Respaldo_CAMION\camion_ventas_antes_012_p4b_20261029_172556.sql`.
+  - La responsable importó `012_p4b_publicaciones_SUBIR.sql`. Verificado: existen `limite_destacados` y `ventas_vehiculo`, y el motivo admite 500 caracteres. Los conteos no cambiaron.
+  - API arrancada con P4b.
+  - Evidencia en la auditoría:
+    - publicación 13 creada;
+    - quitar destacado y destacar sobre la publicación 2;
+    - venta y reversión del vehículo 20, que no tenía publicación.
+  - "No veo Eliminar": no es un defecto. La publicación 13 seguía PUBLICADA, y Eliminar solo aparece en las inactivas o vendidas.
+  - Mejoras pedidas y hechas:
+    - en "Mis publicaciones", las destacadas van en una sección aparte arriba, con fondo y borde dorados y el sello "★ Destacada", y la API las ordena primero;
+    - todas las fotos de las tarjetas tienen el mismo tamaño (inventario, Mis publicaciones y portal).
+  - Resultados: `npm test` 441/441; `dotnet test` 866/866.
