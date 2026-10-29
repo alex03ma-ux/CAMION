@@ -259,3 +259,36 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
     - **renovar**: no hay fila RENOVAR y el fin sigue en 2026-11-26;
     - la tarjeta "Mi suscripción" vista desde una cuenta de asesor.
     Quedan para una próxima prueba.
+
+## 2026-10-29 — P4b Publicaciones
+- Rama `feature/p4b-publicaciones`, creada **encima de `feature/p4p-planes`**, igual que P4p sobre P4a.
+- Decisiones de la responsable en esta sesión:
+  - D-38: destacados según el plan; el asesor los gestiona y puede cambiarlos sin límite de cambios.
+  - D-39: origen de la venta en una lista fija.
+  - D-40: el cupo cuenta todas las publicaciones salvo las eliminadas; eliminar libera cupo.
+  - D-41: la vigencia de la publicación es la del plan; un plan nuevo se suma al final.
+- Contrato y criterios en `docs/criterios/P4b*.md`.
+- Backend:
+  - publicaciones: crear, editar, inactivar, reactivar, renovar y eliminar (lógico);
+  - destacados con `limite_destacados`;
+  - venta y reversión en `ventas_vehiculo`;
+  - reasignación por el administrador (D-34);
+  - cupo.
+  - El portal tiene una nueva regla de visibilidad (plan vigente del asesor) y muestra el precio y las fotos del vehículo.
+  - Las pruebas de P3 afectadas por D-41 se ajustaron con un comentario que lo explica.
+- Migración `012_p4b_publicaciones` (con su archivo SUBIR) **sin aplicar**:
+  - añade `planes.limite_destacados`;
+  - amplía `publicaciones.motivo_ocultamiento` a 500;
+  - crea la tabla `ventas_vehiculo`.
+  - **Hay que aplicarla antes de reiniciar la API con este código.** Sin ella fallan los planes, la venta y el detalle del inventario.
+- Frontend:
+  - "Publicar", "Marcar vendido" y "Revertir venta" en el inventario;
+  - `#/publicaciones` "Mis publicaciones" con el contador de cupo y destacados;
+  - "Reasignar" para el administrador;
+  - "Destacados incluidos" en los planes.
+- Resultados ejecutados por el coordinador: `dotnet test` 866/866; `npm test` 439/439; tipos y `npm run build` correctos.
+- Revisión de seguridad: rutas con `AsesorOAdministrador` (lo ajeno da 404) y la reasignación con `SoloAdministrador`; sin SQL escrito a mano; la 012 no toca datos existentes.
+- PROPUESTOS pendientes de confirmar:
+  - si se pasa a un plan con menos límite, lo que ya excede se mantiene;
+  - "hoy" de la fecha de venta en hora de Colombia;
+  - el inventario consulta las publicaciones aparte (se puede optimizar).
