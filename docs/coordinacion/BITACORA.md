@@ -246,3 +246,16 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - todas las rutas nuevas tienen `SoloAdministrador`, salvo `/api/asesor/suscripcion` (`SoloAsesor`);
   - sin SQL escrito a mano;
   - la migración 011 solo cambia la CHECK.
+- Prueba manual de P4p (2026-10-29), con la responsable:
+  - Respaldo previo `C:\Respaldo_CAMION\camion_ventas_antes_011_p4p_20261029_135045.sql` (43 tablas, "Dump completed").
+  - La responsable importó `011_p4p_estados_suscripcion_SUBIR.sql` en phpMyAdmin. Verificado: `CK_Sus_Estado` ya admite SUSPENDIDA y REACTIVADA, y los conteos no cambiaron (1 suscripción, 1 plan, 20 vehículos).
+  - API y web arrancadas con `feature/p4p-planes` en el panel de Terminal. Se reiniciaron una vez porque se cerraron sus pestañas.
+  - La responsable informa de que **todo funcionó correctamente**. Evidencia en la base:
+    - plan "Plan Básico" creado (1 mes, cupo 5);
+    - suscripción DEMO suspendida y luego reactivada (estado REACTIVADA);
+    - una marca desactivada y reactivada;
+    - todo con su auditoría (Plan CREAR, Suscripcion SUSPENDER y REACTIVAR, Catalogo DESACTIVAR y ACTIVAR).
+  - Lo que no consta en la auditoría:
+    - **renovar**: no hay fila RENOVAR y el fin sigue en 2026-11-26;
+    - la tarjeta "Mi suscripción" vista desde una cuenta de asesor.
+    Quedan para una próxima prueba.
