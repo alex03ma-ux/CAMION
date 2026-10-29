@@ -156,12 +156,14 @@ public sealed class InventarioEstadosTests(InventarioFixture fx) : IClassFixture
         Assert.DoesNotContain(await _api.AuditoriaVehiculo(id), a => a.Accion == "EDITAR");
     }
 
-    [Fact(DisplayName = "D-22: no existe acción para marcar VENDIDO en P4a")]
+    // P4b (D-22): "Marcar vendido" ya existe (POST .../vender, VentasTests). Lo que se mantiene de P4a: las acciones de
+    // estado genéricas no llevan a VENDIDO, y vender sin los datos de la venta no cambia el vehículo.
+    [Fact(DisplayName = "D-22 (P4b): vender exige los datos de la venta; sin ellos -> 400 y el vehículo sigue ACTIVO")]
     public async Task No_hay_accion_vender()
     {
         var id = await _api.CrearId(_api.A);
         var r = await _api.Accion(_api.A.Token, id, "vender");
-        Assert.True(r.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.MethodNotAllowed, $"Llegó {(int)r.StatusCode}");
+        Assert.Equal(HttpStatusCode.BadRequest, r.StatusCode);
         Assert.Equal("ACTIVO", (await _api.VehiculoDb(id)).Estado);
     }
 

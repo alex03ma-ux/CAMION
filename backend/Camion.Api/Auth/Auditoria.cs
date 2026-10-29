@@ -38,6 +38,16 @@ public static class Auditoria
     public const string Suspender = "SUSPENDER";
     public const string Cancelar = "CANCELAR";
 
+    // P4b (HU-023 a HU-028, HU-064, D-34, D-38, D-40): publicaciones, destacados, venta y reasignación.
+    public const string EntidadPublicacion = "Publicacion";
+    public const string EntidadVenta = "Venta";
+    public const string Eliminar = "ELIMINAR";
+    public const string Destacar = "DESTACAR";
+    public const string QuitarDestacado = "QUITAR_DESTACADO";
+    public const string Vender = "VENDER";
+    public const string RevertirVenta = "REVERTIR";
+    public const string Reasignar = "REASIGNAR";
+
     // Solo agrega la fila al contexto; se guarda en la misma transacción que el cambio auditado.
     public static void Agregar(CamionDbContext db, string? actorId, string usuarioAfectadoId, string accion,
         string? estadoAnterior, string estadoNuevo, string? motivo, bool incluirMotivo)

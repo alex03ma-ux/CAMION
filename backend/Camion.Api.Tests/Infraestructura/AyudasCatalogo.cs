@@ -188,8 +188,13 @@ public sealed class Siembra
         "n07-vigencia-futura", "n08-asesor-bloqueado", "n09-asesor-rechazado", "n10-asesor-pendiente",
         "n11-titulo-espacios", "n13-titulo-vacio", "n14-plan-vencido", "n15-plan-cancelado", "n16-plan-estado-vencida",
         "n17-precio-cero", "n18-reservado-vencido", "n19-reservado-asesor-bloqueado", "n20-vencida-hace-1min",
-        "n21-plan-fin-exacto", "n22-precio-nulo", "n23-titulo-nulo"
+        "n21-plan-fin-exacto", "n22-precio-nulo", "n23-titulo-nulo",
+        // P4b (D-41): plan ACTIVA sin fecha de fin (no es vigente) y plan SUSPENDIDA.
+        "n24-plan-sin-fin", "n25-plan-suspendido"
     ];
+
+    private global::Camion.Api.Models.Plan _planBase = null!;
+    private int _asesoresExtra;
 
     private Siembra(CamionDbContext db) => _db = db;
 
@@ -247,6 +252,7 @@ public sealed class Siembra
         var plan = new global::Camion.Api.Models.Plan { Nombre = "Plan Ficticio P3", PrecioCop = 0, DuracionMeses = 1, LimitePublicaciones = 10 };
         db.Planes.Add(plan);
         await db.SaveChangesAsync();
+        s._planBase = plan;
         Suscripcion Plan(PerfilAsesor p, string estado, DateTime? fin) =>
             new() { AsesorId = p.Id, PlanId = plan.Id, Estado = estado, InicioVigencia = T.AddDays(-30), FinVigencia = fin };
         var planes = perfiles.Select(p => Plan(p, Suscripcion.Activa, T.AddDays(30))).ToArray();
@@ -326,6 +332,28 @@ public sealed class Siembra
         return p;
     }
 
+    /// <summary>
+    /// P4b (D-41): asesor con cuenta ACTIVA cuya ÚNICA suscripción es la indicada. Desde P4b la visibilidad depende del
+    /// plan del asesor (no de la suscripción de cada vigencia), así que los casos "plan vencido/cancelado/..." necesitan un
+    /// asesor que no tenga además el plan vigente de A1. Guarda en la base al momento (ids).
+    /// </summary>
+    public AsesorSembrado AsesorConPlan(string estado, DateTime? fin, DateTime? inicio = null)
+    {
+        var n = ++_asesoresExtra;
+        var u = Usuario($"x{n}", EstadosCuenta.Activa);
+        var perfil = Perfil(u, PerfilAsesor.Aprobado, $"91{n:D8}");
+        _db.Users.Add(u);
+        _db.PerfilesAsesor.Add(perfil);
+        _db.SaveChanges();
+        var sus = new Suscripcion
+        {
+            AsesorId = perfil.Id, PlanId = _planBase.Id, Estado = estado, InicioVigencia = inicio ?? T.AddDays(-30), FinVigencia = fin
+        };
+        _db.Suscripciones.Add(sus);
+        _db.SaveChanges();
+        return new(u, perfil, sus);
+    }
+
     public HistorialVigencia Vigencia(Publicacion p, DateTime inicio, DateTime fin, Suscripcion? plan = null)
     {
         var h = new HistorialVigencia { SuscripcionId = (plan ?? A1.Plan).Id, Inicio = inicio, Fin = fin, Motivo = "ALTA" };
@@ -398,11 +426,16 @@ public sealed class Siembra
             case "n02-oculta": p = N(estadoPub: "OCULTA"); break;
             case "n03-borrador": p = N(estadoPub: "BORRADOR"); break;
             case "n04-eliminada": p = N(estadoPub: "ELIMINADA"); break;
+            // P4b (D-41): la publicación vence cuando vence el plan del asesor, no cuando termina la fila de vigencia.
+            // Los casos de vencimiento usan un asesor cuya única suscripción es la vencida (antes eran del A1 vigente).
             case "n05-vencida-fin-exacto":
-                p = N(vigente: false);
-                Vigencia(p, T.AddDays(-30), T);
+            {
+                var a = AsesorConPlan(Suscripcion.Activa, T);
+                p = N(asesor: a, vigente: false);
+                Vigencia(p, T.AddDays(-30), T, a.Plan);
                 Destacar(p, T.AddDays(-1), T.AddDays(5));
                 break;
+            }
             case "n06-sin-vigencia": p = N(vigente: false); break;
             case "n07-vigencia-futura":
                 p = N(vigente: false);
@@ -416,22 +449,30 @@ public sealed class Siembra
             case "n10-asesor-pendiente": p = N(asesor: A4); break;
             case "n11-titulo-espacios": p = N(titulo: "   "); break;
             case "n13-titulo-vacio": p = N(titulo: ""); break;
-            case "n14-plan-vencido": p = N(plan: PlanVencido); break;
-            case "n15-plan-cancelado": p = N(plan: PlanCancelado); break;
-            case "n16-plan-estado-vencida": p = N(plan: PlanEstadoVencida); break;
+            case "n14-plan-vencido": p = N(asesor: AsesorConPlan(Suscripcion.Activa, T.AddMinutes(-1))); break;
+            case "n15-plan-cancelado": p = N(asesor: AsesorConPlan(Suscripcion.Cancelada, T.AddDays(30))); break;
+            case "n16-plan-estado-vencida": p = N(asesor: AsesorConPlan(Suscripcion.Vencida, null)); break;
             case "n17-precio-cero": p = N(precio: 0m); break;
             case "n18-reservado-vencido":
-                p = N(estadoCom: Publicacion.Reservado, vigente: false);
-                Vigencia(p, T.AddDays(-40), T.AddMinutes(-1));
+            {
+                var a = AsesorConPlan(Suscripcion.Activa, T.AddMinutes(-1));
+                p = N(estadoCom: Publicacion.Reservado, asesor: a, vigente: false);
+                Vigencia(p, T.AddDays(-40), T.AddMinutes(-1), a.Plan);
                 break;
+            }
             case "n19-reservado-asesor-bloqueado": p = N(estadoCom: Publicacion.Reservado, asesor: A2); break;
             case "n20-vencida-hace-1min":
-                p = N(vigente: false);
-                Vigencia(p, T.AddDays(-30), T.AddMinutes(-1));
+            {
+                var a = AsesorConPlan(Suscripcion.Activa, T.AddMinutes(-1));
+                p = N(asesor: a, vigente: false);
+                Vigencia(p, T.AddDays(-30), T.AddMinutes(-1), a.Plan);
                 break;
-            case "n21-plan-fin-exacto": p = N(plan: PlanFinExacto); break;
+            }
+            case "n21-plan-fin-exacto": p = N(asesor: AsesorConPlan(Suscripcion.Activa, T)); break;
             case "n22-precio-nulo": p = N(precio: null); break;
             case "n23-titulo-nulo": p = N(titulo: null); break;
+            case "n24-plan-sin-fin": p = N(asesor: AsesorConPlan(Suscripcion.Activa, null)); break;
+            case "n25-plan-suspendido": p = N(asesor: AsesorConPlan(Suscripcion.Suspendida, T.AddDays(30))); break;
             default: throw new ArgumentException("Caso desconocido: " + caso);
         }
         return p;

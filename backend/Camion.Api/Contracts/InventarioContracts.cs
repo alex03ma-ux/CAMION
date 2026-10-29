@@ -57,7 +57,10 @@ public sealed record ItemInventario(
     string? NotaReserva,
     // Solo para el administrador.
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    AsesorInventario? Asesor);
+    AsesorInventario? Asesor,
+    // P4b: su publicación no eliminada (se omite si no tiene).
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    PublicacionDeVehiculo? Publicacion = null);
 
 public sealed record InventarioPaginaResponse(
     IReadOnlyList<ItemInventario> Items,
@@ -106,7 +109,13 @@ public sealed record DetalleInventario(
     IReadOnlyList<FotoInventarioResponse> Fotos,
     // Solo para el administrador.
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    AsesorInventario? Asesor);
+    AsesorInventario? Asesor,
+    // P4b: su publicación no eliminada (se omite si no tiene).
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    PublicacionDeVehiculo? Publicacion = null,
+    // P4b: la venta vigente (no revertida) si el vehículo está VENDIDO (se omite si no hay).
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    VentaDeVehiculo? Venta = null);
 
 public sealed record OpcionCatalogo(long Id, string Nombre);
 

@@ -16,6 +16,7 @@ public static partial class ReglasP4p
     public const string MensajePrecioPlan = "Escribe el precio en pesos (número entero mayor o igual a 0).";
     public const string MensajeDuracion = "Escribe la duración en meses (número entero de 1 a 36).";
     public const string MensajeLimite = "Escribe el límite de publicaciones (número entero de 1 a 1000).";
+    public const string MensajeLimiteDestacados = "Escribe los destacados incluidos (número entero de 0 a 20).";
     public const string MensajePlanDuplicado = "Ya existe un plan con ese nombre.";
     public const string MensajePlan = "Elige un plan.";
     public const string MensajePlanActivo = "Elige un plan activo.";
@@ -35,6 +36,7 @@ public static partial class ReglasP4p
     public const int DiasPorMes = 30;         // D-35
     public const int DuracionMaxima = 36;
     public const int LimiteMaximo = 1000;
+    public const int LimiteDestacadosMaximo = 20;   // D-38, CK_Plan_Destacados
     public const decimal PrecioMaximo = 9_999_999_999_999m;   // DECIMAL(15,2)
     public const int MaxNombre = 100;
 
@@ -97,6 +99,8 @@ public static partial class ReglasP4p
         if (r?.DuracionMeses is not { } meses || meses is < 1 or > DuracionMaxima) errores["duracionMeses"] = [MensajeDuracion];
         if (r?.LimitePublicaciones is not { } limite || limite is < 1 or > LimiteMaximo)
             errores["limitePublicaciones"] = [MensajeLimite];
+        if (r?.LimiteDestacados is { } destacados && destacados is < 0 or > LimiteDestacadosMaximo)
+            errores["limiteDestacados"] = [MensajeLimiteDestacados];
         return errores;
     }
 

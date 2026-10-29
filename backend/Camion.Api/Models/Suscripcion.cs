@@ -37,6 +37,8 @@ public sealed class Plan
     public decimal PrecioCop { get; set; }
     public int DuracionMeses { get; set; }
     public int LimitePublicaciones { get; set; }
+    // P4b (D-38, migración 012): destacados incluidos en el plan, de 0 a 20.
+    public int LimiteDestacados { get; set; }
     public bool EsPrueba { get; set; }
     public bool Activo { get; set; } = true;
     public DateTime CreadoEn { get; set; } = DateTime.UtcNow;

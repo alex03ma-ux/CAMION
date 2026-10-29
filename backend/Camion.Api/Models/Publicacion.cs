@@ -1,10 +1,13 @@
 namespace Camion.Api.Models;
 
 // P3: tablas existentes publicaciones, fotos_publicacion, historial_vigencias y publicaciones_destacadas
-// (script 002). Solo lectura. Estados D-4 / D-11.
+// (script 002). Estados D-4 / D-11. P4b (HU-023 a HU-028, D-40, D-41): la API las gestiona.
 public sealed class Publicacion
 {
+    public const string Borrador = "BORRADOR";
     public const string Publicada = "PUBLICADA";
+    public const string Oculta = "OCULTA";
+    public const string Eliminada = "ELIMINADA";
     public const string Disponible = "DISPONIBLE";
     public const string Reservado = "RESERVADO";
     public const string Vendido = "VENDIDO";
@@ -55,6 +58,8 @@ public sealed class HistorialVigencia
 public sealed class PublicacionDestacada
 {
     public const string Activa = "ACTIVA";
+    // P4b (D-38): quitar el destacado lo cierra (fin = ahora); la fila no se borra.
+    public const string Finalizada = "FINALIZADA";
 
     public long Id { get; set; }
     public long PublicacionId { get; set; }

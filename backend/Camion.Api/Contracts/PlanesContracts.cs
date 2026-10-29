@@ -11,7 +11,9 @@ public sealed record PlanRequest(
     decimal? PrecioCop,
     long? DuracionMeses,
     long? LimitePublicaciones,
-    bool? EsPrueba);
+    bool? EsPrueba,
+    // P4b (D-38): 0 a 20. Opcional: al crear, null = 0; al editar, null conserva el valor actual.
+    long? LimiteDestacados = null);
 
 public sealed record PlanItem(
     long Id,
@@ -22,7 +24,8 @@ public sealed record PlanItem(
     int LimitePublicaciones,
     bool EsPrueba,
     bool Activo,
-    int SuscripcionesVivas);
+    int SuscripcionesVivas,
+    int LimiteDestacados);
 
 public sealed record PlanesResponse(IReadOnlyList<PlanItem> Items);
 
@@ -37,7 +40,7 @@ public sealed record MotivoSuscripcionRequest(string? Motivo);
 // asesor.id = perfiles_asesor.id.
 public sealed record AsesorSuscripcion(long Id, string Nombre);
 
-public sealed record PlanSuscripcion(long Id, string Nombre, int LimitePublicaciones, int DiasVigencia);
+public sealed record PlanSuscripcion(long Id, string Nombre, int LimitePublicaciones, int DiasVigencia, int LimiteDestacados);
 
 public sealed record SuscripcionItem(
     long Id,
@@ -59,6 +62,7 @@ public sealed record SuscripcionesPaginaResponse(
     int Tamano);
 
 // GET /api/asesor/suscripcion (SoloAsesor).
+// P4b: los destacados del asesor se consultan en GET /api/publicaciones/cupo.
 public sealed record MiPlan(string Nombre, int LimitePublicaciones, int DiasVigencia);
 
 public sealed record MiSuscripcionResponse(
