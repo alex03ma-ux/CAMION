@@ -447,16 +447,22 @@ function PanelPublicaciones({
         </p>
       )}
 
-      {lista && lista.items.length > 0 && (
-        <ul className="inv-lista" aria-busy={cargando}>
-          {lista.items.map((p) => {
+      {lista && lista.items.length > 0 && (() => {
+        // Petición de la responsable en la prueba de P4b: las destacadas en una sección aparte,
+        // arriba y diferenciadas; debajo, el resto. La API ya las devuelve primero.
+        const tarjeta = (p: Publicacion) => {
             const titulo = tituloDe(p)
             const estado = estadoVisible(p)
             const acciones = accionesPublicacion(p)
             return (
-              <li key={p.id} className="inv-tarjeta">
+              <li key={p.id} className={p.destacada ? 'inv-tarjeta pub-tarjeta-destacada' : 'inv-tarjeta'}>
                 <div className="inv-tarjeta-foto">
                   <ImagenVehiculo src={p.fotoPortada} alt="" />
+                  {p.destacada && (
+                    <span className="pub-sello-destacada" aria-hidden="true">
+                      ★ Destacada
+                    </span>
+                  )}
                 </div>
                 <div className="inv-tarjeta-cuerpo">
                   <h3 className="inv-tarjeta-titulo">{titulo}</h3>
@@ -553,9 +559,35 @@ function PanelPublicaciones({
                 </div>
               </li>
             )
-          })}
-        </ul>
-      )}
+        }
+        const destacadas = lista.items.filter((p) => p.destacada)
+        const resto = lista.items.filter((p) => !p.destacada)
+        return (
+          <>
+            {destacadas.length > 0 && (
+              <section className="pub-seccion pub-seccion-destacadas" aria-labelledby="pub-titulo-destacadas">
+                <h2 id="pub-titulo-destacadas" className="pub-seccion-titulo">
+                  <span aria-hidden="true">★ </span>Destacadas ({destacadas.length})
+                </h2>
+                <p className="campo-ayuda">Se muestran primero en el portal.</p>
+                <ul className="inv-lista" aria-busy={cargando}>
+                  {destacadas.map(tarjeta)}
+                </ul>
+              </section>
+            )}
+            {resto.length > 0 && (
+              <section className="pub-seccion" aria-labelledby="pub-titulo-resto">
+                <h2 id="pub-titulo-resto" className="pub-seccion-titulo">
+                  {destacadas.length > 0 ? 'Otras publicaciones' : 'Publicaciones'} ({resto.length})
+                </h2>
+                <ul className="inv-lista" aria-busy={cargando}>
+                  {resto.map(tarjeta)}
+                </ul>
+              </section>
+            )}
+          </>
+        )
+      })()}
 
       {lista && lista.total > 0 && totalPaginas > 1 && (
         <nav className="paginacion" aria-label="Paginación de las publicaciones">

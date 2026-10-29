@@ -1955,3 +1955,53 @@ label.campo-obligatorio::after,
   border-color: #fedf89;
   color: #93370d;
 }
+
+/* Prueba manual de P4b: todas las fotos de las tarjetas del mismo tamaño. El marco tiene proporción
+   fija y la imagen lo llena recortando, sin poder estirarlo (en una tarjeta flexible el contenido
+   alto podía agrandar el marco). Vale para el inventario, Mis publicaciones y el portal. */
+.inv-tarjeta-foto,
+.cat-tarjeta-foto {
+  position: relative;
+  flex: none;
+  min-height: 0;
+  overflow: hidden;
+}
+.inv-tarjeta-foto > img,
+.inv-tarjeta-foto > svg,
+.cat-tarjeta-foto > img,
+.cat-tarjeta-foto > svg {
+  position: absolute;
+  inset: 0;
+}
+
+/* Mis publicaciones: sección de destacadas arriba y tarjetas diferenciadas. */
+.pub-seccion {
+  margin: 20px 0 0;
+}
+.pub-seccion-titulo {
+  margin: 0 0 4px;
+  font-size: 1.15rem;
+}
+.pub-seccion-destacadas {
+  padding: 14px 16px 18px;
+  border-radius: 16px;
+  background: #fff8e6;
+  border: 1px solid #f0c75e;
+}
+.pub-tarjeta-destacada {
+  outline: 3px solid #d99a00;
+  outline-offset: 0;
+  box-shadow: 0 8px 24px rgba(217, 154, 0, 0.25);
+}
+.pub-sello-destacada {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #d99a00;
+  color: #1f1300;
+  font-weight: 800;
+  font-size: 0.85rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}

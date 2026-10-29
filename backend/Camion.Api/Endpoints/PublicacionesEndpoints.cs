@@ -71,9 +71,12 @@ public static class PublicacionesEndpoints
             var saltar = (long)(numeroPagina - 1) * tamanoPagina;
             var filas = saltar >= total
                 ? []
-                : await Filas(db, consulta.OrderByDescending(p => p.ActualizadoEn).ThenByDescending(p => p.Id)
+                // Las destacadas van primero (sección aparte en "Mis publicaciones"), luego las más recientes.
+                : await Filas(db, consulta
+                    .OrderByDescending(p => p.Destacados.Any(d => d.Estado == PublicacionDestacada.Activa && d.Inicio <= ahora && d.Fin > ahora))
+                    .ThenByDescending(p => p.ActualizadoEn).ThenByDescending(p => p.Id)
                     .Skip((int)saltar).Take(tamanoPagina), ahora).ToListAsync(ct);
-            var items = filas.OrderByDescending(f => f.ActualizadoEn).ThenByDescending(f => f.Id)
+            var items = filas.OrderByDescending(f => f.Destacada).ThenByDescending(f => f.ActualizadoEn).ThenByDescending(f => f.Id)
                 .Select(f => Item(f, actor)).ToArray();
             return Results.Ok(new MisPublicacionesPaginaResponse(items, total, numeroPagina, tamanoPagina));
         });

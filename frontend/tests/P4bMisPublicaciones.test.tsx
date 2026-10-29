@@ -255,3 +255,27 @@ describe('Administrador', () => {
     expect(screen.queryByLabelText('Asesor')).toBeNull()
   })
 })
+
+describe('Organización pedida en la prueba manual de P4b', () => {
+  it('las destacadas van en una sección propia arriba, con sello "★ Destacada"; el resto debajo', async () => {
+    abrirAsesor({
+      [RUTA_LISTA_PUB]: paginaPub([pub(1, 11), pub(2, 12, { destacada: true }), pub(3, 13)]),
+    })
+    const seccionDestacadas = await screen.findByRole('region', { name: /Destacadas \(1\)/ })
+    expect(within(seccionDestacadas).getByRole('heading', { level: 3, name: 'Camión de trabajo 2' })).toBeInTheDocument()
+    expect(within(seccionDestacadas).getByText('★ Destacada')).toBeInTheDocument()
+    expect(tarjeta('Camión de trabajo 2')).toHaveClass('pub-tarjeta-destacada')
+
+    const otras = screen.getByRole('region', { name: /Otras publicaciones \(2\)/ })
+    expect(within(otras).getByRole('heading', { level: 3, name: 'Camión de trabajo 1' })).toBeInTheDocument()
+    expect(within(otras).queryByText('★ Destacada')).toBeNull()
+    // La sección de destacadas está antes en la página.
+    expect(seccionDestacadas.compareDocumentPosition(otras) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('sin destacadas solo aparece la sección "Publicaciones"', async () => {
+    abrirAsesor({ [RUTA_LISTA_PUB]: paginaPub([pub(1, 11)]) })
+    expect(await screen.findByRole('region', { name: /^Publicaciones \(1\)/ })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: /Destacadas/ })).toBeNull()
+  })
+})
