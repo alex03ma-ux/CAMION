@@ -252,7 +252,6 @@ Las decisiones D-1 a D-5 se detectaron al comparar los documentos fuente el 2026
   - B) Incluirlo en P4b, junto con la publicación (vender oculta la publicación, RN-VE-014).
 - Recomendación: B. Cerrar el ciclo del vehículo junto con sus publicaciones evita estados a medias.
 - Bloquea: nada de P4a.
-- **Decisión: A** (respuesta de la responsable, transmitida por el coordinador principal). **Solo el administrador** puede reasignar un vehículo de un asesor a otro asesor activo, con **motivo obligatorio** y auditoría (quién, cuándo, de quién a quién). Se construye **junto con P4b**, no en P4a.
 - **Decisión: "Marcar como vendido" entra en P4b** (respuesta de la responsable, transmitida por el coordinador principal).
   - Nota: el mensaje decía "A", pero describía la opción B (en P4b). Se registra lo que dice el texto. Si la responsable quería esperar a P7, que lo confirme.
 
@@ -427,3 +426,4 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
   - B) Se mantiene fijo, y para cambiarlo se crea un vehículo nuevo.
 - Recomendación: A, coherente con "el dueño puede modificar todo lo suyo" y con la reasignación de D-7. Mejor junto con P4b, porque afecta a las publicaciones del vehículo.
 - Bloquea: nada de P4a.
+- **Decisión: A** (respuesta de la responsable, transmitida por el coordinador principal). **Solo el administrador** puede reasignar un vehículo de un asesor a otro asesor activo, con **motivo obligatorio** y auditoría (quién, cuándo, de quién a quién). Se construye **junto con P4b**, no en P4a.
