@@ -327,7 +327,7 @@ public static class InventarioEndpoints
                 return Results.Conflict(new ErrorResponse(MensajeCambioCategoriaPublicado,
                     new Dictionary<string, string[]> { ["tipoId"] = [MensajeCambioCategoriaPublicado] }));
 
-            var (errores, datos) = await ReglasInventario.ValidarAsync(db, request, vehiculo.TipoVehiculoId, ahora.Year, ct);
+            var (errores, datos) = await ReglasInventario.ValidarAsync(db, request, vehiculo.TipoVehiculoId, ahora.Year, ct, vehiculo);
             if (errores.Count > 0 || datos is null)
                 return Results.BadRequest(new ErrorResponse(ReglasInventario.MensajeRevisar, errores));
             if (datos.Placa is not null && datos.Placa != vehiculo.Placa && await PlacaOcupadaAsync(db, datos.Placa, id, ct))

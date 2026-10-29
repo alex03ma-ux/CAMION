@@ -14,7 +14,7 @@ public static class ConsultasCatalogo
     /// 1. PUBLICADA; 2. DISPONIBLE o RESERVADO (un vendido nunca se ve); 3. vigente (historial_vigencias con
     /// inicio &lt;= ahora &lt; fin); 4. asesor dueño con cuenta ACTIVA; 5. precio &gt; 0 y título no vacío
     /// (y publicada_en con valor, que la CHECK CK_Pub_Publicable ya exige); 6. la suscripción de la fila
-    /// vigente está ACTIVA con fin_vigencia nula o posterior a ahora; 7 (P4a, D-4/D-11): el vehículo está
+    /// vigente está ACTIVA o REACTIVADA (P4p) con fin_vigencia nula o posterior a ahora; 7 (P4a, D-4/D-11): el vehículo está
     /// ACTIVO o RESERVADO (un vehículo INACTIVO o VENDIDO nunca se ve, aunque su publicación siga PUBLICADA).
     /// </summary>
     public static IQueryable<Publicacion> Visibles(CamionDbContext db, DateTime ahora) =>
@@ -22,8 +22,10 @@ public static class ConsultasCatalogo
             p.EstadoPublicacion == Publicacion.Publicada &&
             (p.EstadoComercial == Publicacion.Disponible || p.EstadoComercial == Publicacion.Reservado) &&
             p.Vigencias.Any(v => v.Inicio <= ahora && v.Fin > ahora &&
-                // 6 (aclaración C-P3-2): la suscripción de esa vigencia sigue ACTIVA y sin vencer.
-                db.Suscripciones.Any(s => s.Id == v.SuscripcionId && s.Estado == Suscripcion.Activa &&
+                // 6 (aclaración C-P3-2; P4p, D-4): la suscripción de esa vigencia sigue ACTIVA o REACTIVADA y sin vencer
+                // (una SUSPENDIDA oculta las publicaciones del asesor).
+                db.Suscripciones.Any(s => s.Id == v.SuscripcionId &&
+                                          (s.Estado == Suscripcion.Activa || s.Estado == Suscripcion.Reactivada) &&
                                           (s.FinVigencia == null || s.FinVigencia > ahora))) &&
             db.PerfilesAsesor.Any(a => a.Id == p.AsesorId &&
                 db.Users.Any(u => u.Id == a.UsuarioId && u.EstadoCuenta == EstadosCuenta.Activa)) &&

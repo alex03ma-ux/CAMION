@@ -24,6 +24,20 @@ public static class Auditoria
     public const string Inactivar = "INACTIVAR";
     public const string Reactivar = "REACTIVAR";
 
+    // P4p (HU-049 a HU-051, HU-066 a HU-069, HU-082 a HU-084, D-37): planes, suscripciones y catálogos.
+    public const string EntidadPlan = "Plan";
+    public const string EntidadSuscripcion = "Suscripcion";
+    public const string EntidadCatalogo = "Catalogo";
+    public const string Activar = "ACTIVAR";
+    public const string Desactivar = "DESACTIVAR";
+    public const string Renombrar = "RENOMBRAR";
+    public const string Categorias = "CATEGORIAS";
+    public const string Asignar = "ASIGNAR";
+    public const string Renovar = "RENOVAR";
+    public const string CambiarPlan = "CAMBIAR_PLAN";
+    public const string Suspender = "SUSPENDER";
+    public const string Cancelar = "CANCELAR";
+
     // Solo agrega la fila al contexto; se guarda en la misma transacción que el cambio auditado.
     public static void Agregar(CamionDbContext db, string? actorId, string usuarioAfectadoId, string accion,
         string? estadoAnterior, string estadoNuevo, string? motivo, bool incluirMotivo)
@@ -41,6 +55,22 @@ public static class Auditoria
                 : JsonSerializer.Serialize(new Dictionary<string, string> { ["estado"] = estadoAnterior }),
             DatosNuevos = JsonSerializer.Serialize(nuevos),
             CreadoEn = DateTime.UtcNow
+        });
+    }
+
+    // P4p: fila genérica (plan, suscripción o catálogo) con los datos antes y después, ya sin datos sensibles.
+    public static void AgregarEvento(CamionDbContext db, string? actorId, string entidad, string entidadId, string accion,
+        IReadOnlyDictionary<string, object?>? anteriores, IReadOnlyDictionary<string, object?> nuevos, DateTime ahora)
+    {
+        db.AuditoriaEventos.Add(new AuditoriaEvento
+        {
+            UsuarioId = actorId,
+            Entidad = entidad,
+            EntidadId = entidadId,
+            Accion = accion,
+            DatosAnteriores = anteriores is null ? null : JsonSerializer.Serialize(anteriores),
+            DatosNuevos = JsonSerializer.Serialize(nuevos),
+            CreadoEn = ahora
         });
     }
 

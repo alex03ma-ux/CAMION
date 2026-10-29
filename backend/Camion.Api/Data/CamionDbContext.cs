@@ -35,6 +35,9 @@ public sealed class CamionDbContext : IdentityDbContext<ApplicationUser, Identit
     public DbSet<TipoMaquina> TiposMaquina => Set<TipoMaquina>();
     public DbSet<FotoInventario> FotosVehiculo => Set<FotoInventario>();
 
+    // P4p: tabla existente planes del script 002 (HU-049 a HU-051).
+    public DbSet<Plan> Planes => Set<Plan>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -210,14 +213,38 @@ public sealed class CamionDbContext : IdentityDbContext<ApplicationUser, Identit
             entity.HasIndex(x => x.DepartamentoId).HasDatabaseName("IX_Municipio_Departamento");
             entity.HasOne(x => x.Departamento).WithMany().HasForeignKey(x => x.DepartamentoId).OnDelete(DeleteBehavior.Restrict);
         });
+        // P4p (HU-049 a HU-051): tabla existente planes del script 002, con sus nombres de columna exactos.
+        builder.Entity<Plan>(entity =>
+        {
+            entity.ToTable("planes", t => t.HasCheckConstraint("CK_Plan_Valores",
+                "precio_cop >= 0 AND duracion_meses > 0 AND limite_publicaciones > 0"));
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(x => x.Nombre).HasColumnName("nombre").HasMaxLength(100).IsRequired();
+            var precioPlan = entity.Property(x => x.PrecioCop).HasColumnName("precio_cop").HasPrecision(15, 2);
+            if (esSqlite) precioPlan.HasConversion<double>();
+            entity.Property(x => x.DuracionMeses).HasColumnName("duracion_meses");
+            entity.Property(x => x.LimitePublicaciones).HasColumnName("limite_publicaciones");
+            entity.Property(x => x.EsPrueba).HasColumnName("es_prueba");
+            entity.Property(x => x.Activo).HasColumnName("activo");
+            entity.Property(x => x.CreadoEn).HasColumnName("creado_en");
+        });
         builder.Entity<Suscripcion>(entity =>
         {
-            entity.ToTable("suscripciones");
+            // P4p: CK_Sus_Estado con los estados de D-4 (migración 011) y CK_Sus_Fechas del script 002.
+            entity.ToTable("suscripciones", t =>
+            {
+                t.HasCheckConstraint("CK_Sus_Estado",
+                    "estado IN ('PENDIENTE','ACTIVA','SUSPENDIDA','REACTIVADA','VENCIDA','CANCELADA','RECHAZADA')");
+                t.HasCheckConstraint("CK_Sus_Fechas",
+                    "fin_vigencia IS NULL OR inicio_vigencia IS NOT NULL AND fin_vigencia > inicio_vigencia");
+            });
             entity.HasKey(x => x.Id);
             entity.Property(x => x.Id).HasColumnName("id").ValueGeneratedOnAdd();
             entity.Property(x => x.AsesorId).HasColumnName("asesor_id");
-            // En la base es FK a planes; la tabla planes todavía no se mapea (fuera de P3).
+            // FK a planes (script 002), mapeada en P4p.
             entity.Property(x => x.PlanId).HasColumnName("plan_id");
+            entity.HasOne(x => x.Plan).WithMany().HasForeignKey(x => x.PlanId).OnDelete(DeleteBehavior.Restrict);
             entity.Property(x => x.Estado).HasColumnName("estado").HasMaxLength(25).IsRequired();
             entity.Property(x => x.InicioVigencia).HasColumnName("inicio_vigencia");
             entity.Property(x => x.FinVigencia).HasColumnName("fin_vigencia");

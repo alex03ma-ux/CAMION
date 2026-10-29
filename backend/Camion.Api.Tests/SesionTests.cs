@@ -229,12 +229,24 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
             "POST /api/inventario/vehiculos/{id}/inactivar", "POST /api/inventario/vehiculos/{id}/liberar",
             "POST /api/inventario/vehiculos/{id}/reactivar", "POST /api/inventario/vehiculos/{id}/reservar",
             // P4a: editar y reordenar fotos.
-            "PUT /api/inventario/vehiculos/{id}", "PUT /api/inventario/vehiculos/{id}/fotos/orden"
-        }, modifican);
+            "PUT /api/inventario/vehiculos/{id}", "PUT /api/inventario/vehiculos/{id}/fotos/orden",
+            // P4p: planes (crear, editar, activar, inactivar).
+            "POST /api/admin/planes/", "PUT /api/admin/planes/{id}", "POST /api/admin/planes/{id}/activar",
+            "POST /api/admin/planes/{id}/inactivar",
+            // P4p: suscripciones (asignar, renovar, cambiar plan, suspender, reactivar, cancelar).
+            "POST /api/admin/asesores/{asesorId}/suscripcion", "POST /api/admin/suscripciones/{id}/renovar",
+            "POST /api/admin/suscripciones/{id}/cambiar-plan", "POST /api/admin/suscripciones/{id}/suspender",
+            "POST /api/admin/suscripciones/{id}/reactivar", "POST /api/admin/suscripciones/{id}/cancelar",
+            // P4p (D-37): catálogos (crear, renombrar, activar, desactivar) y modelos.
+            "POST /api/admin/catalogos/{catalogo}", "PUT /api/admin/catalogos/{catalogo}/{id}",
+            "POST /api/admin/catalogos/{catalogo}/{id}/activar", "POST /api/admin/catalogos/{catalogo}/{id}/desactivar",
+            "POST /api/admin/catalogos/marcas/{marcaId}/lineas", "PUT /api/admin/catalogos/lineas/{id}",
+            "POST /api/admin/catalogos/lineas/{id}/activar", "POST /api/admin/catalogos/lineas/{id}/desactivar"
+        }.OrderBy(x => x, StringComparer.Ordinal).ToArray(), modifican);
 
-        // CA-SE006-13: toda ruta bajo /api/admin exige SoloAdministrador (5 acciones + la lista).
+        // CA-SE006-13: toda ruta bajo /api/admin exige SoloAdministrador (P2: 5 acciones + la lista; P4p: 4 GET y 18 acciones).
         var admin = todos.Where(e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/admin", StringComparison.Ordinal)).ToList();
-        Assert.Equal(6, admin.Count);
+        Assert.Equal(28, admin.Count);
         foreach (var e in admin)
         {
             var politicas = e.Metadata.GetOrderedMetadata<IAuthorizeData>().Select(a => a.Policy).ToArray();
@@ -265,10 +277,19 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
         // CA-061-15: ninguna ruta permite editar o borrar auditoría ni historial.
         Assert.DoesNotContain(todos, e => e.RoutePattern.RawText!.Contains("auditoria", StringComparison.OrdinalIgnoreCase) ||
                                           e.RoutePattern.RawText!.Contains("historial", StringComparison.OrdinalIgnoreCase));
-        // Ninguna ruta usa PATCH; PUT y DELETE solo existen en /api/inventario (P4a).
+        // Ninguna ruta usa PATCH; PUT solo en /api/inventario (P4a) y /api/admin (P4p); DELETE solo en /api/inventario
+        // (P4p: planes y catálogos nunca se borran).
         Assert.DoesNotContain(todos, e => Metodo(e) == "PATCH");
-        Assert.DoesNotContain(todos, e => Metodo(e) is "PUT" or "DELETE" &&
+        Assert.DoesNotContain(todos, e => Metodo(e) is "PUT" &&
+            !e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/inventario/", StringComparison.Ordinal) &&
+            !e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/admin/", StringComparison.Ordinal));
+        Assert.DoesNotContain(todos, e => Metodo(e) is "DELETE" &&
             !e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/inventario/", StringComparison.Ordinal));
+
+        // P4p (HU-066): /api/asesor/suscripcion es la única ruta /api/asesor y exige SoloAsesor.
+        var asesor = Assert.Single(todos, e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/asesor", StringComparison.Ordinal));
+        Assert.Equal("GET", Metodo(asesor));
+        Assert.Contains("SoloAsesor", asesor.Metadata.GetOrderedMetadata<IAuthorizeData>().Select(a => a.Policy));
 
         // /health es anónimo (no se prueba /health/database: intentaría conectar con MariaDB).
         Assert.Equal(HttpStatusCode.OK, (await _c.GetAsync("/health")).StatusCode);

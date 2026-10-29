@@ -55,11 +55,26 @@ public sealed class InventarioApi : IDisposable
     public (string Id, long PerfilId) Pendiente;
     public string TokenComprador = null!;
 
-    private InventarioApi() => C = F.CreateClient();
+    // P4p: con un reloj, las peticiones pasan por una fábrica derivada que sustituye TimeProvider (la base es la misma).
+    public RelojFijo? Reloj { get; }
+    private readonly Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<Program>? _conReloj;
 
-    public static async Task<InventarioApi> Crear()
+    private InventarioApi(RelojFijo? reloj = null)
     {
-        var api = new InventarioApi();
+        Reloj = reloj;
+        if (reloj is null)
+        {
+            C = F.CreateClient();
+            return;
+        }
+        _conReloj = F.WithWebHostBuilder(b => Microsoft.AspNetCore.TestHost.WebHostBuilderExtensions.ConfigureTestServices(b,
+            s => s.AddSingleton<TimeProvider>(reloj)));
+        C = _conReloj.CreateClient();
+    }
+
+    public static async Task<InventarioApi> Crear(RelojFijo? reloj = null)
+    {
+        var api = new InventarioApi(reloj);
         await api.SembrarCatalogos();
         api.Admin = await CrearAdministrador(api.F, api.C);
         api.A = await api.CrearAsesor("Asesora Alfa Ficticia");
@@ -333,6 +348,7 @@ public sealed class InventarioApi : IDisposable
     public void Dispose()
     {
         C.Dispose();
+        _conReloj?.Dispose();
         F.Dispose();
     }
 }
