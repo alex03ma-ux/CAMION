@@ -138,3 +138,64 @@ export function CampoSelect({
     </div>
   )
 }
+
+type CampoAreaTextoProps = {
+  id: string
+  etiqueta: string
+  valor: string
+  onCambio: (valor: string) => void
+  errores?: string[]
+  maxLength?: number
+  filas?: number
+  /** Texto de ayuda bajo el campo (p. ej. "Hasta 4000 caracteres."); se le añade el conteo. */
+  ayuda?: string
+  deshabilitado?: boolean
+  requerido?: boolean
+}
+
+/** P4b: área de texto con etiqueta, ayuda con el conteo de caracteres y errores asociados. */
+export function CampoAreaTexto({
+  id,
+  etiqueta,
+  valor,
+  onCambio,
+  errores = [],
+  maxLength,
+  filas = 4,
+  ayuda,
+  deshabilitado = false,
+  requerido = true,
+}: CampoAreaTextoProps) {
+  const idError = `${id}-error`
+  const idAyuda = `${id}-ayuda`
+  const tieneErrores = errores.length > 0
+  const describedBy = [ayuda !== undefined ? idAyuda : undefined, tieneErrores ? idError : undefined]
+    .filter(Boolean)
+    .join(' ')
+
+  return (
+    <div className="campo">
+      <label htmlFor={id} className={requerido ? 'campo-obligatorio' : undefined}>
+        {etiqueta}
+      </label>
+      <textarea
+        id={id}
+        name={id}
+        rows={filas}
+        value={valor}
+        maxLength={maxLength}
+        onChange={(e: ChangeEvent<HTMLTextAreaElement>) => onCambio(e.target.value)}
+        aria-invalid={tieneErrores}
+        aria-describedby={describedBy || undefined}
+        aria-required={requerido ? 'true' : undefined}
+        disabled={deshabilitado}
+      />
+      {ayuda !== undefined && (
+        <p id={idAyuda} className="campo-ayuda">
+          {ayuda} Llevas {valor.trim().length}.
+        </p>
+      )}
+      <ListaErrores id={idError} errores={errores} />
+    </div>
+  )
+}

@@ -36,6 +36,7 @@ const ID_CAMPO: Record<CampoPlan, string> = {
   precioCop: 'plan-precio',
   duracionMeses: 'plan-duracion',
   limitePublicaciones: 'plan-limite',
+  limiteDestacados: 'plan-destacados',
   esPrueba: 'plan-prueba',
 }
 
@@ -44,6 +45,7 @@ const ORDEN_CAMPOS: readonly CampoPlan[] = [
   'precioCop',
   'duracionMeses',
   'limitePublicaciones',
+  'limiteDestacados',
   'esPrueba',
 ]
 
@@ -316,6 +318,21 @@ export function AdminPlanes({ token, onSesionTerminada }: AdminPlanesProps) {
           <p id="plan-limite-ayuda" className="campo-ayuda admin-ayuda-campo">
             De 1 a 1.000 vehículos publicados a la vez.
           </p>
+          <Campo
+            id={ID_CAMPO.limiteDestacados}
+            etiqueta="Destacados incluidos"
+            valor={formulario.limiteDestacados}
+            onCambio={(v) => cambiar('limiteDestacados', soloDigitos(v).slice(0, 2))}
+            inputMode="numeric"
+            maxLength={2}
+            errores={errores.limiteDestacados}
+            autoComplete="off"
+            describidoPor="plan-destacados-ayuda"
+            deshabilitado={enviando}
+          />
+          <p id="plan-destacados-ayuda" className="campo-ayuda admin-ayuda-campo">
+            De 0 a 20 publicaciones destacadas a la vez. El asesor elige cuáles y puede cambiarlas.
+          </p>
         </div>
         <label className="opcion-casilla" htmlFor={ID_CAMPO.esPrueba}>
           <input
@@ -371,6 +388,7 @@ export function AdminPlanes({ token, onSesionTerminada }: AdminPlanesProps) {
                 <th scope="col">Precio</th>
                 <th scope="col">Duración</th>
                 <th scope="col">Cupo</th>
+                <th scope="col">Destacados</th>
                 <th scope="col">Tipo</th>
                 <th scope="col">Estado</th>
                 <th scope="col">Suscripciones vivas</th>
@@ -389,6 +407,9 @@ export function AdminPlanes({ token, onSesionTerminada }: AdminPlanesProps) {
                   <td>
                     {formatoMiles(p.limitePublicaciones)}{' '}
                     {p.limitePublicaciones === 1 ? 'publicación' : 'publicaciones'}
+                  </td>
+                  <td>
+                    {formatoMiles(p.limiteDestacados)} {p.limiteDestacados === 1 ? 'destacado' : 'destacados'}
                   </td>
                   <td>{p.esPrueba ? 'De prueba' : 'Normal'}</td>
                   <td>

@@ -15,6 +15,8 @@ import {
   type ListaInventario,
 } from '../api/inventario'
 import { ApiError, MENSAJE_INESPERADO, type ErroresPorCampo } from '../api/http'
+import { publicacionesPorVehiculo, type Publicacion } from '../api/publicaciones'
+import { estadoVisible, nombreEstadoPublicacion } from '../publicaciones/estados'
 import { formatoCop, formatoMiles } from '../catalogo/formato'
 import {
   accionesEstado,
@@ -25,12 +27,13 @@ import {
   validarMotivoInactivar,
 } from '../inventario/estados'
 import { categoriaDeTipo } from '../inventario/reglasCategoria'
-import { HASH_INVENTARIO_NUEVO, hashInventarioVehiculo } from '../rutas'
+import { HASH_INVENTARIO_NUEVO, HASH_PUBLICACIONES, hashInventarioVehiculo, hashVehiculo } from '../rutas'
 import { descartarAvisoPendiente, leerVehiculoReciente } from '../inventario/avisoPendiente'
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo, CampoSelect } from './Campo'
 import { DialogoConfirmacion } from './DialogoAccion'
 import { ImagenVehiculo } from './ImagenVehiculo'
+import { useDialogosVehiculo } from './useDialogosVehiculo'
 
 type InventarioListaProps = {
   token: string
@@ -128,6 +131,10 @@ export function InventarioLista({
   /** Id del vehículo con una acción directa en curso (reservar, liberar, reactivar). */
   const [enCurso, setEnCurso] = useState<{ id: number; accion: AccionEstado } | null>(null)
   const [dialogo, setDialogo] = useState<DialogoInactivar | null>(null)
+  // P4b: publicación de cada vehículo (null mientras carga o si no se pudo consultar).
+  const [publicaciones, setPublicaciones] = useState<Map<number, Publicacion> | null>(null)
+  const [errorPublicaciones, setErrorPublicaciones] = useState(false)
+  const [recargaPublicaciones, setRecargaPublicaciones] = useState(0)
 
   const tituloResultados = useRef<HTMLHeadingElement>(null)
   const [recienteId] = useState<number | null>(() => leerVehiculoReciente())
@@ -212,6 +219,27 @@ export function InventarioLista({
     window.setTimeout(() => tituloResultados.current?.focus(), 0)
   }
 
+  const dialogosP4b = useDialogosVehiculo({ token, onSesionTerminada, onTerminar: terminarAccion })
+
+  // P4b: el contrato no trae la publicación dentro del vehículo; se reúne del listado de publicaciones.
+  const asesorFiltrado = esAdmin ? filtros.asesorId : ''
+  useEffect(() => {
+    const control = new AbortController()
+    setErrorPublicaciones(false)
+    publicacionesPorVehiculo(token, esAdmin, asesorFiltrado, control.signal)
+      .then((mapa) => setPublicaciones(mapa))
+      .catch((error: unknown) => {
+        if (control.signal.aborted) return
+        if (error instanceof ApiError && error.status === 401) {
+          onSesionTerminada()
+          return
+        }
+        setPublicaciones(null)
+        setErrorPublicaciones(true)
+      })
+    return () => control.abort()
+  }, [token, esAdmin, asesorFiltrado, recarga, recargaPublicaciones, onSesionTerminada])
+
   async function accionDirecta(item: ItemInventario, accion: AccionEstado) {
     if (enCurso || dialogo) return
     setResultado(null)
@@ -283,13 +311,16 @@ export function InventarioLista({
   const opcionesAsesor = (catalogos?.asesores ?? []).map((a) => ({ valor: a.id, nombre: a.nombre }))
   const totalPaginas = lista ? Math.max(1, Math.ceil(lista.total / Math.max(1, lista.tamano))) : 1
   const paginaActual = lista?.pagina ?? filtros.pagina
-  const ocupado = enCurso !== null || dialogo !== null
+  const ocupado = enCurso !== null || dialogo !== null || dialogosP4b.ocupado
 
   return (
     <>
       <div className="inv-barra">
         <a className="inv-boton-enlace" href={HASH_INVENTARIO_NUEVO}>
           Registrar vehículo
+        </a>
+        <a className="inv-boton-enlace inv-boton-secundario" href={HASH_PUBLICACIONES}>
+          {esAdmin ? 'Publicaciones' : 'Mis publicaciones'}
         </a>
       </div>
 
@@ -365,6 +396,15 @@ export function InventarioLista({
       <Aviso aviso={resultado} />
       <Aviso aviso={errorCarga} />
       {cargando && <p role="status">Cargando inventario...</p>}
+      {errorPublicaciones && !cargando && lista && lista.items.length > 0 && (
+        <p className="dato-secundario pub-sin-datos">
+          No se pudo consultar el estado de las publicaciones; por eso no se muestran las acciones de publicar y
+          vender.{' '}
+          <button type="button" className="secondary-button" onClick={() => setRecargaPublicaciones((r) => r + 1)}>
+            Volver a consultar publicaciones
+          </button>
+        </p>
+      )}
 
       {lista && lista.items.length === 0 && !cargando && !errorCarga && (
         <p className="admin-vacio">
@@ -472,6 +512,17 @@ export function InventarioLista({
                       </span>
                     )}
                   </div>
+                  {publicaciones && (
+                    <BloquePublicacion
+                      item={item}
+                      titulo={titulo}
+                      publicacion={publicaciones.get(item.id) ?? null}
+                      ocupado={ocupado}
+                      onPublicar={(b) => dialogosP4b.abrirPublicar(vehiculoDialogo(item), b)}
+                      onVender={(b) => dialogosP4b.abrirVender(vehiculoDialogo(item), b)}
+                      onRevertir={(b) => dialogosP4b.abrirRevertir(vehiculoDialogo(item), b)}
+                    />
+                  )}
                 </div>
               </li>
             )
@@ -503,6 +554,8 @@ export function InventarioLista({
         </nav>
       )}
 
+      {dialogosP4b.dialogo}
+
       {dialogo && (
         <DialogoConfirmacion
           titulo={dialogo.accion === 'reservar' ? 'Reservar vehículo' : 'Inactivar vehículo'}
@@ -524,5 +577,86 @@ export function InventarioLista({
         />
       )}
     </>
+  )
+}
+
+function vehiculoDialogo(item: ItemInventario) {
+  return { id: item.id, titulo: tituloVehiculo(item), precioCop: item.precioCop, asesor: item.asesor }
+}
+
+/**
+ * P4b: estado de la publicación del vehículo y sus acciones en el inventario.
+ * - Sin publicación: "Publicar" si está activo o reservado y tiene fotos (D-30).
+ * - Con publicación: su estado en texto y el enlace a "Mis publicaciones" (y al portal si se ve).
+ * - "Marcar vendido" (activo o reservado) y "Revertir venta" (vendido).
+ */
+function BloquePublicacion({
+  item,
+  titulo,
+  publicacion,
+  ocupado,
+  onPublicar,
+  onVender,
+  onRevertir,
+}: {
+  item: ItemInventario
+  titulo: string
+  publicacion: Publicacion | null
+  ocupado: boolean
+  onPublicar: (boton: HTMLButtonElement) => void
+  onVender: (boton: HTMLButtonElement) => void
+  onRevertir: (boton: HTMLButtonElement) => void
+}) {
+  const vendible = item.estado === 'ACTIVO' || item.estado === 'RESERVADO'
+  const estadoPub = publicacion ? estadoVisible(publicacion) : null
+  const sr = <span className="sr-only">{titulo}</span>
+  return (
+    <div className="pub-bloque">
+      {publicacion && estadoPub ? (
+        <p className="pub-bloque-estado">
+          Publicación:{' '}
+          <span className={`estado pub-estado-${estadoPub.toLowerCase()}`}>{nombreEstadoPublicacion(estadoPub)}</span>
+          {publicacion.destacada && <span className="cat-etiqueta cat-etiqueta-destacado pub-destacada">Destacada</span>}
+        </p>
+      ) : (
+        <p className="pub-bloque-estado">Sin publicación</p>
+      )}
+      <div className="acciones-fila inv-acciones">
+        {publicacion && (
+          <a className="inv-boton-enlace inv-boton-pequeno inv-boton-secundario" href={HASH_PUBLICACIONES}>
+            Gestionar en Mis publicaciones {sr}
+          </a>
+        )}
+        {publicacion && estadoPub === 'PUBLICADA' && publicacion.slugPublico && (
+          <a
+            className="inv-boton-enlace inv-boton-pequeno inv-boton-secundario"
+            href={hashVehiculo(publicacion.slugPublico)}
+          >
+            Abrir en el portal {sr}
+          </a>
+        )}
+        {!publicacion && vendible && item.totalFotos > 0 && (
+          <button type="button" disabled={ocupado} onClick={(e) => onPublicar(e.currentTarget)}>
+            Publicar {sr}
+          </button>
+        )}
+        {vendible && (
+          <button type="button" className="secondary-button" disabled={ocupado} onClick={(e) => onVender(e.currentTarget)}>
+            Marcar vendido {sr}
+          </button>
+        )}
+        {item.estado === 'VENDIDO' && (
+          <button type="button" className="secondary-button" disabled={ocupado} onClick={(e) => onRevertir(e.currentTarget)}>
+            Revertir venta {sr}
+          </button>
+        )}
+      </div>
+      {!publicacion && vendible && item.totalFotos === 0 && (
+        <p className="dato-secundario">Agrega al menos una foto para poder publicarlo.</p>
+      )}
+      {!publicacion && item.estado === 'INACTIVO' && (
+        <p className="dato-secundario">Reactiva el vehículo para poder publicarlo.</p>
+      )}
+    </div>
   )
 }

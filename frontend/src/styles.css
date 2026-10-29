@@ -1889,3 +1889,69 @@ label.campo-obligatorio::after,
   line-height: 1.5;
   color: #52657b;
 }
+
+/* ---- P4b: publicaciones, destacados, venta y reasignación ---- */
+
+.pub-bloque {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.pub-bloque-estado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  font-size: 14px;
+  color: #344054;
+}
+
+.pub-destacada {
+  margin-left: 6px;
+}
+
+.pub-contador {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #17365d;
+}
+
+.pub-sin-datos {
+  margin: 8px 0;
+}
+
+.pub-reasignar {
+  margin: 16px 0;
+  padding: 14px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.pub-estado-publicada {
+  background: #ecfdf3;
+  border-color: #abefc6;
+  color: #067647;
+}
+
+.pub-estado-oculta,
+.pub-estado-eliminada {
+  background: #f2f4f7;
+  border-color: #d0d5dd;
+  color: #344054;
+}
+
+.pub-estado-vencida {
+  background: #fef3f2;
+  border-color: #fecdca;
+  color: #b42318;
+}
+
+.pub-estado-vendida {
+  background: #fffaeb;
+  border-color: #fedf89;
+  color: #93370d;
+}
