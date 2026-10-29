@@ -218,3 +218,31 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - un **VENDIDO** queda en solo lectura (regla D-22/HU-064);
   - el **asesor propietario** no se puede cambiar al editar (se elige solo al crear). Ninguna regla escrita lo exige: se pregunta a la responsable (D-34).
 - Resultados: `dotnet test` 696/696; `npm test` 340/340, con `--testTimeout=30000` porque el equipo estaba cargado (con el límite normal fallaban algunas por tiempo y pasaban al repetirlas); tipos y `npm run build` correctos.
+
+## 2026-10-29 — P4p Planes, suscripciones y catálogos
+- Rama `feature/p4p-planes`, creada **encima de `feature/p4a-inventario`**, porque P4a aún no está fusionado. La responsable lo eligió en esta sesión.
+- Decisiones de la responsable en esta sesión:
+  - D-35: 30 días por cada mes del plan.
+  - D-36: solo el administrador renueva.
+  - D-37: autonomía completa sobre los catálogos. Se dejan fuera las 4 categorías y la DIVIPOLA (PROPUESTO).
+- Contrato `docs/criterios/P4p-contrato-api.md` y criterios `docs/criterios/P4p.md`.
+- Backend:
+  - planes;
+  - suscripciones: asignar, renovar, cambiar de plan, suspender, reactivar y cancelar;
+  - `GET /api/asesor/suscripcion`;
+  - catálogos administrables;
+  - la condición 6 del portal acepta ACTIVA o REACTIVADA.
+- Migración `011_p4p_estados_suscripcion` (con su archivo SUBIR) sin aplicar: añade SUSPENDIDA y REACTIVADA a `CK_Sus_Estado`.
+- Frontend:
+  - el administrador tiene las secciones Planes, Suscripciones y Catálogos;
+  - el asesor ve la tarjeta "Mi suscripción".
+- Corrección del coordinador (punto 16 del agente de backend): desactivar una marca o un modelo impedía editar los vehículos que los usan, en contra de D-37.
+  - Ahora la API acepta el valor que el vehículo ya tenía.
+  - El formulario lo muestra "(desactivado)".
+  - Hay 3 pruebas de API y 1 de componente.
+- Resultados: `dotnet test` 798/798; `npm test` 400/400 (con `--testTimeout=30000` por la carga del equipo); tipos y `npm run build` correctos.
+- Revisión de seguridad (coordinador):
+  - sin secretos;
+  - todas las rutas nuevas tienen `SoloAdministrador`, salvo `/api/asesor/suscripcion` (`SoloAsesor`);
+  - sin SQL escrito a mano;
+  - la migración 011 solo cambia la CHECK.
