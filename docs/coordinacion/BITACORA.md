@@ -305,3 +305,10 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
     - en "Mis publicaciones", las destacadas van en una sección aparte arriba, con fondo y borde dorados y el sello "★ Destacada", y la API las ordena primero;
     - todas las fotos de las tarjetas tienen el mismo tamaño (inventario, Mis publicaciones y portal).
   - Resultados: `npm test` 441/441; `dotnet test` 866/866.
+- Continuación de la prueba de P4b. La responsable encontró "Eliminar" en Mis publicaciones; la confusión venía de que miraba "Inactivar vehículo" en el inventario. Consta INACTIVAR y REACTIVAR de la publicación 13.
+- **Pendiente para la próxima sesión:**
+  - eliminar una publicación y ver que libera cupo;
+  - reasignar un vehículo a otro asesor (hace falta un segundo asesor activo con plan);
+  - renovar una suscripción y ver "Mi suscripción" desde una cuenta de asesor (pendiente de P4p).
+  - Propuesta abierta: mostrar en la tarjeta del inventario las acciones de su publicación, o un enlace a ella.
+- API y web apagadas por petición de la responsable. Las migraciones 011 y 012 quedan aplicadas.
