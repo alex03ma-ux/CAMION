@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type MouseEvent } from 'react'
 import { categoriasDisponibles, Q_MAX, type OpcionCatalogo } from '../api/catalogo'
 import { HASH_CUENTA, HASH_INICIO, HASH_REGISTRO, hashBuscar, navegar, type Ruta } from '../rutas'
+import { IconoLupa, IconoUsuario } from './IconosPortal'
 
 type EncabezadoProps = {
   ruta: Ruta
@@ -17,24 +18,52 @@ function saltarAlContenido(evento: MouseEvent<HTMLAnchorElement>) {
   principal?.focus()
 }
 
-/** Encabezado común: portal, búsqueda, Carros/Camiones y acceso a la cuenta (P3). */
+/** Logo de texto con el camión de línea (rojo, negro y blanco). */
+export function LogoPortal({ claro = false }: { claro?: boolean }) {
+  return (
+    <a className={claro ? 'cat-logo cat-logo-claro' : 'cat-logo'} href={HASH_INICIO}>
+      <span className="cat-logo-texto">
+        <span className="cat-logo-eyebrow">Financiamos Tu</span>{' '}
+        <span className="cat-logo-nombre">Camión</span>
+      </span>
+      <svg className="cat-logo-camion" viewBox="0 0 64 40" aria-hidden="true" focusable="false">
+        <path
+          d="M2 34h40V6H18M42 14h10l8 10v10h-6M18 34h14"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <circle cx="13" cy="34" r="4.5" fill="none" stroke="currentColor" strokeWidth="3" />
+        <circle cx="49" cy="34" r="4.5" fill="none" stroke="currentColor" strokeWidth="3" />
+      </svg>
+    </a>
+  )
+}
+
+/**
+ * Encabezado común (P3, rediseño rojo/negro/blanco): logo, Inicio y las categorías, y el acceso a la
+ * cuenta. En el inicio la búsqueda está en la portada; en las demás pantallas, aquí.
+ */
 export function Encabezado({ ruta, tipos, conSesion }: EncabezadoProps) {
   const qActual = ruta.nombre === 'buscar' ? ruta.filtros.q : ''
   const tipoActual = ruta.nombre === 'buscar' ? ruta.filtros.tipoId : ''
-  // El campo se reinicia con la búsqueda de la URL (clave del formulario).
+  const enInicio = ruta.nombre === 'inicio'
   return (
     <header className="cat-encabezado">
       <a className="saltar-contenido" href="#contenido" onClick={saltarAlContenido}>
         Saltar al contenido
       </a>
       <div className="cat-encabezado-interior">
-        <a className="cat-logo" href={HASH_INICIO}>
-          <span className="cat-logo-eyebrow">Red de venta</span>
-          <span className="cat-logo-nombre">Financiamos Tu Camión</span>
-        </a>
-        <BusquedaEncabezado key={qActual} qInicial={qActual} />
+        <LogoPortal />
         <nav className="cat-nav" aria-label="Principal">
           <ul>
+            <li>
+              <a href={HASH_INICIO} aria-current={enInicio ? 'page' : undefined}>
+                Inicio
+              </a>
+            </li>
             {categoriasDisponibles(tipos).map(({ tipo, enlace }) => (
               <li key={tipo.id}>
                 <a
@@ -46,27 +75,19 @@ export function Encabezado({ ruta, tipos, conSesion }: EncabezadoProps) {
               </li>
             ))}
             {conSesion ? (
-              <li>
+              <li className="cat-nav-acceso">
                 <a
                   className="cat-nav-cuenta"
                   href={HASH_CUENTA}
                   aria-current={ruta.nombre === 'cuenta' ? 'page' : undefined}
                 >
+                  <IconoUsuario />
                   Mi cuenta
                 </a>
               </li>
             ) : (
               <>
-                <li>
-                  <a
-                    className="cat-nav-cuenta"
-                    href={HASH_CUENTA}
-                    aria-current={ruta.nombre === 'cuenta' && !ruta.registro ? 'page' : undefined}
-                  >
-                    Iniciar sesión
-                  </a>
-                </li>
-                <li>
+                <li className="cat-nav-acceso">
                   <a
                     href={HASH_REGISTRO}
                     aria-current={ruta.nombre === 'cuenta' && ruta.registro ? 'page' : undefined}
@@ -74,10 +95,21 @@ export function Encabezado({ ruta, tipos, conSesion }: EncabezadoProps) {
                     Registrarme
                   </a>
                 </li>
+                <li>
+                  <a
+                    className="cat-nav-cuenta"
+                    href={HASH_CUENTA}
+                    aria-current={ruta.nombre === 'cuenta' && !ruta.registro ? 'page' : undefined}
+                  >
+                    <IconoUsuario />
+                    Ingresar
+                  </a>
+                </li>
               </>
             )}
           </ul>
         </nav>
+        {!enInicio && <BusquedaEncabezado key={qActual} qInicial={qActual} />}
       </div>
     </header>
   )
@@ -94,6 +126,7 @@ function BusquedaEncabezado({ qInicial }: { qInicial: string }) {
       <label className="sr-only" htmlFor="busqueda-encabezado">
         Buscar vehículos
       </label>
+      <IconoLupa className="cat-busqueda-lupa" />
       <input
         id="busqueda-encabezado"
         type="search"

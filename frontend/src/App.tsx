@@ -30,6 +30,7 @@ import { AdminUsuarios } from './components/AdminUsuarios'
 import type { DatosAviso } from './components/Aviso'
 import { Aviso } from './components/Aviso'
 import { DetalleVehiculo } from './components/DetalleVehiculo'
+import { PiePortal } from './components/PiePortal'
 import { Encabezado } from './components/Encabezado'
 import { Inicio } from './components/Inicio'
 import { InventarioPagina } from './components/InventarioPagina'
@@ -301,6 +302,7 @@ export default function App() {
           renderInventario(ruta)}
         {ruta.nombre === 'publicaciones' && renderPublicaciones()}
       </main>
+      <PiePortal tipos={tipos} conSesion={conSesion} />
     </>
   )
 

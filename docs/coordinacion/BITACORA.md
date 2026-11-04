@@ -312,3 +312,9 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - renovar una suscripción y ver "Mi suscripción" desde una cuenta de asesor (pendiente de P4p).
   - Propuesta abierta: mostrar en la tarjeta del inventario las acciones de su publicación, o un enlace a ella.
 - API y web apagadas por petición de la responsable. Las migraciones 011 y 012 quedan aplicadas.
+
+## 2026-11-04 — Rediseño visual del portal (rama `feature/diseno-portal`, apilada sobre P4b)
+- **Pedido de la responsable:** "incluirle diseño desde la entrada", con colores corporativos rojo, negro y blanco; aprobó una referencia clara y sencilla (D-42).
+- **Hecho (IMPLEMENTADO y PROBADO):** encabezado blanco con logo, Inicio y categorías, "Registrarme" y botón "Ingresar"; portada con ilustración de camión, título y buscador grande (texto + tipo de vehículo); tarjetas de categoría con iconos; tarjetas de vehículo con sello rojo "Destacado"/negro "Reservado" sobre la foto y precio en rojo; franja de confianza; banda de crédito; pie oscuro solo con enlaces que existen. Botones de todo el sistema pasan de azul a rojo. Fuera del inicio, la búsqueda vuelve al encabezado.
+- **Pruebas ejecutadas:** `npx vitest run` 444/444 (se actualizaron 6 pruebas del encabezado por el cambio de "Iniciar sesión" a "Ingresar", el nuevo h1 y la búsqueda en la portada; 3 nuevas). `tsc -b` y `npm run build` OK. Revisión en el navegador a 1280 px y 375 px (sin desplazamiento horizontal).
+- **Pendientes:** confirmar textos de la franja, datos de contacto/horario/legales del pie y foto de portada (D-42).

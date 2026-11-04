@@ -466,3 +466,11 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
 - Un plan nuevo aprobado por el administrador mientras otro sigue vigente se suma al final del actual. Esto es la renovación de P4p, con el plan nuevo.
 - El "vencimiento automático" (HU-028) ocurre cuando vence el plan.
 - Cambia la regla de visibilidad del portal: las condiciones 3 y 6 de P3 pasan a ser "el asesor tiene un plan vigente". El detalle está en `docs/criterios/P4b-contrato-api.md`.
+
+## D-42 — Rediseño del portal (rojo, negro y blanco) · PARCIAL (2026-11-04)
+- **Decisión de la responsable (en esta sesión):** el portal sigue la referencia visual que entregó: encabezado blanco, portada con camión y buscador, cuatro categorías (Camiones resaltada en rojo), destacados con borde y sello rojo, franja de confianza, banda de crédito y pie oscuro. Colores corporativos: rojo, negro y blanco. "No quiero que se vea tan recargado".
+- **Pendiente de confirmar (no se inventa nada):**
+  - Textos de la franja de confianza: "Vehículos revisados", "Papeles al día", "Financiación" y "Asesoría". Se tomaron de la referencia; si alguno no es una promesa real del negocio, se cambia en `frontend/src/components/Inicio.tsx` (constante `CONFIANZA`).
+  - Correo, teléfono, dirección, horario y páginas legales del pie: no se muestran hasta que la responsable los entregue.
+  - El botón "Quiero un crédito" lleva al registro mientras no exista la solicitud de crédito (llega con P5).
+  - La portada usa una ilustración propia en SVG; se puede reemplazar por una foto con licencia de uso que entregue la responsable.

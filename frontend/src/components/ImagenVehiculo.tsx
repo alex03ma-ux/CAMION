@@ -20,14 +20,14 @@ function ImagenReemplazo({ alt, className }: { alt: string; className?: string }
       aria-hidden={decorativa ? true : undefined}
       focusable="false"
     >
-      <rect width="160" height="100" fill="#e2e8f0" />
-      <g fill="#94a3b8">
+      <rect width="160" height="100" fill="#ececec" />
+      <g fill="#bdbdbd">
         <rect x="34" y="34" width="62" height="30" rx="3" />
         <path d="M98 42h16l12 12v10H98z" />
         <circle cx="54" cy="68" r="7" />
         <circle cx="110" cy="68" r="7" />
       </g>
-      <text x="80" y="88" textAnchor="middle" fontSize="10" fill="#475569" fontFamily="system-ui, sans-serif">
+      <text x="80" y="88" textAnchor="middle" fontSize="10" fill="#555555" fontFamily="system-ui, sans-serif">
         Sin foto
       </text>
     </svg>
