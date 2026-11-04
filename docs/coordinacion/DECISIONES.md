@@ -473,4 +473,9 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
   - Textos de la franja de confianza: "Vehículos revisados", "Papeles al día", "Financiación" y "Asesoría". Se tomaron de la referencia; si alguno no es una promesa real del negocio, se cambia en `frontend/src/components/Inicio.tsx` (constante `CONFIANZA`).
   - Correo, teléfono, dirección, horario y páginas legales del pie: no se muestran hasta que la responsable los entregue.
   - El botón "Quiero un crédito" lleva al registro mientras no exista la solicitud de crédito (llega con P5).
-  - La portada usa una ilustración propia en SVG; se puede reemplazar por una foto con licencia de uso que entregue la responsable.
+  - La portada usa una ilustración propia en SVG mientras el administrador no suba una foto.
+- **Decisión de la responsable (2026-11-04): "Que lo cambie el admin".** La foto de fondo de la portada la administra el administrador desde "Mi cuenta" › Portada:
+  - subir una foto JPG, PNG o WebP de hasta 5 MB (validada por su contenido) o quitarla para volver a la ilustración;
+  - sin cambios de esquema: el archivo vive en `Media:Ruta/portal/` con nombre aleatorio; la portada vigente es la más reciente y la anterior se borra al reemplazarla;
+  - se audita en `auditoria_eventos` (entidad `Portal`, acciones `CAMBIAR_PORTADA` y `QUITAR_PORTADA`);
+  - rutas: `GET /api/catalogo/portada` (anónima), `POST /api/admin/portal/portada` y `POST /api/admin/portal/portada/quitar` (SoloAdministrador). Quitar es POST porque el proyecto solo admite DELETE en las fotos del inventario.

@@ -183,7 +183,7 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
         }
     }
 
-    [Fact(DisplayName = "CA-SE006-03/05/13, CA-061-15, CA-N03-R04, CA-SE005-06 (C-P3-8), CA-D03-05, P4a: anónimos solo registros, login, /health, los 4 GET del catálogo y GET /media; /api/admin exige SoloAdministrador; /api/inventario exige AsesorOAdministrador; ninguna ruta edita auditoría")]
+    [Fact(DisplayName = "CA-SE006-03/05/13, CA-061-15, CA-N03-R04, CA-SE005-06 (C-P3-8), CA-D03-05, P4a: anónimos solo registros, login, /health, los 5 GET del catálogo (D-42: portada) y GET /media; /api/admin exige SoloAdministrador; /api/inventario exige AsesorOAdministrador; ninguna ruta edita auditoría")]
     public async Task Inventario_de_endpoints()
     {
         var todos = Endpoints(factory.Services).ToList();
@@ -193,7 +193,7 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
         // P4a (D-20): GET /media/{**ruta}, anónimo porque el catálogo público muestra las fotos.
         Assert.Equal(new[]
         {
-            "GET /api/catalogo/filtros", "GET /api/catalogo/inicio", "GET /api/catalogo/publicaciones",
+            "GET /api/catalogo/filtros", "GET /api/catalogo/inicio", "GET /api/catalogo/portada", "GET /api/catalogo/publicaciones",
             "GET /api/catalogo/publicaciones/{slug}",
             "GET /health", "GET /health/database", "GET /media/{**ruta}", "POST /api/auth/login",
             "POST /api/auth/registro/asesor", "POST /api/auth/registro/comprador"
@@ -201,7 +201,7 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
 
         // P3: todo /api/catalogo es GET, permite anónimos de forma explícita y no exige ninguna política.
         var catalogo = todos.Where(e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/catalogo", StringComparison.Ordinal)).ToList();
-        Assert.Equal(4, catalogo.Count);
+        Assert.Equal(5, catalogo.Count);
         foreach (var e in catalogo)
         {
             Assert.Equal("GET", Metodo(e));
@@ -237,6 +237,8 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
             "POST /api/admin/asesores/{asesorId}/suscripcion", "POST /api/admin/suscripciones/{id}/renovar",
             "POST /api/admin/suscripciones/{id}/cambiar-plan", "POST /api/admin/suscripciones/{id}/suspender",
             "POST /api/admin/suscripciones/{id}/reactivar", "POST /api/admin/suscripciones/{id}/cancelar",
+            // D-42: foto de portada del portal (subir y quitar), solo el administrador.
+            "POST /api/admin/portal/portada", "POST /api/admin/portal/portada/quitar",
             // P4p (D-37): catálogos (crear, renombrar, activar, desactivar) y modelos.
             "POST /api/admin/catalogos/{catalogo}", "PUT /api/admin/catalogos/{catalogo}/{id}",
             "POST /api/admin/catalogos/{catalogo}/{id}/activar", "POST /api/admin/catalogos/{catalogo}/{id}/desactivar",
@@ -253,9 +255,9 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
         }.OrderBy(x => x, StringComparer.Ordinal).ToArray(), modifican);
 
         // CA-SE006-13: toda ruta bajo /api/admin exige SoloAdministrador (P2: 5 acciones + la lista; P4p: 4 GET y 18 acciones;
-        // P4b: reasignar un vehículo).
+        // P4b: reasignar un vehículo; D-42: subir y quitar la portada).
         var admin = todos.Where(e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/admin", StringComparison.Ordinal)).ToList();
-        Assert.Equal(29, admin.Count);
+        Assert.Equal(31, admin.Count);
         foreach (var e in admin)
         {
             var politicas = e.Metadata.GetOrderedMetadata<IAuthorizeData>().Select(a => a.Policy).ToArray();

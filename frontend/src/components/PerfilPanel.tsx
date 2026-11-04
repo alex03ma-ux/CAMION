@@ -82,6 +82,9 @@ export function PerfilPanel({
           <a className="inv-boton-enlace inv-boton-secundario" href={hashSeccionAdmin('catalogos')}>
             Catálogos
           </a>
+          <a className="inv-boton-enlace inv-boton-secundario" href={hashSeccionAdmin('portada')}>
+            Portada
+          </a>
         </nav>
       )}
       <button

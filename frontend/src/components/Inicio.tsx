@@ -1,4 +1,4 @@
-import { useCallback, useState, type FormEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import {
   categoriasDisponibles,
   MENSAJE_SIN_VEHICULOS,
@@ -6,6 +6,7 @@ import {
   Q_MAX,
   type OpcionCatalogo,
 } from '../api/catalogo'
+import { obtenerPortada } from '../api/portada'
 import { usePeticion } from '../catalogo/usePeticion'
 import { HASH_BUSCAR, HASH_REGISTRO, hashBuscar, navegar } from '../rutas'
 import { Aviso } from './Aviso'
@@ -54,11 +55,16 @@ export function Inicio({ tipos }: InicioProps) {
   const [estado, reintentar] = usePeticion(cargar, 'inicio')
 
   const categorias = categoriasDisponibles(tipos)
+  const fotoPortada = useFotoPortada()
 
   return (
     <div className="cat-inicio">
       <section className="cat-portada" aria-labelledby="inicio-titulo">
-        <IlustracionCamion className="cat-portada-imagen" />
+        {fotoPortada.url && !fotoPortada.fallida ? (
+          <img className="cat-portada-imagen cat-portada-foto" src={fotoPortada.url} alt="" onError={fotoPortada.alFallar} />
+        ) : (
+          <IlustracionCamion className="cat-portada-imagen" />
+        )}
         <div className="cat-portada-interior">
           <p className="cat-portada-eyebrow">Camiones, carros, carrocerías y maquinaria</p>
           <h1 id="inicio-titulo" tabIndex={-1}>
@@ -161,6 +167,25 @@ export function Inicio({ tipos }: InicioProps) {
       </div>
     </div>
   )
+}
+
+/**
+ * D-42: foto de portada elegida por el administrador. Mientras carga, si no hay o si falla, se ve la
+ * ilustración: la portada nunca queda vacía.
+ */
+function useFotoPortada() {
+  const [url, setUrl] = useState<string | null>(null)
+  const [fallida, setFallida] = useState(false)
+  useEffect(() => {
+    const control = new AbortController()
+    obtenerPortada(control.signal)
+      .then((u) => setUrl(u))
+      .catch(() => {
+        // Sin conexión o error: se queda la ilustración.
+      })
+    return () => control.abort()
+  }, [])
+  return { url, fallida, alFallar: () => setFallida(true) }
 }
 
 /** Buscador grande de la portada: texto libre y tipo de vehículo. */

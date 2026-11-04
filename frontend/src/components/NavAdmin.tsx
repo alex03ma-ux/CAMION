@@ -7,9 +7,10 @@ export const NOMBRES_SECCION_ADMIN: Record<SeccionAdmin, string> = {
   planes: 'Planes',
   suscripciones: 'Suscripciones',
   catalogos: 'Catálogos',
+  portada: 'Portada',
 }
 
-const ORDEN: readonly SeccionAdmin[] = ['usuarios', 'planes', 'suscripciones', 'catalogos']
+const ORDEN: readonly SeccionAdmin[] = ['usuarios', 'planes', 'suscripciones', 'catalogos', 'portada']
 
 export function NavAdmin({ actual }: { actual: SeccionAdmin }) {
   return (

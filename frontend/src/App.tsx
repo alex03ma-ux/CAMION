@@ -24,6 +24,7 @@ import {
 import { esAdministrador } from './auth/roles'
 import { usePeticion } from './catalogo/usePeticion'
 import { AdminCatalogos } from './components/AdminCatalogos'
+import { AdminPortada } from './components/AdminPortada'
 import { AdminPlanes } from './components/AdminPlanes'
 import { AdminSuscripciones } from './components/AdminSuscripciones'
 import { AdminUsuarios } from './components/AdminUsuarios'
@@ -491,6 +492,7 @@ export default function App() {
           <AdminSuscripciones token={token} onSesionTerminada={alTerminarSesionAdmin} />
         )}
         {seccion === 'catalogos' && <AdminCatalogos token={token} onSesionTerminada={alTerminarSesionAdmin} />}
+        {seccion === 'portada' && <AdminPortada token={token} onSesionTerminada={alTerminarSesionAdmin} />}
       </>
     )
   }

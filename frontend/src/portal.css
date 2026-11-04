@@ -697,3 +697,60 @@ form.cat-busqueda-portada {
   font-size: 13px;
   color: #9a9a9a;
 }
+
+/* D-42: foto de portada subida por el administrador (cubre el lado derecho, igual que la ilustración). */
+.cat-portada-foto {
+  object-fit: cover;
+  object-position: right center;
+}
+
+/* ---- Administración: Portada ---- */
+.admin-portada {
+  max-width: 760px;
+  margin: 24px auto;
+  padding: 28px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
+  text-align: left;
+}
+
+.admin-portada-marco {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid var(--gris-borde);
+  background: #f1eeeb;
+}
+
+.admin-portada-marco img,
+.admin-portada-marco svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+form.admin-portada-form {
+  max-width: none;
+  margin: 16px 0 0;
+  padding: 0;
+  box-shadow: none;
+}
+
+.admin-portada-form input[type="file"] {
+  padding: 10px;
+}
+
+.admin-portada-botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-portada-botones button {
+  width: auto;
+  padding: 12px 20px;
+}

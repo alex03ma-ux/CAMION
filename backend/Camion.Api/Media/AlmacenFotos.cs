@@ -12,6 +12,9 @@ public interface IAlmacenFotos
 
     /// <summary>Ruta física segura dentro de la raíz, o null si la clave sale de la raíz o no es una ruta válida.</summary>
     string? RutaSegura(string clave);
+
+    /// <summary>Claves relativas (con "/") de los archivos de una carpeta de la raíz; vacía si no existe o no es válida.</summary>
+    IReadOnlyList<string> Listar(string carpeta);
 }
 
 public sealed class AlmacenFotosLocal : IAlmacenFotos
@@ -42,6 +45,15 @@ public sealed class AlmacenFotosLocal : IAlmacenFotos
     {
         var ruta = RutaSegura(clave);
         if (ruta is not null && File.Exists(ruta)) File.Delete(ruta);
+    }
+
+    public IReadOnlyList<string> Listar(string carpeta)
+    {
+        var ruta = RutaSegura(carpeta);
+        if (ruta is null || !Directory.Exists(ruta)) return [];
+        return Directory.EnumerateFiles(ruta)
+            .Select(f => $"{carpeta.TrimEnd('/')}/{Path.GetFileName(f)}")
+            .ToArray();
     }
 
     public string? RutaSegura(string clave)

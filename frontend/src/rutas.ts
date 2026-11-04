@@ -6,6 +6,7 @@
 //   #/cuenta/registro   Lo mismo, abriendo el formulario de registro
 //   #/cuenta/usuarios, #/cuenta/planes, #/cuenta/suscripciones, #/cuenta/catalogos
 //                       P4p: secciones del administrador (la API las protege igualmente)
+//   #/cuenta/portada    D-42: foto de portada del portal (administrador)
 //   #/inventario        P4a: inventario del asesor (propio) o del administrador (general)
 //   #/inventario/nuevo  P4a: registrar un vehículo
 //   #/inventario/<id>   P4a: editar un vehículo y sus fotos
@@ -25,8 +26,8 @@ export type Ruta =
   | { nombre: 'publicaciones' }
 
 /** P4p: secciones del administrador dentro de "Mi cuenta". */
-export type SeccionAdmin = 'usuarios' | 'planes' | 'suscripciones' | 'catalogos'
-export const SECCIONES_ADMIN: readonly SeccionAdmin[] = ['usuarios', 'planes', 'suscripciones', 'catalogos']
+export type SeccionAdmin = 'usuarios' | 'planes' | 'suscripciones' | 'catalogos' | 'portada'
+export const SECCIONES_ADMIN: readonly SeccionAdmin[] = ['usuarios', 'planes', 'suscripciones', 'catalogos', 'portada']
 
 /** `#/cuenta/<seccion>`. */
 export function hashSeccionAdmin(seccion: SeccionAdmin): string {
