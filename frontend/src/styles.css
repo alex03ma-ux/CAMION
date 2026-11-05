@@ -2005,3 +2005,92 @@ label.campo-obligatorio::after,
   font-size: 0.85rem;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
+
+/* ---- P5: contactos (leads) en el panel ---- */
+.lead-tarjeta-nueva {
+  border-left: 4px solid #d71920;
+}
+
+.lead-nuevo {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #d71920;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.lead-mensaje {
+  margin: 4px 0 8px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.lead-subtitulo {
+  margin: 12px 0 4px;
+  font-size: 16px;
+}
+
+.lead-filtro-vehiculo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 0;
+}
+
+.lead-filtro-vehiculo button {
+  margin: 0;
+}
+
+.inv-pagina form.lead-nota-form {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  box-shadow: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.lead-acciones {
+  margin-top: 12px;
+}
+
+.lead-acciones button,
+.inv-resumen .acciones-fila a {
+  width: auto;
+  margin: 0;
+}
+
+.lead-historial {
+  margin: 0;
+  padding: 0 0 0 18px;
+}
+
+.lead-evento {
+  padding: 8px 0;
+  border-bottom: 1px solid #e2e8f0;
+  overflow-wrap: anywhere;
+}
+
+.lead-evento:last-child {
+  border-bottom: none;
+}
+
+.lead-evento p {
+  margin: 2px 0;
+}
+
+.lead-evento-cabecera .dato-secundario {
+  margin-top: 2px;
+}
+
+.lead-consentimientos {
+  margin: 0;
+  padding-left: 18px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}

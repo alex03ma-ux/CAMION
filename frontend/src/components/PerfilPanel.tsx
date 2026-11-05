@@ -3,6 +3,7 @@ import type { PerfilUsuario } from '../api/auth'
 import { MINUTOS_INACTIVIDAD } from '../auth/inactivity'
 import { esAdministrador, nombreRol, ROL_ASESOR, tieneRol } from '../auth/roles'
 import { hashSeccionAdmin, HASH_INVENTARIO, HASH_PUBLICACIONES } from '../rutas'
+import { EnlaceContactos } from './EnlaceContactos'
 import { textoAccesoInventario } from './InventarioPagina'
 import { MiSuscripcion } from './MiSuscripcion'
 
@@ -65,6 +66,14 @@ export function PerfilPanel({
         <a className="inv-boton-enlace inv-boton-bloque inv-boton-secundario" href={HASH_PUBLICACIONES}>
           {esAdministrador(perfil.roles) ? 'Publicaciones' : 'Mis publicaciones'}
         </a>
+      )}
+      {/* P5 (D-48): asesor y administrador; un comprador no lo ve (la API responde 403). */}
+      {accesoInventario && token !== undefined && (
+        <EnlaceContactos
+          className="inv-boton-enlace inv-boton-bloque inv-boton-secundario"
+          token={token}
+          onSesionTerminada={onSesionTerminada}
+        />
       )}
       {verAdministracion && (
         <button type="button" onClick={onAbrirAdministracion} disabled={cerrando}>

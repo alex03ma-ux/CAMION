@@ -1,6 +1,6 @@
 // P4p: navegación del administrador dentro de "Mi cuenta" (Usuarios, Planes, Suscripciones, Catálogos).
 // Solo se muestra a quien tiene el rol ADMINISTRADOR según /api/auth/me; la API protege cada ruta.
-import { hashSeccionAdmin, HASH_CUENTA, type SeccionAdmin } from '../rutas'
+import { hashSeccionAdmin, HASH_CONTACTOS, HASH_CUENTA, type SeccionAdmin } from '../rutas'
 
 export const NOMBRES_SECCION_ADMIN: Record<SeccionAdmin, string> = {
   usuarios: 'Usuarios',
@@ -26,6 +26,10 @@ export function NavAdmin({ actual }: { actual: SeccionAdmin }) {
             </a>
           </li>
         ))}
+        <li>
+          {/* P5: los contactos viven en #/contactos (también los usa el asesor). */}
+          <a href={HASH_CONTACTOS}>Contactos</a>
+        </li>
         <li>
           <a href={HASH_CUENTA}>Mi perfil</a>
         </li>
