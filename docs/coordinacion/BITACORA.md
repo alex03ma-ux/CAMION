@@ -325,3 +325,7 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
 - **Contacto en el pie (D-42).** La responsable entregó WhatsApp 3166152907 y correo vc.automotores@gmail.com. El pie tiene ahora la columna "Contacto": el WhatsApp abre wa.me en otra pestaña y el correo abre un mailto. Los datos están en `PiePortal.tsx`.
   - Pruebas: los archivos afectados (`Catalogo` e `InventarioFormulario`) pasan solos, 80/80; `tsc -b` y `npm run build` OK. La suite completa dio 452/453 y 451/453: en cada corrida falló una prueba distinta de InventarioFormulario por tiempo (5 s), con la API y Vite encendidos. Esa prueba también pasa sola sin estos cambios, así que la falla no viene del pie. Queda abierta como prueba inestable.
   - Pendientes de D-42: dirección, horario, páginas legales y los textos de la franja de confianza.
+- **Horario en el pie (D-42).** La responsable confirmó el horario: lunes a viernes de 9:00 a. m. a 5:00 p. m., y sábados de 9:00 a. m. a 3:00 p. m. Va en la columna "Contacto", bajo "Horario de atención".
+  - La dirección no se publica por ahora.
+  - Instagram y TikTok quedan pendientes hasta que existan las cuentas.
+  - Pruebas: `Catalogo.test.tsx` 35/35; `tsc -b` y `npm run build` OK.

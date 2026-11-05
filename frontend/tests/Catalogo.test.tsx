@@ -584,5 +584,9 @@ describe('Rediseño del portal (rojo, negro y blanco)', () => {
       'href',
       'mailto:vc.automotores@gmail.com',
     )
+    expect(within(pie).getByRole('heading', { level: 3, name: 'Horario de atención' })).toBeInTheDocument()
+    expect(within(pie).getByText('Lunes a viernes: 9:00 a. m. a 5:00 p. m.')).toBeInTheDocument()
+    expect(within(pie).getByText('Sábados: 9:00 a. m. a 3:00 p. m.')).toBeInTheDocument()
+    expect(within(pie).queryByRole('link', { name: /instagram|tiktok/i })).not.toBeInTheDocument()
   })
 })

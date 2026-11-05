@@ -11,10 +11,14 @@ type PiePortalProps = {
 export const CONTACTO_WHATSAPP = '316 615 2907'
 export const CONTACTO_WHATSAPP_ENLACE = 'https://wa.me/573166152907'
 export const CONTACTO_CORREO = 'vc.automotores@gmail.com'
+export const HORARIO_ATENCION = [
+  'Lunes a viernes: 9:00 a. m. a 5:00 p. m.',
+  'Sábados: 9:00 a. m. a 3:00 p. m.',
+] as const
 
 /**
- * Pie de página oscuro del portal. Solo lleva enlaces que existen y datos confirmados: el horario y
- * las páginas legales se añaden cuando la responsable los entregue (D-42); no se inventan.
+ * Pie de página oscuro del portal. Solo lleva enlaces que existen y datos confirmados. Dirección,
+ * páginas legales e Instagram/TikTok se añaden cuando la responsable los entregue (D-42); no se inventan.
  */
 export function PiePortal({ tipos, conSesion }: PiePortalProps) {
   return (
@@ -67,6 +71,12 @@ export function PiePortal({ tipos, conSesion }: PiePortalProps) {
             <li>
               <a href={`mailto:${CONTACTO_CORREO}`}>{CONTACTO_CORREO}</a>
             </li>
+          </ul>
+          <h3 className="cat-pie-subtitulo">Horario de atención</h3>
+          <ul>
+            {HORARIO_ATENCION.map((linea) => (
+              <li key={linea}>{linea}</li>
+            ))}
           </ul>
         </section>
       </div>
