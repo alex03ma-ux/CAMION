@@ -1,7 +1,7 @@
 // Rutas por hash (P3: CA-001-06, CA-UI-01, CA-UI-02, CA-004-17, CA-012-02).
 import { describe, expect, it } from 'vitest'
 import { FILTROS_VACIOS } from '../src/api/catalogo'
-import { hashBuscar, hashVehiculo, leerFiltros, leerRuta } from '../src/rutas'
+import { hashBuscar, hashContacto, hashVehiculo, leerFiltros, leerRuta } from '../src/rutas'
 
 describe('leerRuta', () => {
   it('CA-001-06 sin hash, "#" y "#/" abren el inicio', () => {
@@ -83,5 +83,16 @@ describe('hashBuscar / hashVehiculo', () => {
   it('el slug se codifica en el hash del detalle', () => {
     expect(hashVehiculo('kenworth-t800-2018')).toBe('#/vehiculo/kenworth-t800-2018')
     expect(leerRuta(hashVehiculo('camión ñ'))).toEqual({ nombre: 'vehiculo', slug: 'camión ñ' })
+  })
+})
+
+describe('P5: rutas de contactos y privacidad', () => {
+  it('#/contactos, #/contactos/<id> y #/privacidad; ids no válidos van al inicio', () => {
+    expect(leerRuta('#/contactos')).toEqual({ nombre: 'contactos' })
+    expect(leerRuta('#/contactos/')).toEqual({ nombre: 'contactos' })
+    expect(leerRuta(hashContacto(12))).toEqual({ nombre: 'contacto', id: 12 })
+    expect(leerRuta('#/privacidad')).toEqual({ nombre: 'privacidad' })
+    expect(leerRuta('#/contactos/0')).toEqual({ nombre: 'inicio' })
+    expect(leerRuta('#/contactos/abc')).toEqual({ nombre: 'inicio' })
   })
 })
