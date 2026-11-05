@@ -354,13 +354,11 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - "Mis contactos" del asesor y "Contactos" del administrador, con filtros, detalle, notas, cierre con resultado e historial; reasignar y reabrir solo el administrador; aviso "Contactos (N nuevos)" en el panel (D-48);
   - barrido bajo demanda de D-46 (plan vencido, asesor bloqueado, vehículo reasignado);
   - el asesor dueño no ve el formulario en su propia publicación (`esPropio`, CA-P5-11).
-- Migración `013_p5_leads` (con su archivo SUBIR) **sin aplicar**: crea `leads`, `eventos_lead` y `consentimientos_datos`. **Sin ella, la API de esta rama no funciona contra `camion_ventas`.**
+- Migración `013_p5_leads` (con su archivo SUBIR): crea `leads`, `eventos_lead` y `consentimientos_datos`. **APLICADA el 2026-11-05** (ver abajo).
 - **Pruebas ejecutadas:** `dotnet test` 962/962 (agente de backend); `npx vitest run` 528/528 (coordinador); `tsc -b` y `npm run build` OK. Las pruebas de API usan SQLite en memoria y no tocan `camion_ventas`. Se corrigió la inestabilidad de vitest (`maxWorkers: '50%'`, `testTimeout: 15_000`). E2E y prueba manual: NO EJECUTADAS.
 - **Revisión de seguridad** (`REVISION-SEGURIDAD-P5.md`): CON OBSERVACIONES, sin hallazgos críticos ni altos. M-1 (IP detrás de un proxy) y B-4 (MySqlConnector) pasan a INF-2; B-1 corregido; B-2 aceptado (D-49); B-3 aceptado; B-5 se cubre con el paso 3 del procedimiento.
 - **DOCUMENTADO:** D-49, fila INF-2 del backlog, cierre de la evidencia y guía `docs/manual/P5-contactos.md`.
 - **Pendientes:**
-  - aplicar la migración 013 con respaldo previo en `C:\Respaldo_CAMION\` (nombre nuevo), según el procedimiento de `REVISION-SEGURIDAD-P5.md`, para que la API real funcione con esta rama;
-  - la prueba manual de la responsable (pasos en `docs/manual/P5-contactos.md`);
   - INF-2 antes de publicar en internet;
   - la revisión legal (D-44): P5 no sale a internet sin una versión aprobada de la política.
 - PR: por abrir contra `main`, sin merge.
@@ -372,4 +370,17 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - Pruebas: `npx vitest run` 531/531 (3 nuevas; las de crear plan ahora abren el formulario antes). `tsc -b` y `npm run build` OK.
   - También se arregló una prueba intermitente de P5 (CA-P5-57), que buscaba un texto repetido en lugar del aviso.
   - Revisión en pantalla: la responsable la revisó con su cuenta de administradora y respondió "Ya lo revisé" (2026-11-05), sin reportar fallas.
-
+- **Migración 013 aplicada (2026-11-05).**
+  - Respaldo previo: `C:\Respaldo_CAMION\camion_ventas_antes_013_p5_20261105_1023.sql` (129 KB, 44 tablas, termina en "Dump completed"). Se generó con `mysqldump --result-file` para evitar el UTF-16 de la redirección de PowerShell.
+  - La responsable importó `013_p5_leads.sql` desde phpMyAdmin. El primer intento no se ejecutó porque no había archivo seleccionado; el segundo sí.
+  - Verificación de solo lectura: 3 tablas nuevas vacías, 5 CHECK y 9 llaves foráneas; `publicaciones` sigue con 13 filas.
+- **Clave JWT rotada (2026-11-05).** La clave anterior quedó expuesta al pegarla en el chat. La responsable generó una nueva y la guardó ella misma con `dotnet user-secrets`. Las sesiones abiertas con la clave anterior dejaron de valer.
+- **Prueba manual P5: PROBADO por la responsable (2026-11-05), respuesta "Todo bien".**
+  - El asesor de prueba (Xavi Quintero, aprobado, plan vigente) quedó como dueño del vehículo JAC JRR 2024 (`jac-jrr-2024-14`), creado por la administradora y reasignado a él.
+  - En su propia publicación vio el aviso en lugar del formulario (CA-P5-11).
+  - Contactos 2 y 3, enviados sin cuenta: se asignaron solos a Xavi. Él les agregó notas y los cerró ("Duplicado o inválido", "No interesado"). La administradora los reabrió con un motivo.
+  - Contacto 1, en una publicación con plan vencido: fue a Administración y la administradora lo reasignó con un motivo.
+  - Historial verificado en `eventos_lead`: CREADO, ASIGNADO, NOTA, CERRADO, REABIERTO, REASIGNADO, con su actor.
+  - 3 autorizaciones guardadas en `consentimientos_datos`, todas con la versión `BORRADOR-2026-11-04`.
+  - El botón de WhatsApp usó el número del portal porque el teléfono de Xavi tiene 9 dígitos (D-49).
+  - Quedan datos de prueba en `camion_ventas`: los contactos 1 a 3 y el vehículo 21. Se limpian antes de producción.
