@@ -2,6 +2,8 @@ namespace Camion.Api.Contracts;
 
 // P3 (HU-001 a HU-012, RN-VE-011 a RN-VE-014, RN-SE-005): catálogo público, anónimo y de solo lectura.
 // Ninguna respuesta incluye datos del asesor, ids internos de vehículo/asesor, la placa ni datos personales.
+// Única excepción (P5, D-47): el detalle trae "whatsapp", el enlace wa.me del asesor dueño (o el del portal); nunca su
+// correo, documento, nombre ni id.
 // P4a (D-19): marca y modeloAnio pueden ser null (carrocería sin marca ni año).
 public sealed record TarjetaVehiculo(
     string Slug,
@@ -46,7 +48,10 @@ public sealed record DetalleVehiculo(
     decimal? CapacidadCargaKg,
     decimal? PesoBrutoKg,
     int? CilindrajeCc,
-    IReadOnlyList<FotoVehiculo> Fotos);
+    IReadOnlyList<FotoVehiculo> Fotos,
+    // P5 (D-47, CA-P5-61, CA-P5-62): https://wa.me/57XXXXXXXXXX del asesor dueño si su teléfono es un celular
+    // colombiano válido; si no, o si el dueño es administrador, el del portal (D-42).
+    string Whatsapp);
 
 public sealed record InicioCatalogoResponse(
     IReadOnlyList<TarjetaVehiculo> Destacados,
