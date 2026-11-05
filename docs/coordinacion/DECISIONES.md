@@ -524,3 +524,17 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
   - La autorización para compartir datos con bancos, entidades financieras y aseguradoras **no** se pide en la plataforma. "Esto se maneja interno cuando se hace el proceso, en esta plataforma solo vamos hacer contacto asesor y usuario, lo otro es interno el manejo".
   - **Alcance de la plataforma:** poner en contacto al usuario con el asesor o con el administrador. La gestión del crédito, la póliza y la consignación ocurre fuera del portal.
   - **Por confirmar al planear P6:** si "Créditos y búsquedas" sigue con formularios, estados y seguimiento, o se reduce a una solicitud de contacto dirigida al administrador. P5 y P5b no cambian.
+
+## D-46 — ¿Qué pasa con los leads abiertos de un asesor que pierde su plan, es bloqueado o deja de ser dueño del vehículo? · PENDIENTE (2026-11-04)
+- Contexto (detectada al escribir los criterios de P5, `docs/criterios/criterios-P5-leads.md`, CA-P5-50 a CA-P5-53):
+  - D-7 dice que el asesor atiende los contactos de sus vehículos publicados **mientras su plan esté vigente**; si no, el administrador. HU-032 y HU-033 dicen que el asesor gestiona y cierra el lead, sin límite de tiempo.
+  - Por D-41, una publicación solo se ve en el portal si el plan del asesor está vigente. Por eso, al crear el lead casi siempre hay plan vigente. La duda real es **después**: un lead tarda días en cerrarse y en ese tiempo el plan puede vencer, el asesor puede ser bloqueado o el administrador puede reasignar el vehículo a otro asesor (D-34).
+- Opciones:
+  - A) **La asignación se fija al crear el lead.** El asesor conserva sus leads abiertos aunque venza su plan; el administrador los ve todos y los reasigna a mano si quiere (D-7). Solo pasan solos a Administración los de un asesor **bloqueado**, que ya no puede entrar. Si se reasigna el vehículo (D-34), sus leads abiertos lo siguen.
+    - Impacto: es lo más simple; el asesor no pierde los clientes que llegaron mientras pagaba el plan.
+  - B) **La asignación sigue al plan.** Al vencer el plan, o al bloquear al asesor, sus leads abiertos pasan solos a Administración (auditado como SISTEMA). No vuelven solos al renovar. Si se reasigna el vehículo, sus leads abiertos lo siguen.
+    - Impacto: lectura literal de D-7; hace falta un proceso que revise vencimientos, y el asesor que se atrasa en el pago pierde sus clientes en curso.
+  - C) Como B, pero con unos días de gracia (por ejemplo 5) antes de pasar los leads a Administración.
+    - Impacto: más configuración y un caso más que probar.
+- Recomendación del analista: **A**. Respeta D-7 en el origen del contacto, evita mover leads sin que nadie lo decida y deja la decisión final al administrador, que ve todos los leads.
+- Bloquea: solo CA-P5-50 a CA-P5-53. El resto de P5 se puede construir.
