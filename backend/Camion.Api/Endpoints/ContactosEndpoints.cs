@@ -63,6 +63,16 @@ public static class ContactosEndpoints
             var version = configuracion["PoliticaDatos:Version"];
             if (string.IsNullOrWhiteSpace(version)) version = ReglasLeads.VersionPoliticaPorDefecto;
 
+            // CA-P5-21 (y B-1 de la revisión de seguridad): envíos aceptados del mismo teléfono en 24 h, contando los leads
+            // nuevos y los contactos repetidos. Va antes de la rama de repetidos para que varias IP no inflen sin fin el
+            // historial ni consentimientos_datos.
+            var desde = ahora.AddDays(-1);
+            var telefono = datos.Telefono;
+            var enviados = await db.Leads.AsNoTracking().CountAsync(l => l.Telefono == telefono && l.CreadoEn > desde, ct) +
+                           await db.EventosLead.AsNoTracking().CountAsync(e => e.Tipo == EventoLead.ContactoRepetido &&
+                               e.CreadoEn > desde && db.Leads.Any(l => l.Id == e.LeadId && l.Telefono == telefono), ct);
+            if (enviados >= limites.LimiteTelefonoDia) return MuchasSolicitudes();
+
             await using var tx = await db.Database.BeginTransactionAsync(ct);
             // CA-P5-23: mismo teléfono y misma publicación con un lead ABIERTO -> contacto repetido en su historial.
             var existente = await db.Leads.AsNoTracking()
@@ -82,12 +92,6 @@ public static class ContactosEndpoints
                 await tx.CommitAsync(ct);
                 return Exito();
             }
-
-            // CA-P5-21: más de N leads nuevos del mismo teléfono en 24 h -> 429.
-            var desde = ahora.AddDays(-1);
-            if (await db.Leads.AsNoTracking().CountAsync(l => l.Telefono == datos.Telefono && l.CreadoEn > desde, ct)
-                >= limites.LimiteTelefonoDia)
-                return MuchasSolicitudes();
 
             // CA-P5-25 a CA-P5-28: el responsable lo calcula siempre el servidor; nace ABIERTO.
             var responsable = await BarridoLeads.ResponsableAlCrearAsync(db, pub.AsesorId, ahora, ct);
