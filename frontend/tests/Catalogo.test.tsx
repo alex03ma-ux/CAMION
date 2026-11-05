@@ -449,7 +449,13 @@ describe('Acceso público y comprador en solo lectura', () => {
 
       const catalogo = api.llamadas.filter((l) => l.url.startsWith('/api/catalogo'))
       expect(catalogo.length).toBeGreaterThanOrEqual(4)
-      for (const l of catalogo) expect(cabecera(l.init, 'Authorization')).toBeUndefined()
+      // P5 (CA-P5-11): solo el asesor envía su token, y solo al pedir el detalle de una publicación,
+      // para saber si es suya (`esPropio`). Listados, inicio y filtros siguen sin token para todos.
+      const detalleV1 = rutaDetalle(V1.slug)
+      for (const l of catalogo) {
+        if (rol === 'ASESOR' && l.url.startsWith(detalleV1)) continue
+        expect(cabecera(l.init, 'Authorization')).toBeUndefined()
+      }
       // La sesión sí se verifica con su token (no regresión P1).
       expect(cabecera(api.llamadasA(ME)[0].init, 'Authorization')).toMatch(/^Bearer /)
     },

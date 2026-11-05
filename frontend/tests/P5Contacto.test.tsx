@@ -286,6 +286,37 @@ describe('Contacto con sesión (CA-P5-02, CA-P5-18)', () => {
   })
 })
 
+describe('Asesor en su propia publicación (CA-P5-11)', () => {
+  const PERFIL_ASESOR = { ...PERFIL_FICTICIO, nombreCompleto: 'Asesor Ficticio', roles: ['ASESOR'] }
+
+  it('el asesor pide el detalle con su token; si es suyo ve un aviso y no el formulario', async () => {
+    guardarSesionFicticia(Date.now() + 60 * 60 * 1000)
+    const api = simularFetch({
+      [RUTA_FILTROS]: respuestaFiltros(),
+      [rutaDetalle(V1.slug)]: { status: 200, body: { ...detalle(V1, { whatsapp: WA_ASESOR }), esPropio: true } },
+      '/api/auth/me': { status: 200, body: PERFIL_ASESOR },
+    })
+    abrirApp(`#/vehiculo/${V1.slug}`)
+    expect(await screen.findByText(/Esta es una de tus publicaciones/)).toBeInTheDocument()
+    expect(screen.queryByRole('form', { name: 'Formulario de contacto' })).not.toBeInTheDocument()
+    const conToken = api.llamadasA(rutaDetalle(V1.slug)).filter((l) => cabecera(l.init, 'Authorization'))
+    expect(cabecera(conToken[conToken.length - 1].init, 'Authorization')).toBe(`Bearer ${TOKEN_FICTICIO}`)
+    expect(api.llamadasA(RUTA_CONTACTOS)).toHaveLength(0)
+  })
+
+  it('el asesor en una publicación ajena (esPropio false) ve el formulario', async () => {
+    guardarSesionFicticia(Date.now() + 60 * 60 * 1000)
+    simularFetch({
+      [RUTA_FILTROS]: respuestaFiltros(),
+      [rutaDetalle(V1.slug)]: { status: 200, body: { ...detalle(V1, { whatsapp: WA_ASESOR }), esPropio: false } },
+      '/api/auth/me': { status: 200, body: PERFIL_ASESOR },
+    })
+    abrirApp(`#/vehiculo/${V1.slug}`)
+    expect(await formulario()).toBeInTheDocument()
+    expect(screen.queryByText(/Esta es una de tus publicaciones/)).not.toBeInTheDocument()
+  })
+})
+
 describe('Botón "Escribir por WhatsApp" (D-47)', () => {
   it('CA-P5-61 usa el enlace del asesor con un texto que nombra el vehículo, en otra pestaña', async () => {
     const { api } = abrirFicha()

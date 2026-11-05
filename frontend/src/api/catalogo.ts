@@ -49,6 +49,8 @@ export type DetalleVehiculo = TarjetaVehiculo & {
   fotos: FotoVehiculo[]
   /** P5 (D-47): enlace https://wa.me/57… del asesor dueño o del portal; null si no llega. */
   whatsapp: string | null
+  /** P5 (CA-P5-11): true solo si se pidió con el token del asesor dueño. */
+  esPropio: boolean
 }
 
 export type RespuestaInicio = {
@@ -338,13 +340,18 @@ export async function buscarPublicaciones(
   }
 }
 
-/** GET /api/catalogo/publicaciones/{slug}. Un 404 llega como ApiError con status 404. */
+/**
+ * GET /api/catalogo/publicaciones/{slug}. Un 404 llega como ApiError con status 404.
+ * `token` solo se envía para un asesor, para saber si la publicación es suya (CA-P5-11).
+ */
 export async function obtenerDetalle(
   slug: string,
   signal?: AbortSignal,
+  token?: string,
 ): Promise<DetalleVehiculo> {
   const datos = await peticion(`/api/catalogo/publicaciones/${encodeURIComponent(slug)}`, {
     signal,
+    token,
     mensajesPorCodigo: { 404: MENSAJE_NO_DISPONIBLE },
   })
   const tarjeta = aTarjeta(datos)
@@ -364,6 +371,7 @@ export async function obtenerDetalle(
     cilindrajeCc: numeroONulo(datos.cilindrajeCc),
     fotos,
     whatsapp: textoONulo(datos.whatsapp),
+    esPropio: datos.esPropio === true,
   }
 }
 

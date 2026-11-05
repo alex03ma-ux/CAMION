@@ -49,7 +49,13 @@ function fichaTecnica(v: Detalle): { nombre: string; valor: string }[] {
  * P5: formulario "Contactar" y botón de WhatsApp (D-47). Del asesor solo llega el enlace wa.me.
  */
 export function DetalleVehiculo({ slug, sesion = null }: { slug: string; sesion?: SesionContacto | null }) {
-  const [estado, reintentar] = usePeticion((signal) => obtenerDetalle(slug, signal), slug)
+  // Solo el asesor envía su token: así la API dice si la publicación es suya (CA-P5-11).
+  // Compradores y visitantes piden el catálogo sin token, como en P3.
+  const tokenAsesor = sesion?.perfil.roles.includes('ASESOR') ? sesion.token : undefined
+  const [estado, reintentar] = usePeticion(
+    (signal) => obtenerDetalle(slug, signal, tokenAsesor),
+    `${slug}|${tokenAsesor ? 'asesor' : 'publico'}`,
+  )
 
   const noDisponible = estado.estado === 'error' && estado.error.status === 404
   const vehiculo = estado.estado === 'ok' ? estado.datos : null
@@ -115,12 +121,18 @@ export function DetalleVehiculo({ slug, sesion = null }: { slug: string; sesion?
               negociable={vehiculo.negociable}
             />
 
-            <FormularioContacto
-              slug={vehiculo.slug}
-              titulo={vehiculo.titulo}
-              whatsapp={vehiculo.whatsapp}
-              sesion={sesion}
-            />
+            {vehiculo.esPropio ? (
+              <p className="cat-aviso-propio" role="note">
+                Esta es una de tus publicaciones. Los contactos que lleguen por ella los verás en "Mis contactos".
+              </p>
+            ) : (
+              <FormularioContacto
+                slug={vehiculo.slug}
+                titulo={vehiculo.titulo}
+                whatsapp={vehiculo.whatsapp}
+                sesion={sesion}
+              />
+            )}
 
             {ficha.length > 0 && (
               <section aria-labelledby="detalle-ficha">

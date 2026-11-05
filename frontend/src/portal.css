@@ -893,3 +893,14 @@ form.admin-portada-form {
   color: var(--rojo-oscuro);
   font-weight: 600;
 }
+
+/* P5 (CA-P5-11): aviso al asesor en su propia publicación, en lugar del formulario de contacto. */
+.cat-aviso-propio {
+  margin: 18px 0;
+  padding: 12px 14px;
+  border-left: 4px solid var(--rojo);
+  border-radius: 8px;
+  background: #f6f6f6;
+  color: #222;
+}
+
