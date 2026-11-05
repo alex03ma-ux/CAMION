@@ -649,7 +649,7 @@ form.cat-busqueda-portada {
 
 @media (min-width: 760px) {
   .cat-pie-interior {
-    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
   }
 
   .cat-pie-columna {
@@ -683,6 +683,7 @@ form.cat-busqueda-portada {
 .cat-pie a:not(.cat-logo) {
   color: #d6d6d6;
   text-decoration: none;
+  overflow-wrap: anywhere;
 }
 
 .cat-pie a:not(.cat-logo):hover {

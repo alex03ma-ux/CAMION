@@ -7,9 +7,14 @@ type PiePortalProps = {
   conSesion: boolean
 }
 
+/** Contacto confirmado por la responsable (D-42, 2026-11-04). Se cambia solo aquí. */
+export const CONTACTO_WHATSAPP = '316 615 2907'
+export const CONTACTO_WHATSAPP_ENLACE = 'https://wa.me/573166152907'
+export const CONTACTO_CORREO = 'vc.automotores@gmail.com'
+
 /**
- * Pie de página oscuro del portal. Solo lleva enlaces que existen: el contacto, el horario y las
- * páginas legales se añaden cuando la responsable entregue esos datos (D-42); no se inventan.
+ * Pie de página oscuro del portal. Solo lleva enlaces que existen y datos confirmados: el horario y
+ * las páginas legales se añaden cuando la responsable los entregue (D-42); no se inventan.
  */
 export function PiePortal({ tipos, conSesion }: PiePortalProps) {
   return (
@@ -51,6 +56,19 @@ export function PiePortal({ tipos, conSesion }: PiePortalProps) {
             )}
           </ul>
         </nav>
+        <section className="cat-pie-columna" aria-labelledby="pie-contacto">
+          <h2 id="pie-contacto">Contacto</h2>
+          <ul>
+            <li>
+              <a href={CONTACTO_WHATSAPP_ENLACE} target="_blank" rel="noopener noreferrer">
+                WhatsApp {CONTACTO_WHATSAPP}
+              </a>
+            </li>
+            <li>
+              <a href={`mailto:${CONTACTO_CORREO}`}>{CONTACTO_CORREO}</a>
+            </li>
+          </ul>
+        </section>
       </div>
       <p className="cat-pie-legal">© {new Date().getFullYear()} Financiamos Tu Camión</p>
     </footer>

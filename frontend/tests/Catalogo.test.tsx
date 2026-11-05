@@ -571,12 +571,18 @@ describe('Rediseño del portal (rojo, negro y blanco)', () => {
     expect(within(encabezado()).getByRole('searchbox', { name: 'Buscar vehículos' })).toBeInTheDocument()
   })
 
-  it('el pie de página solo enlaza pantallas que existen (sin datos de contacto inventados)', async () => {
+  it('el pie de página enlaza pantallas que existen y el contacto confirmado (WhatsApp y correo)', async () => {
     simularFetch({ [RUTA_FILTROS]: respuestaFiltros(), [RUTA_INICIO]: INICIO_VACIO })
     abrirApp('#/')
     const pie = screen.getByRole('contentinfo')
     expect(await within(pie).findByRole('link', { name: 'Camiones' })).toHaveAttribute('href', '#/buscar?tipoId=2')
     expect(within(pie).getByRole('link', { name: 'Ingresar' })).toHaveAttribute('href', '#/cuenta')
-    expect(within(pie).queryByText(/@|teléfono/i)).not.toBeInTheDocument()
+    const whatsapp = within(pie).getByRole('link', { name: 'WhatsApp 316 615 2907' })
+    expect(whatsapp).toHaveAttribute('href', 'https://wa.me/573166152907')
+    expect(whatsapp).toHaveAttribute('rel', 'noopener noreferrer')
+    expect(within(pie).getByRole('link', { name: 'vc.automotores@gmail.com' })).toHaveAttribute(
+      'href',
+      'mailto:vc.automotores@gmail.com',
+    )
   })
 })

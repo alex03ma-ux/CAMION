@@ -471,7 +471,7 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
 - **Decisión de la responsable (en esta sesión):** el portal sigue la referencia visual que entregó: encabezado blanco, portada con camión y buscador, cuatro categorías (Camiones resaltada en rojo), destacados con borde y sello rojo, franja de confianza, banda de crédito y pie oscuro. Colores corporativos: rojo, negro y blanco. "No quiero que se vea tan recargado".
 - **Pendiente de confirmar (no se inventa nada):**
   - Textos de la franja de confianza: "Vehículos revisados", "Papeles al día", "Financiación" y "Asesoría". Se tomaron de la referencia; si alguno no es una promesa real del negocio, se cambia en `frontend/src/components/Inicio.tsx` (constante `CONFIANZA`).
-  - Correo, teléfono, dirección, horario y páginas legales del pie: no se muestran hasta que la responsable los entregue.
+  - Contacto del pie: **CONFIRMADO (2026-11-04)** por la responsable: WhatsApp 3166152907 (enlace `https://wa.me/573166152907`) y correo vc.automotores@gmail.com. Dirección, horario y páginas legales siguen pendientes y no se muestran.
   - El botón "Quiero un crédito" lleva al registro mientras no exista la solicitud de crédito (llega con P5).
   - La portada usa una ilustración propia en SVG mientras el administrador no suba una foto.
 - **Decisión de la responsable (2026-11-04): "Que lo cambie el admin".** La foto de fondo de la portada la administra el administrador desde "Mi cuenta" › Portada:
