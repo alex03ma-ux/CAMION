@@ -115,6 +115,31 @@ public sealed class LeadsPermisosQaTests(P5Fixture fixture) : IClassFixture<P5Fi
         Assert.Equal("CERRADO", visto.GetProperty("estado").GetString());
     }
 
+    [Fact(DisplayName = "CA-P5-49: si el vehículo se inactiva o la publicación se elimina, el lead sigue ABIERTO con su responsable y el detalle muestra el estado actual")]
+    public async Task Vehiculo_inactivo_o_publicacion_eliminada()
+    {
+        _api.Hora(T);
+        var (a1, pub1, slug1) = await _api.AsesorPublicado("Asesor Inactiva Vehiculo");
+        var lead1 = await _api.LeadNuevo(slug1);
+        Assert.Equal(HttpStatusCode.OK, (await _api.Accion(a1.Token, pub1.GetProperty("vehiculoId").GetInt64(), "inactivar",
+            "Fuera de servicio (prueba)")).StatusCode);
+        var j1 = await Esperar(await _api.DetalleLead(a1.Token, lead1.Id), HttpStatusCode.OK);
+        Assert.Equal("ABIERTO", j1.GetProperty("estado").GetString());
+        Assert.Equal("INACTIVO", j1.GetProperty("vehiculo").GetProperty("estadoVehiculo").GetString());
+        Assert.Equal(a1.PerfilId, (await _api.LeadDb(lead1.Id)).ResponsableAsesorId);
+
+        var (a2, pub2, slug2) = await _api.AsesorPublicado("Asesor Elimina Publicacion");
+        var lead2 = await _api.LeadNuevo(slug2);
+        await _api.Inactivada(a2.Token, IdDe(pub2));
+        await _api.AccionPubOk(a2.Token, IdDe(pub2), "eliminar");
+        var j2 = await Esperar(await _api.DetalleLead(a2.Token, lead2.Id), HttpStatusCode.OK);
+        Assert.Equal("ABIERTO", j2.GetProperty("estado").GetString());
+        Assert.Equal("ELIMINADA", j2.GetProperty("vehiculo").GetProperty("estadoPublicacion").GetString());
+        Assert.Equal(a2.PerfilId, (await _api.LeadDb(lead2.Id)).ResponsableAsesorId);
+        // El responsable lo cierra cuando corresponda.
+        await Esperar(await _api.AccionLead(a2.Token, lead2.Id, "cerrar", new { resultado = "VEHICULO_NO_DISPONIBLE" }), HttpStatusCode.OK);
+    }
+
     [Fact(DisplayName = "CA-P5-32: un comprador puede contactar (POST /api/contactos) pero no consultar el lead que él mismo creó")]
     public async Task Comprador_contacta_pero_no_lee()
     {
