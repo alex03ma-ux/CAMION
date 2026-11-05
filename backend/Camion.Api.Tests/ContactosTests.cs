@@ -415,6 +415,27 @@ public sealed class ContactosTests(P5Fixture fixture) : IClassFixture<P5Fixture>
             Assert.False(detalle.TryGetProperty(clave, out _), clave);
     }
 
+    [Fact(DisplayName = "CA-P5-11: el detalle público trae esPropio = true solo con el token del asesor dueño; anónimo, comprador y asesor ajeno -> false")]
+    public async Task Es_propio()
+    {
+        _api.Hora(T);
+        var (asesor, _, slug) = await _api.AsesorPublicado("Asesor Es Propio");
+        async Task<bool> EsPropio(string? token)
+        {
+            var r = await _api.Enviar(HttpMethod.Get, "/api/catalogo/publicaciones/" + slug, token);
+            return (await Esperar(r, HttpStatusCode.OK)).GetProperty("esPropio").GetBoolean();
+        }
+        Assert.False(await EsPropio(null));
+        Assert.False(await EsPropio(_api.TokenComprador));
+        Assert.False(await EsPropio(_api.B.Token));
+        Assert.False(await EsPropio(_api.Admin.Token));
+        Assert.False(await EsPropio("no-es-un-jwt"));
+        Assert.True(await EsPropio(asesor.Token));
+        var texto = await (await _api.Enviar(HttpMethod.Get, "/api/catalogo/publicaciones/" + slug, asesor.Token)).Content.ReadAsStringAsync();
+        Assert.DoesNotContain(asesor.UsuarioId, texto);
+        Assert.DoesNotContain($"\"{asesor.PerfilId}\"", texto);
+    }
+
     [Theory(DisplayName = "CA-P5-62: asesor sin teléfono válido o con un fijo -> WhatsApp del portal (316 615 2907)")]
     [InlineData(null)]
     [InlineData("1234567")]

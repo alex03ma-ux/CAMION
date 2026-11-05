@@ -51,7 +51,9 @@ public sealed record DetalleVehiculo(
     IReadOnlyList<FotoVehiculo> Fotos,
     // P5 (D-47, CA-P5-61, CA-P5-62): https://wa.me/57XXXXXXXXXX del asesor dueño si su teléfono es un celular
     // colombiano válido; si no, o si el dueño es administrador, el del portal (D-42).
-    string Whatsapp);
+    string Whatsapp,
+    // P5 (CA-P5-11): true solo si la petición trae un token válido del asesor dueño; sin token o de otro usuario, false.
+    bool EsPropio);
 
 public sealed record InicioCatalogoResponse(
     IReadOnlyList<TarjetaVehiculo> Destacados,

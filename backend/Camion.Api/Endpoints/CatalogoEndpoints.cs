@@ -144,7 +144,8 @@ public static class CatalogoEndpoints
         });
 
         // Detalle: 404 con el mismo mensaje si no existe o no es visible (vendida, oculta, vencida, asesor no activo).
-        catalogo.MapGet("/publicaciones/{slug}", async (string slug, CamionDbContext db, TimeProvider reloj,
+        catalogo.MapGet("/publicaciones/{slug}", async (string slug, System.Security.Claims.ClaimsPrincipal principal,
+            CamionDbContext db, TimeProvider reloj,
             Microsoft.Extensions.Options.IOptions<Camion.Api.Leads.OpcionesContacto> opciones, CancellationToken ct) =>
         {
             if (string.IsNullOrEmpty(slug) || slug.Length > MaxSlug)
@@ -185,11 +186,18 @@ public static class CatalogoEndpoints
                                where p.Id == fila.Id
                                select new
                                {
+                                   UsuarioId = u.Id,
                                    u.PhoneNumber,
                                    EsAdmin = db.UserRoles.Any(ur => ur.UserId == u.Id &&
                                        db.Roles.Any(r => r.Id == ur.RoleId && r.NormalizedName == Camion.Api.Auth.Roles.Administrador))
                                }).FirstAsync(ct);
             var whatsapp = Camion.Api.Leads.ReglasLeads.EnlaceWhatsapp(dueno.PhoneNumber, dueno.EsAdmin, opciones.Value.WhatsappPortal);
+            // P5 (CA-P5-11): true solo con un token válido del asesor dueño (para ocultar el formulario); sin id del dueño.
+            var usuarioId = principal.Identity?.IsAuthenticated == true
+                ? principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                : null;
+            var esPropio = usuarioId is not null && usuarioId == dueno.UsuarioId &&
+                           principal.IsInRole(Camion.Api.Auth.Roles.Asesor);
 
             var t = ConsultasCatalogo.Tarjeta(fila);
             return Results.Ok(new DetalleVehiculo(
@@ -198,7 +206,7 @@ public static class CatalogoEndpoints
                 ficha.DescripcionComercial, ficha.DescripcionTecnica, ficha.Carroceria, ficha.Combustible,
                 ficha.CapacidadCargaKg, ficha.PesoBrutoKg, ficha.CilindrajeCc,
                 fotos.Select(f => new FotoVehiculo(ConsultasCatalogo.UrlFoto(f.ArchivoClave)!, f.Orden, f.EsPortada)).ToArray(),
-                whatsapp));
+                whatsapp, esPropio));
         });
 
         // Opciones de filtros: solo catálogos activos con al menos una publicación visible; rangos sobre las visibles.
