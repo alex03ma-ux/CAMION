@@ -470,7 +470,7 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
 ## D-42 — Rediseño del portal (rojo, negro y blanco) · PARCIAL (2026-11-04)
 - **Decisión de la responsable (en esta sesión):** el portal sigue la referencia visual que entregó: encabezado blanco, portada con camión y buscador, cuatro categorías (Camiones resaltada en rojo), destacados con borde y sello rojo, franja de confianza, banda de crédito y pie oscuro. Colores corporativos: rojo, negro y blanco. "No quiero que se vea tan recargado".
 - **Pendiente de confirmar (no se inventa nada):**
-  - Textos de la franja de confianza: "Vehículos revisados", "Papeles al día", "Financiación" y "Asesoría". Se tomaron de la referencia; si alguno no es una promesa real del negocio, se cambia en `frontend/src/components/Inicio.tsx` (constante `CONFIANZA`).
+  - Franja de servicios: **CONFIRMADA (2026-11-04)**. La franja de confianza se reemplaza por "Nuestros servicios": créditos vehiculares, venta de camiones nuevos, venta de camiones usados peritados, venta de carrocerías, venta de maquinaria amarilla y seguros todo riesgo. Es informativa (sin enlaces) y vive en `frontend/src/components/Inicio.tsx` (constante `SERVICIOS`). La responsable escribió "usados periables"; se publicó como **"peritados"** y queda por confirmar esa palabra. El alquiler no se muestra (ver D-43).
   - Contacto del pie: **CONFIRMADO (2026-11-04)** por la responsable: WhatsApp 3166152907 (enlace `https://wa.me/573166152907`) y correo vc.automotores@gmail.com. Horario **CONFIRMADO (2026-11-04)**: lunes a viernes de 9:00 a. m. a 5:00 p. m. y sábados de 9:00 a. m. a 3:00 p. m. Dirección: por ahora no se publica (decisión de la responsable). Instagram y TikTok: sí se publicarán, pero las cuentas aún no existen y no se muestran hasta tener los enlaces. Páginas legales: pendientes.
   - El botón "Quiero un crédito" lleva al registro mientras no exista la solicitud de crédito (llega con P5).
   - La portada usa una ilustración propia en SVG mientras el administrador no suba una foto.
@@ -479,3 +479,17 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
   - sin cambios de esquema: el archivo vive en `Media:Ruta/portal/` con nombre aleatorio; la portada vigente es la más reciente y la anterior se borra al reemplazarla;
   - se audita en `auditoria_eventos` (entidad `Portal`, acciones `CAMBIAR_PORTADA` y `QUITAR_PORTADA`);
   - rutas: `GET /api/catalogo/portada` (anónima), `POST /api/admin/portal/portada` y `POST /api/admin/portal/portada/quitar` (SoloAdministrador). Quitar es POST porque el proyecto solo admite DELETE en las fotos del inventario.
+
+## D-43 — Alquiler de vehículos como servicio nuevo · PROPUESTO (2026-11-04)
+- **Pedido de la responsable:** "alquiler (esto me gustaria analizarlo como una nueva propuesta, pero necesito que lo revisemos por temas de contratos y legalidad como seria el proceso)".
+- **Estado:** no se implementa ni se anuncia en el portal hasta que se definan el modelo de negocio y la revisión legal. No está en las HU v3.0.
+- **Preguntas de negocio para definir el proceso:**
+  1. ¿De quién son los vehículos que se alquilan: de la empresa, de asesores o de clientes? ¿La plataforma solo intermedia?
+  2. ¿Con conductor o sin conductor? ¿Por días, meses o largo plazo (renting/leasing operativo)?
+  3. ¿Qué tipos: camiones, maquinaria amarilla, carros?
+  4. ¿Quién atiende la solicitud? Por la regla vigente, todo servicio lo atiende el administrador (D-7).
+  5. Requisitos del arrendatario: documentos, licencia, estudio de crédito, depósito o garantía.
+  6. Entrega y devolución: acta de inventario y estado del vehículo con fotos, kilometraje u horómetro, combustible.
+  7. Seguros, mantenimiento, multas y siniestros: ¿quién los asume?
+- **Revisión legal (la hace un abogado; el agente no da concepto jurídico):** tipo de contrato; si el alquiler de vehículos de carga o con conductor exige habilitación ante el Ministerio de Transporte o la Superintendencia de Transporte; pólizas exigibles (SOAT, todo riesgo, responsabilidad civil); tratamiento de datos personales (Ley 1581 de 2012); facturación e impuestos.
+- **Propuesta de alcance mínimo, cuando se apruebe:** un aviso "Alquila un vehículo" igual a los de D-6 (sin cuenta, dirigido al administrador). El contrato y la entrega se manejan fuera del portal hasta tener el modelo legal definido.

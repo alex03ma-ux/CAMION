@@ -11,12 +11,11 @@ import { usePeticion } from '../catalogo/usePeticion'
 import { HASH_BUSCAR, HASH_REGISTRO, hashBuscar, navegar } from '../rutas'
 import { Aviso } from './Aviso'
 import {
-  IconoAsesoria,
   IconoCamion,
   IconoCarro,
   IconoCarroceria,
   IconoCredito,
-  IconoDocumento,
+  IconoEscudo,
   IconoEstrella,
   IconoFlecha,
   IconoLupa,
@@ -39,14 +38,16 @@ const ICONO_CATEGORIA: Record<string, ReactNode> = {
 }
 
 /**
- * Franja de confianza. Textos de la referencia aprobada por la responsable; su contenido comercial
- * queda pendiente de confirmar (D-42) y se cambia solo aquí.
+ * Franja "Nuestros servicios": lista confirmada por la responsable (D-42, 2026-11-04). Es informativa;
+ * el alquiler queda fuera hasta revisar contratos y legalidad (D-43). Se cambia solo aquí.
  */
-const CONFIANZA: { texto: string; icono: ReactNode }[] = [
-  { texto: 'Vehículos revisados', icono: <IconoRevisado /> },
-  { texto: 'Papeles al día', icono: <IconoDocumento /> },
-  { texto: 'Financiación', icono: <IconoMonedas /> },
-  { texto: 'Asesoría', icono: <IconoAsesoria /> },
+export const SERVICIOS: { texto: string; icono: ReactNode }[] = [
+  { texto: 'Créditos vehiculares', icono: <IconoMonedas /> },
+  { texto: 'Venta de camiones nuevos', icono: <IconoCamion /> },
+  { texto: 'Venta de camiones usados peritados', icono: <IconoRevisado /> },
+  { texto: 'Venta de carrocerías', icono: <IconoCarroceria /> },
+  { texto: 'Venta de maquinaria amarilla', icono: <IconoMaquinaria /> },
+  { texto: 'Seguros todo riesgo', icono: <IconoEscudo /> },
 ]
 
 /** Portal principal (HU-001): portada con búsqueda, categorías, destacados (HU-003) y recientes (HU-002). */
@@ -144,14 +145,17 @@ export function Inicio({ tipos }: InicioProps) {
           </section>
         )}
 
-        <ul className="cat-confianza" aria-label="Por qué comprar aquí">
-          {CONFIANZA.map(({ texto, icono }) => (
-            <li key={texto}>
-              {icono}
-              <span>{texto}</span>
-            </li>
-          ))}
-        </ul>
+        <section className="cat-servicios" aria-labelledby="inicio-servicios">
+          <h2 id="inicio-servicios">Nuestros servicios</h2>
+          <ul className="cat-confianza">
+            {SERVICIOS.map(({ texto, icono }) => (
+              <li key={texto}>
+                {icono}
+                <span>{texto}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
 
         <section className="cat-credito" aria-labelledby="inicio-credito">
           <IconoCredito className="cat-credito-icono" />

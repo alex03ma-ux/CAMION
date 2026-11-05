@@ -115,6 +115,15 @@ export function IconoRevisado(p: PropsIcono) {
   )
 }
 
+export function IconoEscudo(p: PropsIcono) {
+  return (
+    <Icono {...p}>
+      <path d="M24 5 9 11v11c0 10 6.5 17 15 21 8.5-4 15-11 15-21V11Z" />
+      <path d="m17 24 5 5 9-10" />
+    </Icono>
+  )
+}
+
 export function IconoDocumento(p: PropsIcono) {
   return (
     <Icono {...p}>

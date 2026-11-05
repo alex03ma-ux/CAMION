@@ -571,6 +571,21 @@ describe('Rediseño del portal (rojo, negro y blanco)', () => {
     expect(within(encabezado()).getByRole('searchbox', { name: 'Buscar vehículos' })).toBeInTheDocument()
   })
 
+  it('la franja "Nuestros servicios" lista los seis servicios confirmados, sin alquiler (D-43)', async () => {
+    simularFetch({ [RUTA_FILTROS]: respuestaFiltros(), [RUTA_INICIO]: INICIO_VACIO })
+    abrirApp('#/')
+    const seccion = await screen.findByRole('region', { name: 'Nuestros servicios' })
+    expect(within(seccion).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      'Créditos vehiculares',
+      'Venta de camiones nuevos',
+      'Venta de camiones usados peritados',
+      'Venta de carrocerías',
+      'Venta de maquinaria amarilla',
+      'Seguros todo riesgo',
+    ])
+    expect(within(seccion).queryByText(/alquiler/i)).not.toBeInTheDocument()
+  })
+
   it('el pie de página enlaza pantallas que existen y el contacto confirmado (WhatsApp y correo)', async () => {
     simularFetch({ [RUTA_FILTROS]: respuestaFiltros(), [RUTA_INICIO]: INICIO_VACIO })
     abrirApp('#/')
