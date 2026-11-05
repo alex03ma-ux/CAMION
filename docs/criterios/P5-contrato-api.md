@@ -116,7 +116,8 @@ CHECK `CK_Lead_Cierre`: `estado = 'ABIERTO' OR resultado_cierre IS NOT NULL`. Í
 | `automatico` | TINYINT(1) NOT NULL DEFAULT 0 | |
 | `responsable_anterior_asesor_id` | BIGINT NULL | FK `perfiles_asesor`. NULL = Administración |
 | `responsable_nuevo_asesor_id` | BIGINT NULL | FK `perfiles_asesor`. NULL = Administración |
-| `texto` | VARCHAR(500) NULL | nota, motivo, mensaje repetido o resultado |
+| `texto` | VARCHAR(500) NULL | nota, motivo, mensaje repetido u observación del cierre |
+| `resultado_cierre` | VARCHAR(30) NULL | solo en `CERRADO`; se conserva aunque el lead se reabra |
 | `creado_en` | DATETIME(6) NOT NULL | |
 
 Nunca guarda el teléfono ni el correo del visitante (CA-P5-28). Índice `IX_EvLead_Lead (lead_id, creado_en)`.
@@ -189,7 +190,7 @@ Grupo `/api/leads`, política `AsesorOAdministrador`. Sin token → 401; comprad
 | POST | `/api/leads/{id}/notas` | asesor o admin | `{ texto }` → 201 con el detalle |
 | POST | `/api/leads/{id}/cerrar` | asesor o admin | `{ resultado, observacion? }` → 200 con el detalle |
 | POST | `/api/leads/{id}/reabrir` | **solo admin** | `{ motivo }` → 200 con el detalle |
-| POST | `/api/leads/{id}/reasignar` | **solo admin** | `{ asesorId?, aAdministracion?, motivo }` → 200 con el detalle |
+| POST | `/api/leads/{id}/reasignar` | **solo admin** | `{ asesorId?, administracion?, motivo }` → 200 con el detalle |
 
 **Filtros de la lista** (400 "Revisa los filtros." con `errores`):
 
@@ -212,7 +213,7 @@ resultadoCierre?, cerradoEn?
 
 **`LeadDetalle`** = `LeadItem` + `observacionCierre?`, `cerradoPor?` (nombre) y:
 
-- `eventos`: `[{ tipo, fecha, actor { tipo ("USUARIO" | "SISTEMA"), nombre? }, automatico, texto?, responsableAnterior?, responsableNuevo? }]` en orden cronológico (CA-P5-42). `responsableAnterior/Nuevo` tienen la forma de `responsable`.
+- `eventos`: `[{ tipo, fecha, actor { tipo ("USUARIO" | "SISTEMA"), nombre? }, automatico, texto?, resultado?, responsableAnterior?, responsableNuevo? }]` en orden cronológico (CA-P5-42). `responsableAnterior/Nuevo` tienen la forma de `responsable`.
 - `consentimientos`: `[{ formulario, versionPolitica, aceptadoEn }]` **solo para el administrador**; para el asesor es `null` (CA-P5-16).
 
 **Notas** (CA-P5-37, 38): texto de 5 a 500 → 400 en `texto` "La nota debe tener entre 5 y 500 caracteres."; lead CERRADO → 409 "Este contacto está cerrado.".
@@ -224,7 +225,7 @@ resultadoCierre?, cerradoEn?
 
 **Reabrir** (CA-P5-41): motivo de 5 a 500 (400 en `motivo`, "Escribe el motivo (5 a 500 caracteres)."). Lead ABIERTO → 409 "Este contacto ya está abierto.". Vuelve a ABIERTO con el mismo responsable; se borran resultado, observación, quién y cuándo se cerró (quedan en el historial). Asesor → 403.
 
-**Reasignar** (CA-P5-44 a 48): `aAdministracion: true` (sin `asesorId`) o `asesorId` de un asesor con perfil APROBADO, cuenta ACTIVA y rol ASESOR (con o sin plan, CA-P5-47).
+**Reasignar** (CA-P5-44 a 48): `administracion: true` (sin `asesorId`) o `asesorId` de un asesor con perfil APROBADO, cuenta ACTIVA y rol ASESOR (con o sin plan, CA-P5-47).
 - 400 en `asesorId`: "Elige un asesor aprobado." (falta, no existe, no aprobado, o vienen los dos).
 - 400 en `motivo`: "Escribe el motivo (5 a 500 caracteres).".
 - Lead CERRADO → 409 "Este contacto está cerrado."; mismo responsable → 409 "El contacto ya está asignado a ese responsable.".
@@ -258,6 +259,8 @@ Los contactos repetidos solo dejan evento en el historial y su consentimiento. N
 - "Mis contactos" (asesor) y "Contactos" (admin) con lista, detalle, notas, cierre y, para el admin, reabrir y reasignar. Menú "Contactos (N nuevos)" con `GET /api/leads/resumen`.
 
 ## Riesgos
+
+- **Orden de despliegue.** Con el código de P5 y sin la migración 013 en la base, fallan el contacto, `/api/leads`, **bloquear un asesor** y **reasignar un vehículo** (los dos últimos consultan `leads`). La migración debe aplicarse antes de arrancar esta versión de la API contra `camion_ventas`.
 
 - **IP detrás del proxy.** En desarrollo, Vite reenvía todo desde 127.0.0.1: todos los visitantes comparten el límite por IP. En producción hará falta `ForwardedHeaders` con los proxies de confianza; no se lee `X-Forwarded-For` sin esa configuración porque cualquiera podría falsearla.
 - **Ventana diaria fija.** El límite diario por IP se reinicia cada 24 h desde la primera petición, no a medianoche.
