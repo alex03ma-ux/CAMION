@@ -5,6 +5,7 @@ using Camion.Api.Comandos;
 using Camion.Api.Contracts;
 using Camion.Api.Data;
 using Camion.Api.Endpoints;
+using Camion.Api.Leads;
 using Camion.Api.Media;
 using Camion.Api.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -13,6 +14,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MySqlConnector;
+using System.Threading.RateLimiting;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("CamionDatabase")
@@ -86,6 +89,38 @@ builder.Services.AddSingleton(TimeProvider.System);
 // Las pruebas sustituyen IAlmacenFotos por una carpeta temporal.
 builder.Services.AddSingleton<IAlmacenFotos>(sp =>
     new AlmacenFotosLocal(sp.GetRequiredService<IConfiguration>()["Media:Ruta"]));
+// P5 (CA-P5-20 a CA-P5-22): límites del contacto público, configurables (sección "Contactos"; las pruebas los suben).
+builder.Services.Configure<OpcionesContacto>(builder.Configuration.GetSection("Contactos"));
+// Limitador global encadenado (Microsoft.AspNetCore.RateLimiting, incluido en .NET 8): solo actúa sobre las rutas marcadas
+// con LimitePeticionesContacto; por IP, una ventana corta (5 cada 10 min) y una diaria (20). El resto pasa sin límite.
+builder.Services.AddRateLimiter(options =>
+{
+    static RateLimitPartition<string> Ventana(HttpContext http, string prefijo, Func<OpcionesContacto, (int Limite, TimeSpan Ventana)> valores)
+    {
+        if (http.GetEndpoint()?.Metadata.GetMetadata<LimitePeticionesContacto>() is null)
+            return RateLimitPartition.GetNoLimiter("libre");
+        var (limite, ventana) = valores(http.RequestServices.GetRequiredService<IOptions<OpcionesContacto>>().Value);
+        var ip = http.Connection.RemoteIpAddress?.ToString() ?? "sin-ip";
+        return RateLimitPartition.GetFixedWindowLimiter(prefijo + ip, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = Math.Max(1, limite),
+            Window = ventana,
+            QueueLimit = 0,
+            AutoReplenishment = true
+        });
+    }
+    options.GlobalLimiter = PartitionedRateLimiter.CreateChained(
+        PartitionedRateLimiter.Create<HttpContext, string>(http => Ventana(http, "corta:",
+            o => (o.LimiteVentanaCorta, TimeSpan.FromMinutes(Math.Max(1, o.VentanaCortaMinutos))))),
+        PartitionedRateLimiter.Create<HttpContext, string>(http => Ventana(http, "dia:",
+            o => (o.LimiteDiario, TimeSpan.FromDays(1)))));
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (contexto, ct) =>
+    {
+        contexto.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        await contexto.HttpContext.Response.WriteAsJsonAsync(new ErrorResponse(ReglasLeads.MensajeMuchas), ct);
+    };
+});
 // JSON malformado o con tipos incorrectos: el framework lanza BadHttpRequestException y se responde con el formato común.
 builder.Services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = true);
 var app = builder.Build();
@@ -150,6 +185,8 @@ app.Use(async (context, next) =>
 
 app.UseAuthentication();
 app.UseAuthorization();
+// P5: después del enrutado (implícito) para leer la marca LimitePeticionesContacto de la ruta.
+app.UseRateLimiter();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "Camion.Api" }));
 app.MapGet("/health/database", async (IConfiguration configuration, CancellationToken cancellationToken) =>
@@ -183,6 +220,9 @@ app.MapAdminCatalogosEndpoints();
 // P4b: publicaciones, destacados, venta y reasignación (D-22, D-34, D-38 a D-41).
 app.MapPublicacionesEndpoints();
 app.MapVentasEndpoints();
+// P5: contacto público y gestión de leads (HU-029 a HU-033, D-7, D-44, D-46, D-48).
+app.MapContactosEndpoints();
+app.MapLeadsEndpoints();
 
 app.Run();
 
