@@ -59,22 +59,29 @@ public sealed class InventarioApi : IDisposable
     public RelojFijo? Reloj { get; }
     private readonly Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<Program>? _conReloj;
 
-    private InventarioApi(RelojFijo? reloj = null)
+    private InventarioApi(RelojFijo? reloj = null, Action<Microsoft.AspNetCore.Hosting.IWebHostBuilder>? configurar = null)
     {
         Reloj = reloj;
-        if (reloj is null)
+        if (reloj is null && configurar is null)
         {
             C = F.CreateClient();
             return;
         }
-        _conReloj = F.WithWebHostBuilder(b => Microsoft.AspNetCore.TestHost.WebHostBuilderExtensions.ConfigureTestServices(b,
-            s => s.AddSingleton<TimeProvider>(reloj)));
+        // P5: "configurar" permite cambiar la configuración (p. ej. bajar los límites del contacto público).
+        _conReloj = F.WithWebHostBuilder(b =>
+        {
+            if (reloj is not null)
+                Microsoft.AspNetCore.TestHost.WebHostBuilderExtensions.ConfigureTestServices(b,
+                    s => s.AddSingleton<TimeProvider>(reloj));
+            configurar?.Invoke(b);
+        });
         C = _conReloj.CreateClient();
     }
 
-    public static async Task<InventarioApi> Crear(RelojFijo? reloj = null)
+    public static async Task<InventarioApi> Crear(RelojFijo? reloj = null,
+        Action<Microsoft.AspNetCore.Hosting.IWebHostBuilder>? configurar = null)
     {
-        var api = new InventarioApi(reloj);
+        var api = new InventarioApi(reloj, configurar);
         await api.SembrarCatalogos();
         api.Admin = await CrearAdministrador(api.F, api.C);
         api.A = await api.CrearAsesor("Asesora Alfa Ficticia");

@@ -148,6 +148,8 @@ public sealed class CatalogoSeguridadTests(CatalogoReferencia referencia) : ICla
         foreach (var a in new[] { d.A1, d.A2, d.A3, d.A4 })
             prohibidosEnValores.AddRange(new[] { a.Usuario.Id, a.Usuario.Email!, a.Usuario.PhoneNumber!, a.Usuario.NombreCompleto,
                 a.Perfil.NumeroDocumento, a.Perfil.NombreComercial! });
+        // P5 (D-47): el detalle trae además "whatsapp" (enlace wa.me con el celular normalizado del asesor); el teléfono tal
+        // como se registró, el correo, el documento y el nombre siguen prohibidos (ContactosTests.Whatsapp_del_asesor).
         var clavesProhibidas = new[] { "id", "vehiculoId", "publicacionId", "asesorId", "usuarioId", "email", "telefono",
             "nombreCompleto", "numeroDocumento", "nombreComercial", "motivoOcultamiento", "suscripcionId", "planId", "archivoClave" };
 
