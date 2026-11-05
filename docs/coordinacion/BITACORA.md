@@ -321,4 +321,4 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
 - **Portada administrable (D-42), misma rama.** La responsable pidió que la foto de fondo la cambie el administrador.
   - IMPLEMENTADO y PROBADO: API (`PortalEndpoints.cs`, sin migración) y pantalla "Mi cuenta" › Portada con vista previa, subir y quitar (con confirmación). El inicio usa la foto si existe y, si no hay o falla, la ilustración.
   - Pruebas ejecutadas: `dotnet test` 876/876 (10 nuevas de portada; la prueba de inventario de rutas se actualizó con las 3 rutas nuevas); `npx vitest run` 453/453 (9 nuevas); `tsc -b` y `npm run build` OK. Comprobado con la API real: `GET /api/catalogo/portada` responde `{"url":null}` y quitar sin token responde 401.
-  - Pendiente: prueba manual de la responsable con su cuenta de administrador (subir una foto y verla en el inicio).
+  - Prueba manual: la responsable la hizo con su cuenta de administrador y confirmó en el chat "Ya lo probé" (2026-11-04), sin reportar fallas. Constancia: su confirmación; el agente no vio la sesión.
