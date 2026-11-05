@@ -54,13 +54,13 @@ También aplican RN-SE-005 y RN-SE-006 (anónimo contacta; permisos por rol), D-
 |---|---|---|---|
 | Peticiones por IP en la ventana corta | 5 cada 10 minutos | `Contactos:LimiteVentanaCorta`, `Contactos:VentanaCortaMinutos` | 429 |
 | Peticiones por IP al día | 20 (ventana fija de 24 h) | `Contactos:LimiteDiario` | 429 |
-| Leads nuevos por teléfono normalizado en 24 h | 10 | `Contactos:LimiteTelefonoDia` | 429 |
+| Envíos aceptados por teléfono normalizado en 24 h (leads nuevos + contactos repetidos) | 10 | `Contactos:LimiteTelefonoDia` | 429 |
 | Tamaño del cuerpo | 8 KB (8192 bytes) | `Contactos:TamanoMaximoBytes` | 413 |
 | Campo trampa `sitioWeb` relleno | — | — | 201 normal, no guarda nada |
 
 - La limitación por IP usa `Microsoft.AspNetCore.RateLimiting` (incluido en .NET 8, sin paquetes nuevos), con un limitador global encadenado que solo actúa sobre las rutas marcadas con `LimitePeticionesContacto` (hoy `POST /api/contactos`; P5b marcará las suyas). Cuenta todas las peticiones a la ruta, también las rechazadas por validación.
 - La IP es `Connection.RemoteIpAddress`. No se leen cabeceras `X-Forwarded-For` (ver Riesgos).
-- El límite por teléfono cuenta leads creados (no contactos repetidos) en las últimas 24 h y se comprueba solo cuando se va a crear un lead nuevo.
+- El límite por teléfono (B-1 de `REVISION-SEGURIDAD-P5.md`) cuenta los leads creados **y** los eventos `CONTACTO_REPETIDO` de ese teléfono en las últimas 24 h, y se comprueba **antes** de la rama de contacto repetido. Así varias IP no pueden inflar sin fin el historial ni `consentimientos_datos`. Al superarlo, 429 sin guardar nada.
 - Las pruebas suben los límites en la configuración para no volverse frágiles; una clase de pruebas propia los baja para comprobar el 429.
 
 ### Teléfono (CA-P5-04, CA-P5-05)
@@ -74,6 +74,7 @@ También aplican RN-SE-005 y RN-SE-006 (anónimo contacta; permisos por rol), D-
 
 - `GET /api/catalogo/publicaciones/{slug}` añade **un solo campo**: `whatsapp`, un enlace `https://wa.me/57XXXXXXXXXX` sin texto.
 - Es el teléfono del asesor dueño (`AspNetUsers.PhoneNumber`) si, normalizado con la regla de arriba, es un **celular** (empieza por 3). Si es fijo, no es válido, el dueño tiene rol ADMINISTRADOR o no hay teléfono, es el del portal: `https://wa.me/573166152907` (configuración `Contactos:WhatsappPortal`, D-42).
+- **`esPropio`** (boolean, CA-P5-11): `true` solo si la petición trae un token válido de un usuario con rol ASESOR que es el dueño de la publicación; en cualquier otro caso (sin token, token inválido, comprador, administrador, otro asesor) es `false`. Sirve para que la ficha oculte el formulario al dueño. La ruta sigue anónima y no expone ningún id. El POST de contacto mantiene el 409 como respaldo.
 - Nunca se envían el correo, el documento, el nombre ni el id del asesor. Las demás rutas del catálogo no cambian, y siguen siendo 5 GET.
 - Una publicación no visible sigue dando 404 (CA-P5-63): no se expone ningún teléfono.
 - El texto inicial del mensaje (`?text=`) lo arma el frontend con el título del vehículo.
@@ -176,7 +177,7 @@ Mensajes por campo (400):
 | `mensaje` | opcional; hasta 500 | "El mensaje no puede pasar de 500 caracteres." |
 | `autorizacionDatos` | debe ser `true` | "Debes autorizar el tratamiento de tus datos para enviar el formulario." |
 
-Orden: tamaño (413) → formato (400) → campo trampa (201) → campos (400) → publicación (404) → dueño (409) → duplicado (201) → límite por teléfono (429) → lead nuevo (201). El límite por IP actúa antes que todo (middleware).
+Orden: tamaño (413) → formato (400) → campo trampa (201) → campos (400) → publicación (404) → dueño (409) → límite por teléfono (429) → duplicado (201) → lead nuevo (201). El límite por IP actúa antes que todo (middleware).
 
 ### Gestión (panel)
 
@@ -247,7 +248,7 @@ Los contactos repetidos solo dejan evento en el historial y su consentimiento. N
 
 ### Cambios en endpoints existentes
 
-- `GET /api/catalogo/publicaciones/{slug}`: añade `whatsapp` (D-47).
+- `GET /api/catalogo/publicaciones/{slug}`: añade `whatsapp` (D-47) y `esPropio` (CA-P5-11). La prueba P3 "con token el cuerpo es idéntico al anónimo" admite como única diferencia `"esPropio":true` en el detalle de las publicaciones del asesor dueño del token.
 - `POST /api/admin/usuarios/{id}/bloquear`: si el usuario es asesor, sus leads ABIERTO pasan a Administración en la misma transacción (D-46 B).
 - `POST /api/admin/vehiculos/{id}/reasignar`: los leads ABIERTO del dueño anterior siguen al vehículo (D-34, D-46 B).
 - `SesionTests.Inventario_de_endpoints`: añade `POST /api/contactos` a los anónimos y a los que modifican, las 4 POST de `/api/leads`, y comprueba que `/api/leads` tiene 7 rutas con `AsesorOAdministrador` (y `SoloAdministrador` en reabrir y reasignar) y que `/api/contactos` es una única ruta POST anónima con limitación de peticiones. `/api/catalogo` sigue con 5 GET y `/api/admin` con 31.
@@ -263,6 +264,7 @@ Los contactos repetidos solo dejan evento en el historial y su consentimiento. N
 - **Orden de despliegue.** Con el código de P5 y sin la migración 013 en la base, fallan el contacto, `/api/leads`, **bloquear un asesor** y **reasignar un vehículo** (los dos últimos consultan `leads`). La migración debe aplicarse antes de arrancar esta versión de la API contra `camion_ventas`.
 
 - **IP detrás del proxy.** En desarrollo, Vite reenvía todo desde 127.0.0.1: todos los visitantes comparten el límite por IP. En producción hará falta `ForwardedHeaders` con los proxies de confianza; no se lee `X-Forwarded-For` sin esa configuración porque cualquiera podría falsearla.
+- **Duplicados simultáneos (B-2, riesgo aceptado).** La comprobación de "lead ABIERTO con el mismo teléfono y la misma publicación" es una lectura sin bloqueo, e `IX_Lead_Duplicado` no es único (no puede serlo: un mismo teléfono puede tener leads CERRADOS en esa publicación). Dos envíos exactamente simultáneos pueden crear dos leads. El impacto es solo funcional (no expone datos); el responsable lo cierra con `DUPLICADO_INVALIDO`. No se cambia el índice ni se añade bloqueo.
 - **Ventana diaria fija.** El límite diario por IP se reinicia cada 24 h desde la primera petición, no a medianoche.
 - **Barrido bajo demanda.** Si nadie consulta leads, los de un plan vencido siguen asignados al asesor en la base hasta la siguiente consulta. Como toda lectura de `/api/leads` barre antes de leer, nadie llega a verlos con el asesor después del vencimiento; la fecha del evento es la de esa consulta.
 - **La política sigue en borrador (D-44).** P5 no sale a internet hasta que exista una versión aprobada en `PoliticaDatos:Version`.
