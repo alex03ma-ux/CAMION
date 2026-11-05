@@ -330,5 +330,5 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - Instagram y TikTok quedan pendientes hasta que existan las cuentas.
   - Pruebas: `Catalogo.test.tsx` 35/35; `tsc -b` y `npm run build` OK.
 - **Franja "Nuestros servicios" (D-42).** Reemplaza la franja de confianza con los seis servicios que confirmó la responsable, en una rejilla de 2, 3 o 6 columnas según el ancho de pantalla, con un ícono nuevo de escudo para seguros. El alquiler queda como propuesta aparte (D-43), con preguntas de negocio y revisión legal pendientes.
-  - Por confirmar: "peritados" (ella escribió "periables").
+  - "Peritados": confirmado por la responsable.
   - Pruebas: `Catalogo` y `Portada` 45/45 (1 nueva); `tsc -b` y `npm run build` OK; revisada en el navegador.
