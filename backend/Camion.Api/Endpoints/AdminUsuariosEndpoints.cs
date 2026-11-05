@@ -218,6 +218,10 @@ public static class AdminUsuariosEndpoints
                     {
                         log.LogWarning("Asesor sin perfil_asesor usuarioId={UsuarioId}: no se escribe historial", user.Id);
                     }
+                    // P5 (D-46 B, CA-P5-51): al bloquear a un asesor, sus leads abiertos pasan a Administración (SISTEMA).
+                    if (perfil is not null && accion.Ruta == "bloquear")
+                        await Camion.Api.Leads.BarridoLeads.PasarAsesorAAdministracionAsync(db, perfil.Id,
+                            Camion.Api.Leads.ReglasLeads.MotivoAsesorBloqueado, ahora, CancellationToken.None);
                     // 4. Auditoría (sin documento ni datos sensibles).
                     Auditoria.Agregar(db, administradorId, user.Id, accion.CodigoAuditoria,
                         estadoAnterior, accion.Hacia, motivo, incluirMotivo: true);
