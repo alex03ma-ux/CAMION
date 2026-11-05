@@ -341,4 +341,4 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - qué es una solicitud de crédito o de seguro;
   - con quién se comparten los datos.
 - La declaración de consignación al publicar queda PROPUESTA (D-45).
-
+- **D-45, respuesta de la responsable.** No se pide la declaración de consignación al publicar ni la autorización para bancos y aseguradoras en la plataforma: es manejo interno. La plataforma solo pone en contacto a usuario y asesor. Queda por confirmar el alcance de P6 al planearla.

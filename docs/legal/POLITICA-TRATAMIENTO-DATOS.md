@@ -96,7 +96,9 @@ Ningún sistema es infalible. Si ocurre un incidente de seguridad, se informará
 
 > NOTA PARA REVISIÓN:
 > - Confirmar el tratamiento de la transmisión o transferencia internacional (Gmail y WhatsApp) y si se necesitan contratos con los encargados.
-> - Como el negocio es intermediario (confirmado por la responsable, 2026-11-04), la autorización debe mencionar expresamente que los datos se comparten con entidades financieras, aseguradoras, asesores o dueños de los vehículos. Confirmar si esas entidades actúan como responsables o como encargados, y si hay que nombrarlas en la política.
+> - La responsable decidió (D-45) que la plataforma solo pone en contacto. La autorización para compartir datos con bancos y aseguradoras se recoge internamente, durante el proceso de crédito o de póliza, fuera del portal. Confirmar con el abogado:
+>   - si la autorización del portal (contacto) basta para que el negocio llame al titular y le ofrezca ese proceso;
+>   - si esta política debe mencionar desde ya que los datos podrán compartirse con esas entidades.
 
 ## 10. Almacenamiento en el navegador
 

@@ -519,8 +519,8 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
   - Todo vehículo publicado debe estar en consignación o tener autorización de su dueño.
   - Los créditos se gestionan ante bancos y entidades financieras, y los seguros ante aseguradoras, como bróker.
 - **Aplicado en:** los borradores de `docs/legal/` (D-44).
-- **Impacto en el sistema (PROPUESTO, sin implementar; pendiente de que la responsable lo apruebe):**
-  - **Al crear o publicar un vehículo.** Pedir que se declare si está en consignación o tiene autorización del dueño, y quizá adjuntar el soporte, visible solo para el administrador.
-  - **Créditos y seguros (P6, HU-N02).** La solicitud debe pedir autorización expresa para compartir los datos con bancos, entidades financieras y aseguradoras.
-  - Ambos cambios requieren migración.
-
+- **Impacto en el sistema. Decisión de la responsable (2026-11-04): no se implementa nada de esto.**
+  - Al crear o publicar un vehículo **no** se pide declarar la consignación ni la autorización del dueño, ni adjuntar soporte. Ese control es interno del negocio.
+  - La autorización para compartir datos con bancos, entidades financieras y aseguradoras **no** se pide en la plataforma. "Esto se maneja interno cuando se hace el proceso, en esta plataforma solo vamos hacer contacto asesor y usuario, lo otro es interno el manejo".
+  - **Alcance de la plataforma:** poner en contacto al usuario con el asesor o con el administrador. La gestión del crédito, la póliza y la consignación ocurre fuera del portal.
+  - **Por confirmar al planear P6:** si "Créditos y búsquedas" sigue con formularios, estados y seguimiento, o se reduce a una solicitud de contacto dirigida al administrador. P5 y P5b no cambian.
