@@ -48,6 +48,12 @@ public static class Auditoria
     public const string RevertirVenta = "REVERTIR";
     public const string Reasignar = "REASIGNAR";
 
+    // P5 (HU-030 a HU-033, D-7, D-46): leads. Nunca nombre, teléfono, correo ni mensaje del visitante (CA-P5-59).
+    public const string EntidadLead = "Lead";
+    public const string Nota = "NOTA";
+    public const string Cerrar = "CERRAR";
+    public const string Reabrir = "REABRIR";
+
     // Solo agrega la fila al contexto; se guarda en la misma transacción que el cambio auditado.
     public static void Agregar(CamionDbContext db, string? actorId, string usuarioAfectadoId, string accion,
         string? estadoAnterior, string estadoNuevo, string? motivo, bool incluirMotivo)

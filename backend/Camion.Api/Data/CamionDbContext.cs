@@ -41,6 +41,11 @@ public sealed class CamionDbContext : IdentityDbContext<ApplicationUser, Identit
     // P4b: tabla nueva de la migración 012 (HU-064, D-22, D-39).
     public DbSet<VentaVehiculo> VentasVehiculo => Set<VentaVehiculo>();
 
+    // P5: tablas nuevas de la migración 013 (HU-029 a HU-033, D-44). No se usa solicitudes del script 002.
+    public DbSet<Lead> Leads => Set<Lead>();
+    public DbSet<EventoLead> EventosLead => Set<EventoLead>();
+    public DbSet<ConsentimientoDatos> ConsentimientosDatos => Set<ConsentimientoDatos>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -440,6 +445,84 @@ public sealed class CamionDbContext : IdentityDbContext<ApplicationUser, Identit
             entity.HasOne<Publicacion>().WithMany().HasForeignKey(x => x.PublicacionId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.RegistradaPor).OnDelete(DeleteBehavior.SetNull);
             entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.RevertidaPor).OnDelete(DeleteBehavior.SetNull);
+        });
+        MapearLeads(builder);
+    }
+
+    // P5 (HU-029 a HU-033, D-7, D-9, D-44, D-46, D-48): migración 013.
+    private static void MapearLeads(ModelBuilder builder)
+    {
+        builder.Entity<Lead>(entity =>
+        {
+            entity.ToTable("leads", t =>
+            {
+                t.HasCheckConstraint("CK_Lead_Estado", "estado IN ('ABIERTO','CERRADO')");
+                t.HasCheckConstraint("CK_Lead_Resultado", "resultado_cierre IS NULL OR resultado_cierre IN " +
+                    "('VENTA_CONCRETADA','NO_INTERESADO','NO_RESPONDIO','VEHICULO_NO_DISPONIBLE','DUPLICADO_INVALIDO','OTRO')");
+                t.HasCheckConstraint("CK_Lead_Cierre", "estado = 'ABIERTO' OR resultado_cierre IS NOT NULL");
+            });
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(x => x.PublicacionId).HasColumnName("publicacion_id");
+            entity.Property(x => x.UsuarioId).HasColumnName("usuario_id").HasMaxLength(255);
+            entity.Property(x => x.Nombre).HasColumnName("nombre").HasMaxLength(150).IsRequired();
+            entity.Property(x => x.Telefono).HasColumnName("telefono").HasMaxLength(20).IsRequired();
+            entity.Property(x => x.Correo).HasColumnName("correo").HasMaxLength(254);
+            entity.Property(x => x.Mensaje).HasColumnName("mensaje").HasMaxLength(500).IsRequired();
+            entity.Property(x => x.Estado).HasColumnName("estado").HasMaxLength(20).IsRequired();
+            entity.Property(x => x.ResponsableAsesorId).HasColumnName("responsable_asesor_id");
+            entity.Property(x => x.AsignacionManual).HasColumnName("asignacion_manual");
+            entity.Property(x => x.VistoPorResponsable).HasColumnName("visto_por_responsable");
+            entity.Property(x => x.ResultadoCierre).HasColumnName("resultado_cierre").HasMaxLength(30);
+            entity.Property(x => x.ObservacionCierre).HasColumnName("observacion_cierre").HasMaxLength(500);
+            entity.Property(x => x.CerradoPor).HasColumnName("cerrado_por").HasMaxLength(255);
+            entity.Property(x => x.CerradoEn).HasColumnName("cerrado_en");
+            entity.Property(x => x.CreadoEn).HasColumnName("creado_en");
+            entity.Property(x => x.ActualizadoEn).HasColumnName("actualizado_en");
+            entity.HasIndex(x => new { x.ResponsableAsesorId, x.Estado, x.CreadoEn }).HasDatabaseName("IX_Lead_Responsable");
+            entity.HasIndex(x => new { x.PublicacionId, x.Telefono, x.Estado }).HasDatabaseName("IX_Lead_Duplicado");
+            entity.HasIndex(x => new { x.Telefono, x.CreadoEn }).HasDatabaseName("IX_Lead_Telefono");
+            entity.HasIndex(x => x.CreadoEn).HasDatabaseName("IX_Lead_Creado");
+            entity.HasOne(x => x.Publicacion).WithMany().HasForeignKey(x => x.PublicacionId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.UsuarioId).OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne<PerfilAsesor>().WithMany().HasForeignKey(x => x.ResponsableAsesorId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.CerradoPor).OnDelete(DeleteBehavior.SetNull);
+        });
+        builder.Entity<EventoLead>(entity =>
+        {
+            entity.ToTable("eventos_lead", t => t.HasCheckConstraint("CK_EvLead_Tipo",
+                "tipo IN ('CREADO','ASIGNADO','CONTACTO_REPETIDO','NOTA','REASIGNADO','CERRADO','REABIERTO')"));
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(x => x.LeadId).HasColumnName("lead_id");
+            entity.Property(x => x.Tipo).HasColumnName("tipo").HasMaxLength(30).IsRequired();
+            entity.Property(x => x.ActorUsuarioId).HasColumnName("actor_usuario_id").HasMaxLength(255);
+            entity.Property(x => x.Automatico).HasColumnName("automatico");
+            entity.Property(x => x.ResponsableAnteriorAsesorId).HasColumnName("responsable_anterior_asesor_id");
+            entity.Property(x => x.ResponsableNuevoAsesorId).HasColumnName("responsable_nuevo_asesor_id");
+            entity.Property(x => x.Texto).HasColumnName("texto").HasMaxLength(500);
+            entity.Property(x => x.ResultadoCierre).HasColumnName("resultado_cierre").HasMaxLength(30);
+            entity.Property(x => x.CreadoEn).HasColumnName("creado_en");
+            entity.HasIndex(x => new { x.LeadId, x.CreadoEn }).HasDatabaseName("IX_EvLead_Lead");
+            entity.HasOne<Lead>().WithMany().HasForeignKey(x => x.LeadId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.ActorUsuarioId).OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne<PerfilAsesor>().WithMany().HasForeignKey(x => x.ResponsableAnteriorAsesorId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<PerfilAsesor>().WithMany().HasForeignKey(x => x.ResponsableNuevoAsesorId).OnDelete(DeleteBehavior.Restrict);
+        });
+        builder.Entity<ConsentimientoDatos>(entity =>
+        {
+            entity.ToTable("consentimientos_datos", t => t.HasCheckConstraint("CK_Consent_Formulario",
+                "formulario IN ('CONTACTO_VEHICULO','VENDE_TU_CAMION','SEGURO_TODO_RIESGO','REGISTRO_COMPRADOR','INSCRIPCION_ASESOR')"));
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(x => x.Formulario).HasColumnName("formulario").HasMaxLength(30).IsRequired();
+            entity.Property(x => x.VersionPolitica).HasColumnName("version_politica").HasMaxLength(40).IsRequired();
+            entity.Property(x => x.AceptadoEn).HasColumnName("aceptado_en");
+            entity.Property(x => x.UsuarioId).HasColumnName("usuario_id").HasMaxLength(255);
+            entity.Property(x => x.Entidad).HasColumnName("entidad").HasMaxLength(40).IsRequired();
+            entity.Property(x => x.EntidadId).HasColumnName("entidad_id").HasMaxLength(100).IsRequired();
+            entity.HasIndex(x => new { x.Entidad, x.EntidadId }).HasDatabaseName("IX_Consent_Entidad");
+            entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.UsuarioId).OnDelete(DeleteBehavior.SetNull);
         });
     }
 }
