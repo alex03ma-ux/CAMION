@@ -500,9 +500,9 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
 - **Hecho:** borradores en `docs/legal/POLITICA-TRATAMIENTO-DATOS.md` y `docs/legal/TERMINOS-Y-CONDICIONES.md`, basados en los datos que el portal recoge hoy. Están marcados como BORRADOR, con campos `[POR COMPLETAR]` y notas para el abogado. **No se publican en el portal hasta la revisión legal.**
 - **Datos que debe entregar la responsable:** razón social, NIT, dirección de notificaciones, dominio, proveedor de alojamiento y fecha de vigencia.
 - **Preguntas para el abogado (marcadas en los borradores):**
-  - figura legal para ofrecer seguros (agente o agencia, o convenio con una aseguradora);
-  - si se presta con recursos propios o con entidades aliadas;
-  - venta propia o intermediación (garantías);
+  - figura legal para intermediar seguros (agente, agencia, corredor o convenio);
+  - requisitos para ser bróker de crédito y revelar comisiones;
+  - obligaciones del intermediario frente al comprador y modelo de contrato de consignación;
   - alcance del peritaje;
   - si las bases de datos deben inscribirse en el RNBD;
   - transferencia de datos a Gmail y WhatsApp;
@@ -511,4 +511,16 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
   - una casilla de autorización sin marcar, con enlace a la política, en el registro, la inscripción de asesor y todo formulario de contacto o aviso;
   - guardar la prueba de la autorización (fecha, versión de la política y formulario), lo que requiere una migración reversible;
   - publicar `#/privacidad` y `#/terminos` y enlazarlas desde el pie una vez aprobadas.
+
+## D-45 — Modelo de negocio: intermediación · TOMADA (2026-11-04)
+- **La responsable:** "somos intermediarios, básicamente los camiones son de terceros que ya deben estar en consignación cuando estén publicados o tener autorización de dueño, los créditos se gestionan ante bancos y entidades financieras, nosotros somos brókers, igual pasa con las pólizas".
+- **Decisión:**
+  - Financiamos Tu Camión no es dueño de los vehículos, no presta dinero y no expide pólizas.
+  - Todo vehículo publicado debe estar en consignación o tener autorización de su dueño.
+  - Los créditos se gestionan ante bancos y entidades financieras, y los seguros ante aseguradoras, como bróker.
+- **Aplicado en:** los borradores de `docs/legal/` (D-44).
+- **Impacto en el sistema (PROPUESTO, sin implementar; pendiente de que la responsable lo apruebe):**
+  - **Al crear o publicar un vehículo.** Pedir que se declare si está en consignación o tiene autorización del dueño, y quizá adjuntar el soporte, visible solo para el administrador.
+  - **Créditos y seguros (P6, HU-N02).** La solicitud debe pedir autorización expresa para compartir los datos con bancos, entidades financieras y aseguradoras.
+  - Ambos cambios requieren migración.
 

@@ -336,4 +336,9 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - Pendientes de D-42 (no bloquean): Instagram y TikTok cuando existan las cuentas, y la decisión sobre las páginas de términos y privacidad.
   - La rama `feature/diseno-portal` queda lista para PR, apilada sobre P4b.
 - **Borradores legales (D-44).** Hechos a petición de la responsable: política de tratamiento de datos (Ley 1581 de 2012) y términos y condiciones, en `docs/legal/`. Son DOCUMENTADO, no IMPLEMENTADO: falta la revisión de un abogado, los datos del responsable (razón social, NIT y dirección) y la casilla de autorización en los formularios.
+- **Modelo de intermediación (D-45).** La responsable confirmó que el negocio es intermediario: los vehículos son de terceros, en consignación o con autorización del dueño, y los créditos y las pólizas se gestionan como bróker. Se ajustaron los dos borradores legales:
+  - quién vende;
+  - qué es una solicitud de crédito o de seguro;
+  - con quién se comparten los datos.
+- La declaración de consignación al publicar queda PROPUESTA (D-45).
 

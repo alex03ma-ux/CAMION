@@ -8,10 +8,11 @@
 
 **Financiamos Tu Camión** (`[RAZÓN SOCIAL]`, NIT `[NIT]`) opera el portal `[DOMINIO]`.
 
-En el portal se publican camiones, carros, carrocerías y maquinaria amarilla para la venta. También se ofrecen estos servicios:
-- créditos vehiculares;
-- seguros todo riesgo;
-- ayuda para vender el vehículo de un cliente.
+**Financiamos Tu Camión es un intermediario.** No es dueño de los vehículos publicados, no presta dinero y no expide pólizas.
+- **Vehículos.** Pertenecen a terceros. Solo se publican vehículos entregados en consignación o con autorización de su dueño.
+- **Créditos vehiculares.** Gestionamos la solicitud ante bancos y entidades financieras, como intermediarios (bróker).
+- **Seguros todo riesgo.** Gestionamos la cotización y la solicitud ante aseguradoras, como intermediarios.
+- **Venta del vehículo de un cliente.** Ayudamos a ofrecerlo a compradores.
 
 **Contacto:** vc.automotores@gmail.com · WhatsApp 316 615 2907 · lunes a viernes de 9:00 a. m. a 5:00 p. m. y sábados de 9:00 a. m. a 3:00 p. m.
 
@@ -45,8 +46,10 @@ En el portal se publican camiones, carros, carrocerías y maquinaria amarilla pa
 - Financiamos Tu Camión revisa las publicaciones, pero no garantiza que toda la información sea exacta.
 - El comprador debe verificar el vehículo, sus documentos, su historial y su estado antes de comprar.
 - Los precios son en pesos colombianos y pueden cambiar sin previo aviso mientras no se haya cerrado el negocio. Un vehículo puede aparecer como "Reservado" o salir del catálogo cuando se vende.
+- Solo se publican vehículos en consignación o con autorización escrita de su dueño. Quien publica debe tener esa consignación o autorización y presentarla cuando Financiamos Tu Camión la pida.
+- El contrato de compraventa se celebra entre el dueño del vehículo y el comprador. Financiamos Tu Camión acompaña e intermedia, pero no es el vendedor.
 - Está prohibido publicar:
-  - vehículos ajenos sin autorización;
+  - vehículos sin consignación ni autorización del dueño;
   - vehículos con información falsa;
   - vehículos con problemas legales que no se informen;
   - fotos de terceros sin permiso;
@@ -54,7 +57,8 @@ En el portal se publican camiones, carros, carrocerías y maquinaria amarilla pa
 
 > NOTA PARA REVISIÓN:
 > - **"Usados peritados".** Definir quién hace el peritaje, qué cubre y si se entrega un informe al comprador. De eso depende lo que se puede prometer aquí.
-> - **Venta propia o intermediación.** Definir si Financiamos Tu Camión vende directamente algunos vehículos (nuevos o usados) o solo intermedia. Cambia sus obligaciones de garantía frente al comprador (Ley 1480 de 2011, Estatuto del Consumidor).
+> - **Intermediación (confirmado por la responsable, 2026-11-04).** Revisar qué obligaciones conserva el intermediario frente al comprador según la Ley 1480 de 2011, el Estatuto del Consumidor (información, idoneidad del anuncio). También hay que definir las comisiones y quién las paga: el dueño, el comprador o ambos. Además, conviene un modelo de contrato de consignación o de autorización de venta.
+> - **Vehículos nuevos.** Si vienen de concesionarios, confirmar la figura (consignación o convenio).
 
 ## 6. Planes de los asesores
 
@@ -66,12 +70,18 @@ En el portal se publican camiones, carros, carrocerías y maquinaria amarilla pa
 
 ## 7. Créditos y seguros
 
-- **Crédito.** Una solicitud de crédito no es una aprobación. La aprobación, el monto, la tasa y el plazo dependen del estudio de la entidad que otorga el crédito: `[ENTIDAD O ENTIDADES FINANCIERAS ALIADAS]`.
-- **Seguro.** Una solicitud de seguro no es una póliza. La cobertura la define la aseguradora en la póliza que expida.
+- **Crédito.** Financiamos Tu Camión no presta dinero ni recibe dineros del público.
+  - Actúa como intermediario: recoge la solicitud y la presenta ante bancos y entidades financieras: `[ENTIDADES ALIADAS]`.
+  - Una solicitud de crédito no es una aprobación. La aprobación, el monto, la tasa y el plazo los decide cada entidad según su estudio.
+  - El contrato de crédito se firma directamente con la entidad.
+  - `[INDICAR SI SE COBRA COMISIÓN AL SOLICITANTE Y CUÁNTO]`.
+- **Seguro.** Financiamos Tu Camión no expide pólizas.
+  - Gestiona la cotización y la solicitud ante aseguradoras: `[ASEGURADORAS O FIGURA DE INTERMEDIACIÓN]`.
+  - Una solicitud de seguro no es una póliza. La cobertura, el valor y las exclusiones los define la aseguradora en la póliza que expida.
 
 > NOTA PARA REVISIÓN (importante):
-> - **Crédito.** Confirmar si Financiamos Tu Camión presta con recursos propios o remite a entidades financieras. En el primer caso aplican reglas de usura y de crédito al consumo o comercial.
-> - **Seguros.** En Colombia, ofrecer o intermediar seguros normalmente exige ser agente o agencia de seguros, o tener convenio con una aseguradora, bajo la vigilancia de la Superintendencia Financiera. Confirmar con qué figura se ofrece "Seguros todo riesgo".
+> - **Crédito (bróker, confirmado por la responsable).** Revisar los requisitos para intermediar crédito sin ser entidad vigilada: no recibir dinero del público, revelar las comisiones y tener convenios con las entidades.
+> - **Seguros (intermediación, confirmado por la responsable).** En Colombia, la intermediación de seguros normalmente exige actuar como agente o agencia de seguros, o como corredor, con la idoneidad que pide la Superintendencia Financiera, o hacerlo bajo convenio con una aseguradora o con un intermediario autorizado. Confirmar la figura y nombrarla aquí.
 > - **El nombre "Financiamos Tu Camión".** Confirmar que no sugiere una actividad financiera vigilada que el negocio no tenga.
 
 ## 8. Uso permitido del portal

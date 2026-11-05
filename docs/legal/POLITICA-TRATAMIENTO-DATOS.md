@@ -88,12 +88,15 @@ Ningún sistema es infalible. Si ocurre un incidente de seguridad, se informará
 
 - Los datos se alojan en `[PROVEEDOR Y PAÍS DEL SERVIDOR]`.
 - Los mensajes de contacto pueden llegar a cuentas de correo y WhatsApp de proveedores con servidores fuera de Colombia, como Google (Gmail) y Meta (WhatsApp).
-- No vendemos ni cedemos datos a terceros.
-- Compartimos con el asesor los datos de quien contacta un vehículo que ese asesor publicó, solo para atender ese contacto.
+- No vendemos datos a terceros.
+- Somos intermediarios. Por eso compartimos datos solo con quien hace falta para atender cada solicitud, y solo con la autorización del titular:
+  - **Crédito.** Con los bancos y entidades financieras ante los que se gestiona la solicitud, para que hagan su estudio. Esas entidades tratan los datos según sus propias políticas y, si consultan centrales de riesgo, piden su propia autorización.
+  - **Seguro.** Con las aseguradoras o intermediarios de seguros ante los que se cotiza o se solicita la póliza.
+  - **Contacto por un vehículo.** Con el asesor que lo publicó o con su dueño, solo para atender ese contacto.
 
 > NOTA PARA REVISIÓN:
 > - Confirmar el tratamiento de la transmisión o transferencia internacional (Gmail y WhatsApp) y si se necesitan contratos con los encargados.
-> - Confirmar si la compartición con el asesor requiere una mención expresa en la autorización.
+> - Como el negocio es intermediario (confirmado por la responsable, 2026-11-04), la autorización debe mencionar expresamente que los datos se comparten con entidades financieras, aseguradoras, asesores o dueños de los vehículos. Confirmar si esas entidades actúan como responsables o como encargados, y si hay que nombrarlas en la política.
 
 ## 10. Almacenamiento en el navegador
 
