@@ -8,7 +8,7 @@ Fuentes: `docs/requisitos/requisitos-funcionales-v3.0.md` (matriz oficial de 87 
 Marcas:
 - **CONFIRMADO (fuente)**: sale literalmente de una HU, RN o decisión.
 - **PROPUESTO**: lo infiere el analista; necesita visto bueno del coordinador o de la responsable.
-- **PENDIENTE D-46**: no se construye hasta que la responsable responda D-46.
+- **D-46 TOMADA (B, 2026-11-04)**: CA-P5-50 a CA-P5-53 ya se pueden construir. Ver también la adenda de D-47 (CA-P5-61 a CA-P5-64) y D-48.
 
 Cómo se prueba: API = prueba de integración; COMP = prueba de componente del frontend; MAN = prueba manual de la responsable.
 Las rutas y los nombres de campos son orientativos; el contrato definitivo lo fija el arquitecto en `docs/criterios/P5-contrato-api.md`.
@@ -167,10 +167,10 @@ Mínimo propuesto: se mantienen los dos estados de la v3.0 y la trazabilidad se 
 | Id | Dado | Cuando | Entonces | Marca | Prueba |
 |---|---|---|---|---|---|
 | CA-P5-49 | Un lead ABIERTO | Su vehículo se vende, se inactiva o la publicación se elimina | El lead sigue con su responsable y ABIERTO; el detalle muestra el estado actual del vehículo ("Vendido", "Inactivo"…) y el responsable lo cierra cuando corresponda | PROPUESTO | API |
-| CA-P5-50 | Un lead ABIERTO asignado a un asesor | Vence el plan del asesor | **PENDIENTE D-46.** Opción recomendada: el lead sigue con el asesor; el administrador lo ve y puede reasignarlo | PENDIENTE D-46 | API |
-| CA-P5-51 | Un lead ABIERTO asignado a un asesor | El administrador bloquea al asesor | **PENDIENTE D-46.** Opción recomendada: sus leads abiertos pasan a Administración, con actor SISTEMA y motivo "Asesor bloqueado" en el historial y la auditoría | PENDIENTE D-46 | API |
-| CA-P5-52 | Un lead ABIERTO | El administrador reasigna el vehículo a otro asesor (D-34) | **PENDIENTE D-46.** Opción recomendada: los leads abiertos siguen al vehículo, con su propia entrada de reasignación auditada; los cerrados no cambian | PENDIENTE D-46 | API |
-| CA-P5-53 | Un lead que pasó a Administración por CA-P5-50 o CA-P5-51 | El asesor renueva su plan o lo desbloquean | **PENDIENTE D-46.** Opción recomendada: no vuelve solo; el administrador decide si lo reasigna | PENDIENTE D-46 | API |
+| CA-P5-50 | Un lead ABIERTO asignado a un asesor | Vence el plan del asesor | El lead pasa a Administración. Queda en el historial y la auditoría con actor SISTEMA y motivo "Plan vencido". El paso ocurre como tarde en la siguiente revisión automática o consulta de leads | D-46 (B) | API |
+| CA-P5-51 | Un lead ABIERTO asignado a un asesor | El administrador bloquea al asesor | Sus leads abiertos pasan a Administración, con actor SISTEMA y motivo "Asesor bloqueado" en el historial y la auditoría | D-46 (B) | API |
+| CA-P5-52 | Un lead ABIERTO | El administrador reasigna el vehículo a otro asesor (D-34) | Los leads abiertos siguen al vehículo, con su propia entrada de reasignación auditada; los cerrados no cambian | D-46 (B) | API |
+| CA-P5-53 | Un lead que pasó a Administración por CA-P5-50 o CA-P5-51 | El asesor renueva su plan o lo desbloquean | El lead no vuelve solo; el administrador decide si lo reasigna (D-7) | D-46 (B) | API |
 
 ---
 
@@ -182,7 +182,7 @@ Mínimo propuesto: se mantienen los dos estados de la v3.0 y la trazabilidad se 
 | CA-P5-55 | Un error de validación (400) | Se muestra | El error aparece junto a cada campo, con los textos de CA-P5-03 a CA-P5-07 y CA-P5-14, y el foco va al primer campo con error | PROPUESTO | COMP |
 | CA-P5-56 | Un 404, 429 o error del servidor (500 o sin conexión) | Se muestra | El 404 y el 429 usan sus textos (CA-P5-09, CA-P5-20). El 500 o la falta de conexión: "No pudimos enviar tus datos. Intenta de nuevo en unos minutos o escríbenos por WhatsApp al 316 615 2907." Nunca se muestran trazas ni detalles técnicos | Número de WhatsApp: CONFIRMADO (D-42). Textos: PROPUESTO | COMP |
 | CA-P5-57 | El panel del asesor o del administrador | Pide una acción no permitida (409, 403) | Se muestra el mensaje de la API en lenguaje sencillo, sin códigos | PROPUESTO | COMP |
-| CA-P5-58 | Un asesor o un administrador con leads ABIERTOS que aún no ha abierto | Entra al panel | El menú muestra "Contactos (N nuevos)". Un lead deja de ser nuevo cuando su responsable abre el detalle. No hay correo, WhatsApp ni aviso en tiempo real | HU-071 / RN-NO-002 piden notificar en tiempo real; no hay servicio de correo (D-5). Aviso solo en el panel: PROPUESTO (pregunta 2 del resumen) | API + COMP |
+| CA-P5-58 | Un asesor o un administrador con leads ABIERTOS que aún no ha abierto | Entra al panel | El menú muestra "Contactos (N nuevos)". Un lead deja de ser nuevo cuando su responsable abre el detalle. No hay correo, WhatsApp ni aviso en tiempo real | HU-071 / RN-NO-002 piden notificar en tiempo real; no hay servicio de correo (D-5). Aviso solo en el panel: CONFIRMADO (D-48) | API + COMP |
 | CA-P5-59 | Cualquier operación de leads | Se escribe el registro técnico de la aplicación | No incluye nombre, teléfono, correo ni mensaje del visitante; solo identificadores | CONFIRMADO (RN-SE-004) en lo general; detalle PROPUESTO | API (revisión) |
 | CA-P5-60 | Cualquier usuario | Intenta borrar un lead | No existe un endpoint de borrado; la supresión que pida un titular se atiende por el procedimiento de la política, fuera de P5 | PROPUESTO | API |
 
@@ -218,3 +218,13 @@ Mínimo propuesto: se mantienen los dos estados de la v3.0 y la trazabilidad se 
 - Por D-41, una publicación solo es visible si el plan del asesor está vigente. Por eso el caso "si no, al administrador" de D-7 casi nunca ocurre al crear el lead (solo en CA-P5-26 y CA-P5-27); su efecto real se da después de crearlo, y eso es D-46.
 - Ya resueltas, sin decisión nueva: numeración de la notificación de lead nuevo (HU-071 en la matriz, HU-072 en la lista; vale la matriz, D-1); la asignación automática de RN-CL-003 cambia por D-7.
 - Hallazgo técnico, no de negocio: el esquema `solicitudes` exige usuario y correo y usa otros estados. Se corrige con la migración de P5 (D-9 ya está decidida).
+
+## Adenda (2026-11-04) — Botón de WhatsApp en el detalle (D-47)
+
+| ID | Dado | Cuando | Entonces | Origen | Nivel |
+|---|---|---|---|---|---|
+| CA-P5-61 | Una publicación visible cuyo asesor dueño tiene un teléfono válido | Se abre el detalle (con o sin cuenta) | Junto al formulario aparece "Escribir por WhatsApp", que abre `https://wa.me/57<teléfono>` en otra pestaña (`rel="noopener noreferrer"`), con un texto inicial que nombra el vehículo (PROPUESTO). El DTO público solo envía el enlace o el número del asesor, nunca su correo ni su documento | D-47 | API + COMP |
+| CA-P5-62 | Una publicación a cargo del administrador, o un asesor sin teléfono válido | Se abre el detalle | El botón usa el WhatsApp del portal (316 615 2907, D-42) | D-47 / D-42 | API + COMP |
+| CA-P5-63 | Una publicación no visible: plan vencido, vendida o inactiva | Se pide el detalle | 404, como hoy: no se expone ningún teléfono | D-41 / D-47 | API |
+| CA-P5-64 | Se pulsa el botón de WhatsApp | — | No se crea un lead ni se pide consentimiento: la conversación ocurre fuera del portal | D-47 (consecuencia aceptada) | COMP |
+

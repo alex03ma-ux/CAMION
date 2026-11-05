@@ -525,7 +525,7 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
   - **Alcance de la plataforma:** poner en contacto al usuario con el asesor o con el administrador. La gestión del crédito, la póliza y la consignación ocurre fuera del portal.
   - **Por confirmar al planear P6:** si "Créditos y búsquedas" sigue con formularios, estados y seguimiento, o se reduce a una solicitud de contacto dirigida al administrador. P5 y P5b no cambian.
 
-## D-46 — ¿Qué pasa con los leads abiertos de un asesor que pierde su plan, es bloqueado o deja de ser dueño del vehículo? · PENDIENTE (2026-11-04)
+## D-46 — ¿Qué pasa con los leads abiertos de un asesor que pierde su plan, es bloqueado o deja de ser dueño del vehículo? · TOMADA (2026-11-04)
 - Contexto (detectada al escribir los criterios de P5, `docs/criterios/criterios-P5-leads.md`, CA-P5-50 a CA-P5-53):
   - D-7 dice que el asesor atiende los contactos de sus vehículos publicados **mientras su plan esté vigente**; si no, el administrador. HU-032 y HU-033 dicen que el asesor gestiona y cierra el lead, sin límite de tiempo.
   - Por D-41, una publicación solo se ve en el portal si el plan del asesor está vigente. Por eso, al crear el lead casi siempre hay plan vigente. La duda real es **después**: un lead tarda días en cerrarse y en ese tiempo el plan puede vencer, el asesor puede ser bloqueado o el administrador puede reasignar el vehículo a otro asesor (D-34).
@@ -538,3 +538,23 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
     - Impacto: más configuración y un caso más que probar.
 - Recomendación del analista: **A**. Respeta D-7 en el origen del contacto, evita mover leads sin que nadie lo decida y deja la decisión final al administrador, que ve todos los leads.
 - Bloquea: solo CA-P5-50 a CA-P5-53. El resto de P5 se puede construir.
+- **Decisión de la responsable (2026-11-04): B. La asignación sigue al plan.** Pasan solos a Administración, auditados como SISTEMA, los leads abiertos de un asesor cuyo plan vence o que es bloqueado. No vuelven solos al renovar; el administrador puede reasignarlos a mano (D-7). Si se reasigna el vehículo (D-34), sus leads abiertos lo siguen.
+
+## D-47 — Cómo contacta el comprador desde el detalle del vehículo · TOMADA (2026-11-04)
+- Opciones presentadas:
+  - A) solo formulario (recomendada);
+  - B) formulario y botón de WhatsApp del asesor.
+- **Decisión de la responsable: B.**
+  - El detalle muestra el formulario de contacto, que crea el lead (P5), y un botón de WhatsApp que abre `wa.me` con el teléfono del asesor dueño de la publicación.
+  - Si la publicación está a cargo del administrador, el botón usa el WhatsApp del portal (D-42).
+- Consecuencias aceptadas:
+  - las conversaciones por WhatsApp no quedan registradas en la plataforma;
+  - el teléfono del asesor queda público mientras su publicación esté visible (solo con plan vigente, D-41).
+- **Pendiente legal (D-44):** los términos y la política deben decir que el teléfono del asesor se publica junto a sus vehículos.
+
+## D-48 — Aviso al asesor de un lead nuevo · TOMADA (2026-11-04)
+- **Decisión de la responsable:**
+  - por ahora el aviso es solo dentro del panel: "Contactos (N nuevos)";
+  - el aviso por correo o WhatsApp queda para P8, porque no hay servicio de correo (D-5).
+- RN-NO-002 queda cubierta parcialmente.
+
