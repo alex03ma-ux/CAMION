@@ -62,6 +62,15 @@ export function textoDiasDuracion(duracion: string): string {
 
 type Dialogo = { plan: Plan; accion: AccionPlan; enviando: boolean; error: DatosAviso | null }
 
+/** Qué planes se ven en la lista. Al entrar, solo los activos (pedido de la responsable, 2026-11-04). */
+type FiltroPlanes = 'activos' | 'inactivos' | 'todos'
+
+const TEXTO_VACIO: Record<FiltroPlanes, string> = {
+  activos: 'No hay planes activos. Crea uno con el botón «Crear plan» o revisa los inactivos.',
+  inactivos: 'No hay planes inactivos.',
+  todos: 'Aún no hay planes. Crea el primero con el botón «Crear plan».',
+}
+
 export function AdminPlanes({ token, onSesionTerminada }: AdminPlanesProps) {
   const [planes, setPlanes] = useState<Plan[] | null>(null)
   const [cargando, setCargando] = useState(true)
@@ -75,11 +84,14 @@ export function AdminPlanes({ token, onSesionTerminada }: AdminPlanesProps) {
   const [errorFormulario, setErrorFormulario] = useState<DatosAviso | null>(null)
   const [enviando, setEnviando] = useState(false)
   const [dialogo, setDialogo] = useState<Dialogo | null>(null)
+  const [formularioAbierto, setFormularioAbierto] = useState(false)
+  const [filtro, setFiltro] = useState<FiltroPlanes>('activos')
 
   const titulo = useRef<HTMLHeadingElement>(null)
   const tituloFormulario = useRef<HTMLHeadingElement>(null)
   const tituloLista = useRef<HTMLHeadingElement>(null)
   const origenDialogo = useRef<HTMLButtonElement | null>(null)
+  const botonCrear = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     titulo.current?.focus()
@@ -119,7 +131,22 @@ export function AdminPlanes({ token, onSesionTerminada }: AdminPlanesProps) {
     if (campo) window.setTimeout(() => document.getElementById(ID_CAMPO[campo])?.focus(), 0)
   }
 
+  function abrirNuevo() {
+    limpiarFormulario()
+    setResultado(null)
+    setFormularioAbierto(true)
+    window.setTimeout(() => tituloFormulario.current?.focus(), 0)
+  }
+
+  /** Cancelar: descarta lo escrito sin guardar y oculta el formulario. */
+  function cancelarFormulario() {
+    limpiarFormulario()
+    setFormularioAbierto(false)
+    window.setTimeout(() => botonCrear.current?.focus(), 0)
+  }
+
   function empezarEdicion(plan: Plan) {
+    setFormularioAbierto(true)
     setEditando(plan)
     setFormulario(formularioDePlan(plan))
     setErrores({})
@@ -160,6 +187,7 @@ export function AdminPlanes({ token, onSesionTerminada }: AdminPlanesProps) {
           : `Se creó el plan ${datos.nombre}.`,
       })
       limpiarFormulario()
+      setFormularioAbierto(false)
       setRecarga((r) => r + 1)
       window.setTimeout(() => tituloLista.current?.focus(), 0)
     } catch (error) {
@@ -186,6 +214,7 @@ export function AdminPlanes({ token, onSesionTerminada }: AdminPlanesProps) {
       }
       if (error instanceof ApiError && error.status === 404) {
         limpiarFormulario()
+        setFormularioAbierto(false)
         setRecarga((r) => r + 1)
       }
       setErrorFormulario({
@@ -241,6 +270,8 @@ export function AdminPlanes({ token, onSesionTerminada }: AdminPlanesProps) {
   }
 
   const idAyudaDias = 'plan-duracion-dias'
+  const visibles =
+    planes?.filter((p) => (filtro === 'todos' ? true : filtro === 'activos' ? p.activo : !p.activo)) ?? null
 
   return (
     <section className="panel-ancho" aria-labelledby="planes-titulo">
@@ -252,6 +283,15 @@ export function AdminPlanes({ token, onSesionTerminada }: AdminPlanesProps) {
         ni renovar, pero las suscripciones que ya lo usan siguen. Los planes no se borran.
       </p>
 
+      {!formularioAbierto && (
+        <div className="admin-barra">
+          <button type="button" ref={botonCrear} onClick={abrirNuevo} disabled={dialogo !== null}>
+            Crear plan
+          </button>
+        </div>
+      )}
+
+      {formularioAbierto && (
       <form className="admin-form" onSubmit={(e) => void guardar(e)} noValidate aria-busy={enviando}>
         <h3 ref={tituloFormulario} tabIndex={-1} className="admin-subtitulo">
           {editando ? `Editar plan ${editando.nombre}` : 'Nuevo plan'}
@@ -273,6 +313,7 @@ export function AdminPlanes({ token, onSesionTerminada }: AdminPlanesProps) {
             autoComplete="off"
             deshabilitado={enviando}
           />
+          <div className="admin-campo-con-ayuda">
           <Campo
             id={ID_CAMPO.precioCop}
             etiqueta="Precio (COP)"
@@ -288,6 +329,8 @@ export function AdminPlanes({ token, onSesionTerminada }: AdminPlanesProps) {
           <p id="plan-precio-ayuda" className="campo-ayuda admin-ayuda-campo">
             En pesos, sin decimales. Un plan de prueba puede costar 0.
           </p>
+          </div>
+          <div className="admin-campo-con-ayuda">
           <Campo
             id={ID_CAMPO.duracionMeses}
             etiqueta="Duración en meses"
@@ -303,6 +346,8 @@ export function AdminPlanes({ token, onSesionTerminada }: AdminPlanesProps) {
           <p id={idAyudaDias} className="campo-ayuda admin-ayuda-campo" aria-live="polite">
             {textoDiasDuracion(formulario.duracionMeses)}
           </p>
+          </div>
+          <div className="admin-campo-con-ayuda">
           <Campo
             id={ID_CAMPO.limitePublicaciones}
             etiqueta="Cupo de publicaciones"
@@ -318,6 +363,8 @@ export function AdminPlanes({ token, onSesionTerminada }: AdminPlanesProps) {
           <p id="plan-limite-ayuda" className="campo-ayuda admin-ayuda-campo">
             De 1 a 1.000 vehículos publicados a la vez.
           </p>
+          </div>
+          <div className="admin-campo-con-ayuda">
           <Campo
             id={ID_CAMPO.limiteDestacados}
             etiqueta="Destacados incluidos"
@@ -333,6 +380,7 @@ export function AdminPlanes({ token, onSesionTerminada }: AdminPlanesProps) {
           <p id="plan-destacados-ayuda" className="campo-ayuda admin-ayuda-campo">
             De 0 a 20 publicaciones destacadas a la vez. El asesor elige cuáles y puede cambiarlas.
           </p>
+          </div>
         </div>
         <label className="opcion-casilla" htmlFor={ID_CAMPO.esPrueba}>
           <input
@@ -355,28 +403,37 @@ export function AdminPlanes({ token, onSesionTerminada }: AdminPlanesProps) {
         <Aviso aviso={errorFormulario} />
         <div className="admin-botones">
           <button type="submit" disabled={enviando}>
-            {enviando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Crear plan'}
+            {enviando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Guardar plan'}
           </button>
-          {editando && (
-            <button type="button" className="secondary-button" onClick={limpiarFormulario} disabled={enviando}>
-              Cancelar edición
-            </button>
-          )}
+          <button type="button" className="secondary-button" onClick={cancelarFormulario} disabled={enviando}>
+            Cancelar
+          </button>
         </div>
       </form>
+      )}
 
-      <h3 ref={tituloLista} tabIndex={-1} className="admin-subtitulo">
-        Planes registrados
-        {planes && !cargando && <span className="admin-total"> ({planes.length})</span>}
-      </h3>
+      <div className="admin-lista-cabecera">
+        <h3 ref={tituloLista} tabIndex={-1} className="admin-subtitulo">
+          Planes registrados
+          {visibles && !cargando && <span className="admin-total"> ({visibles.length})</span>}
+        </h3>
+        <label className="admin-filtro" htmlFor="planes-filtro">
+          Mostrar
+          <select id="planes-filtro" value={filtro} onChange={(e) => setFiltro(e.target.value as FiltroPlanes)}>
+            <option value="activos">Activos</option>
+            <option value="inactivos">Inactivos</option>
+            <option value="todos">Todos</option>
+          </select>
+        </label>
+      </div>
       <Aviso aviso={resultado} />
       <Aviso aviso={errorCarga} />
       {cargando && <p role="status">Cargando planes...</p>}
-      {planes && planes.length === 0 && !cargando && !errorCarga && (
-        <p className="admin-vacio">Aún no hay planes. Crea el primero con el formulario.</p>
+      {visibles && visibles.length === 0 && !cargando && !errorCarga && (
+        <p className="admin-vacio">{TEXTO_VACIO[filtro]}</p>
       )}
 
-      {planes && planes.length > 0 && (
+      {visibles && visibles.length > 0 && (
         <div className="tabla-contenedor" role="region" aria-labelledby="planes-tabla" tabIndex={0}>
           <table className="tabla-usuarios tabla-admin">
             <caption id="planes-tabla" className="sr-only">
@@ -396,7 +453,7 @@ export function AdminPlanes({ token, onSesionTerminada }: AdminPlanesProps) {
               </tr>
             </thead>
             <tbody>
-              {planes.map((p) => (
+              {visibles.map((p) => (
                 <tr key={p.id}>
                   <th scope="row">{p.nombre}</th>
                   <td>{formatoCop(p.precioCop)}</td>

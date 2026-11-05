@@ -267,7 +267,7 @@ describe('Detalle (asesor): historial, notas y cierre', () => {
     await screen.findByRole('heading', { level: 1, name: 'Contacto de Visitante 5' })
     await user.type(screen.getByLabelText('Nueva nota'), 'Una nota válida')
     await user.click(screen.getByRole('button', { name: 'Guardar nota' }))
-    expect(await screen.findByText('Este contacto está cerrado.')).toHaveAttribute('role', 'alert')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Este contacto está cerrado.')
     await waitFor(() => expect(api.llamadasA(RUTA_DETALLE)).toHaveLength(2))
     expect(await screen.findByText('Finalizado')).toBeInTheDocument()
     expect(screen.queryByLabelText('Nueva nota')).not.toBeInTheDocument()

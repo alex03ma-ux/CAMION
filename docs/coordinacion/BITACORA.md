@@ -364,3 +364,12 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - INF-2 antes de publicar en internet;
   - la revisión legal (D-44): P5 no sale a internet sin una versión aprobada de la política.
 - PR: por abrir contra `main`, sin merge.
+- **Pantalla de Planes reorganizada (pedido de la responsable, 2026-11-04; HU-049 a HU-051).**
+  - Al entrar se ven solo los planes activos; el filtro "Mostrar" deja ver los inactivos o todos.
+  - El formulario está oculto hasta pulsar "Crear plan", que ahora va arriba. Su botón de envío se llama "Guardar plan".
+  - "Cancelar" descarta lo escrito sin guardar, vacía y oculta el formulario. Sirve también al editar, en lugar de "Cancelar edición".
+  - Cada ayuda queda justo debajo de su campo; antes quedaban desalineadas.
+  - Pruebas: `npx vitest run` 531/531 (3 nuevas; las de crear plan ahora abren el formulario antes). `tsc -b` y `npm run build` OK.
+  - También se arregló una prueba intermitente de P5 (CA-P5-57), que buscaba un texto repetido en lugar del aviso.
+  - No revisado en el navegador: la pantalla pide la sesión de administradora.
+

@@ -1771,8 +1771,40 @@ label.campo-obligatorio::after,
 }
 
 .admin-ayuda-campo {
+  margin: -6px 0 12px;
+}
+
+/* Planes: cada campo con su ayuda debajo; barra con "Crear plan"; filtro de la lista. */
+.admin-campo-con-ayuda {
+  min-width: 0;
+}
+
+.admin-barra {
+  margin: 12px 0 20px;
+}
+
+.admin-barra button {
+  width: auto;
+}
+
+.admin-lista-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.admin-filtro {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
-  align-self: end;
+  font-weight: 600;
+}
+
+.admin-filtro select {
+  width: auto;
 }
 
 .admin-botones {
