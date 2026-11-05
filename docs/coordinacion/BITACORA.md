@@ -335,3 +335,5 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
 - **Cierre del rediseño en esta sesión.** La responsable pide seguir con el rumbo actual y pausar el alquiler (D-43 EN PAUSA).
   - Pendientes de D-42 (no bloquean): Instagram y TikTok cuando existan las cuentas, y la decisión sobre las páginas de términos y privacidad.
   - La rama `feature/diseno-portal` queda lista para PR, apilada sobre P4b.
+- **Borradores legales (D-44).** Hechos a petición de la responsable: política de tratamiento de datos (Ley 1581 de 2012) y términos y condiciones, en `docs/legal/`. Son DOCUMENTADO, no IMPLEMENTADO: falta la revisión de un abogado, los datos del responsable (razón social, NIT y dirección) y la casilla de autorización en los formularios.
+

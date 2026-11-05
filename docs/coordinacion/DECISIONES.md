@@ -494,3 +494,21 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
   7. Seguros, mantenimiento, multas y siniestros: ¿quién los asume?
 - **Revisión legal (la hace un abogado; el agente no da concepto jurídico):** tipo de contrato; si el alquiler de vehículos de carga o con conductor exige habilitación ante el Ministerio de Transporte o la Superintendencia de Transporte; pólizas exigibles (SOAT, todo riesgo, responsabilidad civil); tratamiento de datos personales (Ley 1581 de 2012); facturación e impuestos.
 - **Propuesta de alcance mínimo, cuando se apruebe:** un aviso "Alquila un vehículo" igual a los de D-6 (sin cuenta, dirigido al administrador). El contrato y la entrega se manejan fuera del portal hasta tener el modelo legal definido.
+
+## D-44 — Política de datos y términos (Ley 1581 de 2012) · PROPUESTO (2026-11-04)
+- **Pedido de la responsable:** preparar las páginas de términos y de privacidad antes de seguir con P5.
+- **Hecho:** borradores en `docs/legal/POLITICA-TRATAMIENTO-DATOS.md` y `docs/legal/TERMINOS-Y-CONDICIONES.md`, basados en los datos que el portal recoge hoy. Están marcados como BORRADOR, con campos `[POR COMPLETAR]` y notas para el abogado. **No se publican en el portal hasta la revisión legal.**
+- **Datos que debe entregar la responsable:** razón social, NIT, dirección de notificaciones, dominio, proveedor de alojamiento y fecha de vigencia.
+- **Preguntas para el abogado (marcadas en los borradores):**
+  - figura legal para ofrecer seguros (agente o agencia, o convenio con una aseguradora);
+  - si se presta con recursos propios o con entidades aliadas;
+  - venta propia o intermediación (garantías);
+  - alcance del peritaje;
+  - si las bases de datos deben inscribirse en el RNBD;
+  - transferencia de datos a Gmail y WhatsApp;
+  - compartir los datos de contacto con el asesor.
+- **Pendiente técnico (antes de salir a internet; afecta P5, P5b y el registro):**
+  - una casilla de autorización sin marcar, con enlace a la política, en el registro, la inscripción de asesor y todo formulario de contacto o aviso;
+  - guardar la prueba de la autorización (fecha, versión de la política y formulario), lo que requiere una migración reversible;
+  - publicar `#/privacidad` y `#/terminos` y enlazarlas desde el pie una vez aprobadas.
+
