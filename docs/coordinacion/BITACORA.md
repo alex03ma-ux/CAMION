@@ -371,5 +371,5 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - Cada ayuda queda justo debajo de su campo; antes quedaban desalineadas.
   - Pruebas: `npx vitest run` 531/531 (3 nuevas; las de crear plan ahora abren el formulario antes). `tsc -b` y `npm run build` OK.
   - También se arregló una prueba intermitente de P5 (CA-P5-57), que buscaba un texto repetido en lugar del aviso.
-  - No revisado en el navegador: la pantalla pide la sesión de administradora.
+  - Revisión en pantalla: la responsable la revisó con su cuenta de administradora y respondió "Ya lo revisé" (2026-11-05), sin reportar fallas.
 
