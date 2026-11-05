@@ -151,6 +151,8 @@ type CampoAreaTextoProps = {
   ayuda?: string
   deshabilitado?: boolean
   requerido?: boolean
+  /** P5: para mover el foco al primer campo con error. */
+  ref?: Ref<HTMLTextAreaElement>
 }
 
 /** P4b: área de texto con etiqueta, ayuda con el conteo de caracteres y errores asociados. */
@@ -165,6 +167,7 @@ export function CampoAreaTexto({
   ayuda,
   deshabilitado = false,
   requerido = true,
+  ref,
 }: CampoAreaTextoProps) {
   const idError = `${id}-error`
   const idAyuda = `${id}-ayuda`
@@ -179,6 +182,7 @@ export function CampoAreaTexto({
         {etiqueta}
       </label>
       <textarea
+        ref={ref}
         id={id}
         name={id}
         rows={filas}

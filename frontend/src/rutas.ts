@@ -11,6 +11,9 @@
 //   #/inventario/nuevo  P4a: registrar un vehículo
 //   #/inventario/<id>   P4a: editar un vehículo y sus fotos
 //   #/publicaciones     P4b: "Mis publicaciones" del asesor (el administrador ve todas)
+//   #/contactos         P5: contactos (leads) del asesor; el administrador ve todos
+//   #/contactos/<id>    P5: detalle de un contacto con su historial
+//   #/privacidad        P5 (D-44): política de tratamiento de datos (borrador en revisión legal)
 // Cualquier otra ruta muestra el inicio. Nunca se pone el token en la URL.
 import { useEffect, useState } from 'react'
 import { CLAVES_FILTROS, FILTROS_VACIOS, type FiltrosCatalogo } from './api/catalogo'
@@ -24,6 +27,9 @@ export type Ruta =
   | { nombre: 'inventarioNuevo' }
   | { nombre: 'inventarioVehiculo'; id: number }
   | { nombre: 'publicaciones' }
+  | { nombre: 'contactos' }
+  | { nombre: 'contacto'; id: number }
+  | { nombre: 'privacidad' }
 
 /** P4p: secciones del administrador dentro de "Mi cuenta". */
 export type SeccionAdmin = 'usuarios' | 'planes' | 'suscripciones' | 'catalogos' | 'portada'
@@ -41,6 +47,18 @@ export const HASH_REGISTRO = '#/cuenta/registro'
 export const HASH_INVENTARIO = '#/inventario'
 export const HASH_INVENTARIO_NUEVO = '#/inventario/nuevo'
 export const HASH_PUBLICACIONES = '#/publicaciones'
+export const HASH_CONTACTOS = '#/contactos'
+export const HASH_PRIVACIDAD = '#/privacidad'
+
+/** `#/contactos/<id>`. */
+export function hashContacto(id: number): string {
+  return `${HASH_CONTACTOS}/${id}`
+}
+
+/** true si la ruta es la lista o el detalle de los contactos (exigen sesión). */
+export function esRutaContactos(ruta: Ruta): boolean {
+  return ruta.nombre === 'contactos' || ruta.nombre === 'contacto'
+}
 
 /** `#/inventario/<id>` (id entero positivo). */
 export function hashInventarioVehiculo(id: number): string {
@@ -103,6 +121,13 @@ export function leerRuta(hash: string): Ruta {
   if (camino === '/inventario') return { nombre: 'inventario' }
   if (camino === '/inventario/nuevo') return { nombre: 'inventarioNuevo' }
   if (camino === '/publicaciones') return { nombre: 'publicaciones' }
+  if (camino === '/contactos') return { nombre: 'contactos' }
+  if (camino === '/privacidad') return { nombre: 'privacidad' }
+  const contacto = /^\/contactos\/(\d{1,15})$/.exec(camino)
+  if (contacto) {
+    const id = Number(contacto[1])
+    if (Number.isSafeInteger(id) && id > 0) return { nombre: 'contacto', id }
+  }
   const inventario = /^\/inventario\/(\d{1,15})$/.exec(camino)
   if (inventario) {
     const id = Number(inventario[1])

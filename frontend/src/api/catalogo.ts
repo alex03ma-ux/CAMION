@@ -47,6 +47,8 @@ export type DetalleVehiculo = TarjetaVehiculo & {
   pesoBrutoKg: number | null
   cilindrajeCc: number | null
   fotos: FotoVehiculo[]
+  /** P5 (D-47): enlace https://wa.me/57… del asesor dueño o del portal; null si no llega. */
+  whatsapp: string | null
 }
 
 export type RespuestaInicio = {
@@ -361,6 +363,7 @@ export async function obtenerDetalle(
     pesoBrutoKg: numeroONulo(datos.pesoBrutoKg),
     cilindrajeCc: numeroONulo(datos.cilindrajeCc),
     fotos,
+    whatsapp: textoONulo(datos.whatsapp),
   }
 }
 

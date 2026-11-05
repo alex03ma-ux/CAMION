@@ -15,6 +15,7 @@ import {
 import { usePeticion } from '../catalogo/usePeticion'
 import { HASH_INICIO, hashVolverAResultados } from '../rutas'
 import { Aviso } from './Aviso'
+import { FormularioContacto, type SesionContacto } from './FormularioContacto'
 import { Galeria } from './Galeria'
 import { EtiquetasVehiculo } from './TarjetaVehiculo'
 
@@ -44,10 +45,10 @@ function fichaTecnica(v: Detalle): { nombre: string; valor: string }[] {
 }
 
 /**
- * Detalle público de un vehículo. Solo lectura para todos (D-3): no hay
- * botones de edición ni datos del asesor (el contacto llega en P5).
+ * Detalle público de un vehículo. Solo lectura para todos (D-3): no hay botones de edición.
+ * P5: formulario "Contactar" y botón de WhatsApp (D-47). Del asesor solo llega el enlace wa.me.
  */
-export function DetalleVehiculo({ slug }: { slug: string }) {
+export function DetalleVehiculo({ slug, sesion = null }: { slug: string; sesion?: SesionContacto | null }) {
   const [estado, reintentar] = usePeticion((signal) => obtenerDetalle(slug, signal), slug)
 
   const noDisponible = estado.estado === 'error' && estado.error.status === 404
@@ -112,6 +113,13 @@ export function DetalleVehiculo({ slug }: { slug: string }) {
               destacado={vehiculo.destacado}
               reservado={vehiculo.estadoComercial === 'RESERVADO'}
               negociable={vehiculo.negociable}
+            />
+
+            <FormularioContacto
+              slug={vehiculo.slug}
+              titulo={vehiculo.titulo}
+              whatsapp={vehiculo.whatsapp}
+              sesion={sesion}
             />
 
             {ficha.length > 0 && (
