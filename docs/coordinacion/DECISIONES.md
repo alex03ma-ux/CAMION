@@ -558,3 +558,19 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
   - el aviso por correo o WhatsApp queda para P8, porque no hay servicio de correo (D-5).
 - RN-NO-002 queda cubierta parcialmente.
 
+## D-49 — Detalles técnicos de P5 decididos por el coordinador · TOMADA (2026-11-04)
+- Son detalles de implementación, no reglas de negocio, y se pueden revertir. Si la responsable quiere otro comportamiento, se cambia sin migración.
+- Backend:
+  - al reasignar un vehículo (D-34), solo siguen al nuevo dueño los leads abiertos del dueño anterior;
+  - un lead reasignado a mano a un asesor sin plan queda marcado como asignación manual: el barrido por plan vencido no lo mueve; el de bloqueo sí;
+  - un teléfono fijo (60…) usa el WhatsApp del portal, porque wa.me solo funciona con celulares;
+  - "publicación a cargo del administrador" (D-47) significa que el dueño tiene rol ADMINISTRADOR;
+  - un contacto repetido no vuelve a marcar el lead como nuevo y también cuenta para el límite por teléfono (B-1 de `REVISION-SEGURIDAD-P5.md`);
+  - la carrera de duplicados simultáneos es un riesgo aceptado (B-2); el cierre "Contacto duplicado o inválido" cubre el caso;
+  - el barrido de D-46 es bajo demanda, sin servicio en segundo plano.
+- Frontend:
+  - el enlace dice "Contactos (N nuevos)", sin número si es 0 y en singular con 1 ("Contactos (1 nuevo)");
+  - tras el envío con sesión, el formulario vuelve a los datos del perfil;
+  - solo el asesor envía su token al pedir el detalle del vehículo, para obtener `esPropio` (CA-P5-11);
+  - `#/privacidad` muestra solo un aviso de borrador, sin el texto legal, hasta la revisión (D-44).
+

@@ -61,11 +61,11 @@ Abreviaturas: **CT** = `backend/Camion.Api.Tests/ContactosTests.cs`, **CL** = `C
 | 08 | CT:`Campos_manipulados` | PROBADO |
 | 09 | CT:`No_contactable_404`; FC:"CA-P5-09, 11, 56: un 404 muestra…" | PROBADO |
 | 10 | CT:`Reservado_se_contacta` | PROBADO |
-| 11 | CT:`Duenio_no_se_contacta`; FC:"CA-P5-09, 11, 56: un 409 muestra…" | PROBADO en parte: la API da 409 y la interfaz muestra el mensaje, pero **el formulario sí aparece** al dueño (ver Observaciones, O-1) |
+| 11 | CT:`Duenio_no_se_contacta`; API: `esPropio` en el detalle público, `true` solo con el token del asesor dueño (commit c9aaa64); FC:"CA-P5-09, 11, 56: un 409 muestra…"; FC (describe "Asesor en su propia publicación (CA-P5-11)"): el formulario no aparece (commit 77a5d4a) | PROBADO (O-1 resuelta) |
 | 12 | FC:"nota de obligatorios, aria-required…", FC:"CA-P5-12 el botón se desactiva mientras se envía", FC:"CA-P5-55 un 400 del servidor…" (conserva datos) | PROBADO |
 | 13 | FC:"la casilla empieza sin marcar y enlaza a #/privacidad en una pestaña nueva" | PROBADO |
 | 14 | CT:`Sin_autorizacion`; FC:"CA-P5-03, 04, 14, 55 vacío…" | PROBADO |
-| 15 | CT:`Prueba_de_autorizacion` (fecha UTC, versión del servidor, formulario, entidad), CT:`Campos_manipulados` (versión del cliente ignorada) | PROBADO en parte: **no cubierto** que, si falla una de las dos escrituras, no quede ninguna (necesita inyectar un fallo en `SaveChanges`) |
+| 15 | CT:`Prueba_de_autorizacion` (fecha UTC, versión del servidor, formulario, entidad), CT:`Campos_manipulados` (versión del cliente ignorada); `ContactosTransaccionTests` (un fallo al guardar el consentimiento no deja lead, historial ni auditoría; commit c8181e6) | PROBADO |
 | 16 | LG:`Detalle_con_historial` (solo admin ve consentimientos), LG:`Sin_edicion_ni_borrado`; FL:"CA-P5-16 el administrador ve la prueba de autorización", FL:"CA-P5-42 historial… sin autorizaciones…" | PROBADO |
 | 17 | FC:"muestra la franja de borrador, el aviso de revisión legal…"; "P5 no sale a internet sin versión aprobada" | PROBADO (COMP) + **manual** (salida a internet) |
 | 18 | CT:`Comprador_con_sesion`; FC:"comprador: … casilla en cada envío" | PROBADO |
@@ -117,12 +117,26 @@ Abreviaturas: **CT** = `backend/Camion.Api.Tests/ContactosTests.cs`, **CL** = `C
 | 64 | FC:"CA-P5-61 usa el enlace del asesor…" (pulsarlo no llama a `/api/contactos`) | PROBADO |
 | Prueba manual (§12) | Contacto anónimo y con cuenta, gestión como asesor y administradora | **Manual pendiente**: requiere la migración 013 aplicada por la responsable (D-16) |
 
-Resumen: 64 criterios con al menos una prueba automática; 2 con cobertura parcial (CA-P5-11, 15); 1 con parte manual (CA-P5-17) más la prueba manual general.
+Resumen: 64 criterios con al menos una prueba automática; CA-P5-11 y CA-P5-15, antes parciales, quedan cubiertos (ver §5); 1 con parte manual (CA-P5-17) más la prueba manual general.
 
 ## 4. Defectos y observaciones
 
 Ninguna prueba falla. No se encontraron defectos de comportamiento de la API.
 
-- **O-1 (CA-P5-11, desviación de interfaz, no bloqueante).** El criterio dice que al asesor dueño "el formulario no aparece". Hoy aparece y, al enviarlo, la API responde 409 y la interfaz muestra "Este vehículo es tuyo; no puedes contactarte a ti mismo.". La ficha no puede saber quién es el dueño porque el contrato prohíbe enviar el id del asesor en el DTO público (D-47). Reproducción: iniciar sesión como asesor, abrir `#/vehiculo/<slug de un vehículo propio>`, llenar y enviar. Decisión para el coordinador: aceptar el 409 como cumplimiento o añadir al detalle un indicador booleano (`esPropio`) solo con token.
+- **O-1 (CA-P5-11, desviación de interfaz, no bloqueante). RESUELTA: se añadió `esPropio` (ver §5).** El criterio dice que al asesor dueño "el formulario no aparece". Hoy aparece y, al enviarlo, la API responde 409 y la interfaz muestra "Este vehículo es tuyo; no puedes contactarte a ti mismo.". La ficha no puede saber quién es el dueño porque el contrato prohíbe enviar el id del asesor en el DTO público (D-47). Reproducción: iniciar sesión como asesor, abrir `#/vehiculo/<slug de un vehículo propio>`, llenar y enviar. Decisión para el coordinador: aceptar el 409 como cumplimiento o añadir al detalle un indicador booleano (`esPropio`) solo con token.
 - **O-2 (fragilidad de pruebas, corregida).** Ver §1, diagnóstico de vitest.
 - **O-3 (entorno).** La API en http://localhost:5080 no es la de `feature/p5-leads`; no se puede hacer E2E de P5 hasta arrancar esta rama, y eso exige antes la migración 013 en `camion_ventas` (riesgo de orden de despliegue del contrato).
+
+## 5. Cierre (2026-11-04)
+
+- **CA-P5-11 cubierto.** La API devuelve `esPropio` en el detalle público, `true` solo con el token del asesor dueño (c9aaa64); el frontend no muestra el formulario al dueño y en su lugar indica que los contactos llegan a "Mis contactos" (77a5d4a). Pruebas: CT:`Duenio_no_se_contacta` y el bloque "Asesor en su propia publicación (CA-P5-11)" de `frontend/tests/P5Contacto.test.tsx`.
+- **CA-P5-15 cubierto.** `backend/Camion.Api.Tests/ContactosTransaccionTests.cs`: si falla la escritura del consentimiento, no quedan lead, historial ni auditoría (c8181e6).
+- **B-1 corregido** en la API: el límite por teléfono va antes de la rama de contacto repetido y la cuenta (ee923a0). B-2 queda como riesgo aceptado (D-49).
+
+| Comando | Resultado | Quién lo ejecutó |
+|---|---|---|
+| `dotnet test` (Camion.Api.Tests) | **PASA**: 962/962 | agente de backend |
+| `npx vitest run` (frontend) | **PASA**: 528/528 | coordinador |
+| `npx tsc -b` | **PASA** | reportado al cierre por el coordinador |
+| `npm run build` | **PASA** | reportado al cierre por el coordinador |
+| E2E / prueba manual con la API real | **NO EJECUTADA**: requiere la migración 013 aplicada | — |
