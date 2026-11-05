@@ -480,9 +480,10 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
   - se audita en `auditoria_eventos` (entidad `Portal`, acciones `CAMBIAR_PORTADA` y `QUITAR_PORTADA`);
   - rutas: `GET /api/catalogo/portada` (anónima), `POST /api/admin/portal/portada` y `POST /api/admin/portal/portada/quitar` (SoloAdministrador). Quitar es POST porque el proyecto solo admite DELETE en las fotos del inventario.
 
-## D-43 — Alquiler de vehículos como servicio nuevo · PROPUESTO (2026-11-04)
+## D-43 — Alquiler de vehículos como servicio nuevo · EN PAUSA (2026-11-04)
 - **Pedido de la responsable:** "alquiler (esto me gustaria analizarlo como una nueva propuesta, pero necesito que lo revisemos por temas de contratos y legalidad como seria el proceso)".
 - **Estado:** no se implementa ni se anuncia en el portal hasta que se definan el modelo de negocio y la revisión legal. No está en las HU v3.0.
+- **2026-11-04, la responsable:** "dejemos por el momento el tema del alquiler, toca hacer buenos cuestionamientos sobre este proyecto adicional de cómo se integraría". Se pausa y se sigue con el backlog vigente (P5 y siguientes).
 - **Preguntas de negocio para definir el proceso:**
   1. ¿De quién son los vehículos que se alquilan: de la empresa, de asesores o de clientes? ¿La plataforma solo intermedia?
   2. ¿Con conductor o sin conductor? ¿Por días, meses o largo plazo (renting/leasing operativo)?
