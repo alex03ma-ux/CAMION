@@ -574,3 +574,52 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
   - solo el asesor envía su token al pedir el detalle del vehículo, para obtener `esPropio` (CA-P5-11);
   - `#/privacidad` muestra solo un aviso de borrador, sin el texto legal, hasta la revisión (D-44).
 
+## D-50 — Datos de los formularios de los avisos (P5b) · PENDIENTE (2026-11-05)
+- Contexto: D-6 fija los campos de HU-N01 y HU-N02, pero deja abiertos algunos detalles (detectados al escribir `docs/criterios/criterios-P5b-avisos.md`, CA-P5b-04, 08, 09, 15, 17).
+- (a) **Lista de "tipo de vehículo" del seguro.** D-6 propone camión / carro / otro; el portal tiene cuatro categorías (D-17) y anuncia "venta de maquinaria amarilla" (D-42).
+  - A) Camión / Carro / Otro (lo propuesto en D-6).
+  - B) Camión / Carro / Maquinaria / Otro.
+  - C) Las cuatro categorías del portal más Otro (incluye Carrocería).
+  - D) Texto libre.
+  - Recomendación: B. Cubre la maquinaria que se anuncia; una carrocería suelta rara vez se asegura aparte.
+- (b) **¿"Vende tu camión" pide también ciudad, marca o año?**
+  - A) No: solo nombre, teléfono WhatsApp y descripción (D-6); el cliente los escribe en la descripción.
+  - B) Sí, como campos opcionales.
+  - C) Sí, como obligatorios (modifica D-6).
+  - Recomendación: A. Es lo confirmado y el formulario queda corto.
+- (c) **Correo y tipo de teléfono.** D-9 dice "correo opcional en todo formulario sin cuenta"; D-6 no lista correo. El teléfono de HU-N01 es "WhatsApp", y la regla de P5 acepta también fijos (60…).
+  - A) Correo opcional en ambos avisos; teléfono con la regla de P5 (celular o fijo).
+  - B) Sin correo; teléfono con la regla de P5.
+  - C) Sin correo; en "Vende tu camión" solo celulares.
+  - Recomendación: A, por coherencia con D-9 y con el formulario de contacto de P5.
+- Impacto: (a) fija el CHECK de `leads.tipo_vehiculo` en la migración 014; (b) y (c) solo cambian el formulario y la validación.
+- Bloquea: CA-P5b-08, 09, 15 y 17. El resto de P5b se puede construir.
+
+## D-51 — Dónde se ubican los avisos en el portal · PENDIENTE (2026-11-05)
+- Contexto: D-6 dice "portal público" sin ubicación. D-42 dice que la franja "Nuestros servicios" es informativa (sin enlaces) y que el portal no debe verse recargado.
+- Opciones:
+  - A) Dos bloques en la portada, junto a la banda de crédito ("¿Quieres vender tu camión?" y "Asegura tu vehículo todo riesgo"), y una columna "Servicios" en el pie con ambos enlaces. Cada aviso en su pantalla (`#/vende-tu-camion`, `#/seguro-todo-riesgo`). Menú principal y franja sin cambios.
+  - B) Como A, y además dos entradas en el menú principal.
+  - C) Convertir en enlaces los servicios "Seguros todo riesgo" y "venta de camiones usados" de la franja (modifica D-42), más el pie.
+  - D) Solo en el pie.
+- Recomendación: A. Visible sin recargar el encabezado y sin cambiar D-42.
+- Bloquea: CA-P5b-54. No bloquea el backend ni los formularios.
+
+## D-52 — ¿El administrador puede reasignar un aviso a un asesor? · PENDIENTE (2026-11-05)
+- **Contradicción:** D-6 dice que "Vende tu camión" va "siempre al administrador, nunca a un asesor". D-7 (y `CLAUDE.md`) dicen que el administrador "puede reasignar manualmente cualquier solicitud a un asesor".
+- Opciones:
+  - A) Los avisos no se reasignan nunca: siempre en Administración; la API responde 409 y la base lo impide.
+  - B) Se pueden reasignar como un lead de P5 (motivo y auditoría); el asesor los vería solo mientras los tenga asignados.
+  - C) "Vende tu camión" no se reasigna (D-6 literal); el seguro sí.
+- Recomendación: A. Es la lectura literal de D-6 y evita exponer datos de clientes a asesores; si el administrador necesita apoyo de un asesor, lo coordina fuera del sistema.
+- Impacto: con A se añade `CK_Lead_AvisoAdmin` en la migración 014; con B o C los avisos entran en el barrido de D-46 y en la marca `asignacion_manual`.
+- Bloquea: CA-P5b-43.
+
+## D-53 — ¿El comprador con sesión ve sus avisos en "Mi cuenta"? · PENDIENTE (2026-11-05)
+- Contexto: en P5 el comprador no tiene lista propia de contactos (CA-P5-32). D-3 dice que puede pedir seguro y vender su vehículo, sin decir si ve el seguimiento.
+- Opciones:
+  - A) No en P5b; el comprador recibe el mensaje de éxito y el administrador lo contacta (D-45: la plataforma solo pone en contacto). Queda como ítem futuro del backlog, junto con sus contactos de P5.
+  - B) Sí: lista de solo lectura con fecha, tipo y estado (Pendiente / Finalizado), sin notas internas.
+- Recomendación: A. Mantiene P5b pequeño y coherente con P5.
+- Bloquea: CA-P5b-49.
+
