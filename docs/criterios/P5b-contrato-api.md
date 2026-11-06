@@ -170,7 +170,7 @@ Solo `ALTER TABLE leads`; no crea tablas ni toca datos (los leads existentes tom
 | `tipo_vehiculo` (nueva) | `VARCHAR(20) NULL` |
 | `CK_Lead_Origen` (nueva) | `(origen = 'CONTACTO_VEHICULO' AND publicacion_id IS NOT NULL AND tipo_vehiculo IS NULL) OR (origen = 'VENDE_TU_CAMION' AND publicacion_id IS NULL AND tipo_vehiculo IS NULL) OR (origen = 'SEGURO_TODO_RIESGO' AND publicacion_id IS NULL AND tipo_vehiculo IN ('CAMION','CARRO','MAQUINARIA','OTRO'))` |
 | `CK_Lead_AvisoAdmin` (nueva) | `origen = 'CONTACTO_VEHICULO' OR responsable_asesor_id IS NULL` |
-| `CK_Lead_Resultado` | Se reemplaza (DROP CONSTRAINT + ADD en la misma sentencia) para admitir `ATENDIDA` |
+| `CK_Lead_Resultado` | Se reemplaza (DROP CONSTRAINT y ADD en dos sentencias seguidas) para admitir `ATENDIDA` |
 | `IX_Lead_Origen` (nuevo) | `(origen, estado, creado_en)` |
 | `IX_Lead_AvisoDuplicado` (nuevo) | `(origen, telefono, estado)` |
 | BAJAR (comentada) | Solo si no hay filas con `origen <> 'CONTACTO_VEHICULO'` ni `resultado_cierre = 'ATENDIDA'` |
