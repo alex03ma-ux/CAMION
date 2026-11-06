@@ -131,6 +131,7 @@ export function detalle(base: TarjetaVehiculo, extra: Partial<DetalleVehiculo> =
     cilindrajeCc: null,
     fotos: [],
     whatsapp: null,
+    esPropio: false,
     ...extra,
   }
 }
