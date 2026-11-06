@@ -457,13 +457,23 @@ public sealed class CamionDbContext : IdentityDbContext<ApplicationUser, Identit
             entity.ToTable("leads", t =>
             {
                 t.HasCheckConstraint("CK_Lead_Estado", "estado IN ('ABIERTO','CERRADO')");
+                // P5b (migración 014): ATENDIDA para los avisos.
                 t.HasCheckConstraint("CK_Lead_Resultado", "resultado_cierre IS NULL OR resultado_cierre IN " +
-                    "('VENTA_CONCRETADA','NO_INTERESADO','NO_RESPONDIO','VEHICULO_NO_DISPONIBLE','DUPLICADO_INVALIDO','OTRO')");
+                    "('VENTA_CONCRETADA','NO_INTERESADO','NO_RESPONDIO','VEHICULO_NO_DISPONIBLE','DUPLICADO_INVALIDO','OTRO','ATENDIDA')");
                 t.HasCheckConstraint("CK_Lead_Cierre", "estado = 'ABIERTO' OR resultado_cierre IS NOT NULL");
+                // P5b (HU-N01, HU-N02, D-50 a): coherencia entre origen, publicación y tipo de vehículo.
+                t.HasCheckConstraint("CK_Lead_Origen",
+                    "(origen = 'CONTACTO_VEHICULO' AND publicacion_id IS NOT NULL AND tipo_vehiculo IS NULL) OR " +
+                    "(origen = 'VENDE_TU_CAMION' AND publicacion_id IS NULL AND tipo_vehiculo IS NULL) OR " +
+                    "(origen = 'SEGURO_TODO_RIESGO' AND publicacion_id IS NULL AND tipo_vehiculo IS NOT NULL AND tipo_vehiculo IN ('CAMION','CARRO','MAQUINARIA','OTRO'))");
+                // P5b (D-6, D-52 A): un aviso nunca tiene responsable asesor.
+                t.HasCheckConstraint("CK_Lead_AvisoAdmin", "origen = 'CONTACTO_VEHICULO' OR responsable_asesor_id IS NULL");
             });
             entity.HasKey(x => x.Id);
             entity.Property(x => x.Id).HasColumnName("id").ValueGeneratedOnAdd();
             entity.Property(x => x.PublicacionId).HasColumnName("publicacion_id");
+            entity.Property(x => x.Origen).HasColumnName("origen").HasMaxLength(30).IsRequired();
+            entity.Property(x => x.TipoVehiculo).HasColumnName("tipo_vehiculo").HasMaxLength(20);
             entity.Property(x => x.UsuarioId).HasColumnName("usuario_id").HasMaxLength(255);
             entity.Property(x => x.Nombre).HasColumnName("nombre").HasMaxLength(150).IsRequired();
             entity.Property(x => x.Telefono).HasColumnName("telefono").HasMaxLength(20).IsRequired();
@@ -483,6 +493,8 @@ public sealed class CamionDbContext : IdentityDbContext<ApplicationUser, Identit
             entity.HasIndex(x => new { x.PublicacionId, x.Telefono, x.Estado }).HasDatabaseName("IX_Lead_Duplicado");
             entity.HasIndex(x => new { x.Telefono, x.CreadoEn }).HasDatabaseName("IX_Lead_Telefono");
             entity.HasIndex(x => x.CreadoEn).HasDatabaseName("IX_Lead_Creado");
+            entity.HasIndex(x => new { x.Origen, x.Estado, x.CreadoEn }).HasDatabaseName("IX_Lead_Origen");
+            entity.HasIndex(x => new { x.Origen, x.Telefono, x.Estado }).HasDatabaseName("IX_Lead_AvisoDuplicado");
             entity.HasOne(x => x.Publicacion).WithMany().HasForeignKey(x => x.PublicacionId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.UsuarioId).OnDelete(DeleteBehavior.SetNull);
             entity.HasOne<PerfilAsesor>().WithMany().HasForeignKey(x => x.ResponsableAsesorId).OnDelete(DeleteBehavior.Restrict);

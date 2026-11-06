@@ -198,7 +198,9 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
             "GET /health", "GET /health/database", "GET /media/{**ruta}", "POST /api/auth/login",
             "POST /api/auth/registro/asesor", "POST /api/auth/registro/comprador",
             // P5 (HU-029, RN-SE-005, D-3): el contacto público, fuera de /api/catalogo.
-            "POST /api/contactos"
+            "POST /api/contactos",
+            // P5b (HU-N01, HU-N02, D-6): los dos avisos públicos.
+            "POST /api/avisos/seguro-todo-riesgo", "POST /api/avisos/vende-tu-camion"
         }.OrderBy(x => x, StringComparer.Ordinal).ToArray(), anonimos);
 
         // P3: todo /api/catalogo es GET, permite anónimos de forma explícita y no exige ninguna política.
@@ -256,7 +258,9 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
             "POST /api/admin/vehiculos/{id}/reasignar",
             // P5: contacto público (anónimo) y gestión de leads (notas, cerrar, reabrir, reasignar); todas POST.
             "POST /api/contactos", "POST /api/leads/{id}/notas", "POST /api/leads/{id}/cerrar",
-            "POST /api/leads/{id}/reabrir", "POST /api/leads/{id}/reasignar"
+            "POST /api/leads/{id}/reabrir", "POST /api/leads/{id}/reasignar",
+            // P5b: los dos avisos públicos (anónimos).
+            "POST /api/avisos/seguro-todo-riesgo", "POST /api/avisos/vende-tu-camion"
         }.OrderBy(x => x, StringComparer.Ordinal).ToArray(), modifican);
 
         // CA-SE006-13: toda ruta bajo /api/admin exige SoloAdministrador (P2: 5 acciones + la lista; P4p: 4 GET y 18 acciones;
@@ -315,12 +319,20 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
         }
 
         // P5 (CA-P5-20): /api/contactos tiene una sola ruta, POST, anónima de forma explícita, sin política y con la marca
-        // de limitación de peticiones. Ninguna otra ruta lleva esa marca.
+        // de limitación de peticiones. P5b (CA-P5b-24): /api/avisos tiene dos rutas POST, anónimas y con la misma marca (el
+        // cupo por IP es compartido). Ninguna otra ruta lleva esa marca.
         var contactos = Assert.Single(todos, e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/contactos", StringComparison.Ordinal));
-        Assert.Equal("POST", Metodo(contactos));
-        Assert.NotNull(contactos.Metadata.GetMetadata<IAllowAnonymous>());
-        Assert.Empty(contactos.Metadata.GetOrderedMetadata<IAuthorizeData>());
-        Assert.Equal(new[] { contactos }, todos.Where(e => e.Metadata.GetMetadata<Camion.Api.Leads.LimitePeticionesContacto>() is not null));
+        var avisos = todos.Where(e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/avisos", StringComparison.Ordinal)).ToList();
+        Assert.Equal(2, avisos.Count);
+        foreach (var e in avisos.Append(contactos))
+        {
+            Assert.Equal("POST", Metodo(e));
+            Assert.NotNull(e.Metadata.GetMetadata<IAllowAnonymous>());
+            Assert.Empty(e.Metadata.GetOrderedMetadata<IAuthorizeData>());
+        }
+        Assert.Equal(avisos.Append(contactos).OrderBy(e => e.RoutePattern.RawText).ToArray(),
+            todos.Where(e => e.Metadata.GetMetadata<Camion.Api.Leads.LimitePeticionesContacto>() is not null)
+                .OrderBy(e => e.RoutePattern.RawText).ToArray());
 
         // Las cuatro políticas con nombre existen.
         var proveedor = factory.Services.GetRequiredService<IAuthorizationPolicyProvider>();

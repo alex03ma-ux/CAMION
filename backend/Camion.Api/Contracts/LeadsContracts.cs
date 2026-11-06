@@ -17,6 +17,26 @@ public sealed record ContactoRequest(
 // 201: el mismo mensaje para un lead nuevo, un contacto repetido o el campo trampa (CA-P5-54). Sin id ni responsable.
 public sealed record ContactoResponse(string Mensaje);
 
+// P5b (HU-N01, D-6, D-50 b y c): POST /api/avisos/vende-tu-camion (anónimo). Contrato: docs/criterios/P5b-contrato-api.md.
+// Origen, estado, responsable, slug y cualquier otro campo se ignoran (CA-P5b-10). sitioWeb es el campo trampa.
+// 201 con ContactoResponse (el mismo mensaje para nuevo, repetido o trampa).
+public sealed record VendeTuCamionRequest(
+    string? Nombre,
+    string? Telefono,
+    string? Correo,
+    string? Descripcion,
+    bool? AutorizacionDatos,
+    string? SitioWeb);
+
+// P5b (HU-N02, D-6, D-50 a y c): POST /api/avisos/seguro-todo-riesgo (anónimo). tipoVehiculo: CAMION, CARRO, MAQUINARIA u OTRO.
+public sealed record SeguroTodoRiesgoRequest(
+    string? Nombre,
+    string? Telefono,
+    string? Correo,
+    string? TipoVehiculo,
+    bool? AutorizacionDatos,
+    string? SitioWeb);
+
 // POST /api/leads/{id}/notas
 public sealed record NotaLeadRequest(string? Texto);
 
@@ -52,10 +72,15 @@ public sealed record LeadItem(
     DateTime CreadoEn,
     // D-48: abierto y aún no visto por su responsable (solo si quien consulta es el responsable).
     bool Nuevo,
-    VehiculoLead Vehiculo,
+    // P5b: null en los avisos (no tienen vehículo).
+    VehiculoLead? Vehiculo,
     ResponsableLead Responsable,
     string? ResultadoCierre,
-    DateTime? CerradoEn);
+    DateTime? CerradoEn,
+    // P5b: CONTACTO_VEHICULO, VENDE_TU_CAMION o SEGURO_TODO_RIESGO.
+    string Origen,
+    // P5b: solo en SEGURO_TODO_RIESGO (CAMION, CARRO, MAQUINARIA u OTRO).
+    string? TipoVehiculo);
 
 public sealed record LeadsPaginaResponse(IReadOnlyList<LeadItem> Items, int Total, int Pagina, int Tamano);
 
@@ -86,10 +111,12 @@ public sealed record LeadDetalle(
     string Mensaje,
     DateTime CreadoEn,
     bool Nuevo,
-    VehiculoLead Vehiculo,
+    VehiculoLead? Vehiculo,
     ResponsableLead Responsable,
     string? ResultadoCierre,
     DateTime? CerradoEn,
+    string Origen,
+    string? TipoVehiculo,
     string? ObservacionCierre,
     string? CerradoPor,
     IReadOnlyList<EventoLeadItem> Eventos,

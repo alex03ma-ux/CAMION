@@ -66,12 +66,7 @@ public static class ContactosEndpoints
             // CA-P5-21 (y B-1 de la revisión de seguridad): envíos aceptados del mismo teléfono en 24 h, contando los leads
             // nuevos y los contactos repetidos. Va antes de la rama de repetidos para que varias IP no inflen sin fin el
             // historial ni consentimientos_datos.
-            var desde = ahora.AddDays(-1);
-            var telefono = datos.Telefono;
-            var enviados = await db.Leads.AsNoTracking().CountAsync(l => l.Telefono == telefono && l.CreadoEn > desde, ct) +
-                           await db.EventosLead.AsNoTracking().CountAsync(e => e.Tipo == EventoLead.ContactoRepetido &&
-                               e.CreadoEn > desde && db.Leads.Any(l => l.Id == e.LeadId && l.Telefono == telefono), ct);
-            if (enviados >= limites.LimiteTelefonoDia) return MuchasSolicitudes();
+            if (await EnviosTelefonoAsync(db, datos.Telefono, ahora, ct) >= limites.LimiteTelefonoDia) return MuchasSolicitudes();
 
             await using var tx = await db.Database.BeginTransactionAsync(ct);
             // CA-P5-23: mismo teléfono y misma publicación con un lead ABIERTO -> contacto repetido en su historial.
@@ -149,8 +144,20 @@ public static class ContactosEndpoints
         EntidadId = BarridoLeads.Id(leadId)
     };
 
-    // Lee el cuerpo completo; null si pasa de "maximo" bytes.
-    private static async Task<byte[]?> LeerHastaAsync(Stream cuerpo, int maximo, CancellationToken ct)
+    /// <summary>
+    /// CA-P5-21, CA-P5b-25: envíos aceptados del teléfono en las últimas 24 h, sin mirar el origen: leads creados (contactos y
+    /// avisos) más eventos CONTACTO_REPETIDO de cualquier lead de ese teléfono.
+    /// </summary>
+    internal static async Task<int> EnviosTelefonoAsync(CamionDbContext db, string telefono, DateTime ahora, CancellationToken ct)
+    {
+        var desde = ahora.AddDays(-1);
+        return await db.Leads.AsNoTracking().CountAsync(l => l.Telefono == telefono && l.CreadoEn > desde, ct) +
+               await db.EventosLead.AsNoTracking().CountAsync(e => e.Tipo == EventoLead.ContactoRepetido &&
+                   e.CreadoEn > desde && db.Leads.Any(l => l.Id == e.LeadId && l.Telefono == telefono), ct);
+    }
+
+    // Lee el cuerpo completo; null si pasa de "maximo" bytes. También lo usan los avisos de P5b.
+    internal static async Task<byte[]?> LeerHastaAsync(Stream cuerpo, int maximo, CancellationToken ct)
     {
         using var memoria = new MemoryStream();
         var buffer = new byte[4096];
@@ -166,7 +173,7 @@ public static class ContactosEndpoints
     private static IResult Exito() =>
         Results.Json(new ContactoResponse(ReglasLeads.MensajeExito), statusCode: StatusCodes.Status201Created);
 
-    private static IResult DemasiadoGrande() =>
+    internal static IResult DemasiadoGrande() =>
         Results.Json(new ErrorResponse(ReglasLeads.MensajeDemasiadoGrande), statusCode: StatusCodes.Status413PayloadTooLarge);
 
     public static IResult MuchasSolicitudes() =>

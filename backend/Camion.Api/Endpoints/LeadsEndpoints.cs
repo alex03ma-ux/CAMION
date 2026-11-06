@@ -26,7 +26,7 @@ public static class LeadsEndpoints
         var leads = app.MapGroup("/api/leads").RequireAuthorization(Roles.PoliticaAsesorOAdministrador);
 
         // CA-P5-29, CA-P5-31: "Mis contactos" (asesor) y "Contactos" (administrador), del más reciente al más antiguo.
-        leads.MapGet("", async (string? estado, string? responsable, string? publicacionId, string? vehiculoId,
+        leads.MapGet("", async (string? estado, string? origen, string? responsable, string? publicacionId, string? vehiculoId,
             string? desde, string? hasta, string? pagina, string? tamano, ClaimsPrincipal principal, CamionDbContext db,
             TimeProvider reloj, CancellationToken ct) =>
         {
@@ -36,6 +36,9 @@ public static class LeadsEndpoints
             var errores = new Dictionary<string, string[]>();
             var estadoFiltro = string.IsNullOrWhiteSpace(estado) ? null : estado.Trim().ToUpperInvariant();
             if (estadoFiltro is not null && !Lead.Estados.Contains(estadoFiltro)) errores["estado"] = [ReglasLeads.MensajeEstado];
+            // P5b (CA-P5b-37): filtro por origen.
+            var origenFiltro = string.IsNullOrWhiteSpace(origen) ? null : origen.Trim().ToUpperInvariant();
+            if (origenFiltro is not null && !Lead.Origenes.Contains(origenFiltro)) errores["origen"] = [ReglasLeads.MensajeOrigen];
             var soloAdministracion = false;
             long? responsableId = null;
             if (actor.EsAdmin && !string.IsNullOrWhiteSpace(responsable))
@@ -59,6 +62,7 @@ public static class LeadsEndpoints
 
             var consulta = Alcance(db.Leads.AsNoTracking(), actor);
             if (estadoFiltro is not null) consulta = consulta.Where(l => l.Estado == estadoFiltro);
+            if (origenFiltro is not null) consulta = consulta.Where(l => l.Origen == origenFiltro);
             if (soloAdministracion) consulta = consulta.Where(l => l.ResponsableAsesorId == null);
             if (responsableId is not null) consulta = consulta.Where(l => l.ResponsableAsesorId == responsableId);
             if (publicacion is not null) consulta = consulta.Where(l => l.PublicacionId == publicacion);
@@ -141,7 +145,7 @@ public static class LeadsEndpoints
         {
             var (actor, lead, ahora, error) = await PrepararAsync(principal, db, reloj, id, ct);
             if (error is not null) return error;
-            var errores = ReglasLeads.ValidarCierre(request, out var resultado, out var observacion);
+            var errores = ReglasLeads.ValidarCierre(request, lead!.Origen, out var resultado, out var observacion);
             if (errores.Count > 0) return Results.BadRequest(new ErrorResponse(ReglasLeads.MensajeRevisar, errores));
             if (lead!.Estado == Lead.Cerrado) return Results.Conflict(new ErrorResponse(ReglasLeads.MensajeYaCerrado));
 
@@ -200,6 +204,8 @@ public static class LeadsEndpoints
             var (actor, lead, ahora, error) = await PrepararAsync(principal, db, reloj, id, ct);
             if (error is not null) return error;
             if (!actor!.EsAdmin) return SinPermiso();
+            // P5b (D-52 A, CA-P5b-43): un aviso nunca se reasigna; la base también lo impide (CK_Lead_AvisoAdmin).
+            if (Lead.EsAviso(lead!.Origen)) return Results.Conflict(new ErrorResponse(ReglasLeads.MensajeAvisoAdministracion));
             var errores = ValidacionAuth.ValidarMotivo(request?.Motivo, obligatorio: true);
             var aAdministracion = request?.Administracion == true;
             long? destino = null;
@@ -235,9 +241,12 @@ public static class LeadsEndpoints
     // Ayudas
     // ---------------------------------------------------------------------------------------------------------------
 
-    // D-7, RN-SE-006: el asesor solo ve los leads de los que es responsable ahora.
+    // D-7, RN-SE-006: el asesor solo ve los leads de los que es responsable ahora. P5b (D-6, CA-P5b-46): nunca los avisos
+    // (ya nacen en Administración y CK_Lead_AvisoAdmin lo garantiza; el filtro por origen es una segunda barrera).
     private static IQueryable<Lead> Alcance(IQueryable<Lead> consulta, InventarioEndpoints.Actor actor) =>
-        actor.EsAdmin ? consulta : consulta.Where(l => l.ResponsableAsesorId == actor.PerfilAsesorId);
+        actor.EsAdmin
+            ? consulta
+            : consulta.Where(l => l.ResponsableAsesorId == actor.PerfilAsesorId && l.Origen == Lead.OrigenContactoVehiculo);
 
     // D-48: el responsable es el asesor asignado o, si el lead es de Administración, cualquier administrador.
     private static bool EsResponsable(InventarioEndpoints.Actor actor, long? responsable) =>
@@ -275,28 +284,33 @@ public static class LeadsEndpoints
             ObservacionCierre = l.ObservacionCierre,
             CerradoPor = l.CerradoPor,
             CerradoEn = l.CerradoEn,
+            Origen = l.Origen,
+            TipoVehiculo = l.TipoVehiculo,
+            // P5b: los avisos no tienen publicación; los campos del vehículo quedan nulos.
             PublicacionId = l.PublicacionId,
-            VehiculoId = l.Publicacion!.VehiculoId,
-            Titulo = l.Publicacion.Titulo,
-            Slug = l.Publicacion.SlugPublico,
-            EstadoVehiculo = l.Publicacion.Vehiculo!.Estado,
-            EstadoPublicacion = l.Publicacion.EstadoPublicacion,
-            EstadoComercial = l.Publicacion.EstadoComercial
+            VehiculoId = l.Publicacion == null ? null : (long?)l.Publicacion.VehiculoId,
+            Titulo = l.Publicacion == null ? null : l.Publicacion.Titulo,
+            Slug = l.Publicacion == null ? null : l.Publicacion.SlugPublico,
+            EstadoVehiculo = l.Publicacion == null ? null : l.Publicacion.Vehiculo!.Estado,
+            EstadoPublicacion = l.Publicacion == null ? null : l.Publicacion.EstadoPublicacion,
+            EstadoComercial = l.Publicacion == null ? null : l.Publicacion.EstadoComercial
         });
 
     private static LeadItem Item(FilaLead f, InventarioEndpoints.Actor actor) => new(
         f.Id, f.Estado, f.Nombre, f.Telefono, f.Correo, f.Mensaje, ConsultasCatalogo.Utc(f.CreadoEn), Nuevo(f, actor),
         Vehiculo(f), Responsable(f.ResponsableAsesorId, f.ResponsableNombre), f.ResultadoCierre,
-        f.CerradoEn is { } c ? ConsultasCatalogo.Utc(c) : null);
+        f.CerradoEn is { } c ? ConsultasCatalogo.Utc(c) : null, f.Origen, f.TipoVehiculo);
 
     private static bool Nuevo(FilaLead f, InventarioEndpoints.Actor actor) =>
         f.Estado == Lead.Abierto && !f.Visto && EsResponsable(actor, f.ResponsableAsesorId);
 
-    private static VehiculoLead Vehiculo(FilaLead f) => new(
-        f.VehiculoId, f.PublicacionId, f.Titulo ?? "", f.Slug, f.EstadoVehiculo,
-        f.EstadoPublicacion != Publicacion.Eliminada && f.EstadoComercial == Publicacion.Vendido
-            ? ReglasLeads.EstadoVendida
-            : f.EstadoPublicacion);
+    // P5b (CA-P5b-38): null si el lead no tiene publicación (aviso).
+    private static VehiculoLead? Vehiculo(FilaLead f) => f.PublicacionId is not { } publicacionId || f.VehiculoId is not { } vehiculoId
+        ? null
+        : new(vehiculoId, publicacionId, f.Titulo ?? "", f.Slug ?? "", f.EstadoVehiculo ?? "",
+            f.EstadoPublicacion != Publicacion.Eliminada && f.EstadoComercial == Publicacion.Vendido
+                ? ReglasLeads.EstadoVendida
+                : f.EstadoPublicacion ?? "");
 
     private static ResponsableLead Responsable(long? asesorId, string? nombre) => asesorId is null
         ? new ResponsableLead(ReglasLeads.ResponsableAdministracion, null, null)
@@ -352,7 +366,8 @@ public static class LeadsEndpoints
 
         var item = Item(f, actor);
         return new LeadDetalle(item.Id, item.Estado, item.Nombre, item.Telefono, item.Correo, item.Mensaje, item.CreadoEn,
-            item.Nuevo, item.Vehiculo, item.Responsable, item.ResultadoCierre, item.CerradoEn, f.ObservacionCierre,
+            item.Nuevo, item.Vehiculo, item.Responsable, item.ResultadoCierre, item.CerradoEn, item.Origen, item.TipoVehiculo,
+            f.ObservacionCierre,
             f.CerradoPor is null ? null : nombresUsuario.GetValueOrDefault(f.CerradoPor), items, consentimientos);
     }
 
@@ -399,12 +414,14 @@ public static class LeadsEndpoints
         public string? ObservacionCierre { get; init; }
         public string? CerradoPor { get; init; }
         public DateTime? CerradoEn { get; init; }
-        public long PublicacionId { get; init; }
-        public long VehiculoId { get; init; }
+        public string Origen { get; init; } = Lead.OrigenContactoVehiculo;
+        public string? TipoVehiculo { get; init; }
+        public long? PublicacionId { get; init; }
+        public long? VehiculoId { get; init; }
         public string? Titulo { get; init; }
-        public string Slug { get; init; } = "";
-        public string EstadoVehiculo { get; init; } = "";
-        public string EstadoPublicacion { get; init; } = "";
-        public string EstadoComercial { get; init; } = "";
+        public string? Slug { get; init; }
+        public string? EstadoVehiculo { get; init; }
+        public string? EstadoPublicacion { get; init; }
+        public string? EstadoComercial { get; init; }
     }
 }

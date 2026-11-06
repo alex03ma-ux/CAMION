@@ -223,6 +223,8 @@ app.MapVentasEndpoints();
 // P5: contacto público y gestión de leads (HU-029 a HU-033, D-7, D-44, D-46, D-48).
 app.MapContactosEndpoints();
 app.MapLeadsEndpoints();
+// P5b: avisos públicos "Vende tu camión" y "Compra tu seguro todo riesgo" (HU-N01, HU-N02, D-6, D-52).
+app.MapAvisosEndpoints();
 
 app.Run();
 
