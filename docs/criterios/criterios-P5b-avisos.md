@@ -3,6 +3,7 @@
 Ítem del backlog: **P5b** (HU-N01, HU-N02). Rama: `feature/p5b-avisos` (apilada sobre `feature/p5-leads`).
 Criterio de salida (BACKLOG.md): formularios públicos sin cuenta, validaciones (500 caracteres, teléfono) y solicitudes visibles solo para el administrador (D-6).
 Autor: analista funcional. Fecha: 2026-11-05. Estado del documento: PROPUESTO (pendiente de revisión del coordinador).
+Actualización 2026-11-06 (documentador): D-50 a D-53 quedaron TOMADAS por la responsable el 2026-11-06 según la recomendación (`DECISIONES.md`). Los criterios que decían **PENDIENTE D-n** pasan a **CONFIRMADO (D-n, opción elegida)**. Estado de las pruebas: ver `docs/criterios/P5b-evidencia.md`.
 
 Fuentes: `docs/coordinacion/DECISIONES.md` (D-3, D-6, D-7, D-9, D-31, D-42, D-44, D-45, D-46 a D-49), `docs/criterios/criterios-P5-leads.md`, `docs/criterios/P5-contrato-api.md`, `docs/coordinacion/ESTADO-REAL.md` ("Actualización P5"), `CLAUDE.md` y el código en HEAD `b057c1d` (`feature/p5-leads`).
 HU-N01 y HU-N02 no están en la matriz de 87 HU (D-1); se definen en D-6.
@@ -10,7 +11,7 @@ HU-N01 y HU-N02 no están en la matriz de 87 HU (D-1); se definen en D-6.
 Marcas:
 - **CONFIRMADO (fuente)**: sale literalmente de una HU, RN o decisión TOMADA.
 - **PROPUESTO**: lo infiere el analista; necesita visto bueno del coordinador o de la responsable.
-- **PENDIENTE D-n**: depende de una decisión de negocio abierta (sección 12). Se indica la opción recomendada, pero no se construye hasta la respuesta.
+- **PENDIENTE D-n**: dependía de una decisión de negocio abierta (sección 13). Desde el 2026-11-06 ya no queda ninguno: D-50 a D-53 están TOMADAS y esos criterios figuran como CONFIRMADO con la opción elegida.
 
 Cómo se prueba: API = prueba de integración; COMP = prueba de componente del frontend; MAN = prueba manual de la responsable.
 Rutas, nombres de campos y textos son orientativos; el contrato definitivo lo fija el arquitecto (`docs/criterios/P5b-contrato-api.md`).
@@ -57,7 +58,7 @@ Nota: la sección "Actualización P5" de `ESTADO-REAL.md` es de antes de constru
 | Casilla de autorización | Componente `frontend/src/components/AutorizacionDatos.tsx`; página `#/privacidad` con aviso de borrador (D-49) | Reutilizar |
 | Bandeja del administrador | `Contactos.tsx`, `DetalleContacto.tsx`, `EnlaceContactos.tsx`; `/api/leads` (lista, resumen, detalle, notas, cerrar, reabrir, reasignar). La lista y el detalle **suponen siempre un vehículo**: `LeadsEndpoints.cs:278-284` lee `l.Publicacion!.VehiculoId` y el tipo `LeadItem.vehiculo` no admite nulo | Origen visible, filtro por origen, detalle sin vehículo, resultados de cierre propios, bloqueo de reasignación |
 | Barrido D-46 | Solo mueve leads con responsable asesor | Nada: los avisos nacen en Administración |
-| Portal | La franja "Nuestros servicios" (`Inicio.tsx:44-50`) incluye "Seguros todo riesgo", pero es **informativa, sin enlaces** (D-42). El pie tiene "Explora", "Tu cuenta" y "Contacto" (`PiePortal.tsx`) | Accesos a los avisos (PENDIENTE D-51) y dos pantallas nuevas |
+| Portal | La franja "Nuestros servicios" (`Inicio.tsx:44-50`) incluye "Seguros todo riesgo", pero es **informativa, sin enlaces** (D-42). El pie tiene "Explora", "Tu cuenta" y "Contacto" (`PiePortal.tsx`) | Accesos a los avisos (D-51 A, CONFIRMADO) y dos pantallas nuevas |
 | Tablas `solicitudes` del script 002 | Sin mapear; exigen usuario y correo (contradicen D-9); `CK_Sol_Tipo` no admite estos avisos; no se sabe si existen en la base real | No se usan (sección 3) |
 
 ---
@@ -74,9 +75,9 @@ Cambio de esquema: **migración 014** (`database/migraciones/014_p5b_avisos.sql`
 |---|---|
 | `leads.publicacion_id` | Pasa a NULL. La FK RESTRICT se mantiene |
 | `leads.origen` (nueva) | `VARCHAR(30) NOT NULL DEFAULT 'CONTACTO_VEHICULO'`, CHECK `CONTACTO_VEHICULO`, `VENDE_TU_CAMION`, `SEGURO_TODO_RIESGO` (los mismos códigos que `consentimientos_datos.formulario`). Los leads existentes quedan como `CONTACTO_VEHICULO` |
-| `leads.tipo_vehiculo` (nueva) | `VARCHAR(20) NULL`, CHECK con la lista de D-50 (a) |
+| `leads.tipo_vehiculo` (nueva) | `VARCHAR(20) NULL`, CHECK con la lista de D-50 (a), opción B: `CAMION`, `CARRO`, `MAQUINARIA`, `OTRO` |
 | `CK_Lead_Origen` | `(origen = 'CONTACTO_VEHICULO' AND publicacion_id IS NOT NULL AND tipo_vehiculo IS NULL) OR (origen = 'VENDE_TU_CAMION' AND publicacion_id IS NULL AND tipo_vehiculo IS NULL) OR (origen = 'SEGURO_TODO_RIESGO' AND publicacion_id IS NULL AND tipo_vehiculo IS NOT NULL)` |
-| `CK_Lead_AvisoAdmin` (si D-52 = A) | `origen = 'CONTACTO_VEHICULO' OR responsable_asesor_id IS NULL`: la base impide asignar un aviso a un asesor |
+| `CK_Lead_AvisoAdmin` (D-52 = A, CONFIRMADO) | `origen = 'CONTACTO_VEHICULO' OR responsable_asesor_id IS NULL`: la base impide asignar un aviso a un asesor |
 | `CK_Lead_Resultado` | Se amplía con `ATENDIDA` ("Solicitud atendida", CA-P5b-41) |
 | `leads.mensaje` | Sin cambio de tipo. En "Vende tu camión" guarda la descripción; en el seguro, un texto fijo "Solicitud de seguro todo riesgo" |
 | Índice | `IX_Lead_Origen (origen, estado, creado_en)`; duplicados de avisos: `(origen, telefono, estado)` |
@@ -94,12 +95,12 @@ Riesgo de despliegue: igual que P5, la API de P5b no debe arrancar contra `camio
 | CA-P5b-01 | Un visitante sin cuenta en la pantalla "Vende tu camión" | Escribe nombre, teléfono y descripción válidos, marca la autorización y pulsa "Enviar" | 201; se crea un lead ABIERTO con `origen = VENDE_TU_CAMION`, sin publicación, responsable Administración; se ve el mensaje de éxito (CA-P5b-28) | Sin cuenta, campos y destino administrador: CONFIRMADO (D-6, D-3, D-7). Estado ABIERTO y modelo lead: PROPUESTO | API + COMP |
 | CA-P5b-02 | Un comprador con sesión | Abre el formulario y lo envía | Nombre y teléfono vienen rellenados con su perfil y se pueden editar; el lead queda ligado a su cuenta (`usuario_id`) además de guardar lo escrito | Que el comprador pueda vender su vehículo: CONFIRMADO (D-3). Relleno y vínculo: PROPUESTO (como CA-P5-02) | API + COMP |
 | CA-P5b-03 | El formulario | El nombre está vacío o tiene menos de 2 o más de 150 caracteres tras quitar espacios | 400 en `nombre`: "Escribe tu nombre (entre 2 y 150 caracteres)."; no se guarda nada | Obligatorio: CONFIRMADO (D-6). Límites: PROPUESTO (los de P5) | API + COMP |
-| CA-P5b-04 | El formulario | El teléfono está vacío o no es un celular colombiano (empieza por 3) o fijo (empieza por 60) de 10 dígitos | 400 en `telefono`: "Escribe un celular o fijo colombiano de 10 dígitos, por ejemplo 300 123 4567."; se rechazan 7 dígitos y números extranjeros | Obligatorio y "formato de teléfono válido": CONFIRMADO (D-6). Mismo formato que P5: PROPUESTO (instrucción del coordinador; ver D-50 c sobre fijos y WhatsApp) | API + COMP |
+| CA-P5b-04 | El formulario | El teléfono está vacío o no es un celular colombiano (empieza por 3) o fijo (empieza por 60) de 10 dígitos | 400 en `telefono`: "Escribe un celular o fijo colombiano de 10 dígitos, por ejemplo 300 123 4567."; se rechazan 7 dígitos y números extranjeros | Obligatorio y "formato de teléfono válido": CONFIRMADO (D-6). Mismo formato que P5 (celular o fijo): CONFIRMADO (D-50 c, opción A) | API + COMP |
 | CA-P5b-05 | El formulario | El teléfono llega como `300 123 4567`, `300-123-4567`, `(300) 1234567`, `+57 3001234567` o `573001234567` | Se acepta y se guarda como `+573001234567` | PROPUESTO (CA-P5-05) | API |
 | CA-P5b-06 | El formulario | La descripción está vacía o solo tiene espacios | 400 en `descripcion`: "Describe tu vehículo (máximo 500 caracteres)." | Obligatoria: CONFIRMADO (D-6). Texto: PROPUESTO | API + COMP |
 | CA-P5b-07 | El formulario | La descripción tiene exactamente 500 caracteres / tiene 501 | Con 500 se acepta. Con 501, 400 en `descripcion`: "La descripción no puede pasar de 500 caracteres."; el formulario muestra un contador "N/500" y no deja escribir más de 500 | Máximo 500: CONFIRMADO (D-6). Contador y tope en pantalla: PROPUESTO | API + COMP |
-| CA-P5b-08 | El formulario | Se muestra | Pide solo nombre, teléfono WhatsApp y descripción (más la casilla). No pide ciudad, marca ni año; si la petición los trae, se ignoran | Tres campos: CONFIRMADO (D-6). Campos extra: **PENDIENTE D-50 (b)**, recomendado no pedirlos | API + COMP |
-| CA-P5b-09 | El formulario | Se muestra un campo de correo | Si existe, es opcional y con la regla de P5 (formato, hasta 254): "Escribe un correo válido o deja el campo vacío." | **PENDIENTE D-50 (c)** (D-9 dice "correo opcional en todo formulario sin cuenta"; D-6 no lo lista). Recomendado: incluirlo opcional | API + COMP |
+| CA-P5b-08 | El formulario | Se muestra | Pide solo nombre, teléfono WhatsApp y descripción (más la casilla). No pide ciudad, marca ni año; si la petición los trae, se ignoran | Tres campos: CONFIRMADO (D-6). Campos extra: **CONFIRMADO (D-50 b, opción A)**: no se piden ciudad, marca ni año | API + COMP |
+| CA-P5b-09 | El formulario | Se muestra un campo de correo | Si existe, es opcional y con la regla de P5 (formato, hasta 254): "Escribe un correo válido o deja el campo vacío." | **CONFIRMADO (D-50 c, opción A)**: correo opcional en ambos avisos y teléfono con la regla de P5 (celular o fijo), por coherencia con D-9 | API + COMP |
 | CA-P5b-10 | Una petición manipulada | Envía `slug`, `publicacionId`, `origen`, `estado`, `asesorId` o `responsable` | Se ignoran: el origen lo fija la ruta, el estado nace ABIERTO y el responsable es siempre Administración | PROPUESTO (consecuencia de D-6 "siempre al administrador") | API |
 
 ## 5. Formulario "Compra tu seguro todo riesgo" (HU-N02)
@@ -110,9 +111,9 @@ Riesgo de despliegue: igual que P5, la API de P5b no debe arrancar contra `camio
 | CA-P5b-12 | Un comprador con sesión | Lo envía | Igual que CA-P5b-02 | Pedir seguro: CONFIRMADO (D-3). Relleno y vínculo: PROPUESTO | API + COMP |
 | CA-P5b-13 | El formulario | Nombre inválido | Igual que CA-P5b-03 | Obligatorio: CONFIRMADO (D-6). Límites: PROPUESTO | API + COMP |
 | CA-P5b-14 | El formulario | Teléfono vacío o inválido; teléfono con separadores | Igual que CA-P5b-04 y CA-P5b-05 | Obligatorio: CONFIRMADO (D-6). Formato P5: PROPUESTO | API + COMP |
-| CA-P5b-15 | El formulario | El tipo de vehículo no se elige o llega un valor fuera de la lista | 400 en `tipoVehiculo`: "Elige el tipo de vehículo." | Obligatorio: CONFIRMADO (D-6). Lista: **PENDIENTE D-50 (a)**; recomendada Camión / Carro / Maquinaria / Otro | API + COMP |
+| CA-P5b-15 | El formulario | El tipo de vehículo no se elige o llega un valor fuera de la lista | 400 en `tipoVehiculo`: "Elige el tipo de vehículo." | Obligatorio: CONFIRMADO (D-6). Lista: **CONFIRMADO (D-50 a, opción B)**: Camión / Carro / Maquinaria / Otro | API + COMP |
 | CA-P5b-16 | El formulario | Se elige "Otro" | Se acepta sin pedir más datos; no hay campo de descripción en este aviso | PROPUESTO (D-6 no pide más campos; no se inventan) | API + COMP |
-| CA-P5b-17 | El formulario | Correo | Igual que CA-P5b-09 | **PENDIENTE D-50 (c)** | API + COMP |
+| CA-P5b-17 | El formulario | Correo | Igual que CA-P5b-09 | **CONFIRMADO (D-50 c, opción A)** | API + COMP |
 
 ## 6. Reglas comunes: autorización, anti-abuso, duplicados y mensajes
 
@@ -153,7 +154,7 @@ Riesgo de despliegue: igual que P5, la API de P5b no debe arrancar contra `camio
 | CA-P5b-40 | Un aviso ABIERTO | El administrador añade una nota de 5 a 500 caracteres / fuera de ese rango / el aviso está CERRADO | 201 en el historial / 400 "La nota debe tener entre 5 y 500 caracteres." / 409 "Este contacto está cerrado." | Seguimiento: PROPUESTO (reutiliza CA-P5-37, 38; D-6 no lo define) | API + COMP |
 | CA-P5b-41 | Un aviso ABIERTO | El administrador lo cierra | Resultados disponibles para avisos: Solicitud atendida (`ATENDIDA`, nuevo), No le interesó, No respondió, Contacto duplicado o inválido, Otro (observación de 5 a 500). "Se concretó la venta" y "El vehículo ya no está disponible" no se ofrecen y la API responde 400 en `resultado`: "Ese resultado no aplica a esta solicitud." Queda en historial y auditoría | Cerrar (Abierta → Cerrada): PROPUESTO (D-6). Lista: PROPUESTO | API + COMP |
 | CA-P5b-42 | Un aviso CERRADO | Se intenta cerrar otra vez / el administrador lo reabre con motivo de 5 a 500 | 409 "Este contacto ya está cerrado." / vuelve a ABIERTO en Administración, con historial y auditoría | PROPUESTO (CA-P5-40, 41) | API |
-| CA-P5b-43 | Un aviso ABIERTO | El administrador intenta reasignarlo a un asesor | **PENDIENTE D-52.** Con la opción recomendada (A): el diálogo de reasignar no aparece en los avisos y la API responde 409 "Esta solicitud la atiende siempre la administración."; la base lo impide con `CK_Lead_AvisoAdmin` | PENDIENTE D-52 | API + COMP |
+| CA-P5b-43 | Un aviso ABIERTO | El administrador intenta reasignarlo a un asesor | El diálogo de reasignar no aparece en los avisos y la API responde 409 "Esta solicitud la atiende siempre la administración."; la base lo impide con `CK_Lead_AvisoAdmin` | **CONFIRMADO (D-52, opción A)**: los avisos nunca se reasignan a un asesor | API + COMP |
 | CA-P5b-44 | Los filtros por vehículo o publicación | Se aplican | Excluyen los avisos (no tienen vehículo) | PROPUESTO | API |
 | CA-P5b-45 | Cualquier usuario | Intenta editar los datos del titular o borrar un aviso | No existe ruta para hacerlo; las correcciones van como nota | PROPUESTO (CA-P5-43, 60) | API |
 
@@ -164,7 +165,7 @@ Riesgo de despliegue: igual que P5, la API de P5b no debe arrancar contra `camio
 | CA-P5b-46 | Un asesor Aprobado | Abre "Mis contactos" o pide `GET /api/leads` y `/api/leads/resumen` | Nunca aparecen avisos ni cuentan en sus nuevos | CONFIRMADO (D-6 "nunca a un asesor", D-7, RN-SE-006) | API + COMP |
 | CA-P5b-47 | Un asesor | Pide el detalle o una acción sobre un aviso por su id | 404 "Contacto no encontrado." (no se revela que existe) | 404: PROPUESTO (CA-P5-30) | API |
 | CA-P5b-48 | Un comprador con sesión | Llama a cualquier ruta de lectura o gestión de `/api/leads` | 403; no ve avisos de otros | CONFIRMADO (D-3, RN-SE-006) | API |
-| CA-P5b-49 | Un comprador con sesión | Busca sus propios avisos en "Mi cuenta" | **PENDIENTE D-53.** Con la opción recomendada (A) no hay lista propia en P5b | PENDIENTE D-53 | COMP |
+| CA-P5b-49 | Un comprador con sesión | Busca sus propios avisos en "Mi cuenta" | No hay lista propia en P5b; la pantalla "Mis solicitudes" llega con P6 | **CONFIRMADO (D-53, opción A)** | COMP |
 | CA-P5b-50 | Una petición sin sesión | Llama a rutas de lectura o gestión de `/api/leads` / envía un aviso | 401 / se acepta (las rutas de los avisos son anónimas) | CONFIRMADO (D-3, D-6, RN-SE-006) | API |
 | CA-P5b-51 | Un asesor Pendiente, Rechazado o Bloqueado | Envía un aviso / intenta ver leads | Se acepta como cualquier visitante / sin acceso al panel | PROPUESTO / CONFIRMADO (D-10) | API |
 | CA-P5b-52 | El portal público | Se consulta | Nunca muestra avisos, cuántos hay ni datos de quien los envió | PROPUESTO (CA-P5-35) | API |
@@ -174,7 +175,7 @@ Riesgo de despliegue: igual que P5, la API de P5b no debe arrancar contra `camio
 | Id | Dado | Cuando | Entonces | Marca | Prueba |
 |---|---|---|---|---|---|
 | CA-P5b-53 | Cualquier persona, con o sin sesión y con cualquier rol | Abre `#/vende-tu-camion` o `#/seguro-todo-riesgo` | Ve el formulario correspondiente, con encabezado y pie del portal | Sin cuenta: CONFIRMADO (D-6). Rutas: PROPUESTO | COMP |
-| CA-P5b-54 | El portal | Se recorre | Hay accesos visibles a ambos avisos | **PENDIENTE D-51.** Recomendado: dos bloques en la portada junto a la banda de crédito y una columna "Servicios" en el pie; sin tocar el menú principal ni la franja informativa de D-42 | COMP + MAN |
+| CA-P5b-54 | El portal | Se recorre | Hay accesos visibles a ambos avisos | Dos bloques en la portada junto a la banda de crédito y una columna "Servicios" en el pie; sin tocar el menú principal ni la franja informativa de D-42 | **CONFIRMADO (D-51, opción A)** | COMP + MAN |
 | CA-P5b-55 | El formulario | Se inspecciona | Un `h1` con el nombre del aviso; cada campo con `label` asociado; errores enlazados con `aria-describedby` y `aria-invalid`; el contador de la descripción en `aria-live="polite"`; el tipo de vehículo es un `select` nativo | PROPUESTO | COMP |
 | CA-P5b-56 | Un envío con errores / aceptado | Termina | El foco va al primer campo con error / el mensaje de éxito está en `role="status"` y recibe el foco | PROPUESTO (CA-P5-55) | COMP |
 | CA-P5b-57 | Solo teclado o lector de pantalla | Se usa el formulario | Todo se opera con teclado en orden lógico; el campo trampa está fuera del orden de tabulación y oculto al lector (`aria-hidden`, `tabindex="-1"`); el enlace a la política indica "(se abre en otra pestaña)" | PROPUESTO | COMP |
@@ -198,8 +199,8 @@ Riesgo de despliegue: igual que P5, la API de P5b no debe arrancar contra `camio
 | HU-N01 / D-6 (Vende tu camión) | CA-P5b-01 a 10, 33 | API: envío anónimo y con comprador, validación por campo, 500/501 caracteres, sin publicación creada. COMP: formulario y contador |
 | HU-N02 / D-6 (Seguro) | CA-P5b-11 a 17 | API: envío, tipo de vehículo fuera de lista. COMP: formulario con `select` |
 | D-3 / RN-SE-005 (sin cuenta; comprador puede vender y pedir seguro) | CA-P5b-01, 02, 11, 12, 50, 53 | API + COMP |
-| D-9 (nombre y teléfono obligatorios, correo opcional) | CA-P5b-03, 04, 09, 13, 14, 17 | API + COMP (09 y 17 tras D-50) |
-| D-7 / D-6 (siempre el administrador) | CA-P5b-10, 32, 35, 36, 43, 46 | API: responsable NULL siempre; barrido no los mueve; reasignación (tras D-52) |
+| D-9 (nombre y teléfono obligatorios, correo opcional) | CA-P5b-03, 04, 09, 13, 14, 17 | API + COMP (09 y 17 con D-50 c A) |
+| D-7 / D-6 (siempre el administrador) | CA-P5b-10, 32, 35, 36, 43, 46 | API: responsable NULL siempre; barrido no los mueve; reasignación 409 (D-52 A) |
 | RN-SE-006 (permisos) | CA-P5b-46 a 52 | API: matriz de roles (anónimo 401 en lectura, comprador 403, asesor sin avisos y 404, administrador todo) |
 | RN-CL-004 / HU-032, HU-033 (seguimiento, extendido) | CA-P5b-37 a 45 | API: notas, cierre con resultados de aviso, reapertura. COMP: detalle sin vehículo |
 | RN-SE-003 / HU-061 (auditoría) | CA-P5b-32, 34, 41, 42 | API: eventos e `auditoria_eventos` sin datos personales |
@@ -216,12 +217,12 @@ Riesgo de despliegue: igual que P5, la API de P5b no debe arrancar contra `camio
 
 ## 13. Contradicciones y decisiones
 
-Registradas en `DECISIONES.md` como PENDIENTE:
+Registradas en `DECISIONES.md` como PENDIENTE y **TOMADAS por la responsable el 2026-11-06 según la recomendación**:
 
-- **D-50** — Datos de los formularios: (a) lista de tipo de vehículo del seguro; (b) si "Vende tu camión" pide ciudad, marca o año; (c) si los avisos piden correo opcional (D-9 frente a D-6) y si el teléfono WhatsApp admite fijos.
-- **D-51** — Dónde se ubican los avisos en el portal (D-42 dice que la franja de servicios es informativa y sin enlaces, y "no tan recargado").
-- **D-52** — Contradicción: D-6 dice que el aviso va "siempre al administrador, nunca a un asesor"; D-7 y `CLAUDE.md` dicen que el administrador puede reasignar manualmente **cualquier** solicitud a un asesor.
-- **D-53** — Si el comprador con sesión ve sus avisos en "Mi cuenta".
+- **D-50** — Datos de los formularios: (a) lista de tipo de vehículo del seguro; (b) si "Vende tu camión" pide ciudad, marca o año; (c) si los avisos piden correo opcional (D-9 frente a D-6) y si el teléfono WhatsApp admite fijos. **Decisión:** (a) B, Camión / Carro / Maquinaria / Otro; (b) A, sin ciudad, marca ni año; (c) A, correo opcional y teléfono con la regla de P5.
+- **D-51** — Dónde se ubican los avisos en el portal (D-42 dice que la franja de servicios es informativa y sin enlaces, y "no tan recargado"). **Decisión:** A, dos bloques en la portada y la columna "Servicios" en el pie; menú y franja sin cambios.
+- **D-52** — Contradicción: D-6 dice que el aviso va "siempre al administrador, nunca a un asesor"; D-7 y `CLAUDE.md` dicen que el administrador puede reasignar manualmente **cualquier** solicitud a un asesor. **Decisión:** A, los avisos nunca se reasignan a un asesor (409 en la API y `CK_Lead_AvisoAdmin` en la base).
+- **D-53** — Si el comprador con sesión ve sus avisos en "Mi cuenta". **Decisión:** A, no en P5b; "Mis solicitudes" llega con P6.
 
 Observaciones sin decisión de negocio:
 - `ESTADO-REAL.md` ("Actualización P5") describe el estado previo a P5; hay que actualizarlo.
