@@ -49,10 +49,11 @@ ALTER TABLE leads
 
 -- 3, 4 y 5. CHECK nuevos y CK_Lead_Resultado con ATENDIDA (las filas existentes los cumplen).
 ALTER TABLE leads
+  -- IS NOT NULL explícito: un IN con NULL da NULL y un CHECK con resultado NULL deja pasar la fila.
   ADD CONSTRAINT CK_Lead_Origen CHECK (
     (origen = 'CONTACTO_VEHICULO' AND publicacion_id IS NOT NULL AND tipo_vehiculo IS NULL) OR
     (origen = 'VENDE_TU_CAMION' AND publicacion_id IS NULL AND tipo_vehiculo IS NULL) OR
-    (origen = 'SEGURO_TODO_RIESGO' AND publicacion_id IS NULL AND tipo_vehiculo IN ('CAMION','CARRO','MAQUINARIA','OTRO'))),
+    (origen = 'SEGURO_TODO_RIESGO' AND publicacion_id IS NULL AND tipo_vehiculo IS NOT NULL AND tipo_vehiculo IN ('CAMION','CARRO','MAQUINARIA','OTRO'))),
   ADD CONSTRAINT CK_Lead_AvisoAdmin CHECK (origen = 'CONTACTO_VEHICULO' OR responsable_asesor_id IS NULL);
 
 -- CK_Lead_Resultado con ATENDIDA: se quita y se vuelve a crear en dos sentencias seguidas (algunas versiones no

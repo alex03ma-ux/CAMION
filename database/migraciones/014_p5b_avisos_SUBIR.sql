@@ -20,10 +20,11 @@ ALTER TABLE leads
 -- 3. Coherencia origen / publicación / tipo de vehículo (D-50 a). 4. D-52 (A): un aviso nunca va a un asesor.
 -- 5. CK_Lead_Resultado admite ATENDIDA ("Solicitud atendida").
 ALTER TABLE leads
+  -- IS NOT NULL explícito: un IN con NULL da NULL y un CHECK con resultado NULL deja pasar la fila.
   ADD CONSTRAINT CK_Lead_Origen CHECK (
     (origen = 'CONTACTO_VEHICULO' AND publicacion_id IS NOT NULL AND tipo_vehiculo IS NULL) OR
     (origen = 'VENDE_TU_CAMION' AND publicacion_id IS NULL AND tipo_vehiculo IS NULL) OR
-    (origen = 'SEGURO_TODO_RIESGO' AND publicacion_id IS NULL AND tipo_vehiculo IN ('CAMION','CARRO','MAQUINARIA','OTRO'))),
+    (origen = 'SEGURO_TODO_RIESGO' AND publicacion_id IS NULL AND tipo_vehiculo IS NOT NULL AND tipo_vehiculo IN ('CAMION','CARRO','MAQUINARIA','OTRO'))),
   ADD CONSTRAINT CK_Lead_AvisoAdmin CHECK (origen = 'CONTACTO_VEHICULO' OR responsable_asesor_id IS NULL);
 
 -- CK_Lead_Resultado con ATENDIDA: se quita y se vuelve a crear en dos sentencias seguidas (algunas versiones no

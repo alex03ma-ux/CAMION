@@ -168,7 +168,7 @@ Solo `ALTER TABLE leads`; no crea tablas ni toca datos (los leads existentes tom
 | `publicacion_id` | `BIGINT NULL` (antes NOT NULL). FK `FK_Lead_Publicacion` RESTRICT se mantiene |
 | `origen` (nueva) | `VARCHAR(30) NOT NULL DEFAULT 'CONTACTO_VEHICULO'` |
 | `tipo_vehiculo` (nueva) | `VARCHAR(20) NULL` |
-| `CK_Lead_Origen` (nueva) | `(origen = 'CONTACTO_VEHICULO' AND publicacion_id IS NOT NULL AND tipo_vehiculo IS NULL) OR (origen = 'VENDE_TU_CAMION' AND publicacion_id IS NULL AND tipo_vehiculo IS NULL) OR (origen = 'SEGURO_TODO_RIESGO' AND publicacion_id IS NULL AND tipo_vehiculo IN ('CAMION','CARRO','MAQUINARIA','OTRO'))` |
+| `CK_Lead_Origen` (nueva) | `(origen = 'CONTACTO_VEHICULO' AND publicacion_id IS NOT NULL AND tipo_vehiculo IS NULL) OR (origen = 'VENDE_TU_CAMION' AND publicacion_id IS NULL AND tipo_vehiculo IS NULL) OR (origen = 'SEGURO_TODO_RIESGO' AND publicacion_id IS NULL AND tipo_vehiculo IS NOT NULL AND tipo_vehiculo IN ('CAMION','CARRO','MAQUINARIA','OTRO'))` |
 | `CK_Lead_AvisoAdmin` (nueva) | `origen = 'CONTACTO_VEHICULO' OR responsable_asesor_id IS NULL` |
 | `CK_Lead_Resultado` | Se reemplaza (DROP CONSTRAINT y ADD en dos sentencias seguidas) para admitir `ATENDIDA` |
 | `IX_Lead_Origen` (nuevo) | `(origen, estado, creado_en)` |
@@ -188,4 +188,6 @@ Solo `ALTER TABLE leads`; no crea tablas ni toca datos (los leads existentes tom
 
 ## Cambios al contrato
 
-(Ninguno por ahora. Cada cambio posterior se anota aquí con fecha, motivo y efecto en el frontend.)
+Cada cambio posterior se anota aquí con fecha, motivo y efecto en el frontend.
+
+- 2026-11-06 (antes de entregar; sin efecto en el frontend): `CK_Lead_Origen` añade `tipo_vehiculo IS NOT NULL` en la rama del seguro. Motivo: un `IN` con NULL da NULL y el CHECK dejaba pasar un seguro sin tipo (lo detectó la prueba CA-P5b-62).
