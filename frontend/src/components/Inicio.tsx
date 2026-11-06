@@ -8,7 +8,14 @@ import {
 } from '../api/catalogo'
 import { obtenerPortada } from '../api/portada'
 import { usePeticion } from '../catalogo/usePeticion'
-import { HASH_BUSCAR, HASH_REGISTRO, hashBuscar, navegar } from '../rutas'
+import {
+  HASH_BUSCAR,
+  HASH_REGISTRO,
+  HASH_SEGURO_TODO_RIESGO,
+  HASH_VENDE_TU_CAMION,
+  hashBuscar,
+  navegar,
+} from '../rutas'
 import { Aviso } from './Aviso'
 import {
   IconoCamion,
@@ -168,6 +175,30 @@ export function Inicio({ tipos }: InicioProps) {
             </a>
           </div>
         </section>
+
+        {/* P5b (D-51 A): accesos a los avisos junto a la banda de crédito. La franja de servicios sigue sin enlaces (D-42). */}
+        <div className="cat-avisos">
+          <section className="cat-aviso-bloque" aria-labelledby="inicio-vende">
+            <IconoCamion className="cat-aviso-icono" />
+            <div>
+              <h2 id="inicio-vende">¿Quieres vender tu camión?</h2>
+              <p>Cuéntanos qué vehículo tienes y te contactamos. No necesitas cuenta.</p>
+              <a className="cat-aviso-boton" href={HASH_VENDE_TU_CAMION}>
+                Vende tu camión <IconoFlecha />
+              </a>
+            </div>
+          </section>
+          <section className="cat-aviso-bloque" aria-labelledby="inicio-seguro">
+            <IconoEscudo className="cat-aviso-icono" />
+            <div>
+              <h2 id="inicio-seguro">Asegura tu vehículo todo riesgo</h2>
+              <p>Déjanos tus datos y te ayudamos con tu seguro todo riesgo.</p>
+              <a className="cat-aviso-boton" href={HASH_SEGURO_TODO_RIESGO}>
+                Compra tu seguro <IconoFlecha />
+              </a>
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   )

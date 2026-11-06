@@ -1,5 +1,12 @@
 import { categoriasDisponibles, type OpcionCatalogo } from '../api/catalogo'
-import { HASH_BUSCAR, HASH_CUENTA, HASH_REGISTRO, hashBuscar } from '../rutas'
+import {
+  HASH_BUSCAR,
+  HASH_CUENTA,
+  HASH_REGISTRO,
+  HASH_SEGURO_TODO_RIESGO,
+  HASH_VENDE_TU_CAMION,
+  hashBuscar,
+} from '../rutas'
 import { LogoPortal } from './Encabezado'
 
 type PiePortalProps = {
@@ -38,6 +45,18 @@ export function PiePortal({ tipos, conSesion }: PiePortalProps) {
             ))}
             <li>
               <a href={HASH_BUSCAR}>Todos los vehículos</a>
+            </li>
+          </ul>
+        </nav>
+        {/* P5b (D-51 A): columna "Servicios" con los dos avisos públicos. */}
+        <nav className="cat-pie-columna" aria-label="Servicios en el pie de página">
+          <h2>Servicios</h2>
+          <ul>
+            <li>
+              <a href={HASH_VENDE_TU_CAMION}>Vende tu camión</a>
+            </li>
+            <li>
+              <a href={HASH_SEGURO_TODO_RIESGO}>Compra tu seguro todo riesgo</a>
             </li>
           </ul>
         </nav>
