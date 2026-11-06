@@ -1,12 +1,18 @@
 // P5 — Gestión de contactos (leads) en el panel: /api/leads (contrato docs/criterios/P5-contrato-api.md).
 // HU-031 a HU-033, RN-CL-003, RN-CL-004, D-7, D-46 (B), D-48. Política AsesorOAdministrador; reabrir y reasignar
 // solo el administrador. La interfaz solo oculta: la API vuelve a comprobar el rol y el responsable (404 si no es suyo).
+// P5b (docs/criterios/P5b-contrato-api.md): los avisos "Vende tu camión" y "Seguro todo riesgo" son leads sin
+// vehículo, con `origen` y (el seguro) `tipoVehiculo`; tienen sus propios resultados de cierre y nunca se reasignan (D-52).
 import { MENSAJE_SESION_TERMINADA } from './auth'
 import { ApiError, esObjetoJson, MENSAJE_INESPERADO, peticion } from './http'
 
 // ---- Tipos del contrato ----
 
 export type EstadoLead = 'ABIERTO' | 'CERRADO'
+
+/** P5b: de dónde viene la solicitud. */
+export type OrigenLead = 'CONTACTO_VEHICULO' | 'VENDE_TU_CAMION' | 'SEGURO_TODO_RIESGO'
+export const ORIGENES_LEAD: readonly OrigenLead[] = ['CONTACTO_VEHICULO', 'VENDE_TU_CAMION', 'SEGURO_TODO_RIESGO']
 
 export type ResponsableLead = {
   tipo: 'ASESOR' | 'ADMINISTRACION'
@@ -33,7 +39,12 @@ export type LeadItem = {
   mensaje: string
   creadoEn: string
   nuevo: boolean
-  vehiculo: VehiculoLead
+  /** P5b: los contactos de P5 son CONTACTO_VEHICULO. */
+  origen: OrigenLead
+  /** P5b: solo en SEGURO_TODO_RIESGO ("CAMION", "CARRO", "MAQUINARIA", "OTRO"). */
+  tipoVehiculo: string | null
+  /** P5b: null en los avisos ("Sin vehículo asociado", CA-P5b-38). */
+  vehiculo: VehiculoLead | null
   responsable: ResponsableLead
   resultadoCierre: string | null
   cerradoEn: string | null
@@ -67,6 +78,8 @@ export type FiltrosLeads = {
   estado: EstadoLead | ''
   /** Solo administrador: 'ADMINISTRACION' o un perfiles_asesor.id. */
   responsable: string
+  /** P5b, solo administrador: filtro por origen. */
+  origen: OrigenLead | ''
   vehiculoId: string
   desde: string
   hasta: string
@@ -80,6 +93,7 @@ export type ResultadoCierre =
   | 'NO_RESPONDIO'
   | 'VEHICULO_NO_DISPONIBLE'
   | 'DUPLICADO_INVALIDO'
+  | 'ATENDIDA'
   | 'OTRO'
 
 // ---- Constantes y textos ----
@@ -99,6 +113,8 @@ export const MENSAJE_OBSERVACION_OTRO = 'Escribe la observación (5 a 500 caract
 export const MENSAJE_OBSERVACION_LARGA = 'La observación no puede tener más de 500 caracteres.'
 export const MENSAJE_MOTIVO_LEAD = 'Escribe el motivo (5 a 500 caracteres).'
 export const MENSAJE_DESTINO = 'Elige el nuevo responsable.'
+export const MENSAJE_RESULTADO_NO_APLICA = 'Ese resultado no aplica a esta solicitud.'
+export const MENSAJE_AVISO_SIN_REASIGNAR = 'Esta solicitud la atiende siempre la administración.'
 
 /** CA-P5-36: la pantalla muestra el texto, no el código. */
 export const NOMBRES_ESTADO_LEAD: Record<EstadoLead, string> = {
@@ -112,8 +128,31 @@ export const RESULTADOS_CIERRE: readonly { valor: ResultadoCierre; nombre: strin
   { valor: 'NO_RESPONDIO', nombre: 'No respondió' },
   { valor: 'VEHICULO_NO_DISPONIBLE', nombre: 'El vehículo ya no está disponible' },
   { valor: 'DUPLICADO_INVALIDO', nombre: 'Contacto duplicado o inválido' },
+  { valor: 'ATENDIDA', nombre: 'Solicitud atendida' },
   { valor: 'OTRO', nombre: 'Otro' },
 ]
+
+/** P5b (CA-P5b-41): resultados que solo aplican a un contacto de vehículo o solo a un aviso. */
+const SOLO_VEHICULO: readonly ResultadoCierre[] = ['VENTA_CONCRETADA', 'VEHICULO_NO_DISPONIBLE']
+const SOLO_AVISO: readonly ResultadoCierre[] = ['ATENDIDA']
+
+/** true si la solicitud es un aviso de P5b (sin vehículo; siempre de Administración, D-52). */
+export function esAviso(origen: OrigenLead): boolean {
+  return origen !== 'CONTACTO_VEHICULO'
+}
+
+/** Resultados de cierre válidos para el origen (tabla del contrato P5b). */
+export function resultadosCierrePara(origen: OrigenLead): readonly { valor: ResultadoCierre; nombre: string }[] {
+  const excluidos = esAviso(origen) ? SOLO_VEHICULO : SOLO_AVISO
+  return RESULTADOS_CIERRE.filter((r) => !excluidos.includes(r.valor))
+}
+
+/** CA-P5b-37: etiqueta del origen en la bandeja del administrador. */
+export const NOMBRES_ORIGEN: Record<OrigenLead, string> = {
+  CONTACTO_VEHICULO: 'Contacto de vehículo',
+  VENDE_TU_CAMION: 'Vende tu camión',
+  SEGURO_TODO_RIESGO: 'Seguro todo riesgo',
+}
 
 const NOMBRES_EVENTO: Record<string, string> = {
   CREADO: 'Contacto recibido',
@@ -165,6 +204,9 @@ export function nombreEstadoPublicacionLead(estado: string): string {
 }
 export function nombreFormulario(formulario: string): string {
   return nombreDe(NOMBRES_FORMULARIO, formulario)
+}
+export function nombreOrigen(origen: string): string {
+  return nombreDe(NOMBRES_ORIGEN, origen)
 }
 export function nombreResultado(resultado: string): string {
   return RESULTADOS_CIERRE.find((r) => r.valor === resultado.toUpperCase())?.nombre ?? resultado
@@ -261,8 +303,14 @@ function leerResponsable(valor: unknown): ResponsableLead | null {
   return { tipo, asesorId: idTexto(valor.asesorId), nombre: textoONulo(valor.nombre) }
 }
 
-function leerVehiculo(valor: unknown): VehiculoLead {
-  const v = esObjetoJson(valor) ? valor : {}
+function leerOrigen(valor: unknown): OrigenLead {
+  const codigo = texto(valor).trim().toUpperCase()
+  return ORIGENES_LEAD.find((o) => o === codigo) ?? 'CONTACTO_VEHICULO'
+}
+
+function leerVehiculo(valor: unknown): VehiculoLead | null {
+  if (!esObjetoJson(valor)) return null
+  const v = valor
   return {
     vehiculoId: numero(v.vehiculoId),
     publicacionId: numero(v.publicacionId),
@@ -284,6 +332,8 @@ function leerItem(valor: unknown): LeadItem | null {
     mensaje: texto(valor.mensaje),
     creadoEn: texto(valor.creadoEn),
     nuevo: valor.nuevo === true,
+    origen: leerOrigen(valor.origen),
+    tipoVehiculo: textoONulo(valor.tipoVehiculo)?.toUpperCase() ?? null,
     vehiculo: leerVehiculo(valor.vehiculo),
     responsable: leerResponsable(valor.responsable) ?? { tipo: 'ADMINISTRACION', asesorId: null, nombre: null },
     resultadoCierre: textoONulo(valor.resultadoCierre),
@@ -343,6 +393,7 @@ export function consultaLeads(f: FiltrosLeads, esAdmin: boolean): string {
   const params = new URLSearchParams()
   if (f.estado !== '') params.set('estado', f.estado)
   if (esAdmin && f.responsable !== '') params.set('responsable', f.responsable)
+  if (esAdmin && f.origen !== '') params.set('origen', f.origen)
   if (f.vehiculoId !== '') params.set('vehiculoId', f.vehiculoId)
   if (f.desde !== '') params.set('desde', f.desde)
   if (f.hasta !== '') params.set('hasta', f.hasta)

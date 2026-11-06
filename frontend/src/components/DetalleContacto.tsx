@@ -1,13 +1,17 @@
 // P5 — Detalle de un contacto (#/contactos/<id>): datos del visitante (solo lectura, CA-P5-43), vehículo con su
 // estado actual (CA-P5-49), historial cronológico (CA-P5-42), notas (CA-P5-37), cierre con resultado (CA-P5-39)
 // y, solo para el administrador, reabrir (CA-P5-41), reasignar (CA-P5-44) y la prueba de autorización (CA-P5-16).
+// P5b: un aviso no tiene vehículo ("Sin vehículo asociado"), muestra la descripción o el tipo de vehículo, ofrece
+// sus propios resultados de cierre (CA-P5b-41) y nunca se reasigna (D-52 A, CA-P5b-43).
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { nombreTipoVehiculo } from '../api/avisos'
 import { ApiError, MENSAJE_INESPERADO } from '../api/http'
 import type { ResumenAsesor } from '../api/inventario'
 import {
   agregarNota,
   cerrarLead,
   erroresDeCampo,
+  esAviso,
   formatearFechaHora,
   MENSAJE_DESTINO,
   MENSAJE_RESULTADO,
@@ -16,19 +20,21 @@ import {
   nombreEstadoVehiculo,
   nombreEvento,
   nombreFormulario,
+  nombreOrigen,
   nombreResponsable,
   nombreResultado,
   obtenerLead,
   reabrirLead,
   reasignarLead,
   RESPONSABLE_ADMINISTRACION,
-  RESULTADOS_CIERRE,
+  resultadosCierrePara,
   TEXTO_MAX,
   validarMotivoLead,
   validarNota,
   validarObservacion,
   type EventoLead,
   type LeadDetalle,
+  type ResultadoCierre,
 } from '../api/leads'
 import { HASH_CONTACTOS, hashVehiculo, navegar } from '../rutas'
 import { Aviso, type DatosAviso } from './Aviso'
@@ -265,6 +271,8 @@ export function DetalleContacto({
   const lead = estado.tipo === 'ok' ? estado.lead : null
   const abierto = lead?.estado === 'ABIERTO'
   const ocupado = dialogo !== null || enviandoNota
+  const aviso = lead !== null && esAviso(lead.origen)
+  const vehiculo = lead?.vehiculo ?? null
 
   return (
     <div className="cat-pagina inv-pagina contactos">
@@ -272,7 +280,7 @@ export function DetalleContacto({
         <a href={HASH_CONTACTOS}>Volver a la lista de contactos</a>
       </p>
       <h1 tabIndex={-1} className="inv-titulo">
-        {lead ? `Contacto de ${lead.nombre || 'sin nombre'}` : 'Contacto'}
+        {lead ? `${aviso ? 'Solicitud' : 'Contacto'} de ${lead.nombre || 'sin nombre'}` : 'Contacto'}
       </h1>
 
       {estado.tipo === 'cargando' && <p role="status">Cargando contacto...</p>}
@@ -311,6 +319,18 @@ export function DetalleContacto({
               </span>
             </p>
             <dl className="inv-datos">
+              {esAdmin && (
+                <div>
+                  <dt>Origen</dt>
+                  <dd>{nombreOrigen(lead.origen)}</dd>
+                </div>
+              )}
+              {lead.origen === 'SEGURO_TODO_RIESGO' && (
+                <div>
+                  <dt>Tipo de vehículo</dt>
+                  <dd>{lead.tipoVehiculo ? nombreTipoVehiculo(lead.tipoVehiculo) : '—'}</dd>
+                </div>
+              )}
               <div>
                 <dt>Nombre</dt>
                 <dd>{lead.nombre || '—'}</dd>
@@ -354,7 +374,9 @@ export function DetalleContacto({
                 <strong>Observación del cierre:</strong> {lead.observacionCierre}
               </p>
             )}
-            <h3 className="lead-subtitulo">Mensaje</h3>
+            <h3 className="lead-subtitulo">
+              {lead.origen === 'VENDE_TU_CAMION' ? 'Descripción del vehículo' : 'Mensaje'}
+            </h3>
             <p className="lead-mensaje inv-texto-largo">{lead.mensaje || '—'}</p>
             <p className="campo-ayuda">
               Los datos que dejó la persona no se pueden cambiar. Si hay que corregir algo, anótalo como nota.
@@ -365,41 +387,50 @@ export function DetalleContacto({
             <h2 id="lead-vehiculo-titulo" className="inv-resumen-titulo">
               Vehículo
             </h2>
-            <dl className="inv-datos">
-              <div>
-                <dt>Vehículo</dt>
-                <dd>{lead.vehiculo.titulo || '—'}</dd>
-              </div>
-              <div>
-                <dt>Estado del vehículo</dt>
-                <dd>{lead.vehiculo.estadoVehiculo ? nombreEstadoVehiculo(lead.vehiculo.estadoVehiculo) : '—'}</dd>
-              </div>
-              <div>
-                <dt>Publicación</dt>
-                <dd>
-                  {lead.vehiculo.estadoPublicacion ? nombreEstadoPublicacionLead(lead.vehiculo.estadoPublicacion) : '—'}
-                </dd>
-              </div>
-            </dl>
-            <div className="acciones-fila">
-              {lead.vehiculo.estadoPublicacion === 'PUBLICADA' && lead.vehiculo.slug && (
-                <a className="inv-boton-enlace inv-boton-pequeno inv-boton-secundario" href={hashVehiculo(lead.vehiculo.slug)}>
-                  Ver en el portal
-                </a>
-              )}
-              {lead.vehiculo.vehiculoId > 0 && (
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={() => {
-                    onFiltrarVehiculo({ vehiculoId: lead.vehiculo.vehiculoId, titulo: lead.vehiculo.titulo })
-                    navegar(HASH_CONTACTOS)
-                  }}
-                >
-                  Ver todos los contactos de este vehículo
-                </button>
-              )}
-            </div>
+            {vehiculo === null ? (
+              <p>Sin vehículo asociado</p>
+            ) : (
+              <>
+                <dl className="inv-datos">
+                  <div>
+                    <dt>Vehículo</dt>
+                    <dd>{vehiculo.titulo || '—'}</dd>
+                  </div>
+                  <div>
+                    <dt>Estado del vehículo</dt>
+                    <dd>{vehiculo.estadoVehiculo ? nombreEstadoVehiculo(vehiculo.estadoVehiculo) : '—'}</dd>
+                  </div>
+                  <div>
+                    <dt>Publicación</dt>
+                    <dd>
+                      {vehiculo.estadoPublicacion ? nombreEstadoPublicacionLead(vehiculo.estadoPublicacion) : '—'}
+                    </dd>
+                  </div>
+                </dl>
+                <div className="acciones-fila">
+                  {vehiculo.estadoPublicacion === 'PUBLICADA' && vehiculo.slug && (
+                    <a
+                      className="inv-boton-enlace inv-boton-pequeno inv-boton-secundario"
+                      href={hashVehiculo(vehiculo.slug)}
+                    >
+                      Ver en el portal
+                    </a>
+                  )}
+                  {vehiculo.vehiculoId > 0 && (
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => {
+                        onFiltrarVehiculo({ vehiculoId: vehiculo.vehiculoId, titulo: vehiculo.titulo })
+                        navegar(HASH_CONTACTOS)
+                      }}
+                    >
+                      Ver todos los contactos de este vehículo
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
           </section>
 
           <section className="inv-resumen" aria-labelledby="lead-acciones-titulo">
@@ -429,13 +460,17 @@ export function DetalleContacto({
               </form>
             )}
             {!abierto && <p>Este contacto está cerrado. {esAdmin ? 'Puedes reabrirlo si hace falta.' : ''}</p>}
+            {esAdmin && aviso && (
+              <p className="campo-ayuda">Esta solicitud la atiende siempre la administración: no se reasigna a un asesor.</p>
+            )}
             <div className="acciones-fila lead-acciones">
               {abierto && (
                 <button type="button" disabled={ocupado} onClick={(e) => abrir('cerrar', e.currentTarget)}>
                   Cerrar contacto
                 </button>
               )}
-              {esAdmin && abierto && (
+              {/* D-52 A: un aviso lo atiende siempre la administración; no se ofrece reasignar. */}
+              {esAdmin && abierto && !aviso && (
                 <button
                   type="button"
                   className="secondary-button"
@@ -497,6 +532,7 @@ export function DetalleContacto({
 
       {lead && dialogo?.tipo === 'cerrar' && (
         <DialogoCerrarLead
+          opciones={resultadosCierrePara(lead.origen)}
           enviando={dialogo.enviando}
           erroresResultado={dialogo.erroresResultado}
           erroresObservacion={dialogo.erroresObservacion}
@@ -563,6 +599,8 @@ function EventoHistorial({ evento: e }: { evento: EventoLead }) {
 }
 
 type DialogoCerrarLeadProps = {
+  /** P5b: resultados válidos según el origen (CA-P5b-41). */
+  opciones: readonly { valor: ResultadoCierre; nombre: string }[]
   enviando: boolean
   erroresResultado: string[]
   erroresObservacion: string[]
@@ -573,6 +611,7 @@ type DialogoCerrarLeadProps = {
 
 /** Cerrar con resultado (CA-P5-39): "Otro" exige observación de 5 a 500; los demás la tienen opcional. */
 function DialogoCerrarLead({
+  opciones,
   enviando,
   erroresResultado,
   erroresObservacion,
@@ -627,7 +666,7 @@ function DialogoCerrarLead({
               setResultado(v)
               if (locales) setLocales({ resultado: [], observacion: [] })
             }}
-            opciones={RESULTADOS_CIERRE}
+            opciones={opciones}
             textoVacio="Elige el resultado"
             errores={errR}
             deshabilitado={enviando}
