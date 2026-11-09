@@ -119,6 +119,7 @@ describe('"Vende tu camión": envío (CA-P5b-01, 02, 28, 29, 30, 56)', () => {
       autorizacionDatos: true,
       sitioWeb: '',
     })
+    await user.click(screen.getByRole('button', { name: 'Enviar otra solicitud' }))
     expect(nombre()).toHaveValue('')
     expect(telefonoVende()).toHaveValue('')
     expect(descripcion()).toHaveValue('')
@@ -261,7 +262,8 @@ describe('"Vende tu camión": envío (CA-P5b-01, 02, 28, 29, 30, 56)', () => {
     await user.click(enviar())
     expect(await screen.findByText(MENSAJE_OK)).toBeInTheDocument()
     expect(cabecera(api.llamadasA(RUTA_VENDE)[0].init, 'Authorization')).toBe(`Bearer ${TOKEN_FICTICIO}`)
-    // Tras el envío vuelve a los datos del perfil y la casilla se desmarca.
+    // Tras el envío y "Enviar otra solicitud" vuelve a los datos del perfil y la casilla se desmarca.
+    await user.click(screen.getByRole('button', { name: 'Enviar otra solicitud' }))
     expect(nombre()).toHaveValue('Persona Ficticia')
     expect(descripcion()).toHaveValue('')
     expect(casilla()).not.toBeChecked()
@@ -324,6 +326,7 @@ describe('"Compra tu seguro todo riesgo" (CA-P5b-11, 12, 15, 16, 55)', () => {
       autorizacionDatos: true,
       sitioWeb: '',
     })
+    await user.click(screen.getByRole('button', { name: 'Enviar otra solicitud' }))
     expect(tipo()).toHaveValue('')
     expect(casilla()).not.toBeChecked()
   })
@@ -614,5 +617,29 @@ describe('Permisos: el asesor y el comprador no ven nada nuevo (CA-P5b-46, 48, 4
     await screen.findByText(MENSAJE_OK)
     expect(api.llamadas.some((l) => l.url.startsWith('/api/leads'))).toBe(false)
     expect(screen.queryByRole('link', { name: /Mis solicitudes/ })).not.toBeInTheDocument()
+  })
+})
+
+describe('Confirmación tras enviar un aviso (pedido de la responsable, 2026-11-09)', () => {
+  it('oculta el formulario y ofrece volver al inicio, ver vehículos o enviar otra solicitud', async () => {
+    const { user } = abrirAnonimo('#/vende-tu-camion', { [RUTA_VENDE]: OK })
+    await formVende()
+    await user.type(nombre(), 'Ana')
+    await user.type(telefonoVende(), '3001234567')
+    await user.type(descripcion(), 'Camión NHR')
+    await user.click(casilla())
+    await user.click(enviar())
+
+    const exito = await screen.findByText(MENSAJE_OK)
+    await waitFor(() => expect(exito.parentElement).toHaveFocus())
+    expect(screen.queryByRole('form', { name: 'Formulario Vende tu camión' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Volver al inicio' })).toHaveAttribute('href', '#/')
+    expect(screen.getByRole('link', { name: 'Ver vehículos' })).toHaveAttribute('href', '#/buscar')
+
+    await user.click(screen.getByRole('button', { name: 'Enviar otra solicitud' }))
+    expect(await formVende()).toBeInTheDocument()
+    await waitFor(() => expect(nombre()).toHaveFocus())
+    expect(nombre()).toHaveValue('')
+    expect(screen.queryByText(MENSAJE_OK)).not.toBeInTheDocument()
   })
 })

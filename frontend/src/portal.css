@@ -998,7 +998,7 @@ form.admin-portada-form {
   color: var(--gris-texto);
 }
 
-form.aviso-publico-form {
+.aviso-publico-form {
   position: relative;
   max-width: 640px;
   margin: 12px 0 0;
@@ -1016,7 +1016,7 @@ form.aviso-publico-form {
 }
 
 @media (max-width: 480px) {
-  form.aviso-publico-form {
+  .aviso-publico-form {
     padding: 20px 16px;
   }
 }
@@ -1036,4 +1036,29 @@ form.aviso-publico-form {
 .lead-origen-aviso {
   background: #fde8e8;
   color: var(--rojo-oscuro);
+}
+
+/* Confirmación tras enviar un aviso: el formulario se oculta y se ofrecen tres salidas. */
+.aviso-confirmacion-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.aviso-confirmacion-acciones .inv-boton-enlace,
+.aviso-confirmacion-acciones .aviso-confirmacion-otra {
+  width: auto;
+  margin: 0;
+}
+
+@media (max-width: 480px) {
+  .aviso-confirmacion-acciones {
+    flex-direction: column;
+  }
+
+  .aviso-confirmacion-acciones .inv-boton-enlace,
+  .aviso-confirmacion-acciones .aviso-confirmacion-otra {
+    width: 100%;
+  }
 }

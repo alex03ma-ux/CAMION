@@ -21,6 +21,7 @@ import {
 } from '../api/avisos'
 import { CORREO_MAX, MENSAJE_CONTACTO_FALLO, MENSAJE_REVISA_DATOS, NOMBRE_MAX, TELEFONO_MAX } from '../api/contactos'
 import { ApiError } from '../api/http'
+import { HASH_BUSCAR, HASH_INICIO } from '../rutas'
 import { AutorizacionDatos } from './AutorizacionDatos'
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo, CampoAreaTexto, CampoSelect } from './Campo'
@@ -81,9 +82,12 @@ export function AvisoPublico({ variante, sesion }: AvisoPublicoProps) {
   const [errores, setErrores] = useState<ErroresAviso>({})
   const [enviando, setEnviando] = useState(false)
   const [aviso, setAviso] = useState<DatosAviso | null>(null)
+  // Tras un envío correcto se oculta el formulario y se ofrece cómo seguir (pedido de la responsable, 2026-11-09).
+  const [enviado, setEnviado] = useState<string | null>(null)
   // Evita un segundo envío aunque se pulse dos veces antes de que React vuelva a pintar el botón.
   const enviandoRef = useRef(false)
   const refAviso = useRef<HTMLDivElement>(null)
+  const refConfirmacion = useRef<HTMLDivElement>(null)
   const refNombre = useRef<HTMLInputElement>(null)
   const refTelefono = useRef<HTMLInputElement>(null)
   const refCorreo = useRef<HTMLInputElement>(null)
@@ -151,7 +155,9 @@ export function AvisoPublico({ variante, sesion }: AvisoPublicoProps) {
       // CA-P5b-28: el formulario se vacía (con sesión vuelve a los datos del perfil) y la casilla se desmarca.
       setForm(formularioInicial(perfilRef.current))
       setSitioWeb('')
-      mostrarAviso({ tipo: 'exito', texto: mensaje })
+      setAviso(null)
+      setEnviado(mensaje)
+      window.setTimeout(() => refConfirmacion.current?.focus(), 0)
     } catch (error) {
       // CA-P5b-29: cada error junto a su campo; se conservan los datos escritos.
       if (error instanceof ApiError && error.status === 400 && Object.keys(error.errores).length > 0) {
@@ -169,13 +175,37 @@ export function AvisoPublico({ variante, sesion }: AvisoPublicoProps) {
     }
   }
 
+  /** "Enviar otra solicitud": vuelve al formulario vacío (o con los datos del perfil). */
+  function enviarOtra() {
+    setEnviado(null)
+    window.setTimeout(() => refNombre.current?.focus(), 0)
+  }
+
   return (
     <div className="cat-pagina aviso-publico">
       <h1 className="cat-titulo" tabIndex={-1}>
         {textos.titulo}
       </h1>
-      <p className="aviso-publico-intro">{textos.intro}</p>
+      {enviado === null && <p className="aviso-publico-intro">{textos.intro}</p>}
 
+      {enviado !== null ? (
+        <section className="contacto-form aviso-publico-form aviso-confirmacion" aria-label="Solicitud enviada">
+          <div ref={refConfirmacion} tabIndex={-1} className="contacto-aviso">
+            <Aviso aviso={{ tipo: 'exito', texto: enviado }} />
+          </div>
+          <div className="aviso-confirmacion-acciones">
+            <a className="inv-boton-enlace" href={HASH_INICIO}>
+              Volver al inicio
+            </a>
+            <a className="inv-boton-enlace inv-boton-secundario" href={HASH_BUSCAR}>
+              Ver vehículos
+            </a>
+            <button type="button" className="secondary-button aviso-confirmacion-otra" onClick={enviarOtra}>
+              Enviar otra solicitud
+            </button>
+          </div>
+        </section>
+      ) : (
       <form
         className="contacto-form aviso-publico-form"
         onSubmit={enviar}
@@ -284,6 +314,7 @@ export function AvisoPublico({ variante, sesion }: AvisoPublicoProps) {
           {enviando ? 'Enviando...' : 'Enviar'}
         </button>
       </form>
+      )}
     </div>
   )
 }
