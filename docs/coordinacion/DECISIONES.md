@@ -623,7 +623,7 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
 - Recomendación: A. Mantiene P5b pequeño y coherente con P5.
 - **Decisión (responsable, 2026-11-06): A.** No en P5b. Una sola pantalla "Mis solicitudes" en "Mi cuenta" llegará con P6, con avisos, contactos, créditos y búsquedas juntos.
 
-## D-54 — Alcance de P6 frente a D-45: ¿qué es una solicitud de crédito en el portal? · PENDIENTE (2026-11-10)
+## D-54 — Alcance de P6 frente a D-45: ¿qué es una solicitud de crédito en el portal? · TOMADA (2026-11-10)
 - Contexto (detectada al escribir `docs/criterios/criterios-P6-creditos.md`, sección 2, C-1): D-45 deja "por confirmar al planear P6" si créditos y búsquedas siguen con formularios, estados y seguimiento, o se reducen a una solicitud de contacto para el administrador.
   - La v3.0 **no** pide literalmente estudio de crédito, documentos, ingresos, centrales de riesgo ni entidades financieras. Sus reglas son muy breves: RN-CO-006 "Permite registrar solicitudes", RN-CO-007 "Asigna responsable", RN-CO-008 "Permite gestionar solicitud. Seguimiento".
   - Lo que choca con D-45 es lo que implican las fuentes: FN-03 "Gestión → Resultado"; la minuta (M06 "gestión, seguimiento y comunicación"; FN-03 "evaluación/seguimiento"); y la nota P6 de la política de datos ("se recogerán datos financieros o laborales… centrales de riesgo, Ley 1266 de 2008").
@@ -635,9 +635,9 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
   - C) Flujo completo de gestión de crédito (documentos, estudio, respuesta).
     - Impacto: contradice D-45; es una entrega grande con revisión legal (Ley 1581 y Ley 1266).
 - Recomendación del analista: **A**. Es la lectura directa de D-45 ("en esta plataforma solo vamos a hacer contacto").
-- Bloquea: el diseño de P6 en conjunto. Los criterios están escritos con A.
+- **Decisión (responsable, 2026-11-10): A.** Solicitud de contacto con seguimiento mínimo; la gestión ante bancos es interna.
 
-## D-55 — Datos del formulario de crédito · PENDIENTE (2026-11-10)
+## D-55 — Datos del formulario de crédito · TOMADA (2026-11-10)
 - Contexto: D-9 ya fija nombre y teléfono obligatorios y correo opcional, y que **no se exige cuenta**. Falta decidir qué más se pide. El script 002 preveía un "valor solicitado". La política de datos advierte que los datos financieros o laborales exigen ampliar la política y, si se consultan centrales, una autorización propia.
 - Opciones:
   - A) Además de los datos de contacto, tres campos **opcionales**:
@@ -650,9 +650,10 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
     - Impacto: son datos financieros del titular; exigen ampliar la política y una revisión del abogado antes de salir a internet.
 - Recomendación del analista: **A**. El monto y la cuota hablan de la compra, no de la situación financiera de la persona, y ayudan al administrador a preparar la llamada. Los ingresos se piden en el proceso interno (D-45).
 - Impacto en el esquema: A necesita la tabla `leads_credito` y que `CK_Lead_Origen` admita `tipo_vehiculo` en los créditos; B no necesita tabla.
-- Bloquea: CA-P6-08 a CA-P6-10 y CA-P6-12.
+- **Decisión (responsable, 2026-11-10): B.** Solo nombre, teléfono, correo opcional y comentario opcional (máx. 500), como un aviso. En palabras de la responsable: "esto es interno cuando [se] comunique, esos datos no deberían quedar en la página por seguridad del cliente". No se piden monto, cuota inicial, ingresos ni tipo de vehículo; no se crea la tabla `leads_credito`.
+- PROPUESTO (coordinador, técnico): la ayuda del comentario pide no escribir datos financieros ni documentos ("Cuéntanos qué vehículo te interesa. No escribas ingresos, documentos ni datos bancarios.").
 
-## D-56 — La búsqueda "Busco un vehículo" · PENDIENTE (2026-11-10)
+## D-56 — La búsqueda "Busco un vehículo" · TOMADA (2026-11-10)
 - Contexto: HU-034 a HU-038 y RN-BU-001/002 piden registrar búsquedas, relacionar vehículos y cerrarlas; D-7 las asigna al administrador.
   - FN-02 de la v3.0 incluye "Validación → **Publicación**" y la minuta dice "el sistema compara opciones" (sección 2, C-5 de los criterios). Publicar la necesidad del comprador expondría sus datos a los asesores (D-7) y va más allá de "poner en contacto" (D-45).
   - El script 002 preveía tipo de vehículo, marca, presupuesto mínimo y máximo, municipio y requisitos.
@@ -675,9 +676,9 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
   - B) Como A, más un bloque en la portada junto a los de D-51.
   - Recomendación: A. Aparece donde la persona no encuentra lo que busca, sin recargar la portada (D-42).
 - Impacto en el esquema: (a) A necesita la tabla `leads_busqueda`; (b) A necesita la tabla `busqueda_vehiculos` y dos tipos de evento nuevos.
-- Bloquea: CA-P6-16 a CA-P6-26, CA-P6-50 a CA-P6-56 y CA-P6-72.
+- **Decisión (responsable, 2026-11-10): las recomendaciones.** (a) A, (b) A, (c) A, (d) A.
 
-## D-57 — Estados y resultados de cierre de créditos y búsquedas · PENDIENTE (2026-11-10)
+## D-57 — Estados y resultados de cierre de créditos y búsquedas · TOMADA (2026-11-10)
 - **Contradicción:** D-4 (TOMADA) fija los estados del crédito Registrado → Asignado → Gestionado → Cerrado. Los leads de P5 y P5b usan ABIERTO/CERRADO. Además, con D-7 el paso a "Asignado" ocurre al instante (siempre al administrador), y con D-45 la gestión ocurre fuera del portal. La v3.0 no define estados de búsqueda.
 - (a) **Estados:**
   - A) Se mantiene ABIERTO/CERRADO en la base y se **muestran** los estados de D-4 adaptados: "Registrado" (abierto sin notas), "En gestión" (abierto con al menos una nota del administrador) y "Cerrado". "Asignado" no se muestra porque coincide con "Registrado". Vale igual para las búsquedas.
@@ -693,9 +694,9 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
   - Búsqueda: "Encontró vehículo" (nuevo), "Sin vehículo disponible" (nuevo), "No le interesó", "No respondió", "Contacto duplicado o inválido" y "Otro".
   - Recomendación: A para el crédito y la lista propuesta para la búsqueda. Sirven para el reporte HU-078 (P8) sin registrar la decisión del banco.
 - Impacto en el esquema: amplía `CK_Lead_Resultado`; con (a) B también `CK_Lead_Estado`.
-- Bloquea: CA-P6-44 a CA-P6-46 y CA-P6-70.
+- **Decisión (responsable, 2026-11-10): las recomendaciones.** (a) A: estados mostrados Registrado / En gestión / Cerrado. (b) A para el crédito, sin aprobado ni negado, y la lista propuesta para la búsqueda.
 
-## D-58 — ¿Se reasignan créditos y búsquedas a un asesor? ¿El asesor ve los créditos de sus vehículos? · PENDIENTE (2026-11-10)
+## D-58 — ¿Se reasignan créditos y búsquedas a un asesor? ¿El asesor ve los créditos de sus vehículos? · TOMADA (2026-11-10)
 - **Contradicción:** D-7 dice que el administrador "puede reasignar manualmente **cualquier** solicitud a un asesor". D-52 decidió que los avisos nunca se reasignan, para no exponer datos de clientes.
   - Además, un crédito pedido desde la ficha de un vehículo queda ligado a la publicación de un asesor.
   - El código de P5b ya trata todo origen distinto de `CONTACTO_VEHICULO` como solicitud de Administración: no se reasigna (409), el asesor no lo ve y `CK_Lead_AvisoAdmin` lo impide en la base.
@@ -707,9 +708,9 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
   - C) Solo las búsquedas se reasignan; los créditos no.
   - D) Como A, pero el asesor dueño ve, solo como aviso y sin los datos del cliente, que se pidió un crédito para su vehículo.
 - Recomendación del analista: **A**. Es coherente con D-52, D-7 ("créditos y búsquedas los atiende el administrador") y D-45. Además, ya es el comportamiento del código.
-- Bloquea: CA-P6-39 y CA-P6-60.
+- **Decisión (responsable, 2026-11-10): A.** Créditos y búsquedas nunca se reasignan; el asesor no los ve.
 
-## D-59 — Qué muestra "Mis solicitudes" · PENDIENTE (2026-11-10)
+## D-59 — Qué muestra "Mis solicitudes" · TOMADA (2026-11-10)
 - Contexto: D-53 fija una sola pantalla en "Mi cuenta" con avisos, contactos, créditos y búsquedas. **Ya está decidido** que incluye los contactos de P5. Falta el detalle. La opción B descrita en D-53 hablaba de "fecha, tipo y estado (Pendiente / Finalizado), sin notas internas".
 - (a) **¿Qué solicitudes entran?**
   - A) Solo las enviadas con la sesión iniciada (`usuario_id`).
@@ -723,5 +724,5 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
   - Recomendación: A. Es lo mínimo útil; el resultado y las notas son del trabajo interno.
 - (c) **¿Solo lectura?** Se propone que sí: el comprador no edita, cancela ni borra; para cancelar, escribe por WhatsApp. Si la responsable quiere un botón "Ya no lo necesito", cierra la solicitud con un resultado propio.
 - (d) **¿Quién la ve?** Se propone solo el rol COMPRADOR (D-53 habla del comprador). El asesor tiene "Mis contactos" y el administrador, la bandeja.
-- Bloquea: CA-P6-66 a CA-P6-70 y CA-P6-74.
+- **Decisión (responsable, 2026-11-10): las recomendaciones.** (a) A, (b) A, (c) solo lectura, (d) solo COMPRADOR.
 
