@@ -55,6 +55,36 @@ public static class ReglasLeads
     public const string MensajeResultadoNoAplica = "Ese resultado no aplica a esta solicitud.";
     public const string MensajeAvisoAdministracion = "Esta solicitud la atiende siempre la administración.";
 
+    // P6 (HU-034 a HU-042; docs/criterios/P6-contrato-api.md).
+    public const string MensajeCredito = "Solicitud de crédito";
+    public const string MensajeCreditoVehiculo = "Solicitud de crédito para este vehículo";
+    public const string MensajeComentarioLargo = "El comentario no puede pasar de 500 caracteres.";
+    public const string MensajeBusqueda = "Busco un vehículo";
+    public const string MensajeCategoriaBusqueda = "Elige la categoría del vehículo que buscas.";
+    public const string MensajeMarcaBusqueda = "Elige una marca de la lista.";
+    public const string MensajeModeloBusqueda = "Elige un modelo de la lista.";
+    public const string MensajeAniosBusqueda = "Revisa el rango de años.";
+    public const string MensajePresupuesto = "Escribe un valor en pesos entre 1.000.000 y 5.000.000.000, o deja el campo vacío.";
+    public const string MensajeDepartamentoBusqueda = "Elige un departamento de la lista.";
+    public const string MensajeCiudadBusqueda = "Elige una ciudad de la lista.";
+    public const string MensajeSoloBusqueda = "Solo se pueden relacionar vehículos a una búsqueda.";
+    public const string MensajeBusquedaCerrada = "Esta búsqueda está cerrada.";
+    public const string MensajeNoPublicado = "Ese vehículo no está publicado.";
+    public const string MensajeYaRelacionado = "Ese vehículo ya está relacionado con esta búsqueda.";
+    public const string MensajeTopeRelacionados = "Esta búsqueda ya tiene 10 vehículos relacionados.";
+    public const string MensajeNoRelacionado = "Ese vehículo no está relacionado con esta búsqueda.";
+    public const string MensajeElegirVehiculo = "Elige un vehículo.";
+    public const string MensajeNotaRelacion = "La nota no puede pasar de 300 caracteres.";
+    public const string MensajeSolicitudNoEncontrada = "Solicitud no encontrada.";
+    public const int AnioMinimoBusqueda = 1950;
+    public const long PresupuestoMinimo = 1_000_000;
+    public const long PresupuestoMaximo = 5_000_000_000;
+
+    // D-57 a (A): estados mostrados de créditos y búsquedas.
+    public const string EstadoRegistrado = "REGISTRADO";
+    public const string EstadoEnGestion = "EN_GESTION";
+    public const string EstadoCerradoGestion = "CERRADO";
+
     public const string MensajeNoEncontrado = "Contacto no encontrado.";
     public const string MensajeNota = "La nota debe tener entre 5 y 500 caracteres.";
     public const string MensajeCerrado = "Este contacto está cerrado.";
@@ -141,14 +171,55 @@ public static class ReglasLeads
         return errores;
     }
 
-    /// <summary>CA-P5b-26: texto del evento CONTACTO_REPETIDO de un seguro.</summary>
-    public static string TextoSeguroRepetido(string? tipo) => MensajeSeguro + ". Tipo de vehículo: " + (tipo switch
+    /// <summary>
+    /// P6 (CA-P6-07 a CA-P6-12, CA-P6-27; D-55 B): datos de contacto y comentario. conVehiculo decide el texto fijo cuando el
+    /// comentario llega vacío. Solo se leen los campos de CreditoRequest: lo financiero no existe en el contrato.
+    /// </summary>
+    public static Dictionary<string, string[]> ValidarCredito(CreditoRequest r, bool conVehiculo, out DatosAviso? datos)
+    {
+        datos = null;
+        var errores = ValidarTitular(r.Nombre, r.Telefono, r.Correo, r.AutorizacionDatos,
+            out var nombre, out var telefono, out var correo);
+        var mensaje = (r.Mensaje ?? "").Trim();
+        if (mensaje.Length > MaxMensaje) errores["mensaje"] = [MensajeComentarioLargo];
+        if (errores.Count == 0)
+            datos = new DatosAviso(Lead.OrigenCredito, nombre, telefono!, correo,
+                mensaje.Length > 0 ? mensaje : conVehiculo ? MensajeCreditoVehiculo : MensajeCredito, null);
+        return errores;
+    }
+
+    /// <summary>P6 (CA-P6-16, CA-P6-22, CA-P6-27): datos de contacto y descripción de la búsqueda (los criterios, en ReglasBusqueda).</summary>
+    public static Dictionary<string, string[]> ValidarTitularBusqueda(BusquedaRequest r, out DatosAviso? datos)
+    {
+        datos = null;
+        var errores = ValidarTitular(r.Nombre, r.Telefono, r.Correo, r.AutorizacionDatos,
+            out var nombre, out var telefono, out var correo);
+        var descripcion = (r.Descripcion ?? "").Trim();
+        if (descripcion.Length > MaxMensaje) errores["descripcion"] = [MensajeDescripcionLarga];
+        if (errores.Count == 0)
+            datos = new DatosAviso(Lead.OrigenBusqueda, nombre, telefono!, correo,
+                descripcion.Length > 0 ? descripcion : MensajeBusqueda, null);
+        return errores;
+    }
+
+    /// <summary>P6 (D-57 a A): Registrado / En gestión / Cerrado de un crédito o una búsqueda; null en los demás orígenes.</summary>
+    public static string? EstadoGestion(string origen, string estado, bool conNotas) =>
+        !Lead.TieneEstadoGestion(origen) ? null
+        : estado == Lead.Cerrado ? EstadoCerradoGestion
+        : conNotas ? EstadoEnGestion
+        : EstadoRegistrado;
+
+    /// <summary>P6: etiqueta del tipo de vehículo del seguro (D-50 a).</summary>
+    public static string EtiquetaTipoVehiculo(string? tipo) => tipo switch
     {
         "CAMION" => "Camión",
         "CARRO" => "Carro",
         "MAQUINARIA" => "Maquinaria",
         _ => "Otro"
-    }) + ".";
+    };
+
+    /// <summary>CA-P5b-26: texto del evento CONTACTO_REPETIDO de un seguro.</summary>
+    public static string TextoSeguroRepetido(string? tipo) => MensajeSeguro + ". Tipo de vehículo: " + EtiquetaTipoVehiculo(tipo) + ".";
 
     // Nombre, teléfono, correo y autorización: las mismas reglas del contacto de P5 (D-9, D-44, D-50 c).
     private static Dictionary<string, string[]> ValidarTitular(string? nombreCrudo, string? telefonoCrudo, string? correoCrudo,
@@ -186,7 +257,8 @@ public static class ReglasLeads
             errores["resultado"] = [MensajeResultado];
             resultado = null;
         }
-        else if (!(Lead.EsAviso(origen) ? Lead.ResultadosAviso : Lead.ResultadosContacto).Contains(resultado))
+        // P6 (CA-P6-45, CA-P6-46): cada origen tiene su lista.
+        else if (!Lead.ResultadosDe(origen).Contains(resultado))
         {
             errores["resultado"] = [MensajeResultadoNoAplica];
             resultado = null;

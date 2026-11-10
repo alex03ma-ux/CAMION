@@ -81,6 +81,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(Roles.PoliticaAutenticado, policy => policy.RequireAuthenticatedUser());
     options.AddPolicy(Roles.PoliticaAsesorOAdministrador,
         policy => policy.RequireAuthenticatedUser().RequireRole(Roles.Asesor, Roles.Administrador));
+    options.AddPolicy(Roles.PoliticaSoloComprador, policy => policy.RequireAuthenticatedUser().RequireRole(Roles.Comprador));
 });
 builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, RespuestaAutorizacion>();
 // P3: hora inyectable para la regla de vigencia del catálogo (las pruebas la fijan).
@@ -225,6 +226,9 @@ app.MapContactosEndpoints();
 app.MapLeadsEndpoints();
 // P5b: avisos públicos "Vende tu camión" y "Compra tu seguro todo riesgo" (HU-N01, HU-N02, D-6, D-52).
 app.MapAvisosEndpoints();
+// P6: crédito y búsqueda públicos y "Mis solicitudes" del comprador (HU-034 a HU-042, D-53 a D-59).
+app.MapSolicitudesEndpoints();
+app.MapMisSolicitudesEndpoints();
 
 app.Run();
 

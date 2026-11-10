@@ -46,6 +46,10 @@ public sealed class CamionDbContext : IdentityDbContext<ApplicationUser, Identit
     public DbSet<EventoLead> EventosLead => Set<EventoLead>();
     public DbSet<ConsentimientoDatos> ConsentimientosDatos => Set<ConsentimientoDatos>();
 
+    // P6: tablas nuevas de la migración 015 (HU-034, HU-036, D-56). No se usan las tablas de búsqueda del script 002.
+    public DbSet<LeadBusqueda> LeadsBusqueda => Set<LeadBusqueda>();
+    public DbSet<BusquedaVehiculo> BusquedaVehiculos => Set<BusquedaVehiculo>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -457,15 +461,19 @@ public sealed class CamionDbContext : IdentityDbContext<ApplicationUser, Identit
             entity.ToTable("leads", t =>
             {
                 t.HasCheckConstraint("CK_Lead_Estado", "estado IN ('ABIERTO','CERRADO')");
-                // P5b (migración 014): ATENDIDA para los avisos.
+                // P5b (migración 014): ATENDIDA para los avisos. P6 (migración 015, D-57 b A): resultados de crédito y búsqueda.
                 t.HasCheckConstraint("CK_Lead_Resultado", "resultado_cierre IS NULL OR resultado_cierre IN " +
-                    "('VENTA_CONCRETADA','NO_INTERESADO','NO_RESPONDIO','VEHICULO_NO_DISPONIBLE','DUPLICADO_INVALIDO','OTRO','ATENDIDA')");
+                    "('VENTA_CONCRETADA','NO_INTERESADO','NO_RESPONDIO','VEHICULO_NO_DISPONIBLE','DUPLICADO_INVALIDO','OTRO','ATENDIDA'," +
+                    "'REMITIDO_ENTIDAD','VEHICULO_ENCONTRADO','SIN_VEHICULO')");
                 t.HasCheckConstraint("CK_Lead_Cierre", "estado = 'ABIERTO' OR resultado_cierre IS NOT NULL");
                 // P5b (HU-N01, HU-N02, D-50 a): coherencia entre origen, publicación y tipo de vehículo.
                 t.HasCheckConstraint("CK_Lead_Origen",
                     "(origen = 'CONTACTO_VEHICULO' AND publicacion_id IS NOT NULL AND tipo_vehiculo IS NULL) OR " +
                     "(origen = 'VENDE_TU_CAMION' AND publicacion_id IS NULL AND tipo_vehiculo IS NULL) OR " +
-                    "(origen = 'SEGURO_TODO_RIESGO' AND publicacion_id IS NULL AND tipo_vehiculo IS NOT NULL AND tipo_vehiculo IN ('CAMION','CARRO','MAQUINARIA','OTRO'))");
+                    "(origen = 'SEGURO_TODO_RIESGO' AND publicacion_id IS NULL AND tipo_vehiculo IS NOT NULL AND tipo_vehiculo IN ('CAMION','CARRO','MAQUINARIA','OTRO')) OR " +
+                    // P6 (migración 015, D-55 B): crédito con o sin publicación y nunca con tipo de vehículo; búsqueda sin ninguno.
+                    "(origen = 'CREDITO' AND tipo_vehiculo IS NULL) OR " +
+                    "(origen = 'BUSQUEDA' AND publicacion_id IS NULL AND tipo_vehiculo IS NULL)");
                 // P5b (D-6, D-52 A): un aviso nunca tiene responsable asesor.
                 t.HasCheckConstraint("CK_Lead_AvisoAdmin", "origen = 'CONTACTO_VEHICULO' OR responsable_asesor_id IS NULL");
             });
@@ -495,6 +503,8 @@ public sealed class CamionDbContext : IdentityDbContext<ApplicationUser, Identit
             entity.HasIndex(x => x.CreadoEn).HasDatabaseName("IX_Lead_Creado");
             entity.HasIndex(x => new { x.Origen, x.Estado, x.CreadoEn }).HasDatabaseName("IX_Lead_Origen");
             entity.HasIndex(x => new { x.Origen, x.Telefono, x.Estado }).HasDatabaseName("IX_Lead_AvisoDuplicado");
+            // P6 (migración 015, D-59 a A): "Mis solicitudes".
+            entity.HasIndex(x => new { x.UsuarioId, x.CreadoEn }).HasDatabaseName("IX_Lead_Usuario");
             entity.HasOne(x => x.Publicacion).WithMany().HasForeignKey(x => x.PublicacionId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.UsuarioId).OnDelete(DeleteBehavior.SetNull);
             entity.HasOne<PerfilAsesor>().WithMany().HasForeignKey(x => x.ResponsableAsesorId).OnDelete(DeleteBehavior.Restrict);
@@ -503,7 +513,8 @@ public sealed class CamionDbContext : IdentityDbContext<ApplicationUser, Identit
         builder.Entity<EventoLead>(entity =>
         {
             entity.ToTable("eventos_lead", t => t.HasCheckConstraint("CK_EvLead_Tipo",
-                "tipo IN ('CREADO','ASIGNADO','CONTACTO_REPETIDO','NOTA','REASIGNADO','CERRADO','REABIERTO')"));
+                "tipo IN ('CREADO','ASIGNADO','CONTACTO_REPETIDO','NOTA','REASIGNADO','CERRADO','REABIERTO'," +
+                "'VEHICULO_RELACIONADO','VEHICULO_RETIRADO')"));
             entity.HasKey(x => x.Id);
             entity.Property(x => x.Id).HasColumnName("id").ValueGeneratedOnAdd();
             entity.Property(x => x.LeadId).HasColumnName("lead_id");
@@ -524,7 +535,8 @@ public sealed class CamionDbContext : IdentityDbContext<ApplicationUser, Identit
         builder.Entity<ConsentimientoDatos>(entity =>
         {
             entity.ToTable("consentimientos_datos", t => t.HasCheckConstraint("CK_Consent_Formulario",
-                "formulario IN ('CONTACTO_VEHICULO','VENDE_TU_CAMION','SEGURO_TODO_RIESGO','REGISTRO_COMPRADOR','INSCRIPCION_ASESOR')"));
+                "formulario IN ('CONTACTO_VEHICULO','VENDE_TU_CAMION','SEGURO_TODO_RIESGO','REGISTRO_COMPRADOR','INSCRIPCION_ASESOR'," +
+                "'CREDITO','BUSQUEDA')"));
             entity.HasKey(x => x.Id);
             entity.Property(x => x.Id).HasColumnName("id").ValueGeneratedOnAdd();
             entity.Property(x => x.Formulario).HasColumnName("formulario").HasMaxLength(30).IsRequired();
@@ -535,6 +547,60 @@ public sealed class CamionDbContext : IdentityDbContext<ApplicationUser, Identit
             entity.Property(x => x.EntidadId).HasColumnName("entidad_id").HasMaxLength(100).IsRequired();
             entity.HasIndex(x => new { x.Entidad, x.EntidadId }).HasDatabaseName("IX_Consent_Entidad");
             entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.UsuarioId).OnDelete(DeleteBehavior.SetNull);
+        });
+        // P6 (HU-034, D-56 a A; migración 015): criterios de la búsqueda.
+        builder.Entity<LeadBusqueda>(entity =>
+        {
+            entity.ToTable("leads_busqueda", t =>
+            {
+                t.HasCheckConstraint("CK_LeadBusq_Anios",
+                    "(anio_desde IS NULL OR anio_desde BETWEEN 1950 AND 2100) AND " +
+                    "(anio_hasta IS NULL OR anio_hasta BETWEEN 1950 AND 2100) AND " +
+                    "(anio_desde IS NULL OR anio_hasta IS NULL OR anio_desde <= anio_hasta)");
+                t.HasCheckConstraint("CK_LeadBusq_Presupuesto",
+                    "presupuesto_max_cop IS NULL OR presupuesto_max_cop BETWEEN 1000000 AND 5000000000");
+            });
+            entity.HasKey(x => x.LeadId);
+            entity.Property(x => x.LeadId).HasColumnName("lead_id").ValueGeneratedNever();
+            entity.Property(x => x.TipoVehiculoId).HasColumnName("tipo_vehiculo_id");
+            entity.Property(x => x.MarcaId).HasColumnName("marca_id");
+            entity.Property(x => x.LineaId).HasColumnName("linea_id");
+            entity.Property(x => x.AnioDesde).HasColumnName("anio_desde");
+            entity.Property(x => x.AnioHasta).HasColumnName("anio_hasta");
+            entity.Property(x => x.PresupuestoMaxCop).HasColumnName("presupuesto_max_cop");
+            entity.Property(x => x.DepartamentoId).HasColumnName("departamento_id");
+            entity.Property(x => x.MunicipioId).HasColumnName("municipio_id");
+            entity.HasIndex(x => x.TipoVehiculoId).HasDatabaseName("IX_LeadBusq_Tipo");
+            entity.HasIndex(x => x.MarcaId).HasDatabaseName("IX_LeadBusq_Marca");
+            entity.HasIndex(x => x.LineaId).HasDatabaseName("IX_LeadBusq_Linea");
+            entity.HasIndex(x => x.DepartamentoId).HasDatabaseName("IX_LeadBusq_Departamento");
+            entity.HasIndex(x => x.MunicipioId).HasDatabaseName("IX_LeadBusq_Municipio");
+            entity.HasOne<Lead>().WithOne().HasForeignKey<LeadBusqueda>(x => x.LeadId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<TipoVehiculo>().WithMany().HasForeignKey(x => x.TipoVehiculoId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<Marca>().WithMany().HasForeignKey(x => x.MarcaId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<Linea>().WithMany().HasForeignKey(x => x.LineaId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<Departamento>().WithMany().HasForeignKey(x => x.DepartamentoId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<Municipio>().WithMany().HasForeignKey(x => x.MunicipioId).OnDelete(DeleteBehavior.Restrict);
+        });
+        // P6 (HU-036, D-56 b A; migración 015): vehículos relacionados con una búsqueda.
+        builder.Entity<BusquedaVehiculo>(entity =>
+        {
+            entity.ToTable("busqueda_vehiculos");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(x => x.LeadId).HasColumnName("lead_id");
+            entity.Property(x => x.PublicacionId).HasColumnName("publicacion_id");
+            entity.Property(x => x.Nota).HasColumnName("nota").HasMaxLength(BusquedaVehiculo.MaxNota);
+            entity.Property(x => x.RelacionadoPor).HasColumnName("relacionado_por").HasMaxLength(255);
+            entity.Property(x => x.RelacionadoEn).HasColumnName("relacionado_en");
+            entity.Property(x => x.RetiradoPor).HasColumnName("retirado_por").HasMaxLength(255);
+            entity.Property(x => x.RetiradoEn).HasColumnName("retirado_en");
+            entity.HasIndex(x => new { x.LeadId, x.PublicacionId }).IsUnique().HasDatabaseName("UX_BusqVeh_LeadPub");
+            entity.HasIndex(x => x.PublicacionId).HasDatabaseName("IX_BusqVeh_Publicacion");
+            entity.HasOne<Lead>().WithMany().HasForeignKey(x => x.LeadId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(x => x.Publicacion).WithMany().HasForeignKey(x => x.PublicacionId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.RelacionadoPor).OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.RetiradoPor).OnDelete(DeleteBehavior.SetNull);
         });
     }
 }
