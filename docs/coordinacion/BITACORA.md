@@ -421,4 +421,21 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - la prueba manual de la responsable (pasos en `docs/manual/P5b-avisos.md`);
   - INF-2 antes de publicar en internet;
   - la revisión legal (D-44): los avisos no salen a internet sin una versión aprobada de la política.
-- PR: por abrir contra `main`, sin merge. Rama por publicar.
+- PR: por abrir contra `main`, sin merge. Rama publicada en `origin/feature/p5b-avisos`.
+- **Migración 014 aplicada (2026-11-09).**
+  - Respaldo previo: `C:\Respaldo_CAMION\camion_ventas_antes_014_p5b_20261109_1406.sql` (142 KB, 47 tablas, termina en "Dump completed").
+  - La API estaba detenida. La responsable seleccionó `camion_ventas` en phpMyAdmin e importó `014_p5b_avisos_SUBIR.sql`, con mensaje verde.
+  - Verificación de solo lectura:
+    - columnas `origen` y `tipo_vehiculo`;
+    - `publicacion_id` admite NULL;
+    - 5 CHECK, entre ellos `CK_Lead_Origen`, `CK_Lead_AvisoAdmin` y `CK_Lead_Resultado` con ATENDIDA;
+    - índices `IX_Lead_Origen` e `IX_Lead_AvisoDuplicado`;
+    - los 3 leads anteriores quedaron como CONTACTO_VEHICULO;
+    - 14 publicaciones.
+- **API en Windows.** El Control de aplicaciones de Windows (Smart App Control) bloqueó `Camion.Api.exe` recién compilado al usar `dotnet run`. No se cambió esa protección. La API se arranca con `dotnet bin\Debug\net8.0\Camion.Api.dll` desde `backend\Camion.Api`, con `ASPNETCORE_ENVIRONMENT=Development` y `ASPNETCORE_URLS=http://localhost:5080`.
+- **Ajuste pedido en la prueba (2026-11-09).** Después de enviar, el formulario se quedaba vacío y sin salida. Ahora se oculta y ofrece tres opciones: "Volver al inicio", "Ver vehículos" y "Enviar otra solicitud" (commit 12dea7e). Pruebas: `npx vitest run` 577/577, `tsc -b`, `tsc -p tsconfig.test.json` y `npm run build` OK.
+- **Prueba manual P5b: PROBADO por la responsable (2026-11-10), respuesta "Todo bien".**
+  - En la base hay 2 avisos "Vende tu camión" y 1 de seguro (Maquinaria), todos sin publicación y en Administración, sin asesor.
+  - Cada aviso tiene su autorización de datos con su formulario.
+  - En `eventos_lead` no hay notas, cierres ni reaperturas de los avisos. Esa parte de la guía no quedó ejercida a mano; la cubren las pruebas automáticas.
+  - Los avisos 4 a 6 quedan como datos de prueba, junto con los leads 1 a 3. Se limpian antes de producción.
