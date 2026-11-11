@@ -2,7 +2,9 @@
 // con sesión se prellenan los datos del perfil y se envía el token para ligarla a la cuenta (CA-P6-23).
 // Categoría obligatoria; marca, modelo, años, presupuesto, departamento y ciudad (DIVIPOLA, D-29) y descripción
 // opcionales. La búsqueda no se publica ni la ve ningún asesor (CA-P6-24): la atiende la administración (D-58 A).
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+// Las listas salen de GET /api/catalogo/listas-busqueda (Cambios al contrato P6). Si esa ruta falla, se usan las
+// opciones públicas del catálogo como respaldo (sin DIVIPOLA) para no impedir el envío con la categoría.
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import type { OpcionesFiltros } from '../api/catalogo'
 import { CORREO_MAX, MENSAJE_CONTACTO_FALLO, MENSAJE_REVISA_DATOS, NOMBRE_MAX, TELEFONO_MAX } from '../api/contactos'
 import { ApiError } from '../api/http'
@@ -13,6 +15,7 @@ import {
   enviarBusqueda,
   lineasPara,
   municipiosPara,
+  obtenerListasBusqueda,
   opcionesBusquedaDesdeFiltros,
   repartirErrores,
   validarBusqueda,
@@ -22,7 +25,7 @@ import {
   type OpcionesBusqueda,
 } from '../api/solicitudes'
 import { mostrarConMiles, soloDigitos } from '../catalogo/formato'
-import type { EstadoPeticion } from '../catalogo/usePeticion'
+import { usePeticion, type EstadoPeticion } from '../catalogo/usePeticion'
 import { AutorizacionDatos } from './AutorizacionDatos'
 import { Aviso, type DatosAviso } from './Aviso'
 import type { SesionAviso } from './AvisoPublico'
@@ -41,26 +44,52 @@ type BusquedaVehiculoProps = {
   sesion: SesionAviso | null
 }
 
-/** Pantalla #/busco-un-vehiculo: espera las listas del catálogo y muestra el formulario. */
+const cargarListas = (signal: AbortSignal) => obtenerListasBusqueda(signal)
+
+/** Pantalla #/busco-un-vehiculo: espera las listas y muestra el formulario. */
 export function BusquedaVehiculo({ opciones, onReintentarOpciones, sesion }: BusquedaVehiculoProps) {
-  const listas = useMemo(
-    () => (opciones.estado === 'ok' ? opcionesBusquedaDesdeFiltros(opciones.datos) : null),
-    [opciones],
-  )
+  const [estadoListas, reintentarListas] = usePeticion(cargarListas, 'listas-busqueda')
+  const respaldo = estadoListas.estado === 'error' && opciones.estado === 'ok'
+  const listas = useMemo(() => {
+    if (estadoListas.estado === 'ok') return estadoListas.datos
+    if (estadoListas.estado === 'error' && opciones.estado === 'ok') return opcionesBusquedaDesdeFiltros(opciones.datos)
+    return null
+  }, [estadoListas, opciones])
+  const sinListas = estadoListas.estado === 'error' && opciones.estado === 'error'
+  const cargando = listas === null && !sinListas
+  const reintentar = useCallback(() => {
+    reintentarListas()
+    if (opciones.estado === 'error') onReintentarOpciones()
+  }, [reintentarListas, onReintentarOpciones, opciones.estado])
+
   return (
     <div className="cat-pagina aviso-publico">
       <h1 className="cat-titulo" tabIndex={-1}>
         {TITULO_BUSQUEDA}
       </h1>
-      {opciones.estado === 'cargando' && (
+      {cargando && (
         <p className="cat-estado" role="status" aria-busy="true">
           Cargando las opciones...
         </p>
       )}
-      {opciones.estado === 'error' && (
+      {sinListas && (
         <div className="cat-estado">
           <Aviso aviso={{ tipo: 'error', texto: 'No pudimos cargar las categorías. Intenta de nuevo.' }} />
-          <button type="button" className="cat-boton" onClick={onReintentarOpciones}>
+          <button type="button" className="cat-boton" onClick={reintentar}>
+            Reintentar
+          </button>
+        </div>
+      )}
+      {respaldo && (
+        <div className="cat-estado">
+          <Aviso
+            aviso={{
+              tipo: 'advertencia',
+              texto:
+                'No pudimos cargar todas las opciones: faltan algunos modelos y la ciudad. Puedes enviar la búsqueda igual o reintentar.',
+            }}
+          />
+          <button type="button" className="cat-boton secondary-button" onClick={reintentarListas}>
             Reintentar
           </button>
         </div>
@@ -73,7 +102,9 @@ export function BusquedaVehiculo({ opciones, onReintentarOpciones, sesion }: Bus
           }}
         />
       )}
-      {listas !== null && listas.tipos.length > 0 && <FormularioBusqueda opciones={listas} sesion={sesion} />}
+      {listas !== null && listas.tipos.length > 0 && (
+        <FormularioBusqueda key={respaldo ? 'respaldo' : 'completo'} opciones={listas} sesion={sesion} />
+      )}
     </div>
   )
 }

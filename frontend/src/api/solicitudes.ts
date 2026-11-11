@@ -17,7 +17,7 @@ import {
   NOMBRE_MIN,
   normalizarTelefono,
 } from './contactos'
-import { ApiError, esObjetoJson, peticion, type ErroresPorCampo } from './http'
+import { ApiError, esObjetoJson, MENSAJE_INESPERADO, peticion, type ErroresPorCampo } from './http'
 
 // ---- Tipos del contrato ----
 
@@ -180,8 +180,9 @@ export type OpcionesBusqueda = {
 export const OPCIONES_BUSQUEDA_VACIAS: OpcionesBusqueda = { tipos: [], marcas: [], departamentos: [] }
 
 /**
- * Listas a partir de las opciones públicas del catálogo (/api/catalogo/filtros): las cuatro categorías de D-17 y
- * las marcas y modelos activos. Esa ruta no trae la categoría de cada modelo ni la DIVIPOLA.
+ * Respaldo si falla /api/catalogo/listas-busqueda: las opciones públicas del catálogo (/api/catalogo/filtros), con
+ * las cuatro categorías de D-17 y las marcas y modelos que tienen publicaciones. No traen la categoría de cada
+ * modelo ni la DIVIPOLA, pero dejan enviar la búsqueda con la categoría.
  */
 export function opcionesBusquedaDesdeFiltros(o: OpcionesFiltros): OpcionesBusqueda {
   return {
@@ -329,6 +330,49 @@ export function datosBusqueda(f: FormularioBusqueda, sitioWeb: string): Busqueda
     descripcion: descripcion === '' ? null : descripcion,
     autorizacionDatos: base.autorizacionDatos,
     sitioWeb: base.sitioWeb,
+  }
+}
+
+// ---- Listas del formulario (Cambios al contrato P6, 2026-11-10) ----
+
+export const RUTA_LISTAS_BUSQUEDA = '/api/catalogo/listas-busqueda'
+
+function opcion(valor: unknown): OpcionBusqueda | null {
+  if (!esObjetoJson(valor) || typeof valor.id !== 'number' || typeof valor.nombre !== 'string') return null
+  return valor.nombre.trim() === '' ? null : { id: valor.id, nombre: valor.nombre }
+}
+
+function listaDe<T>(valor: unknown, leer: (v: unknown) => T | null): T[] {
+  return Array.isArray(valor) ? valor.map(leer).filter((x): x is T => x !== null) : []
+}
+
+/**
+ * GET /api/catalogo/listas-busqueda (anónima): categorías activas, marcas con sus modelos activos (`tipoIds` vacío =
+ * sin clasificar, vale para cualquier categoría, D-32) y DIVIPOLA completo (D-29).
+ */
+export async function obtenerListasBusqueda(signal?: AbortSignal): Promise<OpcionesBusqueda> {
+  const datos = await peticion(RUTA_LISTAS_BUSQUEDA, { signal })
+  if (!esObjetoJson(datos) || !Array.isArray(datos.tipos)) throw new ApiError(200, MENSAJE_INESPERADO)
+  return {
+    tipos: listaDe(datos.tipos, opcion),
+    marcas: listaDe(datos.marcas, (m): MarcaBusqueda | null => {
+      const base = opcion(m)
+      if (!base || !esObjetoJson(m)) return null
+      return {
+        ...base,
+        lineas: listaDe(m.lineas, (l): LineaBusqueda | null => {
+          const linea = opcion(l)
+          if (!linea || !esObjetoJson(l)) return null
+          const tipoIds = Array.isArray(l.tipoIds) ? l.tipoIds.filter((t): t is number => typeof t === 'number') : []
+          return { ...linea, tipoIds }
+        }),
+      }
+    }),
+    departamentos: listaDe(datos.departamentos, (d): DepartamentoBusqueda | null => {
+      const base = opcion(d)
+      if (!base || !esObjetoJson(d)) return null
+      return { ...base, municipios: listaDe(d.municipios, opcion) }
+    }),
   }
 }
 
