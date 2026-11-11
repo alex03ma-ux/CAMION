@@ -29,9 +29,39 @@ const MENSAJE_429 = 'Has enviado muchas solicitudes. Intenta de nuevo en unos mi
 const MENSAJE_NO_DISPONIBLE = 'Este vehículo ya no está disponible. Mira otros vehículos en el catálogo.'
 const OK: RespuestaSimulada = { status: 201, body: { mensaje: MENSAJE_OK } }
 const FILTROS_CON_VOLQUETA = respuestaFiltros([...TIPOS, { id: 5, nombre: 'Volqueta', total: 1 }])
+const RUTA_LISTAS = '/api/catalogo/listas-busqueda'
+/** GET /api/catalogo/listas-busqueda (Cambios al contrato P6): todo lo activo, en orden alfabético. */
+const LISTAS: RespuestaSimulada = {
+  status: 200,
+  body: {
+    tipos: [
+      { id: 2, nombre: 'Camión' },
+      { id: 1, nombre: 'Carro' },
+      { id: 3, nombre: 'Carrocería' },
+      { id: 4, nombre: 'Maquinaria' },
+      { id: 5, nombre: 'Volqueta' },
+    ],
+    marcas: [
+      {
+        id: 10,
+        nombre: 'Chevrolet',
+        lineas: [
+          { id: 100, nombre: 'NHR', tipoIds: [2] },
+          { id: 101, nombre: 'NPR', tipoIds: [] },
+          { id: 102, nombre: 'Spark', tipoIds: [1] },
+        ],
+      },
+      { id: 11, nombre: 'Kenworth', lineas: [{ id: 110, nombre: 'T800', tipoIds: [2] }] },
+    ],
+    departamentos: [
+      { id: 5, nombre: 'Antioquia', municipios: [{ id: 51, nombre: 'Envigado' }, { id: 50, nombre: 'Medellín' }] },
+      { id: 6, nombre: 'Cundinamarca', municipios: [{ id: 60, nombre: 'Bogotá' }] },
+    ],
+  },
+}
 
 function abrirAnonimo(hash: string, rutas: Rutas = {}) {
-  const api = simularFetch({ [RUTA_FILTROS]: FILTROS_CON_VOLQUETA, ...rutas })
+  const api = simularFetch({ [RUTA_FILTROS]: FILTROS_CON_VOLQUETA, [RUTA_LISTAS]: LISTAS, ...rutas })
   window.location.hash = hash
   render(<App />)
   return { api, user: userEvent.setup() }
@@ -319,31 +349,56 @@ describe('Crédito desde la ficha (CA-P6-03 a 05)', () => {
 // ---- Búsqueda ----
 
 describe('"Busco un vehículo" (CA-P6-16 a 23, 34 a 36)', () => {
-  it('categorías de D-17, listas dependientes y sin departamento/ciudad sin fuente DIVIPOLA pública', async () => {
-    const { user } = abrirAnonimo('#/busco-un-vehiculo')
+  it('todas las categorías activas de /api/catalogo/listas-busqueda y modelos por marca y categoría', async () => {
+    const { api, user } = abrirAnonimo('#/busco-un-vehiculo')
     const form = await formBusqueda()
+    expect(api.llamadasA(RUTA_LISTAS)).toHaveLength(1)
+    expect(cabecera(api.llamadasA(RUTA_LISTAS)[0].init, 'Authorization')).toBeUndefined()
     expect(screen.getByRole('heading', { level: 1, name: 'Busco un vehículo' })).toBeInTheDocument()
     expect(document.title).toBe('Busco un vehículo | Financiamos Tu Camión')
     const categoria = screen.getByLabelText('Categoría')
     expect(categoria).toHaveAttribute('aria-required', 'true')
     expect(within(categoria).getAllByRole('option').map((o) => o.textContent)).toEqual([
       'Elige la categoría',
-      'Carro',
       'Camión',
+      'Carro',
       'Carrocería',
       'Maquinaria',
+      'Volqueta',
     ])
     const modelo = screen.getByLabelText('Modelo (opcional)')
     expect(modelo).toBeDisabled()
     await user.selectOptions(screen.getByLabelText('Marca (opcional)'), '10')
     expect(modelo).toBeEnabled()
+    // Sin categoría: todos los modelos de la marca.
+    expect(within(modelo).getAllByRole('option').map((o) => o.textContent)).toEqual([
+      'Cualquier modelo',
+      'NHR',
+      'NPR',
+      'Spark',
+    ])
+    // Camión: los clasificados como camión y los sin clasificar (tipoIds vacío).
+    await user.selectOptions(categoria, '2')
     expect(within(modelo).getAllByRole('option').map((o) => o.textContent)).toEqual(['Cualquier modelo', 'NHR', 'NPR'])
+    await user.selectOptions(modelo, '100')
+    // Al pasar a Carro, NHR deja de valer y se vacía; NPR (sin clasificar) sigue.
+    await user.selectOptions(categoria, '1')
+    expect(screen.getByLabelText('Modelo (opcional)')).toHaveValue('')
+    expect(within(modelo).getAllByRole('option').map((o) => o.textContent)).toEqual(['Cualquier modelo', 'NPR', 'Spark'])
     await user.selectOptions(modelo, '101')
     await user.selectOptions(screen.getByLabelText('Marca (opcional)'), '11')
     expect(screen.getByLabelText('Modelo (opcional)')).toHaveValue('')
     expect(screen.getByLabelText('Año desde (opcional)')).toHaveAttribute('inputmode', 'numeric')
     expect(screen.getByLabelText('Presupuesto máximo en pesos (opcional)')).toHaveAttribute('inputmode', 'numeric')
-    expect(screen.queryByLabelText('Departamento (opcional)')).not.toBeInTheDocument()
+    // Departamento y luego ciudad.
+    const ciudad = screen.getByLabelText('Ciudad (opcional)')
+    expect(ciudad).toBeDisabled()
+    await user.selectOptions(screen.getByLabelText('Departamento (opcional)'), '5')
+    expect(within(ciudad).getAllByRole('option').map((o) => o.textContent)).toEqual([
+      'Cualquier ciudad',
+      'Envigado',
+      'Medellín',
+    ])
     expect(document.getElementById('busqueda-descripcion-contador')).toHaveTextContent('0/500')
     expect(within(form).getByRole('group', { name: '¿Qué vehículo buscas?' })).toBeInTheDocument()
     expect(within(form).getByRole('group', { name: 'Tus datos de contacto' })).toBeInTheDocument()
@@ -357,6 +412,8 @@ describe('"Busco un vehículo" (CA-P6-16 a 23, 34 a 36)', () => {
     await user.selectOptions(screen.getByLabelText('Modelo (opcional)'), '110')
     await user.type(screen.getByLabelText('Año desde (opcional)'), '2015')
     await user.type(screen.getByLabelText('Año hasta (opcional)'), '2020')
+    await user.selectOptions(screen.getByLabelText('Departamento (opcional)'), '5')
+    await user.selectOptions(screen.getByLabelText('Ciudad (opcional)'), '50')
     fireEvent.change(screen.getByLabelText('Presupuesto máximo en pesos (opcional)'), { target: { value: '150000000' } })
     expect(screen.getByLabelText('Presupuesto máximo en pesos (opcional)')).toHaveValue('150.000.000')
     await user.type(screen.getByLabelText('Cuéntanos qué buscas (opcional)'), ' Doble troque ')
@@ -376,8 +433,8 @@ describe('"Busco un vehículo" (CA-P6-16 a 23, 34 a 36)', () => {
       anioDesde: 2015,
       anioHasta: 2020,
       presupuestoMaximo: 150000000,
-      departamentoId: null,
-      municipioId: null,
+      departamentoId: 5,
+      municipioId: 50,
       descripcion: 'Doble troque',
       autorizacionDatos: true,
       sitioWeb: '',
@@ -405,6 +462,8 @@ describe('"Busco un vehículo" (CA-P6-16 a 23, 34 a 36)', () => {
       anioDesde: null,
       anioHasta: null,
       presupuestoMaximo: null,
+      departamentoId: null,
+      municipioId: null,
       descripcion: null,
     })
   })
@@ -469,16 +528,57 @@ describe('"Busco un vehículo" (CA-P6-16 a 23, 34 a 36)', () => {
     expect(await screen.findByText(MENSAJE_FALLO)).toBeInTheDocument()
   })
 
-  it('si no cargan las categorías ofrece reintentar y no muestra el formulario', async () => {
-    abrirAnonimo('#/busco-un-vehiculo', { [RUTA_FILTROS]: { status: 500 } })
+  it('mientras cargan las listas lo anuncia en role="status"', async () => {
+    abrirAnonimo('#/busco-un-vehiculo')
+    expect(screen.getByRole('status')).toHaveTextContent('Cargando las opciones...')
+    await formBusqueda()
+  })
+
+  it('si fallan las listas, usa las categorías del catálogo y deja enviar solo con la categoría; reintentar las recupera', async () => {
+    const { api, user } = abrirAnonimo('#/busco-un-vehiculo', {
+      [RUTA_LISTAS]: [{ status: 500 }, LISTAS],
+      [RUTA_BUSQUEDAS]: OK,
+    })
+    expect(await screen.findByText(/No pudimos cargar todas las opciones/)).toHaveAttribute('role', 'alert')
+    await formBusqueda()
+    // Respaldo: las cuatro categorías de D-17 del catálogo público, sin DIVIPOLA.
+    expect(within(screen.getByLabelText('Categoría')).getAllByRole('option').map((o) => o.textContent)).toEqual([
+      'Elige la categoría',
+      'Carro',
+      'Camión',
+      'Carrocería',
+      'Maquinaria',
+    ])
+    expect(screen.queryByLabelText('Departamento (opcional)')).not.toBeInTheDocument()
+    await user.selectOptions(screen.getByLabelText('Categoría'), '2')
+    await user.type(screen.getByLabelText('Nombre'), 'Ana')
+    await user.type(screen.getByLabelText('Teléfono o WhatsApp'), '3001234567')
+    await user.click(casilla())
+    await user.click(enviar())
+    await screen.findByText(MENSAJE_OK)
+    expect(cuerpo(api.llamadas, RUTA_BUSQUEDAS)).toMatchObject({ tipoId: 2, departamentoId: null, municipioId: null })
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }))
+    expect(await screen.findByLabelText('Departamento (opcional)')).toBeInTheDocument()
+    expect(screen.queryByText(/No pudimos cargar todas las opciones/)).not.toBeInTheDocument()
+    expect(api.llamadasA(RUTA_LISTAS)).toHaveLength(2)
+  })
+
+  it('si fallan las listas y el catálogo, ofrece reintentar y no muestra el formulario', async () => {
+    const { api, user } = abrirAnonimo('#/busco-un-vehiculo', {
+      [RUTA_LISTAS]: [{ status: 500 }, LISTAS],
+      [RUTA_FILTROS]: { red: true },
+    })
     expect(await screen.findByText('No pudimos cargar las categorías. Intenta de nuevo.')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
     expect(screen.queryByRole('form', { name: 'Formulario Busco un vehículo' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }))
+    await formBusqueda()
+    expect(api.llamadasA(RUTA_LISTAS)).toHaveLength(2)
   })
 
   it('CA-P6-23 con sesión envía el token y prellena el contacto', async () => {
     const { api, user } = abrirApp('#/busco-un-vehiculo', ['COMPRADOR'], {
       [RUTA_FILTROS]: respuestaFiltros(),
+      [RUTA_LISTAS]: LISTAS,
       [RUTA_BUSQUEDAS]: OK,
     })
     await waitFor(() => expect(screen.getByLabelText('Nombre')).toHaveValue('Persona Ficticia'))
@@ -502,7 +602,7 @@ describe('Búsqueda con DIVIPOLA y modelos clasificados (D-29, D-32)', () => {
         nombre: 'Kenworth',
         lineas: [
           { id: 110, nombre: 'T800', tipoIds: [2] },
-          { id: 111, nombre: 'Sin clasificar', tipoIds: null },
+          { id: 111, nombre: 'Sin clasificar', tipoIds: [] },
           { id: 112, nombre: 'Solo carro', tipoIds: [1] },
         ],
       },
