@@ -76,6 +76,7 @@ public static class ReglasLeads
     public const string MensajeElegirVehiculo = "Elige un vehículo.";
     public const string MensajeNotaRelacion = "La nota no puede pasar de 300 caracteres.";
     public const string MensajeSolicitudNoEncontrada = "Solicitud no encontrada.";
+    public const string MensajeSinCriterios = "Esta búsqueda no tiene criterios guardados.";
     public const int AnioMinimoBusqueda = 1950;
     public const long PresupuestoMinimo = 1_000_000;
     public const long PresupuestoMaximo = 5_000_000_000;

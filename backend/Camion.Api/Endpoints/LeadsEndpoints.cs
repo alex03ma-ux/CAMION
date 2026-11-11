@@ -149,7 +149,9 @@ public static class LeadsEndpoints
             if (error is not null) return error;
             if (!actor!.EsAdmin) return SinPermiso();
             if (lead!.Origen != Lead.OrigenBusqueda) return Results.Conflict(new ErrorResponse(ReglasLeads.MensajeSoloBusqueda));
-            var c = await db.LeadsBusqueda.AsNoTracking().FirstAsync(b => b.LeadId == id, ct);
+            // Una búsqueda sin fila de criterios (dato incoherente; la API siempre la crea) -> 409 controlado, nunca 500.
+            var c = await db.LeadsBusqueda.AsNoTracking().FirstOrDefaultAsync(b => b.LeadId == id, ct);
+            if (c is null) return Results.Conflict(new ErrorResponse(ReglasLeads.MensajeSinCriterios));
 
             var consulta = ConsultasCatalogo.VisiblesConDestacado(db, ahora)
                 .Where(x => x.Publicacion.Vehiculo!.TipoVehiculoId == c.TipoVehiculoId);
