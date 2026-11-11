@@ -35,6 +35,7 @@ El frontend se programa contra este documento. **Cualquier cambio posterior se a
 |---|---|---|---|
 | POST | `/api/creditos` | anónimo (token opcional) | `LimitePeticionesContacto` |
 | POST | `/api/busquedas` | anónimo (token opcional) | `LimitePeticionesContacto` |
+| GET | `/api/catalogo/listas-busqueda` | anónimo (solo lectura) | — (caché `public, max-age=300`) |
 | GET | `/api/leads/{id}/coincidencias` | AsesorOAdministrador; solo el administrador la usa (ver permisos) | — |
 | POST | `/api/leads/{id}/vehiculos` | AsesorOAdministrador; solo el administrador | — |
 | POST | `/api/leads/{id}/vehiculos/{publicacionId}/retirar` | AsesorOAdministrador; solo el administrador | — |
@@ -111,6 +112,23 @@ Cuerpo (JSON, máx. 8 KB) — `BusquedaRequest`. Los nombres de los criterios so
 | `descripcion` | string \| null | opcional; hasta 500 tras quitar espacios | "La descripción no puede pasar de 500 caracteres." |
 
 Se guarda: `origen = BUSQUEDA`, `publicacion_id = NULL`, `tipo_vehiculo = NULL`, `mensaje` = la descripción recortada o **"Busco un vehículo"**; los criterios en `leads_busqueda` (una fila por lead). Respuestas: como el crédito, sin 404 ni 409.
+
+### GET /api/catalogo/listas-busqueda (listas del formulario)
+
+Anónima, de solo lectura, sin datos personales; responde igual con o sin token. Cabecera `Cache-Control: public, max-age=300`. Los ids son los que acepta `POST /api/busquedas`.
+
+```json
+{ "tipos": [ { "id": 2, "nombre": "Camión" } ],
+  "marcas": [ { "id": 5, "nombre": "Kenworth",
+                "lineas": [ { "id": 17, "nombre": "T800", "tipoIds": [2] } ] } ],
+  "departamentos": [ { "id": 1, "nombre": "Antioquia",
+                       "municipios": [ { "id": 1, "nombre": "Medellín" } ] } ] }
+```
+
+- `tipos`: categorías activas (D-17). `marcas`: marcas activas con sus modelos activos. `tipoIds`: categorías **activas** del modelo (D-32); vacío = sin clasificar, vale para cualquier categoría. El formulario ofrece en "Modelo" los de la marca elegida cuyo `tipoIds` está vacío o contiene la categoría elegida.
+- `departamentos`: los 33 de DIVIPOLA con **todos** sus municipios (1.122 en `camion_ventas`, unos 40 KB sin comprimir). Se envían juntos en lugar de una ruta por departamento: es el mismo formato de `/api/inventario/catalogos`, evita una petición por cambio de departamento y la caché lo amortiza.
+- Orden alfabético (es-CO) en todas las listas.
+- El servidor vuelve a validar en `POST /api/busquedas`: municipio del departamento, modelo de la marca y de la categoría (si está clasificado).
 
 Una búsqueda **no se publica** ni se muestra a ningún asesor (CA-P6-24), y el sistema **no busca coincidencias solo** (CA-P6-25).
 
@@ -304,7 +322,7 @@ Diferencias con la sección 14 de los criterios (PROPUESTO del arquitecto): se a
 
 ## Cambios en pruebas existentes
 
-- `SesionTests.Inventario_de_endpoints`: rutas anónimas nuevas (`POST /api/creditos`, `POST /api/busquedas`) con `LimitePeticionesContacto`; `/api/leads` pasa de 7 a 10 rutas; `/api/mis-solicitudes` exige `SoloComprador`.
+- `SesionTests.Inventario_de_endpoints`: rutas anónimas nuevas (`POST /api/creditos`, `POST /api/busquedas`, `GET /api/catalogo/listas-busqueda`; `/api/catalogo` pasa de 5 a 6 rutas) con `LimitePeticionesContacto`; `/api/leads` pasa de 7 a 10 rutas; `/api/mis-solicitudes` exige `SoloComprador`.
 - P5b: `ATENDIDA` sigue siendo válido en avisos; los resultados nuevos dan "Ese resultado no aplica a esta solicitud." en contactos y avisos.
 
 ## Riesgos
@@ -317,3 +335,5 @@ Diferencias con la sección 14 de los criterios (PROPUESTO del arquitecto): se a
 ## Cambios al contrato
 
 Cada cambio posterior se anota aquí con fecha, motivo y efecto en el frontend.
+
+- 2026-11-10 (pedido del frontend, aprobado por el coordinador): nueva ruta pública `GET /api/catalogo/listas-busqueda` con categorías, marcas y modelos activos (con sus categorías) y DIVIPOLA completo. Motivo: `/api/inventario/catalogos` es solo para asesor y administrador, y `/api/catalogo/filtros` solo trae lo que tiene publicaciones visibles. Efecto en el frontend: el formulario "Busco un vehículo" usa esta ruta; no cambia ningún otro campo.
