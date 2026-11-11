@@ -70,8 +70,12 @@ public static class ContactosEndpoints
 
             await using var tx = await db.Database.BeginTransactionAsync(ct);
             // CA-P5-23: mismo teléfono y misma publicación con un lead ABIERTO -> contacto repetido en su historial.
+            // M-P6-1 (D-7): solo contactos de vehículo; un crédito de esa ficha (siempre en Administración) no lo absorbe.
+            // D-60: solo si la solicitud abierta es del mismo usuario (o ambas anónimas); nunca se liga a otra cuenta.
             var existente = await db.Leads.AsNoTracking()
-                .Where(l => l.PublicacionId == pub.Id && l.Telefono == datos.Telefono && l.Estado == Lead.Abierto)
+                .Where(l => l.Origen == Lead.OrigenContactoVehiculo && l.PublicacionId == pub.Id &&
+                            l.Telefono == datos.Telefono && l.Estado == Lead.Abierto &&
+                            (usuarioId == null ? l.UsuarioId == null : l.UsuarioId == usuarioId))
                 .OrderByDescending(l => l.Id).Select(l => (long?)l.Id).FirstOrDefaultAsync(ct);
             if (existente is { } leadId)
             {

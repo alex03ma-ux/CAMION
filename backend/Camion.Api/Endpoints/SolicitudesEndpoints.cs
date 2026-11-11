@@ -112,7 +112,9 @@ public static class SolicitudesEndpoints
         // CA-P6-31 a CA-P6-33: mismo origen, mismo teléfono y (en el crédito) la misma publicación o ninguna.
         var existente = await db.Leads.AsNoTracking()
             .Where(l => l.Origen == datos.Origen && l.Telefono == datos.Telefono && l.Estado == Lead.Abierto &&
-                        (publicacionId == null ? l.PublicacionId == null : l.PublicacionId == publicacionId))
+                        (publicacionId == null ? l.PublicacionId == null : l.PublicacionId == publicacionId) &&
+                        // D-60: solo con el mismo usuario (o ambos anónimos); si no, solicitud nueva (CA-P6-06, CA-P6-23).
+                        (usuarioId == null ? l.UsuarioId == null : l.UsuarioId == usuarioId))
             .OrderByDescending(l => l.Id).Select(l => (long?)l.Id).FirstOrDefaultAsync(ct);
         if (existente is { } leadId)
         {
