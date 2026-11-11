@@ -445,6 +445,9 @@ describe('Bandeja del administrador (CA-P5b-37, 38)', () => {
       'Contacto de vehículo',
       'Vende tu camión',
       'Seguro todo riesgo',
+      // P6 (CA-P6-40): orígenes nuevos.
+      'Crédito',
+      'Búsqueda',
     ])
     await user.selectOptions(origen, 'VENDE_TU_CAMION')
     await user.click(screen.getByRole('button', { name: 'Aplicar filtros' }))
