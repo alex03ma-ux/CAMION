@@ -4,6 +4,8 @@
 // acción (401, 403, 404 si el contacto no es suyo, 409 si el estado cambió).
 // P5b: el administrador ve también los avisos "Vende tu camión" y "Seguro todo riesgo", con su origen y un filtro
 // por origen (CA-P5b-37). El asesor no ve nada nuevo: la API nunca le entrega avisos (CA-P5b-46).
+// P6: también créditos y búsquedas (CA-P6-40), con su estado Registrado / En gestión / Cerrado (CA-P6-44). El asesor
+// tampoco los ve (D-58 A, CA-P6-60).
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import type { PerfilUsuario } from '../api/auth'
 import { nombreTipoVehiculo } from '../api/avisos'
@@ -11,12 +13,12 @@ import { ApiError, MENSAJE_INESPERADO, MENSAJE_SIN_PERMISO } from '../api/http'
 import { obtenerCatalogosInventario, type ResumenAsesor } from '../api/inventario'
 import {
   esAviso,
+  estadoMostrado,
   listarLeads,
   NOMBRES_ESTADO_LEAD,
   NOMBRES_ORIGEN,
   nombreOrigen,
   ORIGENES_LEAD,
-  nombreEstadoLead,
   nombreEstadoVehiculo,
   nombreResponsable,
   nombreResultado,
@@ -293,7 +295,7 @@ function ListaContactos({
       </h1>
       <p className="inv-intro">
         {esAdmin
-          ? 'Todos los contactos que llegan desde el portal: los de la ficha de cada vehículo y las solicitudes "Vende tu camión" y "Seguro todo riesgo". Los de Administración los atiende cualquier administrador.'
+          ? 'Todos los contactos que llegan desde el portal: los de la ficha de cada vehículo y las solicitudes de crédito, "Busco un vehículo", "Vende tu camión" y "Seguro todo riesgo". Los de Administración los atiende cualquier administrador.'
           : 'Las personas que te escribieron desde la ficha de tus vehículos publicados. Ábrelos para ver el historial, añadir notas o cerrarlos.'}
       </p>
 
@@ -452,7 +454,7 @@ function TarjetaContacto({ lead, esAdmin }: { lead: LeadItem; esAdmin: boolean }
         <p>
           <span className={`estado ${abierto ? 'estado-pendiente' : 'estado-activa'}`}>
             <span className="sr-only">Estado: </span>
-            {nombreEstadoLead(lead.estado)}
+            {estadoMostrado(lead)}
           </span>
         </p>
         <dl className="inv-datos">
