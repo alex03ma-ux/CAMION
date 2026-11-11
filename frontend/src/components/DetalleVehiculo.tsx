@@ -13,7 +13,7 @@ import {
   textoUbicacion,
 } from '../catalogo/formato'
 import { usePeticion } from '../catalogo/usePeticion'
-import { HASH_INICIO, hashVolverAResultados } from '../rutas'
+import { HASH_INICIO, hashCreditoVehiculo, hashVolverAResultados } from '../rutas'
 import { Aviso } from './Aviso'
 import { FormularioContacto, type SesionContacto } from './FormularioContacto'
 import { Galeria } from './Galeria'
@@ -126,12 +126,22 @@ export function DetalleVehiculo({ slug, sesion = null }: { slug: string; sesion?
                 Esta es una de tus publicaciones. Los contactos que lleguen por ella los verás en "Mis contactos".
               </p>
             ) : (
-              <FormularioContacto
-                slug={vehiculo.slug}
-                titulo={vehiculo.titulo}
-                whatsapp={vehiculo.whatsapp}
-                sesion={sesion}
-              />
+              <>
+                <FormularioContacto
+                  slug={vehiculo.slug}
+                  titulo={vehiculo.titulo}
+                  whatsapp={vehiculo.whatsapp}
+                  sesion={sesion}
+                />
+                {/* P6 (CA-P6-03): crédito para este vehículo; lo atiende la administración (D-58 A). */}
+                <section className="credito-ficha" aria-labelledby="credito-ficha-titulo">
+                  <h2 id="credito-ficha-titulo">¿Necesitas crédito?</h2>
+                  <p>Te ayudamos a financiar este vehículo con bancos y entidades financieras.</p>
+                  <a className="inv-boton-enlace credito-ficha-boton" href={hashCreditoVehiculo(vehiculo.slug)}>
+                    Solicitar crédito para este vehículo
+                  </a>
+                </section>
+              </>
             )}
 
             {ficha.length > 0 && (

@@ -16,6 +16,10 @@
 //   #/privacidad        P5 (D-44): política de tratamiento de datos (borrador en revisión legal)
 //   #/vende-tu-camion   P5b (HU-N01, D-51): aviso "Vende tu camión", sin cuenta
 //   #/seguro-todo-riesgo P5b (HU-N02, D-51): aviso "Compra tu seguro todo riesgo", sin cuenta
+//   #/credito           P6 (HU-039, D-42, D-54): solicitud de crédito desde la portada, sin cuenta
+//   #/credito/<slug>    P6 (HU-039): solicitud de crédito para un vehículo, desde su ficha
+//   #/busco-un-vehiculo P6 (HU-034, D-56): búsqueda "Busco un vehículo", sin cuenta
+//   #/mis-solicitudes   P6 (D-53, D-59): "Mis solicitudes" del comprador (la API la protege con SoloComprador)
 // Cualquier otra ruta muestra el inicio. Nunca se pone el token en la URL.
 import { useEffect, useState } from 'react'
 import { CLAVES_FILTROS, FILTROS_VACIOS, type FiltrosCatalogo } from './api/catalogo'
@@ -34,6 +38,10 @@ export type Ruta =
   | { nombre: 'privacidad' }
   | { nombre: 'vendeTuCamion' }
   | { nombre: 'seguroTodoRiesgo' }
+  /** P6: `slug` null = crédito desde la portada. */
+  | { nombre: 'credito'; slug: string | null }
+  | { nombre: 'buscoVehiculo' }
+  | { nombre: 'misSolicitudes' }
 
 /** P4p: secciones del administrador dentro de "Mi cuenta". */
 export type SeccionAdmin = 'usuarios' | 'planes' | 'suscripciones' | 'catalogos' | 'portada'
@@ -55,6 +63,14 @@ export const HASH_CONTACTOS = '#/contactos'
 export const HASH_PRIVACIDAD = '#/privacidad'
 export const HASH_VENDE_TU_CAMION = '#/vende-tu-camion'
 export const HASH_SEGURO_TODO_RIESGO = '#/seguro-todo-riesgo'
+export const HASH_CREDITO = '#/credito'
+export const HASH_BUSCO_VEHICULO = '#/busco-un-vehiculo'
+export const HASH_MIS_SOLICITUDES = '#/mis-solicitudes'
+
+/** `#/credito/<slug>`: crédito para un vehículo, desde su ficha (CA-P6-03). */
+export function hashCreditoVehiculo(slug: string): string {
+  return `${HASH_CREDITO}/${encodeURIComponent(slug)}`
+}
 
 /** `#/contactos/<id>`. */
 export function hashContacto(id: number): string {
@@ -131,6 +147,9 @@ export function leerRuta(hash: string): Ruta {
   if (camino === '/privacidad') return { nombre: 'privacidad' }
   if (camino === '/vende-tu-camion') return { nombre: 'vendeTuCamion' }
   if (camino === '/seguro-todo-riesgo') return { nombre: 'seguroTodoRiesgo' }
+  if (camino === '/credito') return { nombre: 'credito', slug: null }
+  if (camino === '/busco-un-vehiculo') return { nombre: 'buscoVehiculo' }
+  if (camino === '/mis-solicitudes') return { nombre: 'misSolicitudes' }
   const contacto = /^\/contactos\/(\d{1,15})$/.exec(camino)
   if (contacto) {
     const id = Number(contacto[1])
@@ -143,14 +162,25 @@ export function leerRuta(hash: string): Ruta {
   }
   const vehiculo = /^\/vehiculo\/([^/]+)$/.exec(camino)
   if (vehiculo) {
-    try {
-      const slug = decodeURIComponent(vehiculo[1])
-      if (slug.trim() !== '') return { nombre: 'vehiculo', slug }
-    } catch {
-      // Codificación inválida: se trata como ruta desconocida.
-    }
+    const slug = decodificar(vehiculo[1])
+    if (slug !== null) return { nombre: 'vehiculo', slug }
+  }
+  const credito = /^\/credito\/([^/]+)$/.exec(camino)
+  if (credito) {
+    const slug = decodificar(credito[1])
+    if (slug !== null) return { nombre: 'credito', slug }
   }
   return INICIO
+}
+
+/** Slug decodificado y no vacío; null si la codificación no es válida (se trata como ruta desconocida). */
+function decodificar(valor: string): string | null {
+  try {
+    const slug = decodeURIComponent(valor)
+    return slug.trim() !== '' ? slug : null
+  } catch {
+    return null
+  }
 }
 
 function hashActual(): string {

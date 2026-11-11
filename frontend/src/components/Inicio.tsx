@@ -10,7 +10,7 @@ import { obtenerPortada } from '../api/portada'
 import { usePeticion } from '../catalogo/usePeticion'
 import {
   HASH_BUSCAR,
-  HASH_REGISTRO,
+  HASH_CREDITO,
   HASH_SEGURO_TODO_RIESGO,
   HASH_VENDE_TU_CAMION,
   hashBuscar,
@@ -169,8 +169,8 @@ export function Inicio({ tipos }: InicioProps) {
           <div className="cat-credito-texto">
             <h2 id="inicio-credito">¿Necesitas crédito para tu camión?</h2>
             <p>Te ayudamos a encontrar el plan de pagos ideal.</p>
-            {/* La solicitud de crédito llega en P5; mientras tanto, el registro (D-42). */}
-            <a className="cat-credito-boton" href={HASH_REGISTRO}>
+            {/* P6 (D-42, CA-P6-02): abre el formulario de crédito, ya no el registro. */}
+            <a className="cat-credito-boton" href={HASH_CREDITO}>
               Quiero un crédito <IconoFlecha />
             </a>
           </div>
