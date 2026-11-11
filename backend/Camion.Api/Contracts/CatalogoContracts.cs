@@ -75,3 +75,10 @@ public sealed record FiltrosCatalogoResponse(
     IReadOnlyList<OpcionFiltro> Tipos,
     IReadOnlyList<MarcaFiltro> Marcas,
     RangosFiltro Rangos);
+
+// P6 (HU-034, D-17, D-29, D-32): GET /api/catalogo/listas-busqueda. Categorías, marcas con sus modelos (tipoIds = categorías
+// activas del modelo; vacía = sin clasificar, vale para todas) y departamentos con sus municipios. Solo entradas activas.
+public sealed record ListasBusquedaResponse(
+    IReadOnlyList<OpcionCatalogo> Tipos,
+    IReadOnlyList<MarcaCatalogo> Marcas,
+    IReadOnlyList<DepartamentoCatalogo> Departamentos);

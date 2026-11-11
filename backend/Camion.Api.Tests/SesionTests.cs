@@ -193,7 +193,7 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
         // P4a (D-20): GET /media/{**ruta}, anónimo porque el catálogo público muestra las fotos.
         Assert.Equal(new[]
         {
-            "GET /api/catalogo/filtros", "GET /api/catalogo/inicio", "GET /api/catalogo/portada", "GET /api/catalogo/publicaciones",
+            "GET /api/catalogo/filtros", "GET /api/catalogo/inicio", "GET /api/catalogo/listas-busqueda", "GET /api/catalogo/portada", "GET /api/catalogo/publicaciones",
             "GET /api/catalogo/publicaciones/{slug}",
             "GET /health", "GET /health/database", "GET /media/{**ruta}", "POST /api/auth/login",
             "POST /api/auth/registro/asesor", "POST /api/auth/registro/comprador",
@@ -207,7 +207,8 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
 
         // P3: todo /api/catalogo es GET, permite anónimos de forma explícita y no exige ninguna política.
         var catalogo = todos.Where(e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/catalogo", StringComparison.Ordinal)).ToList();
-        Assert.Equal(5, catalogo.Count);
+        // P6 (HU-034): GET /api/catalogo/listas-busqueda para el formulario "Busco un vehículo".
+        Assert.Equal(6, catalogo.Count);
         foreach (var e in catalogo)
         {
             Assert.Equal("GET", Metodo(e));

@@ -275,6 +275,42 @@ public static class CatalogoEndpoints
             return Results.Ok(new FiltrosCatalogoResponse(respuestaTipos, respuestaMarcas, respuestaRangos));
         });
 
+        // P6 (HU-034, D-17, D-29, D-32, D-56 a A): listas del formulario "Busco un vehículo". Solo entradas activas (marcas y
+        // modelos activos; las categorías de cada modelo, solo las activas) y DIVIPOLA completo (33 departamentos, 1.122
+        // municipios: unos 40 KB, se envían juntos). Mismos ids que espera POST /api/busquedas. Sin datos personales.
+        catalogo.MapGet("/listas-busqueda", async (HttpResponse respuesta, CamionDbContext db, CancellationToken ct) =>
+        {
+            var comparador = StringComparer.Create(CultureInfo.GetCultureInfo("es-CO"), CompareOptions.IgnoreCase);
+            OpcionCatalogo[] Ordenar(IEnumerable<OpcionCatalogo> opciones) =>
+                opciones.OrderBy(o => o.Nombre, comparador).ThenBy(o => o.Id).ToArray();
+
+            var tipos = await db.TiposVehiculo.AsNoTracking().Where(x => x.Activo)
+                .Select(x => new OpcionCatalogo(x.Id, x.Nombre)).ToListAsync(ct);
+            var tiposActivos = tipos.Select(t => t.Id).ToHashSet();
+            var marcas = await db.Marcas.AsNoTracking().Where(x => x.Activo).Select(x => new { x.Id, x.Nombre }).ToListAsync(ct);
+            var lineas = await db.Lineas.AsNoTracking().Where(x => x.Activo && x.Marca!.Activo)
+                .Select(x => new { x.Id, x.MarcaId, x.Nombre }).ToListAsync(ct);
+            var tiposPorLinea = (await db.LineasTipos.AsNoTracking().ToListAsync(ct))
+                .Where(x => tiposActivos.Contains(x.TipoVehiculoId))
+                .GroupBy(x => x.LineaId)
+                .ToDictionary(g => g.Key, g => (IReadOnlyList<long>)g.Select(x => x.TipoVehiculoId).Order().ToArray());
+            var departamentos = await db.Departamentos.AsNoTracking().Select(x => new { x.Id, x.Nombre }).ToListAsync(ct);
+            var municipios = await db.Municipios.AsNoTracking().Select(x => new { x.Id, x.DepartamentoId, x.Nombre }).ToListAsync(ct);
+
+            // Caché corta: las listas cambian poco y la búsqueda las valida otra vez en el servidor.
+            respuesta.Headers.CacheControl = "public, max-age=300";
+            return Results.Ok(new ListasBusquedaResponse(
+                Ordenar(tipos),
+                marcas.Select(m => new MarcaCatalogo(m.Id, m.Nombre,
+                        lineas.Where(l => l.MarcaId == m.Id)
+                            .Select(l => new LineaCatalogo(l.Id, l.Nombre, tiposPorLinea.GetValueOrDefault(l.Id) ?? Array.Empty<long>()))
+                            .OrderBy(l => l.Nombre, comparador).ThenBy(l => l.Id).ToArray()))
+                    .OrderBy(m => m.Nombre, comparador).ThenBy(m => m.Id).ToArray(),
+                departamentos.Select(d => new DepartamentoCatalogo(d.Id, d.Nombre,
+                        Ordenar(municipios.Where(m => m.DepartamentoId == d.Id).Select(m => new OpcionCatalogo(m.Id, m.Nombre)))))
+                    .OrderBy(d => d.Nombre, comparador).ThenBy(d => d.Id).ToArray()));
+        });
+
         return app;
     }
 
