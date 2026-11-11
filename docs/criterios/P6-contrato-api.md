@@ -143,7 +143,8 @@ Una búsqueda **no se publica** ni se muestra a ningún asesor (CA-P6-24), y el 
   - Crédito: hay un lead ABIERTO con `origen = CREDITO`, el mismo teléfono y **la misma publicación** (o ambos sin publicación). No se crea otro: se añade `CONTACTO_REPETIDO` con el texto que se habría guardado en `mensaje` y se guarda su consentimiento.
   - Búsqueda: hay un lead ABIERTO con `origen = BUSQUEDA` y el mismo teléfono. Se añade `CONTACTO_REPETIDO` con un resumen legible de los criterios nuevos (por ejemplo "Busca: Camión · Kenworth T800 · años 2015 a 2020 · hasta $150.000.000 · Medellín (Antioquia). Doble troque con platón", recortado a 500); los criterios guardados no cambian.
   - En ambos casos la respuesta es idéntica a un envío nuevo y el lead no vuelve a marcarse como nuevo (D-49).
-- **Nuevo**: si el anterior está CERRADO, es de otro origen o (crédito) de otra publicación, se crea un lead nuevo.
+  - **Mismo usuario (D-60)**: solo se agrega al lead abierto si tiene el mismo `usuario_id` que el envío; dos anónimos (NULL y NULL) cuentan como iguales. Nunca se asigna un `usuario_id` a una solicitud anónima existente (D-59 a).
+- **Nuevo**: si el anterior está CERRADO, es de otro origen, (crédito) de otra publicación o de otro usuario (anónimo frente a una cuenta, o dos cuentas distintas), se crea un lead nuevo. Los límites por teléfono no cambian: cuentan todos los envíos del teléfono, de cualquier usuario.
 
 ## Autorización de datos (CA-P6-27, CA-P6-28)
 
@@ -227,6 +228,7 @@ Lista ampliada de `resultado` con `REMITIDO_ENTIDAD` ("Remitido a entidad financ
 Ayuda bajo demanda para el administrador; no crea nada ni deja auditoría.
 
 - Solo `BUSQUEDA` (otro origen → 409 "Solo se pueden relacionar vehículos a una búsqueda."). Funciona también con la búsqueda cerrada (solo lectura).
+- Una búsqueda sin fila en `leads_busqueda` (dato incoherente; la API siempre la crea) → 409 `{ "error": "Esta búsqueda no tiene criterios guardados." }`, nunca 500.
 - Publicaciones **visibles** (misma regla del catálogo) que cumplen los criterios guardados: categoría; marca y modelo si se indicaron; `anioDesde <= año <= anioHasta` si se indicaron; precio mostrado `<= presupuestoMaximo` si se indicó; ciudad si se indicó y, si solo hay departamento, ese departamento.
 - Orden: destacados primero y luego las más recientes. Hasta 20.
 
@@ -337,3 +339,7 @@ Diferencias con la sección 14 de los criterios (PROPUESTO del arquitecto): se a
 Cada cambio posterior se anota aquí con fecha, motivo y efecto en el frontend.
 
 - 2026-11-10 (pedido del frontend, aprobado por el coordinador): nueva ruta pública `GET /api/catalogo/listas-busqueda` con categorías, marcas y modelos activos (con sus categorías) y DIVIPOLA completo. Motivo: `/api/inventario/catalogos` es solo para asesor y administrador, y `/api/catalogo/filtros` solo trae lo que tiene publicaciones visibles. Efecto en el frontend: el formulario "Busco un vehículo" usa esta ruta; no cambia ningún otro campo.
+- 2026-11-10 (revisiones de seguridad y QA; D-7, D-59 a, D-60):
+  - M-P6-1: el repetido del contacto de vehículo (P5) solo mira leads `CONTACTO_VEHICULO`; un crédito pedido desde esa ficha ya no absorbe el contacto, que vuelve a llegar al asesor dueño (D-7). El repetido del crédito ya filtraba por `CREDITO`.
+  - O-1 (D-60): el repetido de contacto, avisos, crédito y búsqueda exige el mismo `usuario_id` (NULL con NULL cuenta como igual). Un comprador con sesión cuyo teléfono tiene una solicitud abierta anónima o de otra cuenta obtiene una solicitud nueva que aparece en "Mis solicitudes" (CA-P6-06, CA-P6-23). Sin efecto en el frontend: la respuesta sigue siendo la misma.
+  - `GET /api/leads/{id}/coincidencias` responde 409 "Esta búsqueda no tiene criterios guardados." si falta la fila de criterios (antes, 500).

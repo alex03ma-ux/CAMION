@@ -191,3 +191,4 @@ Solo `ALTER TABLE leads`; no crea tablas ni toca datos (los leads existentes tom
 Cada cambio posterior se anota aquí con fecha, motivo y efecto en el frontend.
 
 - 2026-11-06 (antes de entregar; sin efecto en el frontend): `CK_Lead_Origen` añade `tipo_vehiculo IS NOT NULL` en la rama del seguro. Motivo: un `IN` con NULL da NULL y el CHECK dejaba pasar un seguro sin tipo (lo detectó la prueba CA-P5b-62).
+- 2026-11-10 (P6, D-60; sin efecto en el frontend): el **repetido** de los avisos y del contacto de P5 solo se agrega al lead ABIERTO si tiene el mismo `usuario_id` que el envío (dos anónimos cuentan como iguales); si no, se crea un lead nuevo. Nunca se liga una solicitud anónima a una cuenta (D-59 a). El contacto de P5 además solo mira leads `CONTACTO_VEHICULO` (M-P6-1, D-7). Los límites por teléfono no cambian. Detalle en `P6-contrato-api.md`.
