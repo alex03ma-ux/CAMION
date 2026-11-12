@@ -266,3 +266,84 @@ export async function anularPago(token: string, pagoId: number, motivo: string):
   })
   return leerPago(respuesta)
 }
+
+// ---- D-67: efecto de anular un pago (GET /api/admin/pagos/{id}/efecto-anulacion; no cambia nada) ----
+
+export type TipoEfectoAnulacion = 'DESHACER_RENOVACION' | 'CANCELAR_ASIGNACION' | 'DESHACER_CAMBIO_PLAN' | 'SOLO_PAGO'
+export type BloqueoAnulacion = 'YA_ANULADO' | 'SIN_DATOS' | 'MOVIMIENTO_POSTERIOR' | 'SIN_MOVIMIENTO'
+
+export type EfectoAnulacion = {
+  pagoId: number
+  tipo: TipoEfectoAnulacion
+  suscripcionId: number | null
+  nuevoEstado: string | null
+  nuevaFinVigencia: string | null
+  nuevoPlan: { id: number; nombre: string } | null
+  quedaraVencida: boolean
+  suscripcionCanceladaId: number | null
+  /** null = se puede anular. */
+  bloqueadoPor: BloqueoAnulacion | null
+  /** Texto del 409 que daría la anulación (solo si está bloqueada). */
+  mensaje: string | null
+}
+
+const TIPOS_EFECTO: readonly TipoEfectoAnulacion[] = [
+  'DESHACER_RENOVACION',
+  'CANCELAR_ASIGNACION',
+  'DESHACER_CAMBIO_PLAN',
+  'SOLO_PAGO',
+]
+const BLOQUEOS: readonly BloqueoAnulacion[] = ['YA_ANULADO', 'SIN_DATOS', 'MOVIMIENTO_POSTERIOR', 'SIN_MOVIMIENTO']
+
+export const MENSAJE_ANULACION_BLOQUEADA = 'Este pago no se puede anular ahora.'
+export const AVISO_QUEDARA_VENCIDA = 'Quedará vencida y sus publicaciones dejarán de verse en el portal.'
+
+export function leerEfectoAnulacion(valor: unknown): EfectoAnulacion {
+  if (!esObjetoJson(valor)) throw new ApiError(200, MENSAJE_INESPERADO)
+  const tipo = texto(valor.tipo).toUpperCase()
+  const bloqueo = texto(valor.bloqueadoPor).toUpperCase()
+  const plan = esObjetoJson(valor.nuevoPlan) ? valor.nuevoPlan : null
+  return {
+    pagoId: numeroONulo(valor.pagoId) ?? 0,
+    tipo: TIPOS_EFECTO.find((t) => t === tipo) ?? 'SOLO_PAGO',
+    suscripcionId: numeroONulo(valor.suscripcionId),
+    nuevoEstado: textoONulo(valor.nuevoEstado),
+    nuevaFinVigencia: textoONulo(valor.nuevaFinVigencia),
+    nuevoPlan: plan ? { id: numeroONulo(plan.id) ?? 0, nombre: texto(plan.nombre) } : null,
+    quedaraVencida: valor.quedaraVencida === true,
+    suscripcionCanceladaId: numeroONulo(valor.suscripcionCanceladaId),
+    // Un valor de bloqueo desconocido también bloquea (nunca se ofrece anular a ciegas).
+    bloqueadoPor: bloqueo === '' ? null : (BLOQUEOS.find((b) => b === bloqueo) ?? 'SIN_MOVIMIENTO'),
+    mensaje: textoONulo(valor.mensaje),
+  }
+}
+
+const FECHA_LARGA = new Intl.DateTimeFormat('es-CO', { dateStyle: 'long' })
+
+function fechaLarga(valor: string | null): string {
+  const ms = valor ? Date.parse(valor) : Number.NaN
+  return Number.isNaN(ms) ? 'una fecha sin registrar' : FECHA_LARGA.format(ms)
+}
+
+/** Qué pasará al anular, en lenguaje sencillo (D-67). */
+export function textoEfectoAnulacion(e: EfectoAnulacion): string {
+  switch (e.tipo) {
+    case 'DESHACER_RENOVACION':
+      return `La suscripción volverá a vencer el ${fechaLarga(e.nuevaFinVigencia)}.`
+    case 'CANCELAR_ASIGNACION':
+      return 'La suscripción quedará cancelada.'
+    case 'DESHACER_CAMBIO_PLAN':
+      return `La suscripción volverá al plan ${e.nuevoPlan?.nombre || 'anterior'}, con vencimiento el ${fechaLarga(e.nuevaFinVigencia)}. La del plan nuevo quedará cancelada.`
+    case 'SOLO_PAGO':
+      return 'Solo se anula el pago; la fecha no cambia.'
+  }
+}
+
+export async function obtenerEfectoAnulacion(token: string, pagoId: number, signal?: AbortSignal): Promise<EfectoAnulacion> {
+  const respuesta = await peticion(`/api/admin/pagos/${encodeURIComponent(String(pagoId))}/efecto-anulacion`, {
+    token,
+    signal,
+    mensajesPorCodigo: { 401: MENSAJE_SESION_TERMINADA, 404: MENSAJE_PAGO_NO_ENCONTRADO },
+  })
+  return leerEfectoAnulacion(respuesta)
+}
