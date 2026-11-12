@@ -76,7 +76,19 @@ export function normalizarCelular(valor: string): string | null {
   return d.length === 10 && d.startsWith('3') ? d : null
 }
 
-const PATRON_CORREO = /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']+$/
+/**
+ * B-2: misma regla estricta que el servidor. Parte local con letras y dígitos ASCII y `. _ + -` (empieza por letra
+ * o dígito), `@`, dominio con al menos un punto y terminación de 2 a 24 letras; sin `..`. Así se rechazan
+ * `? & ; , : / < > " ' %` y los espacios.
+ */
+const PATRON_CORREO = /^[A-Za-z0-9][A-Za-z0-9._+-]*@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,24}$/
+
+export function correoPortalValido(valor: string): boolean {
+  return valor.length <= CORREO_MAX && !valor.includes('..') && PATRON_CORREO.test(valor)
+}
+
+/** Caracteres de control (saltos de línea, tabuladores...). */
+const PATRON_CONTROL = /[\u0000-\u001F\u007F]/
 
 /** Enlace https a uno de los hosts permitidos, con ruta, sin usuario ni puerto ni caracteres peligrosos. */
 export function enlaceRedValido(valor: string, hosts: readonly string[]): boolean {
@@ -109,12 +121,12 @@ export function validarContactoPortal(f: FormularioContactoPortal): ErroresConta
   const errores: ErroresContactoPortal = {}
   if (normalizarCelular(f.whatsapp) === null) errores.whatsapp = [MENSAJE_PARAM_WHATSAPP]
   const correo = f.correo.trim()
-  if (correo === '' || correo.length > CORREO_MAX || !PATRON_CORREO.test(correo)) errores.correo = [MENSAJE_PARAM_CORREO]
+  if (!correoPortalValido(correo)) errores.correo = [MENSAJE_PARAM_CORREO]
   const lineas = f.horario.map((l) => l.trim())
   if (
     lineas.length < 1 ||
     lineas.length > HORARIO_LINEAS_MAX ||
-    lineas.some((l) => l === '' || l.length > HORARIO_LINEA_MAX || /[<>]/.test(l))
+    lineas.some((l) => l === '' || l.length > HORARIO_LINEA_MAX || /[<>]/.test(l) || PATRON_CONTROL.test(l))
   ) {
     errores.horario = [MENSAJE_PARAM_HORARIO]
   }

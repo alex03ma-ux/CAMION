@@ -60,6 +60,8 @@ export const MENSAJE_PAGO_FECHA = 'Escribe la fecha del pago (AAAA-MM-DD), de ho
 export const MENSAJE_PAGO_MEDIO = 'Elige el medio de pago.'
 export const MENSAJE_PAGO_REFERENCIA = 'La referencia no puede tener más de 100 caracteres ni los signos < >.'
 export const MENSAJE_PAGO_REFERENCIA_OTRO = 'Escribe la referencia: es obligatoria si el medio es Otro.'
+export const MENSAJE_PAGO_REFERENCIA_CONTROL = 'La referencia no puede tener saltos de línea ni caracteres de control.'
+export const MENSAJE_MOTIVO_CONTROL = 'El motivo no puede tener saltos de línea ni caracteres de control.'
 export const MENSAJE_PAGO_SIN_PRECIO = 'Este plan no tiene precio: no se registra un pago.'
 export const MENSAJE_MOTIVO_ANULACION = 'Escribe el motivo (5 a 500 caracteres).'
 export const MENSAJE_PAGO_NO_ENCONTRADO = 'Pago no encontrado.'
@@ -112,6 +114,8 @@ export function hoyColombia(ahora: Date = new Date()): string {
 }
 
 const PATRON_FECHA = /^\d{4}-\d{2}-\d{2}$/
+/** B-3: caracteres de control (saltos de línea, tabuladores...). */
+const PATRON_CONTROL = /[\u0000-\u001F\u007F]/
 
 /** Fecha de calendario real en formato AAAA-MM-DD. */
 export function fechaIsoValida(valor: string): boolean {
@@ -144,6 +148,8 @@ export function validarPago(f: FormularioPago, hoy: string = hoyColombia()): Err
   const referencia = f.referencia.trim()
   if (referencia.length > REFERENCIA_MAX || /[<>]/.test(referencia)) {
     errores.referencia = [MENSAJE_PAGO_REFERENCIA]
+  } else if (PATRON_CONTROL.test(referencia)) {
+    errores.referencia = [MENSAJE_PAGO_REFERENCIA_CONTROL]
   } else if (f.medio === 'OTRO' && referencia === '') {
     errores.referencia = [MENSAJE_PAGO_REFERENCIA_OTRO]
   }
@@ -178,7 +184,8 @@ export function erroresPagoDe(error: ApiError): ErroresPago {
 
 export function validarMotivoAnulacion(motivo: string): string[] {
   const largo = motivo.trim().length
-  return largo >= MOTIVO_MIN && largo <= MOTIVO_MAX ? [] : [MENSAJE_MOTIVO_ANULACION]
+  if (largo < MOTIVO_MIN || largo > MOTIVO_MAX) return [MENSAJE_MOTIVO_ANULACION]
+  return PATRON_CONTROL.test(motivo.trim()) ? [MENSAJE_MOTIVO_CONTROL] : []
 }
 
 // ---- Lectura de respuestas ----
