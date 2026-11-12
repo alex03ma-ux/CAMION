@@ -101,7 +101,7 @@ export function TarjetaVenta({
           )}
           {revertida && (
             <div>
-              <dt>Revertida</dt>
+              <dt>Revertida por</dt>
               <dd>
                 {venta.revertidaPor ?? 'Cuenta eliminada'}
                 <span className="dato-secundario">{formatearFechaHora(venta.revertidaEn)}</span>
