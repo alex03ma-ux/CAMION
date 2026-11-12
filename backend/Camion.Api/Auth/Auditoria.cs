@@ -63,6 +63,8 @@ public static class Auditoria
     public const string Anular = "ANULAR";
     public const string EntidadParametro = "Parametro";
     public const string Cambiar = "CAMBIAR";
+    // D-67: anular el pago de un movimiento deshace lo que ese pago dio (evento sobre la suscripción).
+    public const string DeshacerPago = "DESHACER_PAGO";
 
     // Solo agrega la fila al contexto; se guarda en la misma transacción que el cambio auditado.
     public static void Agregar(CamionDbContext db, string? actorId, string usuarioAfectadoId, string accion,

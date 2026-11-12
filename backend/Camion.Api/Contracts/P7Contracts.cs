@@ -53,6 +53,21 @@ public sealed record PagoItem(
 
 public sealed record PagosResponse(IReadOnlyList<PagoItem> Items, long TotalPagadoCop);
 
+// D-67: GET /api/admin/pagos/{id}/efecto-anulacion (no cambia nada).
+public sealed record PlanEfecto(long Id, string Nombre);
+
+public sealed record EfectoAnulacionResponse(
+    long PagoId,
+    string Tipo,
+    long SuscripcionId,
+    string? NuevoEstado,
+    DateTime? NuevaFinVigencia,
+    PlanEfecto? NuevoPlan,
+    bool QuedaraVencida,
+    long? SuscripcionCanceladaId,
+    string? BloqueadoPor,
+    string? Mensaje);
+
 // ---------------------------------------------------------------- parámetros de contacto
 
 public sealed record ContactoPortalRequest(

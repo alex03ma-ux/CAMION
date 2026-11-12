@@ -5,6 +5,8 @@ using Camion.Api.Catalogo;
 using Camion.Api.Contracts;
 using Camion.Api.Data;
 using Camion.Api.Models;
+using Camion.Api.Leads;
+using Camion.Api.Publicaciones;
 using Camion.Api.Suscripciones;
 using Microsoft.EntityFrameworkCore;
 
@@ -54,7 +56,15 @@ public static class PagosEndpoints
             return Results.Created($"/api/admin/suscripciones/{id}/pagos", await ItemAsync(db, nuevo!.Id, ct));
         });
 
-        // CA-P7-31: anular con motivo (5 a 500). Queda ANULADO con quién, cuándo y por qué; la suscripción no cambia.
+        // D-67: qué hará la anulación, sin cambiar nada. bloqueadoPor != null -> la anulación responde 409 con mensaje.
+        admin.MapGet("/pagos/{id}/efecto-anulacion", async (long id, CamionDbContext db, TimeProvider reloj, CancellationToken ct) =>
+        {
+            var plan = await AnulacionPagos.PlanearAsync(db, id, reloj.GetUtcNow().UtcDateTime, ct);
+            return plan is null ? Results.NotFound(new ErrorResponse(ReglasPagos.MensajeNoEncontrado)) : Results.Ok(Efecto(plan));
+        });
+
+        // CA-P7-31, D-67: anular con motivo (5 a 500). Queda ANULADO con quién, cuándo y por qué, y en la misma transacción
+        // se deshace lo que dio el pago (renovación, asignación o cambio de plan; ver Suscripciones/AnulacionPagos.cs).
         admin.MapPost("/pagos/{id}/anular", async (long id, AnularPagoRequest? request, ClaimsPrincipal principal,
             CamionDbContext db, TimeProvider reloj, CancellationToken ct) =>
         {
@@ -70,14 +80,14 @@ public static class PagosEndpoints
             var ahora = reloj.GetUtcNow().UtcDateTime;
 
             await using var tx = await db.Database.BeginTransactionAsync(ct);
-            // B-4: se audita el estado real anterior (también PENDIENTE, APROBADO o RECHAZADO del script 002).
-            var actual = await db.Pagos.AsNoTracking().Where(p => p.Id == id)
-                .Select(p => new { p.Estado, p.FechaPago, p.Medio }).SingleAsync(ct);
-            var estadoAnterior = actual.Estado;
-            if (estadoAnterior == Pago.Anulado) return Results.Conflict(new ErrorResponse(ReglasPagos.MensajeYaAnulado));
-            // Un pago antiguo del script 002 sin fecha ni medio no cabe en CK_Pago_Registro como ANULADO.
-            if (actual.FechaPago is null || actual.Medio is null)
-                return Results.Conflict(new ErrorResponse(ReglasPagos.MensajeNoAnulable));
+            // Bloquea al asesor (como las demás acciones de suscripciones) y planea dentro de la transacción.
+            var asesorId = await db.Pagos.AsNoTracking().Where(p => p.Id == id)
+                .Join(db.Suscripciones, p => p.SuscripcionId, s => s.Id, (p, s) => s.AsesorId).SingleAsync(ct);
+            await DatosP4b.BloquearAsesorAsync(db, asesorId, ct);
+            var plan = (await AnulacionPagos.PlanearAsync(db, id, ahora, ct))!;
+            // B-4: se audita el estado real anterior. Sin fecha o medio (script 002) o con un movimiento posterior: 409.
+            if (plan.Bloqueo is not null) return Results.Conflict(new ErrorResponse(plan.Mensaje!));
+            var estadoAnterior = plan.Pago.Estado;
             // UPDATE condicionado al estado leído: de dos anulaciones simultáneas solo una cambia la fila (la otra recibe 409).
             var cambiadas = await db.Pagos.Where(p => p.Id == id && p.Estado == estadoAnterior)
                 .ExecuteUpdateAsync(x => x
@@ -86,16 +96,29 @@ public static class PagosEndpoints
                     .SetProperty(p => p.AnuladoEn, ahora)
                     .SetProperty(p => p.MotivoAnulacion, motivo), ct);
             if (cambiadas == 0) return Results.Conflict(new ErrorResponse(ReglasPagos.MensajeYaAnulado));
+            await AnulacionPagos.AplicarAsync(db, plan, adminId, motivo, ahora, ct);
             Auditoria.AgregarEvento(db, adminId, Auditoria.EntidadPago, id.ToString(CultureInfo.InvariantCulture),
                 Auditoria.Anular, new Dictionary<string, object?> { ["estado"] = estadoAnterior },
-                new Dictionary<string, object?> { ["estado"] = Pago.Anulado, ["motivo"] = motivo }, ahora);
+                new Dictionary<string, object?>
+                {
+                    ["estado"] = Pago.Anulado, ["motivo"] = motivo, ["efecto"] = plan.Tipo, ["suscripcionId"] = plan.SuscripcionId
+                }, ahora);
             await db.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
+            // D-41, D-46: si la suscripción dejó de estar vigente, sus publicaciones dejan de verse (se calcula al leer) y
+            // sus contactos abiertos pasan a Administración con el mismo barrido que usa el resto del sistema.
+            if (plan.Tipo != AnulacionPagos.TipoSoloPago) await BarridoLeads.BarrerAsync(db, ahora, ct);
             return Results.Ok(await ItemAsync(db, id, ct));
         });
 
         return app;
     }
+
+    private static EfectoAnulacionResponse Efecto(AnulacionPagos.Plan p) => new(
+        p.Pago.Id, p.Tipo, p.SuscripcionId, p.NuevoEstado,
+        p.NuevaFin is { } f ? ConsultasCatalogo.Utc(f) : null,
+        p.NuevoPlanId is { } id && p.NuevoPlanNombre is { } nombre && p.Tipo != AnulacionPagos.TipoSoloPago ? new PlanEfecto(id, nombre) : null,
+        p.QuedaraVencida, p.SuscripcionCanceladaId, p.Bloqueo, p.Mensaje);
 
     private static async Task<PagoItem> ItemAsync(CamionDbContext db, long id, CancellationToken ct) =>
         (await ItemsAsync(db, db.Pagos.AsNoTracking().Where(p => p.Id == id), ct)).Single();
