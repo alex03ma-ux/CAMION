@@ -152,11 +152,13 @@ public sealed class PagosTests(P7Fixture fixture) : IClassFixture<P7Fixture>
         Assert.Equal(2, (await _api.PagosDb(sus)).Count);
     }
 
-    [Fact(DisplayName = "CA-P7-31: anular con motivo -> ANULADO auditado, fuera del total; la suscripción no cambia; segunda vez 409")]
+    [Fact(DisplayName = "CA-P7-31, D-67: anular con motivo -> ANULADO auditado, fuera del total; un pago POSTERIOR no cambia la suscripción; segunda vez 409")]
     public async Task Anular()
     {
         var (asesor, plan) = await AsesorYPlan("Asesora Anula Ficticia");
-        var sus = IdDe(await Esperar(await _api.AsignarConPago(asesor.PerfilId, plan, PagoValido()), HttpStatusCode.Created));
+        // D-67: solo un pago POSTERIOR se anula sin tocar la suscripción (los demás casos, en AnulacionD67Tests).
+        var sus = IdDe(await _api.Asignada(asesor.PerfilId, plan));
+        await Esperar(await _api.RegistrarPago(sus, PagoValido()), HttpStatusCode.Created);
         var pago = Assert.Single(await _api.PagosDb(sus));
         var antes = await _api.SusDb(sus);
         _api.Hora(T.AddHours(1));

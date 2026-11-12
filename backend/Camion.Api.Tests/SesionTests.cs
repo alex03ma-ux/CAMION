@@ -276,8 +276,8 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
         // CA-SE006-13: toda ruta bajo /api/admin exige SoloAdministrador (P2: 5 acciones + la lista; P4p: 4 GET y 18 acciones;
         // P4b: reasignar un vehículo; D-42: subir y quitar la portada).
         var admin = todos.Where(e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/admin", StringComparison.Ordinal)).ToList();
-        // P7: pagos (lista, registrar, anular), parámetros (leer, guardar) y panel.
-        Assert.Equal(37, admin.Count);
+        // P7: pagos (lista, registrar, anular), parámetros (leer, guardar) y panel. D-67: efecto de la anulación (GET).
+        Assert.Equal(38, admin.Count);
         foreach (var e in admin)
         {
             var politicas = e.Metadata.GetOrderedMetadata<IAuthorizeData>().Select(a => a.Policy).ToArray();

@@ -307,3 +307,37 @@ Solo `ALTER TABLE pagos` (0 filas en `camion_ventas`, comprobado en solo lectura
    - Se combina (Y) con `asesorId`, `estado`, `pagina` y `tamano`. Otro valor: 400 `{ "error": "Revisa los filtros.", "errores": { "vista": ["Vista no válida."] } }`.
    - `estado=VENCIDA` no cambia (sigue incluyendo vencidas ya reemplazadas).
    - **Enlaces del panel** (la respuesta del panel no cambia): `suscripcionesPorVencer` → `/api/admin/suscripciones?vista=porVencer`; `suscripcionesVencidas` → `/api/admin/suscripciones?vista=vencidasSinRenovar`. En la tabla de la §5, la columna "Lista equivalente" de esas dos filas queda reemplazada por estos filtros.
+
+### 2026-11-13 — D-67: anular un pago deshace lo que ese pago dio
+
+Sin migración: el "antes" sale de la auditoría del movimiento (`Suscripcion` / `RENOVAR` o `CAMBIAR_PLAN`, `datos_anteriores`), enlazado con el pago por la suscripción, la acción y la misma hora de registro.
+
+**POST `/api/admin/pagos/{id}/anular`** (cuerpo y 200 `PagoItem` sin cambios; motivo obligatorio). En la misma transacción:
+
+| `concepto` del pago | Efecto |
+|---|---|
+| `RENOVACION` | la suscripción vuelve al `finVigencia`, `inicioVigencia` y plan de antes de esa renovación; el estado vuelve al de antes salvo que después se suspendiera o reactivara (se conserva) |
+| `ASIGNACION` | la suscripción queda `CANCELADA` (fin = ahora, o su fin si ya pasó) |
+| `CAMBIO_PLAN` | la suscripción nueva queda `CANCELADA` y la anterior vuelve a su estado, plan y `finVigencia` de antes del cambio (si la nueva estaba suspendida, la anterior queda suspendida) |
+| `POSTERIOR` | solo se anula el pago |
+
+- Si la suscripción ya estaba `CANCELADA`, solo se anula el pago (no hay nada que deshacer).
+- **Orden:** solo se anula el pago del movimiento más reciente de la suscripción. Si después hubo otra asignación, renovación o cambio de plan que no se haya deshecho (también uno sin pago), responde **409** "Después de este pago hubo otra asignación, renovación o cambio de plan en esta suscripción. Anula primero el pago de ese movimiento.". Si no se encuentra el movimiento en la auditoría: **409** "No se encontró el movimiento de este pago en la auditoría: no se puede deshacer automáticamente.".
+- **Fecha pasada:** si el `finVigencia` restaurado ya pasó, la suscripción queda vencida (estado efectivo `VENCIDA`), sus publicaciones dejan de verse (D-41, se calcula al leer) y, después del COMMIT, se ejecuta el barrido de D-46 (contactos abiertos a Administración, "Plan vencido"). Los destacados que terminaban después del fin restaurado se acortan a ese fin o terminan ahora.
+- **Auditoría:** `Pago` / `ANULAR` añade `efecto` (tipo) y `suscripcionId`. Cada suscripción tocada recibe `Suscripcion` / `DESHACER_PAGO` con antes y después, `pagoId`, `tipo`, `movimientoId` (evento deshecho) y `motivo`.
+
+**GET `/api/admin/pagos/{id}/efecto-anulacion`** (SoloAdministrador; no cambia nada). 404 "Pago no encontrado.". 200 `EfectoAnulacionResponse`:
+
+```json
+{
+  "pagoId": 12, "tipo": "DESHACER_RENOVACION", "suscripcionId": 4, "nuevoEstado": "ACTIVA",
+  "nuevaFinVigencia": "2026-11-25T15:00:00Z", "nuevoPlan": { "id": 2, "nombre": "Plan básico" },
+  "quedaraVencida": false, "suscripcionCanceladaId": null, "bloqueadoPor": null, "mensaje": null
+}
+```
+
+- `tipo`: `DESHACER_RENOVACION`, `CANCELAR_ASIGNACION`, `DESHACER_CAMBIO_PLAN` o `SOLO_PAGO`.
+- `suscripcionId`: la que queda restaurada (en un cambio de plan, la anterior); `suscripcionCanceladaId`: la nueva que se cancela (solo en cambio de plan).
+- `nuevoPlan`: `null` con `SOLO_PAGO`.
+- `bloqueadoPor`: `null` o `YA_ANULADO`, `SIN_DATOS` (pago sin fecha o medio), `MOVIMIENTO_POSTERIOR`, `SIN_MOVIMIENTO`; `mensaje` es el texto del 409 que daría la anulación.
+
