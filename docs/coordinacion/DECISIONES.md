@@ -741,3 +741,76 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
   - si no coincide, se crea una solicitud nueva;
   - nunca se asigna un usuario a una solicitud anónima existente (D-59 a);
   - los límites por teléfono no cambian.
+
+---
+
+# Decisiones de P7 "Ventas, planes y administración" (D-61 a D-65)
+
+Detectadas al escribir `docs/criterios/criterios-P7-ventas-admin.md` (2026-11-12, analista funcional). Ninguna bloquea el historial de ventas ni la regresión de P4b y P4p. Cada una se escribe con la opción recomendada en los criterios (marcados PENDIENTE D-n).
+
+## D-61 — ¿Los planes se cobran dentro del portal? · PENDIENTE (2026-11-12)
+- Contexto: D-21 y D-26 dejaron los pagos para P7; hoy el administrador activa o renueva a mano cuando confirma el pago y **no queda registro del pago**, solo la auditoría de la activación. La v3.0 menciona la "pasarela de pagos" solo como integración **posible** (§14); ninguna HU pide cobrar en línea, facturar ni llevar contabilidad. El script 002 tiene una tabla `pagos` (valor, referencia, soporte_archivo, estado) sin usar. El plan del asesor es el único dinero que entra a la empresa por el portal (las ventas de vehículos ocurren fuera, D-45).
+- Opciones:
+  - A) **Todo fuera del portal, como hoy.** Activación manual sin registro del pago.
+    - Impacto: sin trabajo ni migración; el administrador lleva los pagos en otro lado.
+  - B) **Cobro fuera del portal y registro interno del pago.** Al asignar o renovar un plan con precio, el administrador anota valor, fecha, medio (Transferencia, Consignación, Efectivo, Otro) y referencia opcional; puede anular un pago con motivo; solo él lo ve.
+    - Impacto: entrega pequeña; probablemente una migración 016 reversible sobre `pagos`. No es factura ni contabilidad.
+  - C) **Como B, más comprobante adjunto** (foto o PDF de la transferencia).
+    - Impacto: archivos con datos bancarios del asesor; almacenamiento y revisión de la política de datos (D-44).
+  - D) **Pasarela de pagos** (PSE o tarjeta), con activación automática.
+    - Impacto: **integración externa**: contrato con un proveedor, comisiones, pruebas en entorno del proveedor, seguridad de pagos y, en la práctica, factura electrónica. Iría en P8 o después.
+- En todas las opciones la **factura electrónica y la contabilidad quedan fuera del portal**, salvo que la responsable pida otra cosa.
+- Recomendación del analista: **B**. Da a la administración el historial de pagos por suscripción con poco trabajo y sin integraciones. Si la responsable prefiere no guardar nada de pagos en el portal, A es válida.
+- Bloquea: CA-P7-27 a CA-P7-34.
+
+## D-62 — Ventas: qué es la reversión, quién la hace y quién ve el historial · PENDIENTE (2026-11-12)
+- Contexto: P4b (aprobado) ya implementa la reversión según la minuta §6 ("reversión por asesor propietario con motivo y auditoría; reactivación requiere confirmación y cupo"), pero permite revertir **al dueño y al administrador**, sin plazo. `ventas_vehiculo` conserva todas las ventas (también las revertidas), pero hoy nadie puede consultarlas.
+- (a) **¿Quién revierte?**
+  - A) El asesor dueño o el administrador, sin plazo, con motivo y auditoría (lo que ya hace el código).
+  - B) Solo el administrador.
+  - C) El dueño dentro de los 30 días siguientes al registro de la venta; después, solo el administrador.
+  - Recomendación: A. Coincide con la minuta y con D-33 ("el dueño puede modificar todo lo suyo"); el administrador conserva sus facultades.
+- (b) **¿Qué significa revertir?**
+  - A) Deshacer la marca de vendido (la venta no se cerró o se marcó por error): vehículo ACTIVO, publicación OCULTA hasta reactivarla con plan, la venta queda como "Revertida" con su motivo. Para corregir un dato (fecha, precio, origen) se revierte y se vuelve a marcar vendido (comportamiento actual).
+  - B) Como A, y además una acción "Corregir datos de la venta" sin revertir, auditada.
+  - Recomendación: A. Ya existe y deja todo trazado.
+- (c) **¿Quién ve el historial de ventas?**
+  - A) El administrador ve todas; el asesor, las de los vehículos que hoy son suyos, también las revertidas.
+  - B) Solo el administrador.
+  - Recomendación: A. Es el mismo alcance que su inventario.
+- (d) **¿Se muestra la auditoría completa del vehículo** (línea de tiempo de cambios)?
+  - A) No en P7; la auditoría sigue registrándose y se consulta en P8 o con apoyo técnico.
+  - B) Sí, solo para el administrador y de solo lectura.
+  - Recomendación: A, para mantener P7 pequeño.
+- Bloquea: CA-P7-02 y CA-P7-17 (con A no cambia nada del código actual).
+
+## D-63 — ¿Qué parámetros cambia el administrador sin programador? · PENDIENTE (2026-11-12)
+- Contexto: HU-081 / RN-PA-001 piden "configuración global" sin detallarla. Hoy el WhatsApp, el correo y el horario del pie están fijos en el frontend (`PiePortal.tsx`), confirmados en D-42, y el WhatsApp del portal de D-47 está en `appsettings.json`. Los catálogos (HU-082 a HU-084) y la foto de portada ya los administra él (D-37, D-42). HU-085 (información corporativa) y HU-086 (textos legales) dependen de la revisión legal (D-44). HU-087 habla de "promociones", que son marketing (P8).
+- Opciones:
+  - A) **Solo los datos de contacto del portal:** WhatsApp, correo, horario (hasta 4 líneas) e Instagram y TikTok (se muestran solo si tienen enlace). El botón de WhatsApp de la ficha (D-47) usa el mismo número.
+    - Impacto: entrega pequeña; probablemente sin migración (`configuracion_sistema` ya existe en el script 002; hay que verificarlo en la base real).
+  - B) **A más información corporativa y textos legales** (razón social, NIT, dirección, política y términos).
+    - Impacto: no se puede publicar hasta que el abogado revise y la responsable entregue los datos (D-44); se haría cuando eso esté listo.
+  - C) **B más valores de negocio:** días por mes del plan, número y tamaño de las fotos, límites anti-abuso, días del aviso de vencimiento.
+    - Impacto: el administrador podría cambiar reglas de negocio (RN-SU-005 "30 días", D-20, D-35) sin control de cambios (v3.0 §16), y algunos valores afectan la seguridad.
+- Recomendación del analista: **A ahora**; la parte corporativa y legal de B cuando se libere D-44; **C no**. HU-087 (promociones) pasa a P8 con marketing.
+- Bloquea: CA-P7-35 a CA-P7-44.
+
+## D-64 — ¿Qué muestra el panel del administrador? · PENDIENTE (2026-11-12)
+- Contexto: el encargo de P7 incluye "panel administrativo e indicadores básicos". HU-075 (dashboard) y HU-080 (indicadores comerciales) son del módulo de Reportes, que el backlog deja en P8 junto con HU-076 a HU-079 (reportes filtrables y exportación). HU-073 y HU-074 piden avisar antes de los vencimientos, y no hay servicio de correo (D-5, D-48).
+- (a) **Contenido del panel "Inicio":**
+  - A) **Contadores operativos**, cada uno con enlace a su lista filtrada: asesores pendientes de aprobación; solicitudes abiertas y nuevas por tipo (contactos de Administración, "Vende tu camión", seguros, créditos, búsquedas); suscripciones que vencen en los próximos 7 días y vencidas sin renovar; publicaciones visibles; vehículos por estado; ventas de los últimos 30 días (cantidad). Sin gráficos, sumas de dinero ni exportación.
+  - B) A más indicadores comerciales: valor vendido del mes, ventas por origen (D-39), contactos por publicación, con gráficos.
+  - C) El dashboard completo de HU-075 y HU-080, con filtros por fecha y exportación.
+  - Recomendación: A en P7; B y C en P8, donde están los reportes.
+- (b) **Aviso de vencimiento dentro del panel** (HU-073 y HU-074 en parte, como D-48):
+  - A) Sí: el contador del administrador y, en "Mi suscripción" del asesor, "Tu plan vence en N días" cuando falten 7 días o menos.
+  - B) No; todo aviso de vencimiento queda para P8.
+  - Recomendación: A. Es barato y evita que las publicaciones se oculten sin aviso (D-41).
+- Bloquea: CA-P7-45 a CA-P7-52.
+
+## D-65 — Cita equivocada de HU-081 en el contrato de P4p · TOMADA (2026-11-12)
+- Contradicción documental, sin impacto en el código: `docs/criterios/P4p-contrato-api.md` (líneas 11 y 137) llama "HU-081" a las notificaciones de vencimiento de suscripción. Por D-1, en la matriz oficial HU-081 es "Administrar parámetros generales" y la notificación de vencimiento de suscripción es **HU-074** (la lista de la sección 10 la llama HU-081).
+- Opciones: A) corregir la cita a HU-074 en ese contrato (documentador); B) dejarla y añadir una nota.
+- Recomendación: A. No requiere a la responsable; la puede cerrar el coordinador.
+- **Decisión (coordinador, 2026-11-12): A.** Corregidas las dos citas en `P4p-contrato-api.md`.
