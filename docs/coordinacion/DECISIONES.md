@@ -726,3 +726,17 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
 - (d) **¿Quién la ve?** Se propone solo el rol COMPRADOR (D-53 habla del comprador). El asesor tiene "Mis contactos" y el administrador, la bandeja.
 - **Decisión (responsable, 2026-11-10): las recomendaciones.** (a) A, (b) A, (c) solo lectura, (d) solo COMPRADOR.
 
+
+## D-60 — Detalles técnicos de P6 decididos por el coordinador · TOMADA (2026-11-10)
+- Contexto: puntos marcados PROPUESTO en `docs/criterios/P6-contrato-api.md` y hallazgos de la revisión de seguridad (M-P6-1) y de QA (O-1). Son decisiones técnicas y reversibles; no cambian reglas de negocio.
+- Crédito desde la ficha: solo sobre una publicación visible (plan vigente), según CA-P6-04; si no, 404.
+- Búsqueda: se guarda también `departamento_id`; el presupuesto es BIGINT (pesos sin decimales).
+- Las listas del formulario de búsqueda salen de la ruta pública de solo lectura `GET /api/catalogo/listas-busqueda` (solo entradas activas, sin datos personales, caché de 5 minutos).
+- Retirar un vehículo de una búsqueda cerrada da 409. "En gestión" se mantiene tras reabrir.
+- "Ver coincidencias" sin criterios guardados responde 409 en lugar de 500.
+- Repetidos (M-P6-1 y O-1), en contacto, avisos, crédito y búsqueda:
+  - solo se agrega a una solicitud abierta del mismo origen;
+  - y del mismo `usuario_id`; dos anónimas cuentan como iguales;
+  - si no coincide, se crea una solicitud nueva;
+  - nunca se asigna un usuario a una solicitud anónima existente (D-59 a);
+  - los límites por teléfono no cambian.
