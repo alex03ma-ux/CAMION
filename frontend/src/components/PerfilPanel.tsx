@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react'
 import type { PerfilUsuario } from '../api/auth'
 import { MINUTOS_INACTIVIDAD } from '../auth/inactivity'
-import { esAdministrador, nombreRol } from '../auth/roles'
-import { HASH_INVENTARIO } from '../rutas'
+import { esAdministrador, nombreRol, ROL_ASESOR, tieneRol } from '../auth/roles'
+import { hashSeccionAdmin, HASH_INVENTARIO } from '../rutas'
 import { textoAccesoInventario } from './InventarioPagina'
+import { MiSuscripcion } from './MiSuscripcion'
 
 type PerfilPanelProps = {
   perfil: PerfilUsuario
@@ -11,6 +12,10 @@ type PerfilPanelProps = {
   onCerrarSesion: () => void
   /** Abre el panel de administración; solo se ofrece a quien tiene el rol ADMINISTRADOR. */
   onAbrirAdministracion?: () => void
+  /** P4p: token para la tarjeta "Mi suscripción" del asesor (si falta, no se muestra). */
+  token?: string
+  /** P4p: 401 al consultar la suscripción. */
+  onSesionTerminada?: () => void
 }
 
 export function PerfilPanel({
@@ -18,6 +23,8 @@ export function PerfilPanel({
   cerrando,
   onCerrarSesion,
   onAbrirAdministracion,
+  token,
+  onSesionTerminada,
 }: PerfilPanelProps) {
   const titulo = useRef<HTMLHeadingElement>(null)
   useEffect(() => {
@@ -29,6 +36,8 @@ export function PerfilPanel({
   const verAdministracion = onAbrirAdministracion !== undefined && esAdministrador(perfil.roles)
   // P4a: "Mi inventario" (asesor) o "Inventario" (administrador); un comprador no lo ve.
   const accesoInventario = textoAccesoInventario(perfil.roles)
+  // P4p: el asesor ve su suscripción; la API (SoloAsesor) lo vuelve a comprobar.
+  const verSuscripcion = token !== undefined && tieneRol(perfil.roles, ROL_ASESOR)
 
   return (
     <section aria-labelledby="perfil-titulo">
@@ -46,6 +55,7 @@ export function PerfilPanel({
       <p className="form-ayuda">
         Por seguridad, la sesión se cierra sola tras {MINUTOS_INACTIVIDAD} minutos sin actividad.
       </p>
+      {verSuscripcion && <MiSuscripcion token={token} onSesionTerminada={onSesionTerminada} />}
       {accesoInventario && (
         <a className="inv-boton-enlace inv-boton-bloque" href={HASH_INVENTARIO}>
           {accesoInventario}
@@ -55,6 +65,19 @@ export function PerfilPanel({
         <button type="button" onClick={onAbrirAdministracion} disabled={cerrando}>
           Administrar usuarios
         </button>
+      )}
+      {verAdministracion && (
+        <nav className="perfil-admin-enlaces" aria-label="Más administración">
+          <a className="inv-boton-enlace inv-boton-secundario" href={hashSeccionAdmin('planes')}>
+            Planes
+          </a>
+          <a className="inv-boton-enlace inv-boton-secundario" href={hashSeccionAdmin('suscripciones')}>
+            Suscripciones
+          </a>
+          <a className="inv-boton-enlace inv-boton-secundario" href={hashSeccionAdmin('catalogos')}>
+            Catálogos
+          </a>
+        </nav>
       )}
       <button
         className={verAdministracion ? 'secondary-button' : undefined}

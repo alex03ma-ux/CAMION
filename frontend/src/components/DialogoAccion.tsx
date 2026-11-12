@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
 import {
   MOTIVO_MAX,
   motivoObligatorio,
@@ -109,6 +109,8 @@ type DialogoConfirmacionProps = {
   validarMotivo?: (motivo: string) => string[]
   /** Texto de ayuda bajo el motivo; por defecto el de 5 a 500 caracteres. */
   ayudaMotivo?: string
+  /** P4p: campos propios del diálogo (p. ej. elegir un plan o renombrar); reciben el foco inicial. */
+  contenido?: ReactNode
   enviando: boolean
   erroresMotivo?: string[]
   error: DatosAviso | null
@@ -130,6 +132,7 @@ export function DialogoConfirmacion({
   motivo: modoMotivo,
   validarMotivo: validar = () => [],
   ayudaMotivo,
+  contenido,
   enviando,
   erroresMotivo = SIN_ERRORES,
   error,
@@ -143,6 +146,7 @@ export function DialogoConfirmacion({
   const refDialogo = useRef<HTMLDivElement>(null)
   const refMotivo = useRef<HTMLTextAreaElement>(null)
   const refConfirmar = useRef<HTMLButtonElement>(null)
+  const refContenido = useRef<HTMLDivElement>(null)
 
   const errores = erroresLocales.length > 0 ? erroresLocales : erroresMotivo
   const tieneErrores = errores.length > 0
@@ -152,7 +156,11 @@ export function DialogoConfirmacion({
   const idAyuda = 'dialogo-motivo-ayuda'
 
   useEffect(() => {
-    if (refMotivo.current) refMotivo.current.focus()
+    const campoPropio = refContenido.current?.querySelector<HTMLElement>(
+      'input:not([disabled]), select:not([disabled]), textarea:not([disabled])',
+    )
+    if (campoPropio) campoPropio.focus()
+    else if (refMotivo.current) refMotivo.current.focus()
     else refConfirmar.current?.focus()
   }, [])
 
@@ -220,6 +228,12 @@ export function DialogoConfirmacion({
         <form className="dialogo-form" onSubmit={enviar} noValidate aria-busy={enviando}>
           <h3 id={idTitulo}>{titulo}</h3>
           <p id={idDescripcion}>{descripcion}</p>
+
+          {contenido !== undefined && (
+            <div ref={refContenido} className="dialogo-contenido">
+              {contenido}
+            </div>
+          )}
 
           {conMotivo && (
             <>

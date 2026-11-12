@@ -4,6 +4,8 @@
 //   #/vehiculo/<slug>   Detalle
 //   #/cuenta            Login / registro / perfil / panel de administración
 //   #/cuenta/registro   Lo mismo, abriendo el formulario de registro
+//   #/cuenta/usuarios, #/cuenta/planes, #/cuenta/suscripciones, #/cuenta/catalogos
+//                       P4p: secciones del administrador (la API las protege igualmente)
 //   #/inventario        P4a: inventario del asesor (propio) o del administrador (general)
 //   #/inventario/nuevo  P4a: registrar un vehículo
 //   #/inventario/<id>   P4a: editar un vehículo y sus fotos
@@ -15,10 +17,19 @@ export type Ruta =
   | { nombre: 'inicio' }
   | { nombre: 'buscar'; filtros: FiltrosCatalogo }
   | { nombre: 'vehiculo'; slug: string }
-  | { nombre: 'cuenta'; registro: boolean }
+  | { nombre: 'cuenta'; registro: boolean; seccion?: SeccionAdmin }
   | { nombre: 'inventario' }
   | { nombre: 'inventarioNuevo' }
   | { nombre: 'inventarioVehiculo'; id: number }
+
+/** P4p: secciones del administrador dentro de "Mi cuenta". */
+export type SeccionAdmin = 'usuarios' | 'planes' | 'suscripciones' | 'catalogos'
+export const SECCIONES_ADMIN: readonly SeccionAdmin[] = ['usuarios', 'planes', 'suscripciones', 'catalogos']
+
+/** `#/cuenta/<seccion>`. */
+export function hashSeccionAdmin(seccion: SeccionAdmin): string {
+  return `#/cuenta/${seccion}`
+}
 
 export const HASH_INICIO = '#/'
 export const HASH_BUSCAR = '#/buscar'
@@ -83,6 +94,8 @@ export function leerRuta(hash: string): Ruta {
   if (camino === '/buscar') return { nombre: 'buscar', filtros: leerFiltros(consulta) }
   if (camino === '/cuenta') return { nombre: 'cuenta', registro: false }
   if (camino === '/cuenta/registro') return { nombre: 'cuenta', registro: true }
+  const seccion = SECCIONES_ADMIN.find((s) => camino === `/cuenta/${s}`)
+  if (seccion) return { nombre: 'cuenta', registro: false, seccion }
   if (camino === '/inventario') return { nombre: 'inventario' }
   if (camino === '/inventario/nuevo') return { nombre: 'inventarioNuevo' }
   const inventario = /^\/inventario\/(\d{1,15})$/.exec(camino)

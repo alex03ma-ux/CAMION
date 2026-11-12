@@ -8,7 +8,7 @@ import {
   type LoginResponse,
   type PerfilUsuario,
 } from './api/auth'
-import { ApiError, MENSAJE_INESPERADO } from './api/http'
+import { ApiError, MENSAJE_INESPERADO, MENSAJE_SIN_PERMISO } from './api/http'
 import { inactividadGuardadaVencida, useInactividad } from './auth/inactivity'
 import {
   borrarSesion,
@@ -23,6 +23,9 @@ import {
 } from './auth/session'
 import { esAdministrador } from './auth/roles'
 import { usePeticion } from './catalogo/usePeticion'
+import { AdminCatalogos } from './components/AdminCatalogos'
+import { AdminPlanes } from './components/AdminPlanes'
+import { AdminSuscripciones } from './components/AdminSuscripciones'
 import { AdminUsuarios } from './components/AdminUsuarios'
 import type { DatosAviso } from './components/Aviso'
 import { Aviso } from './components/Aviso'
@@ -31,6 +34,7 @@ import { Encabezado } from './components/Encabezado'
 import { Inicio } from './components/Inicio'
 import { InventarioPagina } from './components/InventarioPagina'
 import { LoginForm } from './components/LoginForm'
+import { NavAdmin } from './components/NavAdmin'
 import { PerfilPanel } from './components/PerfilPanel'
 import { RegistroForm } from './components/RegistroForm'
 import { Resultados } from './components/Resultados'
@@ -42,6 +46,7 @@ import {
   navegar,
   useHash,
   type Ruta,
+  type SeccionAdmin,
 } from './rutas'
 
 type Vista =
@@ -251,6 +256,14 @@ export default function App() {
 
   const conSesion = vista.tipo !== 'login' && vista.tipo !== 'registro'
 
+  // P4p: al entrar en una sección del administrador (#/cuenta/planes…) se deja la vista "admin"
+  // del botón "Administrar usuarios", para que "Mi perfil" (#/cuenta) vuelva al perfil.
+  const seccionAdmin: SeccionAdmin | undefined = ruta.nombre === 'cuenta' ? ruta.seccion : undefined
+  useEffect(() => {
+    if (seccionAdmin === undefined) return
+    setVista((v) => (v.tipo === 'admin' ? { tipo: 'perfil', sesion: v.sesion, perfil: v.perfil } : v))
+  }, [seccionAdmin])
+
   // P4a: el inventario exige sesión; sin ella se va al login de #/cuenta
   // (si la sesión terminó, allí se ve el aviso "Tu sesión terminó...").
   const enInventario = esRutaInventario(ruta)
@@ -377,11 +390,15 @@ export default function App() {
         />
       )}
 
-      {vista.tipo === 'perfil' && (
+      {vista.tipo === 'perfil' && seccionAdmin !== undefined && renderSeccionAdmin(seccionAdmin)}
+
+      {vista.tipo === 'perfil' && seccionAdmin === undefined && (
         <PerfilPanel
           perfil={vista.perfil}
           cerrando={cerrando}
           onCerrarSesion={() => void cerrarSesion(vista.sesion.accessToken, AVISO_SESION_CERRADA)}
+          token={vista.sesion.accessToken}
+          onSesionTerminada={alTerminarSesionAdmin}
           onAbrirAdministracion={
             esAdministrador(vista.perfil.roles)
               ? () => setVista({ tipo: 'admin', sesion: vista.sesion, perfil: vista.perfil })
@@ -390,7 +407,10 @@ export default function App() {
         />
       )}
 
-      {vista.tipo === 'admin' && esAdministrador(vista.perfil.roles) && (
+      {vista.tipo === 'admin' && esAdministrador(vista.perfil.roles) && seccionAdmin === undefined && (
+        <NavAdmin actual="usuarios" />
+      )}
+      {vista.tipo === 'admin' && esAdministrador(vista.perfil.roles) && seccionAdmin === undefined && (
         <AdminUsuarios
           token={vista.sesion.accessToken}
           usuarioIdPropio={vista.perfil.usuarioId}
@@ -399,6 +419,41 @@ export default function App() {
         />
       )}
     </div>
+    )
+  }
+
+  /** P4p: Usuarios, Planes, Suscripciones y Catálogos; solo con el rol ADMINISTRADOR según /me. */
+  function renderSeccionAdmin(seccion: SeccionAdmin) {
+    if (vista.tipo !== 'perfil') return null
+    if (!esAdministrador(vista.perfil.roles)) {
+      return (
+        <section aria-labelledby="sin-permiso-titulo">
+          <h2 id="sin-permiso-titulo">Administración</h2>
+          <Aviso aviso={{ tipo: 'error', texto: MENSAJE_SIN_PERMISO }} />
+          <p>
+            <a href={HASH_CUENTA}>Volver a mi cuenta</a>
+          </p>
+        </section>
+      )
+    }
+    const token = vista.sesion.accessToken
+    return (
+      <>
+        <NavAdmin actual={seccion} />
+        {seccion === 'usuarios' && (
+          <AdminUsuarios
+            token={token}
+            usuarioIdPropio={vista.perfil.usuarioId}
+            onSesionTerminada={alTerminarSesionAdmin}
+            onVolver={() => navegar(HASH_CUENTA)}
+          />
+        )}
+        {seccion === 'planes' && <AdminPlanes token={token} onSesionTerminada={alTerminarSesionAdmin} />}
+        {seccion === 'suscripciones' && (
+          <AdminSuscripciones token={token} onSesionTerminada={alTerminarSesionAdmin} />
+        )}
+        {seccion === 'catalogos' && <AdminCatalogos token={token} onSesionTerminada={alTerminarSesionAdmin} />}
+      </>
     )
   }
 }

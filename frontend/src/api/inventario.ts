@@ -88,6 +88,8 @@ export type DetalleInventario = {
   altoM: number | null
   materialId: number | null
   tipoMaquinaId: number | null
+  /** D-37: nombres actuales (sirven para conservar un elemento ya desactivado al editar). */
+  nombres: { marca: string | null; linea: string | null; carroceria: string | null; material: string | null; tipoMaquina: string | null; combustible: string | null }
   municipioId: number | null
   /** Puede no venir: se deduce del municipio con los catálogos. */
   departamentoId: number | null
@@ -315,6 +317,14 @@ export function leerDetalle(valor: unknown): DetalleInventario | null {
     altoM: numeroONulo(valor.altoM),
     materialId: numeroONulo(valor.materialId),
     tipoMaquinaId: numeroONulo(valor.tipoMaquinaId),
+    nombres: {
+      marca: nombreDe(valor.marca),
+      linea: nombreDe(valor.linea),
+      carroceria: nombreDe(valor.carroceria),
+      material: nombreDe(valor.material),
+      tipoMaquina: nombreDe(valor.tipoMaquina),
+      combustible: nombreDe(valor.combustible),
+    },
     municipioId: numeroONulo(valor.municipioId) ?? idDe(valor.municipio),
     departamentoId: numeroONulo(valor.departamentoId) ?? idDe(valor.departamento),
     precioCop: numero(valor.precioCop, 0),
@@ -552,4 +562,36 @@ export async function reordenarFotos(
   const lista = esObjetoJson(respuesta) ? respuesta.fotos : respuesta
   if (!Array.isArray(lista)) throw respuestaInvalida()
   return leerFotos(lista)
+}
+
+/**
+ * D-37: al editar, el vehículo conserva un elemento de catálogo que el administrador desactivó.
+ * Se añade a las opciones (marcado como desactivado) para que el formulario no lo pierda.
+ */
+export function catalogosConValoresActuales(
+  catalogos: CatalogosInventario,
+  detalle: DetalleInventario | null,
+): CatalogosInventario {
+  if (!detalle) return catalogos
+  const marca = (nombre: string | null) => `${nombre ?? 'Elemento'} (desactivado)`
+  const agregar = <T extends Opcion>(lista: T[], id: number | null, nombre: string | null, extra: Omit<T, 'id' | 'nombre'>): T[] =>
+    id === null || lista.some((o) => o.id === id) ? lista : [...lista, { id, nombre: marca(nombre), ...extra } as T]
+  let marcas = catalogos.marcas
+  if (detalle.marcaId !== null) {
+    marcas = agregar(marcas, detalle.marcaId, detalle.nombres.marca, { lineas: [] } as Omit<MarcaInventario, 'id' | 'nombre'>)
+    if (detalle.lineaId !== null)
+      marcas = marcas.map((m) =>
+        m.id === detalle.marcaId && !m.lineas.some((l) => l.id === detalle.lineaId)
+          ? { ...m, lineas: [...m.lineas, { id: detalle.lineaId!, nombre: marca(detalle.nombres.linea) }] }
+          : m,
+      )
+  }
+  return {
+    ...catalogos,
+    marcas,
+    carrocerias: agregar(catalogos.carrocerias, detalle.carroceriaId, detalle.nombres.carroceria, {}),
+    materiales: agregar(catalogos.materiales, detalle.materialId, detalle.nombres.material, {}),
+    tiposMaquina: agregar(catalogos.tiposMaquina, detalle.tipoMaquinaId, detalle.nombres.tipoMaquina, {}),
+    combustibles: agregar(catalogos.combustibles, detalle.combustibleId, detalle.nombres.combustible, {}),
+  }
 }

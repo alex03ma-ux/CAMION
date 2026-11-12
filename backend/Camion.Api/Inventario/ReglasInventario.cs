@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Camion.Api.Contracts;
 using Camion.Api.Data;
+using Camion.Api.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Camion.Api.Inventario;
@@ -138,8 +139,18 @@ public static partial class ReglasInventario
     /// (no se puede cambiar); null al crear. Devuelve los errores por campo y, si no hay ninguno, los datos normalizados.
     /// </summary>
     public static async Task<(Dictionary<string, string[]> Errores, DatosVehiculo? Datos)> ValidarAsync(
-        CamionDbContext db, VehiculoInventarioRequest r, long? tipoActual, int anioActual, CancellationToken ct)
+        CamionDbContext db, VehiculoInventarioRequest r, long? tipoActual, int anioActual, CancellationToken ct,
+        Vehiculo? actual = null)
     {
+        // D-37: un elemento de catálogo desactivado no se ofrece, pero el vehículo que ya lo usa lo conserva
+        // y se puede seguir editando sin cambiarlo.
+        bool Conserva(long? id, long? deActual) => actual is not null && id is not null && id == deActual;
+        var conservaMarca = Conserva(r.MarcaId, actual?.MarcaId);
+        var conservaLinea = Conserva(r.LineaId, actual?.LineaId);
+        var conservaCarroceria = Conserva(r.CarroceriaId, actual?.CarroceriaId);
+        var conservaMaterial = Conserva(r.MaterialId, actual?.MaterialId);
+        var conservaTipoMaquina = Conserva(r.TipoMaquinaId, actual?.TipoMaquinaId);
+        var conservaCombustible = Conserva(r.CombustibleId, actual?.CombustibleId);
         var errores = new Dictionary<string, string[]>();
         void Error(string campo, string mensaje)
         {
@@ -196,7 +207,7 @@ public static partial class ReglasInventario
             {
                 if (reglas.Marca == Regla.Obligatorio) Error("marcaId", MensajeMarca);
             }
-            else if (!await db.Marcas.AsNoTracking().AnyAsync(m => m.Id == r.MarcaId && m.Activo, ct))
+            else if (!await db.Marcas.AsNoTracking().AnyAsync(m => m.Id == r.MarcaId && (m.Activo || conservaMarca), ct))
                 Error("marcaId", MensajeMarcaInvalida);
         }
         // D-25: el modelo (línea) es obligatorio en Carro, Camión y Maquinaria; opcional en Carrocería.
@@ -204,7 +215,7 @@ public static partial class ReglasInventario
             Error("lineaId", MensajeLinea);
         if (r.LineaId is not null)
         {
-            var linea = await db.Lineas.AsNoTracking().Where(l => l.Id == r.LineaId && l.Activo)
+            var linea = await db.Lineas.AsNoTracking().Where(l => l.Id == r.LineaId && (l.Activo || conservaLinea))
                 .Select(l => new { l.MarcaId }).FirstOrDefaultAsync(ct);
             if (linea is null) Error("lineaId", MensajeLineaInvalida);
             else if (linea.MarcaId != r.MarcaId) Error("lineaId", MensajeLineaMarca);
@@ -250,7 +261,7 @@ public static partial class ReglasInventario
             {
                 if (reglas.Carroceria == Regla.Obligatorio) Error("carroceriaId", MensajeCarroceria);
             }
-            else if (!await db.TiposCarroceria.AsNoTracking().AnyAsync(c => c.Id == r.CarroceriaId && c.Activo, ct))
+            else if (!await db.TiposCarroceria.AsNoTracking().AnyAsync(c => c.Id == r.CarroceriaId && (c.Activo || conservaCarroceria), ct))
                 Error("carroceriaId", MensajeCarroceriaInvalida);
         }
 
@@ -259,7 +270,7 @@ public static partial class ReglasInventario
             if (Admite(reglas.Medidas, campo, valor is not null) && valor is not null && !DecimalValido(valor.Value, MedidaMaxima))
                 Error(campo, MensajeMedida);
         if (Admite(reglas.Material, "materialId", r.MaterialId is not null) && r.MaterialId is not null &&
-            !await db.MaterialesCarroceria.AsNoTracking().AnyAsync(m => m.Id == r.MaterialId && m.Activo, ct))
+            !await db.MaterialesCarroceria.AsNoTracking().AnyAsync(m => m.Id == r.MaterialId && (m.Activo || conservaMaterial), ct))
             Error("materialId", MensajeMaterialInvalido);
 
         // Tipo de máquina.
@@ -269,13 +280,13 @@ public static partial class ReglasInventario
             {
                 if (reglas.TipoMaquina == Regla.Obligatorio) Error("tipoMaquinaId", MensajeTipoMaquina);
             }
-            else if (!await db.TiposMaquina.AsNoTracking().AnyAsync(t => t.Id == r.TipoMaquinaId && t.Activo, ct))
+            else if (!await db.TiposMaquina.AsNoTracking().AnyAsync(t => t.Id == r.TipoMaquinaId && (t.Activo || conservaTipoMaquina), ct))
                 Error("tipoMaquinaId", MensajeTipoMaquinaInvalido);
         }
 
         // Combustible, cilindraje y peso bruto.
         if (Admite(reglas.Mecanica, "combustibleId", r.CombustibleId is not null) && r.CombustibleId is not null &&
-            !await db.Combustibles.AsNoTracking().AnyAsync(c => c.Id == r.CombustibleId && c.Activo, ct))
+            !await db.Combustibles.AsNoTracking().AnyAsync(c => c.Id == r.CombustibleId && (c.Activo || conservaCombustible), ct))
             Error("combustibleId", MensajeCombustibleInvalido);
         if (Admite(reglas.Mecanica, "cilindrajeCc", r.CilindrajeCc is not null) && r.CilindrajeCc is not null &&
             (r.CilindrajeCc < 1 || r.CilindrajeCc > CilindrajeMaximo))

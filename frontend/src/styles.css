@@ -1697,3 +1697,195 @@ label.campo-obligatorio::after,
   color: #b42318;
   font-weight: 700;
 }
+
+/* ---- P4p: administración (planes, suscripciones, catálogos) y "Mi suscripción" ---- */
+
+.nav-admin {
+  width: 100%;
+  max-width: 1040px;
+  margin-top: 24px;
+}
+
+.nav-admin ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nav-admin a {
+  display: inline-block;
+  padding: 10px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: white;
+  color: #17365d;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.nav-admin a:hover {
+  background: #e8eef6;
+}
+
+.nav-admin a[aria-current='page'] {
+  background: #17365d;
+  border-color: #17365d;
+  color: white;
+}
+
+.nav-admin a:focus-visible,
+.perfil-admin-enlaces a:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.perfil-admin-enlaces {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.container form.admin-form {
+  max-width: none;
+  margin: 0 0 16px;
+  padding: 16px 20px 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.admin-rejilla {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0 20px;
+}
+
+@media (min-width: 640px) {
+  .admin-rejilla {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.admin-ayuda-campo {
+  margin: 0;
+  align-self: end;
+}
+
+.admin-botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-botones button {
+  width: auto;
+  min-width: 160px;
+  margin-top: 16px;
+}
+
+.admin-linea {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0 12px;
+}
+
+.admin-linea .campo {
+  flex: 1 1 240px;
+}
+
+.admin-linea button {
+  width: auto;
+  min-width: 120px;
+  margin-top: 39px;
+}
+
+.container .admin-selector {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0 16px;
+  margin-bottom: 16px;
+}
+
+.admin-modelos {
+  margin-top: 24px;
+  padding-top: 8px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.admin-subtitulo-menor {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.tabla-admin {
+  min-width: 720px;
+}
+
+.opcion-casilla {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 0;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.opcion-casilla input[type='checkbox'] {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  accent-color: #17365d;
+}
+
+.opcion-casilla input[type='checkbox']:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.casillas-categorias {
+  min-width: 0;
+  margin: 16px 0 0;
+  padding: 0;
+  border: none;
+}
+
+.casillas-categorias legend {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.casillas-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+}
+
+.dialogo-contenido {
+  margin-bottom: 8px;
+}
+
+.tarjeta-suscripcion {
+  margin: 20px 0 0;
+  padding: 16px 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.tarjeta-suscripcion h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.tarjeta-suscripcion-vacia {
+  margin: 0;
+  line-height: 1.5;
+  color: #52657b;
+}

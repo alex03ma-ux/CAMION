@@ -944,3 +944,26 @@ describe('D-33: el dueño puede cambiar la categoría al editar', () => {
     expect(screen.getByRole('option', { name: 'Kia no tiene modelos de Camión. Elige otra marca o cambia la categoría.' })).toBeInTheDocument()
   })
 })
+
+describe('D-37: el vehículo conserva una marca o modelo desactivados', () => {
+  it('al editar, la marca y el modelo desactivados aparecen como "(desactivado)" y el PUT los conserva', async () => {
+    const sinChevrolet = { ...CAT, marcas: CAT.marcas.filter((m) => m.id !== 10) }
+    const api = simularFetch({
+      [ME]: me(['ASESOR']),
+      [CATALOGOS]: { status: 200, body: sinChevrolet },
+      [DETALLE_9]: [
+        { status: 200, body: detalleCamion() },
+        { status: 200, body: detalleCamion() },
+      ],
+    })
+    const u = userEvent.setup()
+    abrirConSesion('#/inventario/9')
+    const marca = await screen.findByLabelText('Marca')
+    expect(marca).toHaveValue('10')
+    expect(within(marca).getByRole('option', { name: /\(desactivado\)/ })).toBeInTheDocument()
+    expect(screen.getByLabelText('Línea (modelo)')).toHaveValue('100')
+    await u.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    await waitFor(() => expect(api.llamadasA(DETALLE_9)).toHaveLength(2))
+    expect(cuerpoJson(api.llamadasA(DETALLE_9)[1].init)).toMatchObject({ marcaId: 10, lineaId: 100 })
+  })
+})

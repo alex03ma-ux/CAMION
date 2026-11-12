@@ -243,8 +243,12 @@ public sealed class Siembra
         db.PerfilesAsesor.AddRange(perfiles);
         await db.SaveChangesAsync();
 
+        // P4p: suscripciones.plan_id ya es FK a planes en el modelo; se siembra un plan ficticio.
+        var plan = new global::Camion.Api.Models.Plan { Nombre = "Plan Ficticio P3", PrecioCop = 0, DuracionMeses = 1, LimitePublicaciones = 10 };
+        db.Planes.Add(plan);
+        await db.SaveChangesAsync();
         Suscripcion Plan(PerfilAsesor p, string estado, DateTime? fin) =>
-            new() { AsesorId = p.Id, PlanId = 1, Estado = estado, InicioVigencia = T.AddDays(-30), FinVigencia = fin };
+            new() { AsesorId = p.Id, PlanId = plan.Id, Estado = estado, InicioVigencia = T.AddDays(-30), FinVigencia = fin };
         var planes = perfiles.Select(p => Plan(p, Suscripcion.Activa, T.AddDays(30))).ToArray();
         s.PlanVencido = Plan(perfiles[0], Suscripcion.Activa, T.AddMinutes(-1));
         s.PlanCancelado = Plan(perfiles[0], "CANCELADA", T.AddDays(30));

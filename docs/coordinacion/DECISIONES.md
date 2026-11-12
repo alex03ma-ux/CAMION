@@ -427,3 +427,21 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
 - Recomendación: A, coherente con "el dueño puede modificar todo lo suyo" y con la reasignación de D-7. Mejor junto con P4b, porque afecta a las publicaciones del vehículo.
 - Bloquea: nada de P4a.
 - **Decisión: A** (respuesta de la responsable, transmitida por el coordinador principal). **Solo el administrador** puede reasignar un vehículo de un asesor a otro asesor activo, con **motivo obligatorio** y auditoría (quién, cuándo, de quién a quién). Se construye **junto con P4b**, no en P4a.
+
+## D-35 — Duración de la suscripción · TOMADA (2026-10-29)
+- Contexto: la base guarda la duración del plan en meses (`planes.duracion_meses`) y RN-SU-005 dice "30 días, renovable".
+- **Decisión de la responsable (en esta sesión): 30 días por cada mes del plan.** Un plan de 1 mes da 30 días y uno de 3 meses, 90 días.
+
+## D-36 — ¿Quién renueva una suscripción? · TOMADA (2026-10-29)
+- **Decisión de la responsable (en esta sesión): solo el administrador**, cuando confirma el pago. El asesor consulta su suscripción y ve cuándo vence.
+
+## D-37 — Autonomía del administrador sobre los catálogos · TOMADA (2026-10-29)
+- **Decisión de la responsable (en esta sesión), en sus palabras:** "darle autonomía de catálogo al administrador completa para modificar".
+- El administrador puede crear, renombrar y activar o desactivar:
+  - marcas;
+  - modelos, incluidas sus categorías (D-32);
+  - tipos de carrocería, materiales, tipos de máquina y combustibles.
+- No se borra nada: desactivar oculta el elemento de los formularios y los vehículos que lo usan lo conservan.
+- Se dejan fuera, por seguridad, y quedan PROPUESTO para confirmar:
+  - Las **4 categorías** (Carro, Camión, Carrocería, Maquinaria). Las reglas del formulario dependen de sus nombres, y cambiarlas rompería las validaciones.
+  - Los **departamentos y municipios**. Son la DIVIPOLA oficial del DANE y se actualizan con un script (`docs/GUIA-CATALOGOS.md`).
