@@ -49,15 +49,9 @@ public static class PanelEndpoints
                 return new SolicitudesPorOrigen(o, g?.Abiertas ?? 0, g?.Nuevas ?? 0);
             }).ToArray();
 
-            var vigentes = DatosP4b.SuscripcionesVigentes(db, ahora);
-            var limite = ahora.AddDays(ReglasP4p.DiasAvisoVencimiento);
-            var porVencer = await vigentes.CountAsync(s => s.FinVigencia <= limite, ct);
-            // Vencidas (estado efectivo VENCIDA) cuyo asesor no tiene hoy una suscripción vigente.
-            var vencidas = await db.Suscripciones.AsNoTracking().CountAsync(s =>
-                (s.Estado == Suscripcion.Vencida ||
-                 ((s.Estado == Suscripcion.Activa || s.Estado == Suscripcion.Reactivada) &&
-                  s.FinVigencia != null && s.FinVigencia <= ahora)) &&
-                !vigentes.Any(v => v.AsesorId == s.AsesorId), ct);
+            // O-5 (CA-P7-46): misma consulta que GET /api/admin/suscripciones?vista=porVencer | vencidasSinRenovar.
+            var porVencer = await ConsultasVencimiento.PorVencer(db, db.Suscripciones.AsNoTracking(), ahora).CountAsync(ct);
+            var vencidas = await ConsultasVencimiento.VencidasSinRenovar(db, db.Suscripciones.AsNoTracking(), ahora).CountAsync(ct);
 
             var visibles = await ConsultasCatalogo.Visibles(db, ahora).CountAsync(ct);
 

@@ -22,6 +22,7 @@ public static partial class ReglasP4p
     public const string MensajePlanActivo = "Elige un plan activo.";
     public const string MensajeActivo = "Escribe true o false.";
     public const string MensajeEstado = "Estado no válido.";
+    public const string MensajeVista = "Vista no válida.";
     public const string MensajeAsesorId = "Asesor no válido.";
     public const string MensajePagina = "Página o tamaño no válidos.";
     public const string MensajeAsesorNoActivo = "Solo se puede asignar un plan a un asesor con la cuenta activa.";

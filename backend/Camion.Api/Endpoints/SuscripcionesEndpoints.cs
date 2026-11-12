@@ -26,10 +26,13 @@ public static class SuscripcionesEndpoints
         var admin = app.MapGroup("/api/admin").RequireAuthorization(Roles.PoliticaSoloAdministrador);
 
         // Lista filtrable. estado filtra por el estado efectivo (VENCIDA incluye las ACTIVA/REACTIVADA ya vencidas).
-        admin.MapGet("/suscripciones", async (string? asesorId, string? estado, string? pagina, string? tamano,
+        admin.MapGet("/suscripciones", async (string? asesorId, string? estado, string? vista, string? pagina, string? tamano,
             CamionDbContext db, TimeProvider reloj, CancellationToken ct) =>
         {
             var errores = new Dictionary<string, string[]>();
+            // P7 (O-5, CA-P7-46): vista=porVencer | vencidasSinRenovar, la misma consulta que los contadores del panel.
+            var vistaFiltro = string.IsNullOrWhiteSpace(vista) ? null : ConsultasVencimiento.Normalizar(vista);
+            if (!string.IsNullOrWhiteSpace(vista) && vistaFiltro is null) errores["vista"] = [ReglasP4p.MensajeVista];
             var asesor = LeerEntero(asesorId, 1, long.MaxValue, "asesorId", ReglasP4p.MensajeAsesorId, errores);
             var estadoFiltro = string.IsNullOrWhiteSpace(estado) ? null : estado.Trim().ToUpperInvariant();
             if (estadoFiltro is not null && !EstadosFiltro.Contains(estadoFiltro)) errores["estado"] = [ReglasP4p.MensajeEstado];
@@ -49,6 +52,12 @@ public static class SuscripcionesEndpoints
                 Suscripcion.Activa or Suscripcion.Reactivada => consulta.Where(s => s.Estado == estadoFiltro &&
                     (s.FinVigencia == null || s.FinVigencia > ahora)),
                 _ => consulta.Where(s => s.Estado == estadoFiltro)
+            };
+            consulta = vistaFiltro switch
+            {
+                ConsultasVencimiento.VistaPorVencer => ConsultasVencimiento.PorVencer(db, consulta, ahora),
+                ConsultasVencimiento.VistaVencidasSinRenovar => ConsultasVencimiento.VencidasSinRenovar(db, consulta, ahora),
+                _ => consulta
             };
 
             var total = await consulta.CountAsync(ct);
