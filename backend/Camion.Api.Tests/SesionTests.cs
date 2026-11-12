@@ -202,7 +202,9 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
             // P5b (HU-N01, HU-N02, D-6): los dos avisos públicos.
             "POST /api/avisos/seguro-todo-riesgo", "POST /api/avisos/vende-tu-camion",
             // P6 (HU-034, HU-039, D-3, D-9): crédito y búsqueda públicos.
-            "POST /api/busquedas", "POST /api/creditos"
+            "POST /api/busquedas", "POST /api/creditos",
+            // P7 (D-63 A, CA-P7-42): lectura pública de los datos de contacto del portal, fuera de /api/catalogo.
+            "GET /api/portal/contacto"
         }.OrderBy(x => x, StringComparer.Ordinal).ToArray(), anonimos);
 
         // P3: todo /api/catalogo es GET, permite anónimos de forma explícita y no exige ninguna política.
@@ -266,13 +268,16 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
             "POST /api/avisos/seguro-todo-riesgo", "POST /api/avisos/vende-tu-camion",
             // P6: crédito y búsqueda (anónimos); relacionar y retirar vehículos de una búsqueda (administrador, HU-036).
             "POST /api/busquedas", "POST /api/creditos", "POST /api/leads/{id}/vehiculos",
-            "POST /api/leads/{id}/vehiculos/{publicacionId}/retirar"
+            "POST /api/leads/{id}/vehiculos/{publicacionId}/retirar",
+            // P7: pago posterior y anulación (D-61 B) y parámetros de contacto (D-63 A); solo el administrador.
+            "POST /api/admin/suscripciones/{id}/pagos", "POST /api/admin/pagos/{id}/anular", "PUT /api/admin/parametros/contacto"
         }.OrderBy(x => x, StringComparer.Ordinal).ToArray(), modifican);
 
         // CA-SE006-13: toda ruta bajo /api/admin exige SoloAdministrador (P2: 5 acciones + la lista; P4p: 4 GET y 18 acciones;
         // P4b: reasignar un vehículo; D-42: subir y quitar la portada).
         var admin = todos.Where(e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/admin", StringComparison.Ordinal)).ToList();
-        Assert.Equal(31, admin.Count);
+        // P7: pagos (lista, registrar, anular), parámetros (leer, guardar) y panel. D-67: efecto de la anulación (GET).
+        Assert.Equal(38, admin.Count);
         foreach (var e in admin)
         {
             var politicas = e.Metadata.GetOrderedMetadata<IAuthorizeData>().Select(a => a.Policy).ToArray();
@@ -283,8 +288,10 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
         // P4a (RN-SE-006, D-7): toda ruta bajo /api/inventario exige AsesorOAdministrador y ninguna permite anónimos
         // (3 GET: lista, detalle y catálogos; 9 que modifican; P4b: vender y revertir la venta).
         var inventario = todos.Where(e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/inventario", StringComparison.Ordinal)).ToList();
-        Assert.Equal(14, inventario.Count);
-        Assert.Equal(new[] { "/api/inventario/catalogos", "/api/inventario/vehiculos", "/api/inventario/vehiculos/{id}" },
+        // P7 (D-62 A): GET de las ventas de un vehículo.
+        Assert.Equal(15, inventario.Count);
+        Assert.Equal(new[] { "/api/inventario/catalogos", "/api/inventario/vehiculos", "/api/inventario/vehiculos/{id}",
+                "/api/inventario/vehiculos/{id}/ventas" },
             inventario.Where(e => Metodo(e) == "GET").Select(e => "/" + e.RoutePattern.RawText!.TrimStart('/'))
                 .OrderBy(x => x, StringComparer.Ordinal).ToArray());
         foreach (var e in inventario)
@@ -357,6 +364,16 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
             Assert.Contains("SoloComprador", e.Metadata.GetOrderedMetadata<IAuthorizeData>().Select(a => a.Policy));
             Assert.Null(e.Metadata.GetMetadata<IAllowAnonymous>());
         }
+
+        // P7 (D-62 A, CA-P7-53): /api/ventas tiene un solo GET con AsesorOAdministrador; /api/portal, un solo GET anónimo.
+        var ventas = Assert.Single(todos, e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/ventas", StringComparison.Ordinal));
+        Assert.Equal("GET", Metodo(ventas));
+        Assert.Contains("AsesorOAdministrador", ventas.Metadata.GetOrderedMetadata<IAuthorizeData>().Select(a => a.Policy));
+        Assert.Null(ventas.Metadata.GetMetadata<IAllowAnonymous>());
+        var portal = Assert.Single(todos, e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/portal", StringComparison.Ordinal));
+        Assert.Equal("GET", Metodo(portal));
+        Assert.NotNull(portal.Metadata.GetMetadata<IAllowAnonymous>());
+        Assert.Empty(portal.Metadata.GetOrderedMetadata<IAuthorizeData>());
 
         // CA-061-15: ninguna ruta permite editar o borrar auditoría ni historial.
         Assert.DoesNotContain(todos, e => e.RoutePattern.RawText!.Contains("auditoria", StringComparison.OrdinalIgnoreCase) ||

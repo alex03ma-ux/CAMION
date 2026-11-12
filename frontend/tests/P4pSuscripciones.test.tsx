@@ -72,19 +72,20 @@ describe('Lista de suscripciones', () => {
     expect(within(activa).getByText('Básico')).toBeInTheDocument()
     expect(within(activa).getByText('62 días')).toBeInTheDocument()
     expect(within(activa).getByText(new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium' }).format(Date.parse('2026-12-30T12:00:00Z')))).toBeInTheDocument()
-    expect(botonesDe(activa)).toEqual(['Renovar', 'Cambiar plan', 'Suspender', 'Cancelar suscripción'])
+    // P7 (D-61 B): cada fila ofrece además "Pagos".
+    expect(botonesDe(activa)).toEqual(['Pagos', 'Renovar', 'Cambiar plan', 'Suspender', 'Cancelar suscripción'])
 
     const suspendida = await filaDe('Asesor Dos')
     expect(within(suspendida).getByText('Suspendida')).toBeInTheDocument()
-    expect(botonesDe(suspendida)).toEqual(['Reactivar', 'Cambiar plan', 'Cancelar suscripción'])
+    expect(botonesDe(suspendida)).toEqual(['Pagos', 'Reactivar', 'Cambiar plan', 'Cancelar suscripción'])
 
     const vencida = await filaDe('Asesor Tres')
     expect(within(vencida).getByText('Vencida')).toBeInTheDocument()
-    expect(botonesDe(vencida)).toEqual(['Renovar', 'Cambiar plan', 'Cancelar suscripción'])
+    expect(botonesDe(vencida)).toEqual(['Pagos', 'Renovar', 'Cambiar plan', 'Cancelar suscripción'])
 
     const cancelada = await filaDe('Asesor Cuatro')
     expect(within(cancelada).getByText('Cancelada')).toBeInTheDocument()
-    expect(within(cancelada).getByText('Sin acciones')).toBeInTheDocument()
+    expect(botonesDe(cancelada)).toEqual(['Pagos'])
 
     const reactivada = await filaDe('Asesor Cinco')
     expect(within(reactivada).getByText('Reactivada')).toBeInTheDocument()
@@ -136,6 +137,8 @@ describe('Asignar plan', () => {
     expect(planes).toEqual(['Elige un plan', 'Básico (3 meses, 10 publicaciones)', 'Profesional (6 meses, 30 publicaciones)'])
     await user.selectOptions(screen.getByLabelText('Asesor aprobado'), 'Asesor Uno')
     await user.selectOptions(screen.getByLabelText('Plan activo'), 'Básico (3 meses, 10 publicaciones)')
+    // P7 (D-61 B): el pago es opcional; sin anotarlo, el cuerpo sigue siendo { planId }.
+    await user.click(screen.getByLabelText('Anotar ahora el pago recibido'))
     await user.click(screen.getByRole('button', { name: 'Asignar plan' }))
     await waitFor(() => expect(api.llamadasA(RUTA_ASIGNAR)).toHaveLength(1))
     expect(api.llamadasA(RUTA_ASIGNAR)[0].init?.method).toBe('POST')
@@ -152,6 +155,7 @@ describe('Asignar plan', () => {
     await screen.findByText('No hay suscripciones con estos filtros.')
     await user.selectOptions(screen.getByLabelText('Asesor aprobado'), 'Asesor Uno')
     await user.selectOptions(screen.getByLabelText('Plan activo'), 'Básico (3 meses, 10 publicaciones)')
+    await user.click(screen.getByLabelText('Anotar ahora el pago recibido'))
     await user.click(screen.getByRole('button', { name: 'Asignar plan' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('El asesor ya tiene una suscripción viva.')
   })
@@ -210,6 +214,7 @@ describe('Acciones sobre una suscripción', () => {
     const select = within(dialogo).getByLabelText('Plan para la renovación')
     expect(select).toHaveFocus()
     expect(within(select).getAllByRole('option')[0]).toHaveTextContent('Mantener el plan actual (Básico)')
+    await user.click(within(dialogo).getByLabelText('Anotar ahora el pago recibido'))
     await user.click(within(dialogo).getByRole('button', { name: 'Renovar' }))
     await waitFor(() => expect(api.llamadasA(ruta)).toHaveLength(1))
     expect(cuerpoDe(api, ruta)).toEqual({})
@@ -234,6 +239,7 @@ describe('Acciones sobre una suscripción', () => {
     expect(within(dialogo).getByText('Elige un plan activo.')).toBeInTheDocument()
     expect(api.llamadasA(ruta)).toHaveLength(0)
     await user.selectOptions(select, 'Profesional (6 meses, 30 publicaciones)')
+    await user.click(within(dialogo).getByLabelText('Anotar ahora el pago recibido'))
     await user.click(within(dialogo).getByRole('button', { name: 'Cambiar plan' }))
     await waitFor(() => expect(api.llamadasA(ruta)).toHaveLength(1))
     expect(cuerpoDe(api, ruta)).toEqual({ planId: 2 })

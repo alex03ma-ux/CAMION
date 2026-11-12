@@ -1,212 +1,170 @@
 # CAMION — Financiamos Tu Camión
 
-Portal **Red de Venta – Financiamos Tu Camión** (línea base funcional v3.0): un sitio donde los compradores buscan camiones, piden crédito o seguro y venden su propio vehículo; los asesores publican vehículos y el administrador atiende los servicios.
+Portal **Red de Venta – Financiamos Tu Camión** (línea base funcional v3.0).
 
-> **Estado actual (rama `feature/p3-catalogo`):**
-> - Existen las **cuentas** del portal (P1 y P2): comprador (acceso inmediato), asesor (queda pendiente hasta que el administrador lo apruebe) y administrador (con un panel para aprobar, rechazar, reconsiderar, bloquear y desbloquear cuentas).
-> - Nuevo en P3: el **catálogo público**. Cualquier persona, sin cuenta, ve los vehículos publicados, busca, filtra y abre el detalle.
-> - Todavía no existen el alta de vehículos (P4), el contacto con el vendedor (P5), los créditos, los seguros, etc.
->
-> El estado verificado del código antes de P2 está en `docs/coordinacion/ESTADO-REAL.md`. Lo de P2 y P3 que se describe aquí se comprobó leyendo el código de esta rama.
+## 1. Qué es
 
-Estados que usamos en este documento:
+Un portal de **intermediación** (D-45). Los vehículos son de terceros y los publican asesores aprobados. La plataforma **solo pone en contacto** al interesado con el asesor o con el administrador. La gestión de créditos ante bancos y de pólizas de seguro es **interna** y no se hace en la plataforma (D-45, D-54, D-55).
 
-- **IMPLEMENTADO**: el código existe en esta rama.
-- **PROBADO**: hay pruebas automáticas que se ejecutaron y pasaron. *Las pruebas de P3 se están escribiendo; por eso nada de P3 aparece como PROBADO.*
-- **DOCUMENTADO**: está descrito, pero no necesariamente programado.
-- **PROPUESTO**: valor o comportamiento sugerido, pendiente de confirmación de la responsable.
-- **BLOQUEADO**: no se puede hacer hasta que se resuelva algo.
+Estados que usa esta documentación: **IMPLEMENTADO** (el código existe), **PROBADO** (pruebas ejecutadas y aprobadas), **DOCUMENTADO** (descrito, no necesariamente programado), **PROPUESTO** (pendiente de confirmar) y **BLOQUEADO**.
 
-## Tecnologías
+## 2. Qué funciona hoy
 
-| Parte | Tecnología | Carpeta |
-|---|---|---|
-| Frontend | React 19 + Vite 7 + TypeScript | `frontend/` |
-| Backend | ASP.NET Core .NET 8 (minimal APIs) con ASP.NET Core Identity y tokens JWT | `backend/Camion.Api/` |
-| Acceso a datos | Entity Framework Core con el proveedor Pomelo (MySQL/MariaDB) | `backend/Camion.Api/Data/` |
-| Base de datos | MariaDB 10.4 de XAMPP, base `camion_ventas`, puerto 3306 | scripts en `database/` |
-| Pruebas backend | xUnit (proyecto en preparación) | `backend/Camion.Api.Tests/` |
+`main` contiene P0 a P6, unidos mediante las PR #2 a #12. Todo lo de esta sección está **IMPLEMENTADO y PROBADO** con pruebas automáticas. Además, la responsable hizo una prueba manual de cada fase. La de P6 fue **parcial**: lo que no se probó a mano lo cubren las pruebas automáticas. No hay pruebas E2E. Detalle por fase en [`docs/coordinacion/BITACORA.md`](docs/coordinacion/BITACORA.md) y [`docs/coordinacion/ESTADO-REAL.md`](docs/coordinacion/ESTADO-REAL.md).
 
-El archivo `global.json` de la raíz fija el **SDK 8 de .NET** (versión 8.0.425, admite actualizaciones menores de la misma versión 8.0.x). Así todos los equipos compilan con el mismo SDK aunque tengan otros instalados.
+**Visitante (sin cuenta)**
+- Ver el catálogo: inicio con destacados y recientes, búsqueda, filtros y ficha del vehículo (P3, P4b).
+- Contactar al vendedor desde la ficha, con casilla de autorización de datos, o escribirle por WhatsApp (P5).
+- Enviar los avisos "Vende tu camión" y "Compra tu seguro todo riesgo" (P5b, D-6).
+- Pedir un crédito desde la portada o desde una ficha, y llenar "Busco un vehículo" (P6).
 
-## Qué funciona hoy
+**Comprador** (registro opcional, acceso inmediato y de solo lectura; D-3)
+- Todo lo del visitante, con la sesión abierta.
+- Ver en "Mis solicitudes" lo que envió con su sesión. Es una vista de solo lectura (P6, D-59).
 
-| Función | Estado | Dónde está |
-|---|---|---|
-| Registro de comprador (acceso inmediato, sin aprobación; siempre con rol `COMPRADOR`) | IMPLEMENTADO | `POST /api/auth/registro/comprador` |
-| Iniciar sesión con correo y contraseña (token válido 2 horas) | IMPLEMENTADO | `POST /api/auth/login` |
-| Ver mi perfil | IMPLEMENTADO | `GET /api/auth/me` |
-| Cerrar sesión (invalida el token en **todos** los dispositivos del usuario) | IMPLEMENTADO | `POST /api/auth/logout` |
-| Bloqueo de la cuenta 15 minutos tras 5 intentos fallidos | IMPLEMENTADO | `backend/Camion.Api/Program.cs` |
-| Mensajes de error en español, campo por campo, y reglas de contraseña visibles en el formulario | IMPLEMENTADO | backend y `frontend/src/components/` |
-| Sesión persistente: al recargar la página la sesión se mantiene mientras el token siga vigente | IMPLEMENTADO | `frontend/src/auth/session.ts` |
-| Cierre automático por inactividad: **30 minutos** sin clics, teclas ni toques cierran la sesión solo en ese navegador | IMPLEMENTADO; el valor de 30 min es **PROPUESTO** (pendiente de confirmar) | `frontend/src/auth/inactivity.ts` |
-| Comprobación de salud del backend y de la base de datos | IMPLEMENTADO | `GET /health`, `GET /health/database` |
-| Registro de eventos de seguridad (registro, login, fallo, bloqueo, logout) en el log del servidor, sin contraseñas ni tokens | IMPLEMENTADO | `backend/Camion.Api/Endpoints/AuthEndpoints.cs` |
+**Asesor** (su cuenta queda pendiente hasta que el administrador la aprueba; P2)
+- Gestionar su inventario de vehículos con fotos (P4a).
+- Gestionar sus publicaciones y destacados según su plan, marcar vendido y revertir la venta (P4b).
+- Consultar "Mi suscripción" (P4p).
+- Atender en "Mis contactos" solo los contactos de sus propios vehículos con plan vigente, o los que el administrador le reasigne (P5, D-7). No ve avisos, créditos ni búsquedas.
 
-### Novedades de P2: asesores y administración de usuarios
+**Administrador**
+- Aprobar, rechazar, reconsiderar, bloquear y desbloquear cuentas (P2).
+- Gestionar planes, suscripciones, catálogos de marcas y modelos y la foto de portada (P4p, D-42).
+- Gestionar el inventario y las publicaciones de todos, y reasignar vehículos con motivo (P4b, D-34).
+- Atender todas las solicitudes en "Contactos": contactos, avisos, créditos y búsquedas. Puede añadir notas, cerrar, reabrir, reasignar contactos (con auditoría) y relacionar vehículos con una búsqueda (P5, P5b, P6).
+- El primer administrador se crea con el comando local `promover-admin` (D-13). Ver [`docs/GUIA-ADMINISTRACION.md`](docs/GUIA-ADMINISTRACION.md).
 
-| Función | Estado | Dónde está |
-|---|---|---|
-| Registro de asesor: en "Crear cuenta" se elige "Soy comprador" o "Soy asesor". El asesor da además tipo y número de documento y, si quiere, un nombre comercial. Su cuenta queda **PENDIENTE** (no puede entrar) hasta que el administrador la apruebe | IMPLEMENTADO | `POST /api/auth/registro/asesor`; `frontend/src/components/RegistroForm.tsx` |
-| Tipos de documento CC, CE, NIT y PAS (pasaporte) | IMPLEMENTADO; la lista es **PROPUESTA** (pendiente de confirmar) | `backend/Camion.Api/Auth/ValidacionAuth.cs` |
-| Inicio de sesión con aviso por estado: si la contraseña es correcta pero la cuenta está pendiente, rechazada o bloqueada, se explica el motivo (respuesta 403) | IMPLEMENTADO | `POST /api/auth/login`; `frontend/src/components/LoginForm.tsx` |
-| Tres roles (Comprador, Asesor, Administrador) que se crean solos al arrancar el backend; el rol nunca se elige en un formulario público | IMPLEMENTADO | `backend/Camion.Api/Auth/Roles.cs`, `Program.cs` |
-| Permisos por rol: solo el administrador puede usar `/api/admin/…`; los demás reciben "No tienes permiso para realizar esta acción." | IMPLEMENTADO | `Program.cs`, `Auth/RespuestaAutorizacion.cs` |
-| Crear el primer administrador con el comando local `promover-admin` (D-13) | IMPLEMENTADO | `backend/Camion.Api/Comandos/PromoverAdmin.cs`; ver `docs/GUIA-ADMINISTRACION.md` |
-| Panel "Administrar usuarios": lista con filtros (estado, rol, búsqueda por nombre o correo) y páginas de 20; por defecto muestra los pendientes | IMPLEMENTADO | `GET /api/admin/usuarios`; `frontend/src/components/AdminUsuarios.tsx` |
-| Aprobar o rechazar (con motivo) a un asesor pendiente | IMPLEMENTADO | `POST /api/admin/usuarios/{id}/aprobar` y `/rechazar` |
-| Reconsiderar a un asesor rechazado (pasa a aprobado; motivo obligatorio) (D-15) | IMPLEMENTADO | `POST /api/admin/usuarios/{id}/reconsiderar` |
-| Bloquear (con motivo) y desbloquear compradores y asesores; nunca a un administrador ni la propia cuenta | IMPLEMENTADO | `POST /api/admin/usuarios/{id}/bloquear` y `/desbloquear` |
-| Rechazar y bloquear cierran al instante las sesiones abiertas de esa persona en todos sus equipos | IMPLEMENTADO | `Endpoints/AdminUsuariosEndpoints.cs` |
-| Cuadro de confirmación para cada acción, con el motivo (5 a 500 caracteres cuando es obligatorio) | IMPLEMENTADO; el límite de 5 a 500 es **PROPUESTO** | `frontend/src/components/DialogoAccion.tsx` |
-| Auditoría guardada en la base de datos: cada registro de asesor, cada acción del administrador y cada promoción a administrador quedan en `auditoria_eventos`; los cambios de un asesor también en `historial_autorizaciones` | IMPLEMENTADO | `backend/Camion.Api/Auth/Auditoria.cs` |
-| Migración 003 que adapta la tabla `perfiles_asesor` a los estados Pendiente / Aprobado / Rechazado / Bloqueado (D-10) | IMPLEMENTADO; **aplicada** en `camion_ventas` por la responsable desde phpMyAdmin, con respaldo previo (D-14, D-16) | `database/migraciones/003_p2_estados_asesor.sql` |
+**P7: en la rama `feature/p7-ventas-admin`, pendiente de unir** (todavía no está en `main`)
+- Está **IMPLEMENTADO y PROBADO** con pruebas automáticas. La migración 016 **no está aplicada**, y la prueba manual de la responsable y las pruebas E2E **no se han ejecutado**. Guía en [`docs/manual/P7-administracion.md`](docs/manual/P7-administracion.md).
+- Administrador:
+  - panel "Inicio" con contadores enlazados a sus listas (D-64);
+  - historial de ventas, vigentes y revertidas (D-62);
+  - registro y anulación de los pagos del plan, cobrados fuera del portal (D-61 B, D-66);
+  - "Parámetros" para cambiar el WhatsApp, el correo, el horario, Instagram y TikTok del portal (D-63).
+- Asesor:
+  - "Mis ventas";
+  - en "Mi suscripción", el aviso "Tu plan vence en N días" y el botón de WhatsApp para pedir la renovación.
 
-Según `docs/coordinacion/BITACORA.md`, las funciones de P2 están **PROBADAS**: 223/223 pruebas de API y 93/93 de pantallas pasaron, y la responsable hizo la prueba manual contra `camion_ventas` el 2026-10-26 sin errores. El detalle de cada endpoint está en `backend/GUIA-AUTENTICACION.md`, `docs/criterios/P1-contrato-api.md` y `docs/criterios/P2-contrato-api.md`. La guía paso a paso del administrador está en `docs/GUIA-ADMINISTRACION.md`.
+**Pendiente** (ver [`docs/coordinacion/BACKLOG.md`](docs/coordinacion/BACKLOG.md))
+- P7: aplicar la migración 016, la prueba manual y unir a `main`. P8: reportes, marketing e integraciones.
+- INF-3: pruebas intermitentes (un fallo sin identificar en el backend y pruebas del frontend que fallan con la máquina cargada).
+- INF-1: CI en GitHub Actions. INF-2: requisitos antes de publicar en internet.
+- Revisión legal de la política de datos y de los términos (D-44, PROPUESTO). Ningún formulario sale a internet sin ella.
+- Otros: P2b ("Solicitar ser asesor") y P6-B (hallazgos bajos de seguridad).
+- Recuperar contraseña está **BLOQUEADO**: no hay un servicio de correo aprobado (D-5).
+- Antes de producción hay que borrar los datos de prueba de `camion_ventas`.
 
-### Novedades de P3: catálogo público
+## 3. Tecnologías
 
-Todo es de **solo lectura**: nadie puede crear, editar ni borrar vehículos desde el catálogo. Funciona igual con o sin cuenta.
+| Parte | Tecnología | Carpeta | Puerto |
+|---|---|---|---|
+| Frontend | React 19 + Vite 7 + TypeScript | `frontend/` | 5173 (proxy de `/api` y `/health`) |
+| Backend | ASP.NET Core .NET 8 (minimal APIs) + Identity/JWT, EF Core con Pomelo | `backend/Camion.Api/` | 5080 |
+| Base de datos | MariaDB 10.4 (XAMPP), base `camion_ventas` | `database/` | 3306 |
+| Pruebas | xUnit (API, con SQLite en memoria) y Vitest | `backend/Camion.Api.Tests/`, `frontend/tests/` | — |
 
-| Función | Estado | Dónde está |
-|---|---|---|
-| Portal público **sin cuenta**: la página principal (`#/`) es ahora el catálogo, no el inicio de sesión | IMPLEMENTADO | `frontend/src/App.tsx`, `frontend/src/rutas.ts` |
-| Página de inicio con **Destacados** (hasta 8) y **Recientes** (hasta 12) | IMPLEMENTADO | `GET /api/catalogo/inicio`; `frontend/src/components/Inicio.tsx` |
-| Cuatro categorías: **Carros, Camiones, Carrocerías y Maquinaria** (D-17), como enlaces en el encabezado y en el inicio. Solo aparecen las que tienen al menos un vehículo visible | IMPLEMENTADO | `frontend/src/components/Encabezado.tsx`, `frontend/src/api/catalogo.ts` |
-| Búsqueda por texto (marca, modelo o título; hasta 100 caracteres; no distingue mayúsculas) desde el encabezado | IMPLEMENTADO | `GET /api/catalogo/publicaciones`; `Encabezado.tsx` |
-| Filtros: categoría, marca, modelo (según la marca), presupuesto mínimo y máximo, año desde y hasta, kilometraje máximo y orden. Botones **Aplicar filtros** y **Limpiar filtros**. Los filtros quedan en la dirección de la página, así que se pueden compartir | IMPLEMENTADO | `GET /api/catalogo/filtros`; `frontend/src/components/Filtros.tsx`, `Resultados.tsx` |
-| Resultados en páginas de 12, con los **destacados siempre primero** (RN-VE-012) | IMPLEMENTADO | `backend/Camion.Api/Endpoints/CatalogoEndpoints.cs` |
-| Detalle del vehículo (`#/vehiculo/<slug>`): fotos, precio, etiquetas, ficha técnica y descripción. Si el vehículo no se puede mostrar: "Este vehículo no está disponible." | IMPLEMENTADO | `GET /api/catalogo/publicaciones/{slug}`; `frontend/src/components/DetalleVehiculo.tsx` |
-| Un vehículo **Reservado** se sigue viendo, con la etiqueta "Reservado" (D-11). Un vendido no se ve nunca | IMPLEMENTADO | `frontend/src/components/TarjetaVehiculo.tsx`, `backend/Camion.Api/Catalogo/ConsultasCatalogo.cs` |
-| Regla de visibilidad en un solo lugar: publicado, no vendido, dentro de su vigencia, con la suscripción del asesor activa y el asesor con cuenta activa | IMPLEMENTADO | `backend/Camion.Api/Catalogo/ConsultasCatalogo.cs` |
-| El kilometraje no se muestra en las carrocerías, ni en la maquinaria con kilometraje 0 (D-17) | IMPLEMENTADO | `frontend/src/api/catalogo.ts` |
-| Si un vehículo no tiene foto o la foto no carga, se ve una imagen "Sin foto" | IMPLEMENTADO | `frontend/src/components/ImagenVehiculo.tsx` |
-| Script de datos de demostración (12 publicaciones DEMO, 10 visibles) para la prueba manual (D-18) | IMPLEMENTADO como script; **no está aplicado** en `camion_ventas`. Lo aplica la responsable desde phpMyAdmin (D-16) | `database/demo/demo_p3_catalogo.sql` |
+`global.json` fija el SDK 8 de .NET.
 
-Ninguna función de P3 está todavía en estado PROBADO. La guía para la responsable (qué hace que un vehículo aparezca, cómo usar los filtros y cómo cargar los datos de demostración) está en `docs/GUIA-CATALOGO.md`. El detalle técnico de la API está en `docs/criterios/P3-contrato-api.md`.
+## 4. Puesta en marcha en un equipo nuevo
 
-Mientras la base no tenga publicaciones, el inicio muestra "Pronto tendremos vehículos publicados." Es lo normal: el alta de vehículos llega en P4.
-
-## Qué NO existe todavía
-
-- Publicaciones (P4b). El inventario de P4a ya está en la rama `feature/p4a-inventario`:
-  - alta y edición de vehículos, con al menos 1 foto obligatoria (D-30) y hasta 10;
-  - placa única;
-  - reserva con nota (D-28).
-
-  Mientras no exista P4b, el portal sigue mostrando el precio y las fotos de la publicación.
-- Contactar al vendedor desde el detalle del vehículo (P5).
-- Planes y pagos.
-- Contactos (leads), créditos, búsquedas personalizadas y favoritos.
-- Avisos "Vende tu camión" y "Compra tu seguro todo riesgo".
-- Notificaciones (por ejemplo, avisar por correo al asesor cuando lo aprueban) y reportes.
-- "Solicitar ser asesor" desde una cuenta de comprador (por ahora, quien quiera ser asesor usa otro correo; D-15).
-- Que el administrador cree administradores desde la web: hoy solo se hace con el comando local `promover-admin`.
-- Limitación de peticiones por IP.
-- Guardar en la base de datos los eventos de inicio y cierre de sesión (hoy solo van al log del servidor).
-- Recuperación de contraseña: **BLOQUEADA**, no hay servicio de correo aprobado (D-5).
-
-La base de datos tiene 39 tablas en el script. El código usa las de usuarios, roles, perfil de comprador, perfil de asesor, historial de autorizaciones y auditoría y, desde P3 y **solo para leer**, las de vehículos, publicaciones, fotos, destacados, vigencias, suscripciones y sus catálogos (categorías, marcas, modelos, carrocerías, combustibles, departamentos y municipios). P3 no cambia el esquema. **Que exista una tabla no significa que la función exista.**
-
-El orden de trabajo está en `docs/coordinacion/BACKLOG.md`.
-
-## Estructura
-
-```text
-CAMION/
-├── frontend/                 # React + Vite (catálogo público, login, registro, perfil
-│                             #   y panel de administración)
-├── backend/Camion.Api/       # API .NET 8 (salud, autenticación, administración de usuarios,
-│                             #   catálogo público y el comando local promover-admin)
-├── backend/Camion.Api.Tests/ # Pruebas del backend
-├── database/                 # Scripts SQL del esquema (MySQL 8 y MariaDB 10.4)
-│   ├── migraciones/          # Cambios de esquema con vuelta atrás (003: estados del asesor)
-│   └── demo/                 # Datos de demostración, no reales (P3, D-18)
-├── docs/                     # Requisitos, criterios, coordinación, GUIA-ADMINISTRACION.md
-│                             #   y GUIA-CATALOGO.md
-├── global.json               # Fija el SDK 8 de .NET
-└── README.md
-```
-
-## Requisitos en tu equipo
-
-- SDK de .NET 8 (el `global.json` pide la 8.0.425 o una 8.0.x posterior).
+### Requisitos
+- SDK de .NET 8 (versión de `global.json` o una 8.0.x posterior).
 - Node.js 20.19+ o 22.12+ (lo exige Vite 7).
-- XAMPP con MariaDB encendido en el puerto 3306 y el script `database/002_esquema_inicial_mariadb_10_4.sql` importado en la base `camion_ventas`. Ver `backend/GUIA-CONEXION-MARIADB.md`.
+- XAMPP con MariaDB encendido en el puerto 3306.
 
-## Configurar los secretos locales
-
-El backend **no arranca** si faltan estas dos claves. Se guardan con `dotnet user-secrets`, que las deja fuera del repositorio (nunca en Git ni en `appsettings.json`):
+### Secretos locales
+La API **no arranca** sin dos claves. Se guardan con `dotnet user-secrets` desde `backend/Camion.Api`, nunca en Git ni en `appsettings.json`.
 
 | Clave | Para qué sirve |
 |---|---|
-| `ConnectionStrings:CamionDatabase` | Cadena de conexión a la base `camion_ventas` de MariaDB |
-| `Jwt:Key` | Clave secreta para firmar los tokens; debe tener **al menos 32 bytes** |
+| `ConnectionStrings:CamionDatabase` | Conexión a la base `camion_ventas` |
+| `Jwt:Key` | Firma de los tokens; mínimo 32 bytes |
 
 ```powershell
-cd "C:\Users\alex0\OneDrive\Documentos\proyecto venta de camiones\CAMION\backend\Camion.Api"
 dotnet user-secrets set "ConnectionStrings:CamionDatabase" "<TU_CADENA_DE_CONEXION>"
 dotnet user-secrets set "Jwt:Key" "<TU_CLAVE_DE_32_BYTES_O_MAS>"
 ```
 
-Las guías `backend/GUIA-CONEXION-MARIADB.md` y `backend/GUIA-AUTENTICACION.md` explican cómo armar la cadena y cómo generar una clave aleatoria sin escribirla a mano. No compartas estos valores con nadie ni los pegues en documentos.
+Hay una clave opcional, `Media:Ruta`: es la carpeta de las fotos y por defecto vale `C:\CAMION_media`. Para armar la cadena y generar la clave, ver [`backend/GUIA-CONEXION-MARIADB.md`](backend/GUIA-CONEXION-MARIADB.md) y [`backend/GUIA-AUTENTICACION.md`](backend/GUIA-AUTENTICACION.md). No pegues estos valores en chats ni en documentos.
 
-## Arrancar el backend
+### Base de datos
+1. Antes de cada script, haz un **respaldo** con `mysqldump --result-file=...` en `C:\Respaldo_CAMION\`. El comando está en la cabecera de cada migración. Nunca sobrescribas un respaldo.
+2. **Detén la API.**
+3. En phpMyAdmin, **selecciona primero la base `camion_ventas`**: los archivos `_SUBIR` no traen `USE`. Luego entra en *Importar*, elige el archivo y ejecútalo.
+4. Importa los scripts en este orden:
+   - `database/002_esquema_inicial_mariadb_10_4.sql` (esquema inicial);
+   - por número, `database/migraciones/` y `database/catalogos/`: 003, 004, 005, 006, 007, 008, 009, 010, 011, 012, 013, 014, 015 y 016 (la 016 solo con la versión de P7; aún no está aplicada en `camion_ventas`).
+5. Si un script tiene archivo `_SUBIR`, importa **solo ese archivo**. Si no lo tiene, sigue las instrucciones de su cabecera. En phpMyAdmin, importar la 004 completa falló; hubo que importar solo su sección SUBIR (ver BITACORA, P4a).
+6. Los archivos `_VERIFICAR_Y_BAJAR` y las secciones BAJAR **no se importan al instalar**.
+7. `database/demo/demo_p3_catalogo.sql` carga datos ficticios. Es opcional y sirve solo para pruebas (D-18, D-24).
+
+### Arrancar la API
+Desde `backend/Camion.Api`:
 
 ```powershell
-cd "C:\Users\alex0\OneDrive\Documentos\proyecto venta de camiones\CAMION\backend\Camion.Api"
-dotnet restore
 dotnet run
 ```
 
-Queda escuchando en **http://localhost:5080**. Para comprobarlo abre http://localhost:5080/health y http://localhost:5080/health/database.
-
-## Arrancar el frontend
-
-En otra terminal:
+Si Windows (Smart App Control) bloquea `Camion.Api.exe`, compila con `dotnet build` y arranca la `.dll` (ver BITACORA, P5b):
 
 ```powershell
-cd "C:\Users\alex0\OneDrive\Documentos\proyecto venta de camiones\CAMION\frontend"
+$env:ASPNETCORE_ENVIRONMENT = "Development"
+$env:ASPNETCORE_URLS = "http://localhost:5080"
+dotnet bin\Debug\net8.0\Camion.Api.dll
+```
+
+Para comprobar que funciona, abre http://localhost:5080/health y http://localhost:5080/health/database.
+
+### Arrancar el frontend
+Desde `frontend/`, en otra terminal:
+
+```powershell
 npm install
 npm run dev
 ```
 
-Vite reenvía (proxy) las rutas `/api` y `/health` al backend en el puerto 5080, por eso el backend tiene que estar encendido.
+Abre http://localhost:5173. El inicio es el catálogo. "Mi cuenta" está en `#/cuenta`.
 
-## Cómo entrar al portal
-
-| Quiero… | Abro |
-|---|---|
-| Ver el catálogo (sin cuenta) | **http://localhost:5173/#/** (también vale http://localhost:5173) |
-| Buscar y filtrar | **http://localhost:5173/#/buscar**, o escribo en el buscador del encabezado |
-| Ver un vehículo | Pulso su tarjeta; la dirección queda como `#/vehiculo/<slug>` |
-| Iniciar sesión, ver mi perfil o, si soy administrador, entrar a "Administrar usuarios" | **http://localhost:5173/#/cuenta**, o el enlace **Iniciar sesión** del encabezado (con la sesión abierta se llama **Mi cuenta**) |
-| Crear una cuenta | **http://localhost:5173/#/cuenta/registro**, o el enlace **Registrarme** del encabezado |
-
-Cambio respecto a P2: la página principal ya **no** es el inicio de sesión, sino el catálogo. El inicio de sesión está en `#/cuenta`.
-
-## Ejecutar las pruebas
-
-Pruebas automáticas (añadidas en P1). No usan la base de datos real: el backend se prueba con SQLite en memoria.
+## 5. Pruebas
 
 ```powershell
-# Backend (desde la raíz del repositorio)
+# Backend (desde la raíz)
 dotnet test backend/Camion.Api.Tests
 
-# Frontend (desde la carpeta frontend)
-cd frontend
-npm test
+# Frontend (desde frontend/)
+npx vitest run
+npx tsc -b
+npm run build
 ```
 
-Último resultado registrado en `docs/coordinacion/BITACORA.md`: el 2026-10-26, con P2, backend 223/223 y frontend 93/93 pruebas pasan. Las pruebas de P3 se están escribiendo; todavía no hay resultado de P3 que informar.
+Último resultado registrado, en la rama de **P7** (`feature/p7-ventas-admin`): backend **1240/1240** y frontend **699/699**; `tsc -b`, `tsc -p tsconfig.test.json` y `npm run build`, correctos. En `main` (P6) el último resultado fue 1118/1118 y 643/643. Las pruebas de la API usan SQLite en memoria y no tocan `camion_ventas`.
 
-## Seguridad
+Hay pruebas intermitentes (INF-3). En el backend apareció un fallo sin identificar dos veces, en muchas corridas. En el frontend fallan algunas pruebas cuando la máquina está muy cargada. Si una corrida falla, repítela y anota el nombre de la prueba.
 
-- Nunca guardes contraseñas, tokens, cadenas de conexión ni claves en Git. Usa `dotnet user-secrets` o variables de entorno.
-- Los ejemplos de esta documentación usan marcadores como `<TU_CLAVE>` y datos de prueba evidentes; no son credenciales reales.
-- La configuración actual (HTTP sin HTTPS, sin CORS, usuario `root` de XAMPP) sirve solo para trabajar en tu equipo, no para producción.
+## 6. Forma de trabajo
 
-## Cómo se trabaja
+- Ramas `feature/*`, una por fase, y PR contra `main`. Nadie hace merge ni push a `main` sin aprobación humana.
+- Respaldo antes de cada migración. Los cambios de esquema se hacen solo con migraciones reversibles.
+- El trabajo se coordina con el comando `/coordinar`. El estado, el backlog, las decisiones y la bitácora están en `docs/coordinacion/`.
+- Las reglas completas de negocio, de seguridad y de Git están en [`CLAUDE.md`](CLAUDE.md).
+- Nunca guardes contraseñas, tokens ni cadenas de conexión en Git. La configuración actual (HTTP, usuario local de XAMPP) sirve solo para trabajar en tu equipo.
 
-El trabajo se coordina con el comando `/coordinar` (ver `CLAUDE.md`). Requisitos en `docs/requisitos/`; estado real, backlog, decisiones y bitácora en `docs/coordinacion/`.
+## 7. Mapa de la documentación
+
+| Dónde | Qué contiene |
+|---|---|
+| `docs/coordinacion/ESTADO-REAL.md` | Estado verificado del código, con actualizaciones hasta P7 |
+| `docs/coordinacion/BACKLOG.md` | Orden de trabajo y estado de cada fase |
+| `docs/coordinacion/DECISIONES.md` | Decisiones D-1 en adelante |
+| `docs/coordinacion/BITACORA.md` | Qué se hizo en cada sesión, con migraciones, respaldos y pruebas |
+| `docs/coordinacion/REVISION-SEGURIDAD-P5*.md`, `-P6.md`, `-P7.md` | Revisiones de seguridad |
+| `docs/requisitos/` | Requisitos funcionales v3.0 y minuta de transferencia |
+| `docs/criterios/` | Criterios, contratos de API y evidencia por fase |
+| `docs/manual/` | Guías de uso y de prueba manual: P5 contactos, P5b avisos, P6 créditos y P7 administración |
+| `docs/GUIA-ADMINISTRACION.md`, `GUIA-CATALOGO.md`, `GUIA-CATALOGOS.md` | Guías de administración, catálogo público y marcas y modelos |
+| `docs/legal/` | Borradores de la política de datos y de los términos (D-44; falta la revisión legal) |
+| `backend/GUIA-*.md` | Conexión a MariaDB y autenticación |
+| `database/` | Esquema, `migraciones/`, `catalogos/` y `demo/` |
+
+Datos de contacto públicos: los del pie del portal.

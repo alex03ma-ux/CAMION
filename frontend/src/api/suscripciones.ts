@@ -5,6 +5,7 @@
 import { MOTIVO_MAX, MOTIVO_MIN } from './admin'
 import { MENSAJE_SESION_TERMINADA } from './auth'
 import { ApiError, esObjetoJson, MENSAJE_INESPERADO, peticion } from './http'
+import type { PagoRequest } from './pagos'
 
 // ---- Tipos del contrato ----
 
@@ -50,8 +51,23 @@ export type FiltrosSuscripciones = {
   asesorId: string
   /** Vacío = todos los estados. */
   estado: string
+  /** P7 (O-5, CA-P7-46): vista del panel; vacío = sin vista. Se combina (Y) con los demás filtros. */
+  vista?: VistaSuscripciones | ''
   pagina: number
   tamano: number
+}
+
+export type VistaSuscripciones = 'porVencer' | 'vencidasSinRenovar'
+export const VISTAS_SUSCRIPCIONES: readonly VistaSuscripciones[] = ['porVencer', 'vencidasSinRenovar']
+export const NOMBRES_VISTA_SUSCRIPCIONES: Readonly<Record<VistaSuscripciones, string>> = {
+  porVencer: 'Vencen en los próximos 7 días',
+  vencidasSinRenovar: 'Vencidas sin renovar',
+}
+
+/** Vista válida (sin distinguir mayúsculas) o ''. */
+export function leerVistaSuscripciones(valor: string | null): VistaSuscripciones | '' {
+  const v = (valor ?? '').toLowerCase()
+  return VISTAS_SUSCRIPCIONES.find((x) => x.toLowerCase() === v) ?? ''
 }
 
 /** Respuesta de GET /api/asesor/suscripcion. */
@@ -65,6 +81,10 @@ export type MiSuscripcion =
       finVigencia: string | null
       diasRestantes: number | null
       vigente: boolean
+      /** P7 (D-64 b A): true si está vigente y faltan 7 días o menos. */
+      avisoVencimiento: boolean
+      /** P7: "Tu plan vence en N días. ..." o null. */
+      mensajeVencimiento: string | null
     }
   | { tieneSuscripcion: false; mensaje: string }
 
@@ -206,6 +226,7 @@ export async function listarSuscripciones(
   const parametros = new URLSearchParams()
   if (filtros.asesorId) parametros.set('asesorId', filtros.asesorId)
   if (filtros.estado) parametros.set('estado', filtros.estado)
+  if (filtros.vista) parametros.set('vista', filtros.vista)
   parametros.set('pagina', String(filtros.pagina))
   parametros.set('tamano', String(filtros.tamano))
   const respuesta = await peticion(`/api/admin/suscripciones?${parametros.toString()}`, {
@@ -225,15 +246,21 @@ export async function listarSuscripciones(
   }
 }
 
-/** Asignar un plan a un asesor sin suscripción viva (201; 409 si ya tiene una). */
+/**
+ * Asignar un plan a un asesor sin suscripción viva (201; 409 si ya tiene una).
+ * P7 (D-61 B): `pago` opcional; si viene se guarda en la misma transacción (400 si no es válido y nada cambia).
+ */
 export async function asignarPlan(
   token: string,
   asesorId: string,
   planId: number,
+  pago: PagoRequest | null = null,
 ): Promise<Suscripcion | null> {
+  const body: Record<string, unknown> = { planId }
+  if (pago) body.pago = pago
   const respuesta = await peticion(
     `/api/admin/asesores/${encodeURIComponent(asesorId)}/suscripcion`,
-    { method: 'POST', token, body: { planId }, mensajesPorCodigo: MENSAJES_SUSCRIPCIONES },
+    { method: 'POST', token, body, mensajesPorCodigo: MENSAJES_SUSCRIPCIONES },
   )
   return leerSuscripcion(respuesta)
 }
@@ -245,12 +272,14 @@ export async function ejecutarAccionSuscripcion(
   token: string,
   id: number,
   accion: AccionSuscripcion,
-  datos: { planId?: number | null; motivo?: string },
+  datos: { planId?: number | null; motivo?: string; pago?: PagoRequest | null },
 ): Promise<Suscripcion | null> {
   let body: Record<string, unknown>
-  if (accion === 'renovar') body = datos.planId ? { planId: datos.planId } : {}
-  else if (accion === 'cambiar-plan') body = { planId: datos.planId ?? null }
-  else {
+  if (accion === 'renovar' || accion === 'cambiar-plan') {
+    body = accion === 'renovar' ? (datos.planId ? { planId: datos.planId } : {}) : { planId: datos.planId ?? null }
+    // P7 (D-61 B): el pago es opcional; solo se envía si el administrador lo anotó.
+    if (datos.pago) body.pago = datos.pago
+  } else {
     const limpio = (datos.motivo ?? '').trim()
     body = { motivo: limpio === '' ? null : limpio }
   }
@@ -296,6 +325,8 @@ export async function obtenerMiSuscripcion(
       typeof datos.vigente === 'boolean'
         ? datos.vigente
         : estadoEfectivo === 'ACTIVA' || estadoEfectivo === 'REACTIVADA',
+    avisoVencimiento: datos.avisoVencimiento === true || respuesta.avisoVencimiento === true,
+    mensajeVencimiento: textoONulo(datos.mensajeVencimiento) ?? textoONulo(respuesta.mensajeVencimiento),
   }
 }
 

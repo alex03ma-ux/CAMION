@@ -50,6 +50,10 @@ public sealed class CamionDbContext : IdentityDbContext<ApplicationUser, Identit
     public DbSet<LeadBusqueda> LeadsBusqueda => Set<LeadBusqueda>();
     public DbSet<BusquedaVehiculo> BusquedaVehiculos => Set<BusquedaVehiculo>();
 
+    // P7: tabla pagos del script 002 ampliada por la migración 016 (D-61 B) y configuracion_sistema del script 002 (D-63 A).
+    public DbSet<Pago> Pagos => Set<Pago>();
+    public DbSet<ConfiguracionSistema> ConfiguracionesSistema => Set<ConfiguracionSistema>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -449,6 +453,53 @@ public sealed class CamionDbContext : IdentityDbContext<ApplicationUser, Identit
             entity.HasOne<Publicacion>().WithMany().HasForeignKey(x => x.PublicacionId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.RegistradaPor).OnDelete(DeleteBehavior.SetNull);
             entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.RevertidaPor).OnDelete(DeleteBehavior.SetNull);
+        });
+        // P7 (D-61 B): pagos del script 002 con las columnas de la migración 016.
+        builder.Entity<Pago>(entity =>
+        {
+            entity.ToTable("pagos", t =>
+            {
+                t.HasCheckConstraint("CK_Pago_Valor", "valor_cop > 0");
+                t.HasCheckConstraint("CK_Pago_Estado", "estado IN ('PENDIENTE','APROBADO','RECHAZADO','REGISTRADO','ANULADO')");
+                t.HasCheckConstraint("CK_Pago_Medio", "medio IS NULL OR medio IN ('TRANSFERENCIA','CONSIGNACION','EFECTIVO','OTRO')");
+                t.HasCheckConstraint("CK_Pago_Concepto",
+                    "concepto IS NULL OR concepto IN ('ASIGNACION','RENOVACION','CAMBIO_PLAN','POSTERIOR')");
+                t.HasCheckConstraint("CK_Pago_Registro",
+                    "estado NOT IN ('REGISTRADO','ANULADO') OR (fecha_pago IS NOT NULL AND medio IS NOT NULL)");
+                t.HasCheckConstraint("CK_Pago_Anulacion",
+                    "estado <> 'ANULADO' OR (anulado_en IS NOT NULL AND motivo_anulacion IS NOT NULL)");
+            });
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(x => x.SuscripcionId).HasColumnName("suscripcion_id");
+            var valorPago = entity.Property(x => x.ValorCop).HasColumnName("valor_cop").HasPrecision(15, 2);
+            if (esSqlite) valorPago.HasConversion<double>();
+            entity.Property(x => x.FechaPago).HasColumnName("fecha_pago");
+            entity.Property(x => x.Medio).HasColumnName("medio").HasMaxLength(20);
+            entity.Property(x => x.Referencia).HasColumnName("referencia").HasMaxLength(100);
+            entity.Property(x => x.Concepto).HasColumnName("concepto").HasMaxLength(20);
+            entity.Property(x => x.Estado).HasColumnName("estado").HasMaxLength(25).IsRequired();
+            entity.Property(x => x.RegistradoPor).HasColumnName("verificado_por").HasMaxLength(255);
+            entity.Property(x => x.RegistradoEn).HasColumnName("verificado_en");
+            entity.Property(x => x.AnuladoPor).HasColumnName("anulado_por").HasMaxLength(255);
+            entity.Property(x => x.AnuladoEn).HasColumnName("anulado_en");
+            entity.Property(x => x.MotivoAnulacion).HasColumnName("motivo_anulacion").HasMaxLength(500);
+            entity.Property(x => x.CreadoEn).HasColumnName("creado_en");
+            entity.HasIndex(x => x.SuscripcionId).HasDatabaseName("IX_Pago_Suscripcion");
+            entity.HasOne<Suscripcion>().WithMany().HasForeignKey(x => x.SuscripcionId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.RegistradoPor).OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.AnuladoPor).OnDelete(DeleteBehavior.SetNull);
+        });
+        // P7 (HU-081, D-63 A): configuracion_sistema del script 002. valor_json es JSON en MariaDB (LONGTEXT con json_valid).
+        builder.Entity<ConfiguracionSistema>(entity =>
+        {
+            entity.ToTable("configuracion_sistema");
+            entity.HasKey(x => x.Clave);
+            entity.Property(x => x.Clave).HasColumnName("clave").HasMaxLength(100).ValueGeneratedNever();
+            entity.Property(x => x.ValorJson).HasColumnName("valor_json").IsRequired();
+            entity.Property(x => x.ActualizadoPor).HasColumnName("actualizado_por").HasMaxLength(255);
+            entity.Property(x => x.ActualizadoEn).HasColumnName("actualizado_en");
+            entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.ActualizadoPor).OnDelete(DeleteBehavior.SetNull);
         });
         MapearLeads(builder);
     }

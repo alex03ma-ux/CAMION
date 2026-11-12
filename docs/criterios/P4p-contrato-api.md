@@ -8,7 +8,7 @@ Fijado por el coordinador antes de programar. Se mantienen el formato común de 
 - **Catálogos:** HU-082 Marcas (RN-PA-002), HU-083 Modelos (RN-PA-003) y HU-084 Tipos de carrocería (RN-PA-004).
 - **Decisiones:** D-4, D-21, D-26, D-27, D-32, D-35, D-36 y D-37.
 
-Pagos en línea, comprobantes y notificaciones (HU-081) quedan **fuera** de P4p. El administrador activa a mano cuando confirma el pago (D-26).
+Pagos en línea, comprobantes y notificaciones de vencimiento (HU-074) quedan **fuera** de P4p. El administrador activa a mano cuando confirma el pago (D-26).
 
 ## Migración `database/migraciones/011_p4p_estados_suscripcion.sql` (+ `_SUBIR.sql`)
 
@@ -134,5 +134,5 @@ Todo es responsivo y accesible, como en P2–P4a.
 ## Fuera de P4p
 
 - Exigir plan y cupo al publicar (P4b).
-- Pagos, notificaciones de vencimiento (HU-081) y marcar las vencidas con un proceso automático.
+- Pagos, notificaciones de vencimiento (HU-074) y marcar las vencidas con un proceso automático.
 - Las categorías y la DIVIPOLA (ver arriba).

@@ -31,9 +31,10 @@ public sealed record PlanesResponse(IReadOnlyList<PlanItem> Items);
 
 // ---------------------------------------------------------------- suscripciones
 
-public sealed record AsignarPlanRequest(long? PlanId);
+// P7 (D-61 B): pago opcional que se anota en la misma transacción (docs/criterios/P7-contrato-api.md §2).
+public sealed record AsignarPlanRequest(long? PlanId, PagoRequest? Pago = null);
 
-public sealed record RenovarRequest(long? PlanId);
+public sealed record RenovarRequest(long? PlanId, PagoRequest? Pago = null);
 
 public sealed record MotivoSuscripcionRequest(string? Motivo);
 
@@ -72,7 +73,10 @@ public sealed record MiSuscripcionResponse(
     DateTime? InicioVigencia,
     DateTime? FinVigencia,
     int? DiasRestantes,
-    bool Vigente);
+    bool Vigente,
+    // P7 (D-64 b A, HU-074 parcial): vigente y 7 días o menos para el vencimiento.
+    bool AvisoVencimiento = false,
+    string? MensajeVencimiento = null);
 
 public sealed record SinSuscripcionResponse(object? Suscripcion, string Mensaje);
 

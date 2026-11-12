@@ -110,6 +110,8 @@ describe('Resultados: consulta y contador', () => {
       vi.fn((entrada: RequestInfo | URL) => {
         const url = String(entrada)
         if (url === RUTA_FILTROS) return Promise.resolve(json((respuestaFiltros() as { body: unknown }).body))
+        // P7: el pie lee su contacto; si falla usa el de respaldo.
+        if (url === '/api/portal/contacto') return Promise.reject(new TypeError('Failed to fetch'))
         // Respuesta lenta: el servidor contesta aunque el cliente haya cancelado.
         return new Promise<Response>((resolver) => pendientes.push({ url, resolver }))
       }),

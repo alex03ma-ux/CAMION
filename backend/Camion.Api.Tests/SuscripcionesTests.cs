@@ -119,7 +119,9 @@ public sealed class SuscripcionesTests(P4pFixture fixture) : IClassFixture<P4pFi
         var (asesor, plan, _) = await Asignado(meses: 2);
         _api.Hora(T.AddDays(10).AddHours(1));
         var json = await Esperar(await _api.MiSuscripcion(asesor.Token), HttpStatusCode.OK);
-        Assert.Equal(new[] { "diasRestantes", "estado", "estadoEfectivo", "finVigencia", "inicioVigencia", "plan", "vigente" },
+        // P7 (D-64 b A): avisoVencimiento y mensajeVencimiento; sin datos de pagos (CA-P7-32).
+        Assert.Equal(new[] { "avisoVencimiento", "diasRestantes", "estado", "estadoEfectivo", "finVigencia", "inicioVigencia",
+                "mensajeVencimiento", "plan", "vigente" },
             json.EnumerateObject().Select(p => p.Name).Order(StringComparer.Ordinal).ToArray());
         Assert.Equal(new[] { "diasVigencia", "limitePublicaciones", "nombre" },
             json.GetProperty("plan").EnumerateObject().Select(p => p.Name).Order(StringComparer.Ordinal).ToArray());

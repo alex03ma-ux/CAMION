@@ -14,6 +14,7 @@ import {
   marcarVehiculoReciente,
 } from '../inventario/avisoPendiente'
 import { Aviso, type DatosAviso } from './Aviso'
+import { HistorialVentasVehiculo } from './HistorialVentasVehiculo'
 import { InventarioFormulario } from './InventarioFormulario'
 import { InventarioLista } from './InventarioLista'
 import { ReasignarVehiculo } from './ReasignarVehiculo'
@@ -146,6 +147,8 @@ function InventarioConAcceso({
           </div>
         )}
         <InventarioLista
+          key={ruta.consulta ?? ''}
+          consulta={ruta.consulta}
           token={token}
           esAdmin={esAdmin}
           catalogos={catalogos.estado === 'ok' ? catalogos.datos : null}
@@ -188,24 +191,32 @@ function InventarioConAcceso({
           avisoInicial={leerAvisoPendiente()}
           onSesionTerminada={onSesionTerminada}
           onCreado={alCrear}
-          accionesDetalle={
-            esAdmin
-              ? (detalle, recargar, titulo) => (
-                  <ReasignarVehiculo
-                    token={token}
-                    detalle={detalle}
-                    titulo={titulo}
-                    asesores={catalogos.datos.asesores}
-                    onSesionTerminada={onSesionTerminada}
-                    resultado={avisoReasignar?.id === detalle.id ? avisoReasignar.aviso : null}
-                    onResultado={(aviso, recargarDetalle) => {
-                      setAvisoReasignar(aviso ? { id: detalle.id, aviso } : null)
-                      if (recargarDetalle) recargar()
-                    }}
-                  />
-                )
-              : undefined
-          }
+          accionesDetalle={(detalle, recargar, titulo) => (
+            <>
+              {esAdmin && (
+                <ReasignarVehiculo
+                  token={token}
+                  detalle={detalle}
+                  titulo={titulo}
+                  asesores={catalogos.datos.asesores}
+                  onSesionTerminada={onSesionTerminada}
+                  resultado={avisoReasignar?.id === detalle.id ? avisoReasignar.aviso : null}
+                  onResultado={(aviso, recargarDetalle) => {
+                    setAvisoReasignar(aviso ? { id: detalle.id, aviso } : null)
+                    if (recargarDetalle) recargar()
+                  }}
+                />
+              )}
+              {/* P7 (CA-P7-11, D-62 A): historial de ventas del vehículo (dueño o administrador). */}
+              <HistorialVentasVehiculo
+                token={token}
+                vehiculoId={detalle.id}
+                estadoVehiculo={detalle.estado}
+                esAdmin={esAdmin}
+                onSesionTerminada={onSesionTerminada}
+              />
+            </>
+          )}
         />
       )}
     </div>

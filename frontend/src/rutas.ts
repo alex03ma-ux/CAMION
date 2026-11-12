@@ -20,6 +20,11 @@
 //   #/credito/<slug>    P6 (HU-039): solicitud de crédito para un vehículo, desde su ficha
 //   #/busco-un-vehiculo P6 (HU-034, D-56): búsqueda "Busco un vehículo", sin cuenta
 //   #/mis-solicitudes   P6 (D-53, D-59): "Mis solicitudes" del comprador (la API la protege con SoloComprador)
+//   #/cuenta/inicio, #/cuenta/ventas, #/cuenta/parametros
+//                       P7 (D-62 A, D-63 A, D-64 A): panel, historial de ventas y datos de contacto (administrador)
+//   #/ventas            P7 (D-62 c A): "Mis ventas" del asesor (la API la protege con AsesorOAdministrador)
+//   P7 (CA-P7-46): las listas a las que enlaza el panel aceptan filtros en la consulta del hash, p. ej.
+//   #/cuenta/usuarios?rol=ASESOR&estado=PENDIENTE, #/contactos?origen=CREDITO, #/inventario?estado=ACTIVO.
 // Cualquier otra ruta muestra el inicio. Nunca se pone el token en la URL.
 import { useEffect, useState } from 'react'
 import { CLAVES_FILTROS, FILTROS_VACIOS, type FiltrosCatalogo } from './api/catalogo'
@@ -28,12 +33,13 @@ export type Ruta =
   | { nombre: 'inicio' }
   | { nombre: 'buscar'; filtros: FiltrosCatalogo }
   | { nombre: 'vehiculo'; slug: string }
-  | { nombre: 'cuenta'; registro: boolean; seccion?: SeccionAdmin }
-  | { nombre: 'inventario' }
+  /** P7: `consulta` = filtros iniciales de la sección (enlaces del panel), solo si no está vacía. */
+  | { nombre: 'cuenta'; registro: boolean; seccion?: SeccionAdmin; consulta?: string }
+  | { nombre: 'inventario'; consulta?: string }
   | { nombre: 'inventarioNuevo' }
   | { nombre: 'inventarioVehiculo'; id: number }
   | { nombre: 'publicaciones' }
-  | { nombre: 'contactos' }
+  | { nombre: 'contactos'; consulta?: string }
   | { nombre: 'contacto'; id: number }
   | { nombre: 'privacidad' }
   | { nombre: 'vendeTuCamion' }
@@ -42,14 +48,41 @@ export type Ruta =
   | { nombre: 'credito'; slug: string | null }
   | { nombre: 'buscoVehiculo' }
   | { nombre: 'misSolicitudes' }
+  /** P7: "Mis ventas" del asesor (el administrador ve todas). */
+  | { nombre: 'ventas'; consulta?: string }
 
-/** P4p: secciones del administrador dentro de "Mi cuenta". */
-export type SeccionAdmin = 'usuarios' | 'planes' | 'suscripciones' | 'catalogos' | 'portada'
-export const SECCIONES_ADMIN: readonly SeccionAdmin[] = ['usuarios', 'planes', 'suscripciones', 'catalogos', 'portada']
+/** P4p: secciones del administrador dentro de "Mi cuenta". P7: inicio, ventas y parámetros. */
+export type SeccionAdmin =
+  | 'inicio'
+  | 'usuarios'
+  | 'planes'
+  | 'suscripciones'
+  | 'ventas'
+  | 'catalogos'
+  | 'portada'
+  | 'parametros'
+export const SECCIONES_ADMIN: readonly SeccionAdmin[] = [
+  'inicio',
+  'usuarios',
+  'planes',
+  'suscripciones',
+  'ventas',
+  'catalogos',
+  'portada',
+  'parametros',
+]
 
-/** `#/cuenta/<seccion>`. */
-export function hashSeccionAdmin(seccion: SeccionAdmin): string {
-  return `#/cuenta/${seccion}`
+/** `#/cuenta/<seccion>`; P7: con filtros iniciales opcionales (`?clave=valor`). */
+export function hashSeccionAdmin(seccion: SeccionAdmin, filtros: Record<string, string> = {}): string {
+  return conConsulta(`#/cuenta/${seccion}`, filtros)
+}
+
+/** Añade `?clave=valor` con los valores no vacíos. */
+export function conConsulta(hash: string, filtros: Record<string, string>): string {
+  const p = new URLSearchParams()
+  for (const [clave, valor] of Object.entries(filtros)) if (valor !== '') p.set(clave, valor)
+  const consulta = p.toString()
+  return consulta === '' ? hash : `${hash}?${consulta}`
 }
 
 export const HASH_INICIO = '#/'
@@ -66,6 +99,7 @@ export const HASH_SEGURO_TODO_RIESGO = '#/seguro-todo-riesgo'
 export const HASH_CREDITO = '#/credito'
 export const HASH_BUSCO_VEHICULO = '#/busco-un-vehiculo'
 export const HASH_MIS_SOLICITUDES = '#/mis-solicitudes'
+export const HASH_VENTAS = '#/ventas'
 
 /** `#/credito/<slug>`: crédito para un vehículo, desde su ficha (CA-P6-03). */
 export function hashCreditoVehiculo(slug: string): string {
@@ -139,11 +173,12 @@ export function leerRuta(hash: string): Ruta {
   if (camino === '/cuenta') return { nombre: 'cuenta', registro: false }
   if (camino === '/cuenta/registro') return { nombre: 'cuenta', registro: true }
   const seccion = SECCIONES_ADMIN.find((s) => camino === `/cuenta/${s}`)
-  if (seccion) return { nombre: 'cuenta', registro: false, seccion }
-  if (camino === '/inventario') return { nombre: 'inventario' }
+  if (seccion) return { nombre: 'cuenta', registro: false, seccion, ...conFiltros(consulta) }
+  if (camino === '/inventario') return { nombre: 'inventario', ...conFiltros(consulta) }
   if (camino === '/inventario/nuevo') return { nombre: 'inventarioNuevo' }
   if (camino === '/publicaciones') return { nombre: 'publicaciones' }
-  if (camino === '/contactos') return { nombre: 'contactos' }
+  if (camino === '/contactos') return { nombre: 'contactos', ...conFiltros(consulta) }
+  if (camino === '/ventas') return { nombre: 'ventas', ...conFiltros(consulta) }
   if (camino === '/privacidad') return { nombre: 'privacidad' }
   if (camino === '/vende-tu-camion') return { nombre: 'vendeTuCamion' }
   if (camino === '/seguro-todo-riesgo') return { nombre: 'seguroTodoRiesgo' }
@@ -171,6 +206,11 @@ export function leerRuta(hash: string): Ruta {
     if (slug !== null) return { nombre: 'credito', slug }
   }
   return INICIO
+}
+
+/** P7: `{ consulta }` solo si hay filtros (las rutas sin consulta no cambian). */
+function conFiltros(consulta: string): { consulta?: string } {
+  return consulta.trim() === '' ? {} : { consulta }
 }
 
 /** Slug decodificado y no vacío; null si la codificación no es válida (se trata como ruta desconocida). */

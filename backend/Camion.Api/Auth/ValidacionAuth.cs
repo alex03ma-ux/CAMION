@@ -27,6 +27,19 @@ public static partial class ValidacionAuth
     [GeneratedRegex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.CultureInvariant, 1000)]
     private static partial Regex FormatoEmail();
 
+    // P7 (B-2 de REVISION-SEGURIDAD-P7): correo publicado en un enlace mailto:. Solo letras y dígitos ASCII, . _ + - en
+    // la parte local y un dominio con punto; nunca ? & ; , : / < > " ' % ni espacios, que alterarían el enlace.
+    [GeneratedRegex(@"^[A-Za-z0-9](?:[A-Za-z0-9._+-]{0,63})@[A-Za-z0-9](?:[A-Za-z0-9-]{0,62})(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,62}))*\.[A-Za-z]{2,24}$",
+        RegexOptions.CultureInvariant, 1000)]
+    private static partial Regex FormatoEmailEstricto();
+
+    /// <summary>P7 (B-2): correo estricto para enlaces mailto: (recibe el correo ya normalizado).</summary>
+    public static bool EmailEstrictoValido(string email) =>
+        email.Length <= 254 && !email.Contains("..", StringComparison.Ordinal) && FormatoEmailEstricto().IsMatch(email);
+
+    /// <summary>P7 (B-3): true si el texto tiene caracteres de control (saltos de línea, tabuladores, invisibles C0/C1).</summary>
+    public static bool TieneControl(string? texto) => texto is not null && texto.Any(char.IsControl);
+
     [GeneratedRegex(@"^[0-9 +\-()]+$", RegexOptions.CultureInvariant, 1000)]
     private static partial Regex FormatoTelefono();
 

@@ -11,6 +11,22 @@ import {
 } from '../api/suscripciones'
 import { formatoMiles } from '../catalogo/formato'
 import { Aviso } from './Aviso'
+import { enlaceWhatsappConTexto, TEXTO_WHATSAPP_RENOVAR, useContactoPortal } from './useContactoPortal'
+
+/** P7 (CA-P7-26, D-36): solo el administrador renueva; el asesor le escribe por el WhatsApp del portal. */
+function EnlaceRenovar() {
+  const contacto = useContactoPortal()
+  return (
+    <a
+      className="inv-boton-enlace inv-boton-secundario inv-boton-auto"
+      href={enlaceWhatsappConTexto(contacto.whatsappEnlace, TEXTO_WHATSAPP_RENOVAR)}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Escribir por WhatsApp para renovar<span className="sr-only"> (se abre en una pestaña nueva)</span>
+    </a>
+  )
+}
 
 type MiSuscripcionProps = {
   token: string
@@ -62,6 +78,11 @@ export function MiSuscripcion({ token, onSesionTerminada }: MiSuscripcionProps) 
       )}
       {estado.tipo === 'ok' && estado.datos.tieneSuscripcion && (
         <>
+          {/* P7 (D-64 b A, CA-P7-50): aviso de vencimiento solo cuando lo envía el servidor. */}
+          {estado.datos.avisoVencimiento && estado.datos.mensajeVencimiento && (
+            <Aviso aviso={{ tipo: 'advertencia', texto: estado.datos.mensajeVencimiento }} />
+          )}
+          {estado.datos.avisoVencimiento && estado.datos.mensajeVencimiento && <EnlaceRenovar />}
           <dl className="perfil-datos">
             <dt>Plan</dt>
             <dd>{estado.datos.plan.nombre || '—'}</dd>
@@ -87,6 +108,7 @@ export function MiSuscripcion({ token, onSesionTerminada }: MiSuscripcionProps) 
                 : 'Tu suscripción no está vigente. Comunícate con el administrador para renovarla.'}
             </p>
           )}
+          {estado.datos.estadoEfectivo === 'VENCIDA' && <EnlaceRenovar />}
         </>
       )}
     </div>
