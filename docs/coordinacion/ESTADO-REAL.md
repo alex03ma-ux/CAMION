@@ -221,3 +221,184 @@ Nota: la matriz oficial de 87 HU **no tiene una HU de "Registrar usuario/comprad
 2. **Contacto sin cuenta**: D-3 y RN-SE-005 permiten contactar sin cuenta, pero el esquema exige usuario y correo en `solicitudes`. Confirmar qué datos mínimos se piden a un visitante anónimo (¿correo obligatorio o solo teléfono, como en HU-N01?).
 3. **Estados del asesor**: el esquema usa AUTORIZADO/DESAUTORIZADO; la v3.0 usa Aprobado/Rechazado/Bloqueado. Confirmar el conjunto definitivo (D-4 no cubrió usuarios).
 4. **Estado "Reservado"** de publicación existe en el esquema pero no en la v3.0 ni en D-4: ¿se mantiene?
+
+## Actualización P5 — 2026-11-04 — commit ae12c0b (rama feature/diseno-portal)
+
+Esta es una auditoría solo para P5 (Leads y contactos).
+
+- **Commit auditado:** `ae12c0b3673d3319852025a7795934cc466e6b89`, el HEAD de `feature/diseno-portal`.
+- **Ramas:** `feature/diseno-portal` está apilada sobre `feature/p4b-publicaciones`, que está sobre `feature/p4p-planes`, que está sobre `feature/p4a-inventario`. `main` está en `de4c7fb`.
+- **Límites:** solo lectura. No me conecté a la base, no leí secretos y no revisé `frontend/respaldos/`.
+- **Secciones anteriores:** las secciones 1 a 11 siguen describiendo el commit `4e41f43` (P0). No se reescribieron.
+- **Cambios de otro agente:** al auditar, `docs/coordinacion/DECISIONES.md` estaba modificado (añade D-46, sin commit) y `docs/criterios/criterios-P5-leads.md` no estaba en git. Otro agente los escribe en paralelo.
+
+### P5.1 ¿Existe algo de leads, contactos o solicitudes?
+
+**No hay nada en el código: ni modelo, ni DbSet, ni endpoint, ni pantalla, ni prueba.** Estado de P5: **NO INICIADO**.
+
+- **Modelos.** No hay ninguna clase `Solicitud`, `Lead` ni `Contacto` en `backend/Camion.Api/Models/`.
+- **La palabra "solicitud" en el backend.** Solo aparece en los textos del registro de asesor (`Endpoints/AuthEndpoints.cs:27`, `:180`) y en `MensajesError.FormatoInvalido` (`Contracts/AuthContracts.cs:59`).
+- **La palabra "contacto".** Solo aparece en el origen de venta `CONTACTO_ASESOR` (`Models/VentaVehiculo.cs:8`, `Data/CamionDbContext.cs:421`). Es un dato de la venta (P4b), no un lead.
+- **DbContext.** Mapea 23 DbSet (`Data/CamionDbContext.cs:12-42`). Ninguno corresponde a estas tablas: `solicitudes`, `asignaciones_solicitud`, `seguimiento_solicitud`, `detalle_solicitud_credito`, `detalle_busqueda_personalizada`, `enlaces_compartidos`, `favoritos`, `notificaciones`.
+- **Frontend.**
+  - El detalle del vehículo dice "ni datos del asesor (el contacto llega en P5)" (`frontend/src/components/DetalleVehiculo.tsx:46-49`).
+  - En la portada, "Quiero un crédito" lleva al registro (`frontend/src/components/Inicio.tsx:165-168`). El comentario dice "La solicitud de crédito llega en P5".
+- **Pruebas.** No hay ninguna prueba de leads en `backend/Camion.Api.Tests/` ni en `frontend/tests/`.
+
+**Tablas previstas en `database/002_esquema_inicial_mariadb_10_4.sql`.** Existen en el script, pero ninguna está mapeada en EF.
+
+- **`solicitudes`** (`:345-370`)
+  - **Choca con D-9.** Exige usuario registrado: `comprador_usuario_id VARCHAR(255) NOT NULL`, con FK a AspNetUsers (`:347`, `:363`). También exige correo: `correo_contacto NOT NULL` (`:352`). D-9 dice que el contacto sin cuenta pide nombre y teléfono, y el correo es opcional.
+  - `clave_idempotencia` es `NOT NULL UNIQUE` (`:357`).
+  - `CK_Sol_Tipo` solo admite `CONTACTO`, `CREDITO` y `BUSQUEDA` (`:367`). No incluye los avisos "Vende tu camión" ni "Seguro" de P5b (D-6).
+  - Estados posibles: `NUEVA`, `EN_GESTION`, `CERRADA`, `CANCELADA` (`:368`).
+  - `CK_Sol_Contacto` exige `publicacion_id` cuando el tipo es CONTACTO (`:369`).
+  - Ya tiene el campo del responsable: `responsable_usuario_id`, FK a AspNetUsers con ON DELETE SET NULL (`:355`, `:365`), y el índice `IX_Sol_ResponsableEstado` (`:360`).
+- **`asignaciones_solicitud`** (`:392-405`). Guarda el responsable anterior, el nuevo, `asignado_por` y `motivo NOT NULL`. Sirve para auditar la reasignación de D-7.
+- **`seguimiento_solicitud`** (`:406-417`). Guarda cada cambio de estado con una observación.
+- **`detalle_solicitud_credito`** (`:371`) y **`detalle_busqueda_personalizada`** (`:378`). Son de P6.
+- **Ojo con los identificadores.**
+  - `solicitudes` guarda el responsable como **id de usuario** (AspNetUsers.Id, texto).
+  - Vehículos, publicaciones y suscripciones usan **`perfiles_asesor.id`** (número).
+  - Para unirlos hay que pasar por `PerfilAsesor.UsuarioId` (`Models/PerfilAsesor.cs:13`).
+- **Base real.** No sabemos si estas tablas existen en la base real, porque no se consultó (regla de solo lectura).
+
+**Migraciones** (`database/migraciones/`)
+
+- Existen las 003, 004, 006, 009, 011 y 012. Desde la 006, cada una tiene su archivo `_SUBIR`.
+- Los números 005, 007, 008 y 010 son scripts de datos que están en `database/catalogos/`.
+- Ninguna otra rama usa números nuevos (`git log --all -- database/migraciones`).
+- **El siguiente número libre es 013.**
+- No hay migraciones EF (`dotnet ef`). Todos los cambios de esquema son scripts SQL manuales.
+
+### P5.2 Quién es el asesor dueño y si su plan está vigente (D-7)
+
+**Dueño del vehículo y de la publicación**
+
+- Está en `Vehiculo.AsesorId` (`Models/Vehiculo.cs:16`) y en `Publicacion.AsesorId` (`Models/Publicacion.cs:17`).
+- Los dos apuntan a `perfiles_asesor.id`, con FK Restrict (`Data/CamionDbContext.cs:272`, `:324`, `:352`).
+- Cuando el administrador reasigna el vehículo (D-34), cambian los dos a la vez (`Endpoints/VentasEndpoints.cs:188-194`).
+- Por eso, para saber el dueño al momento del contacto, basta con leer `Publicacion.AsesorId`.
+
+**Plan vigente.** La regla está en un solo lugar y ya se puede reutilizar:
+
+- `DatosP4b.SuscripcionesVigentes(db, ahora)` (`Publicaciones/DatosP4b.cs:15-19`): suscripción ACTIVA o REACTIVADA, con inicio <= ahora < fin.
+- `DatosP4b.SuscripcionVigenteAsync(db, asesorId, ahora, ct)` (`:22-25`): la suscripción vigente de un asesor.
+- `ReglasP4p.Vigente` (`Suscripciones/ReglasP4p.cs:52-53`): la misma regla, evaluada en memoria.
+
+**Asesor activo.** `InventarioEndpoints.AsesorActivoAsync` (`Endpoints/InventarioEndpoints.cs:682`). Es `internal`.
+
+**Publicación visible.**
+
+- La regla está en `ConsultasCatalogo.Visibles(db, ahora)` (`Catalogo/ConsultasCatalogo.cs:23-37`).
+- Exige cuatro cosas: plan vigente del dueño, cuenta ACTIVA, vehículo ACTIVO o RESERVADO, y publicación PUBLICADA.
+- El detalle por slug (`Endpoints/CatalogoEndpoints.cs:147`) usa esa misma consulta.
+
+**Conclusión.** Un lead creado sobre una publicación visible casi siempre tendrá un dueño con plan vigente. Lo que falta decidir es qué pasa después de crearlo (D-46, PENDIENTE; ver P5.7).
+
+### P5.3 Detalle público del vehículo (frontend)
+
+- **Dónde está.** La ruta es `#/vehiculo/<slug>` (`frontend/src/rutas.ts:4`, `:21`). La pantalla es `DetalleVehiculo` (`App.tsx:298`, `components/DetalleVehiculo.tsx:50`).
+- **Hoy no muestra ningún contacto.**
+  - El backend tampoco lo envía. El DTO `DetalleVehiculo` (`Contracts/CatalogoContracts.cs:26-49`) no trae teléfono, WhatsApp ni datos del asesor.
+  - La regla está escrita en `CatalogoContracts.cs:4`: el catálogo no entrega datos del asesor.
+- **Teléfono del asesor.** Solo existe como `AspNetUsers.PhoneNumber`, que se guarda al registrarse (`Endpoints/AuthEndpoints.cs:132`). No se muestra en el catálogo.
+- **Contacto visible hoy.** El único es el del administrador, en el pie del portal: WhatsApp 316 615 2907 y el correo (`components/PiePortal.tsx:10-13`, `:63-72`).
+- **Dónde poner el botón o formulario de contacto.** En la columna `cat-detalle-info`, justo después del precio y las etiquetas (`DetalleVehiculo.tsx:106-116`) y antes de la "Ficha técnica" (`:118`).
+
+### P5.4 Patrones que P5 puede reutilizar
+
+**Auditoría**
+
+- `Auditoria.AgregarEvento(db, actorId, entidad, entidadId, accion, anteriores, nuevos, ahora)` (`Auth/Auditoria.cs:72-85`). Agrega la fila al contexto, y se guarda en la misma transacción que el cambio auditado.
+- Ya existe la acción `Reasignar = "REASIGNAR"` (`:49`).
+- Falta una constante de entidad para las solicitudes (p. ej. `EntidadSolicitud`). Las actuales están en `:10`, `:19`, `:28-30` y `:42-43`.
+- En un contacto anónimo, `actorId` puede ser null, porque `UsuarioId` admite nulos (`Auth/Auditoria.cs:52`).
+
+**Validación de teléfono**
+
+- Ya existe, pero es **privada**: está dentro de `ValidarDatosBasicos` (`Auth/ValidacionAuth.cs:83-102`).
+- Reglas: de 7 a 25 caracteres, solo dígitos, espacio y `+ - ( )`, y al menos 7 dígitos.
+- Usa la expresión `FormatoTelefono()` (`:30-31`, privada) y el mensaje público `MensajeTelefono` (`:12`).
+- Para reutilizarla hay que sacarla a un método público. Es un cambio pequeño.
+- La validación del nombre pide de 2 a 150 caracteres (`:92-94`).
+
+**Limitación de peticiones (rate limiting): no existe**
+
+- No hay `AddRateLimiter` ni `UseRateLimiter` (`Program.cs:25-90`, `:152`).
+- Lo único parecido es el bloqueo de Identity tras varios intentos fallidos de login (`Program.cs:35-37`, `AuthEndpoints.cs:204`).
+- .NET 8 ya trae `Microsoft.AspNetCore.RateLimiting`, así que no hace falta instalar un paquete.
+- Sin límite, un formulario de contacto anónimo queda expuesto a spam.
+
+**Cómo se registran los endpoints**
+
+- Los anónimos se marcan con `.AllowAnonymous()`, en grupo (`Endpoints/CatalogoEndpoints.cs:40`) o en una sola ruta (`PortalEndpoints.cs:29`, `MediaEndpoints.cs:26`).
+- Los que exigen sesión usan `.RequireAuthorization(Roles.Politica…)`. Hay 4 políticas (`Program.cs:74-80`).
+- Todos se registran en `Program.cs:173-185`.
+
+**Prueba `SesionTests.Inventario_de_endpoints`** (`backend/Camion.Api.Tests/SesionTests.cs:186-300`). Cada ruta nueva obliga a actualizarla, porque comprueba:
+
+- La lista exacta de rutas anónimas (`:193-199`).
+- Que todo `/api/catalogo` sea GET y que sean exactamente 5 rutas (`:202-210`). Por eso el POST de contacto **no debe** ir bajo `/api/catalogo`; conviene un prefijo nuevo, p. ej. `/api/contactos`.
+- La lista exacta de rutas que modifican datos (`:219-251`).
+- Que `/api/admin` tenga exactamente 31 rutas, todas con la política SoloAdministrador (`:255-262`).
+- Que ninguna ruta contenga "auditoria" (`:299`).
+
+**Panel del administrador**
+
+- Las secciones se definen en tres sitios:
+  - `SeccionAdmin` y `SECCIONES_ADMIN` (`frontend/src/rutas.ts:29-30`);
+  - los nombres y el orden en `NavAdmin` (`components/NavAdmin.tsx:5-13`);
+  - qué se pinta en cada sección, en `App.tsx:482-495`.
+- Hoy son cinco: usuarios, planes, suscripciones, catálogos y portada.
+- Una sección "Contactos" o "Solicitudes" se añade en esos tres sitios, con la ruta `#/cuenta/<seccion>`.
+
+**Panel del asesor**
+
+- No tiene navegación propia.
+- Desde "Mi perfil" (`components/PerfilPanel.tsx:36-40`, `:66`) se llega a Inventario (`#/inventario`), a "Mis publicaciones" (`#/publicaciones`, `App.tsx:346`) y a "Mi suscripción".
+- Para "Mis contactos" hay que añadir una ruta en `rutas.ts:18-26` y un acceso en `PerfilPanel`.
+
+**Errores en el frontend**
+
+- `ApiError` trae el código (`status`) y un `mensaje` listo para mostrar (`frontend/src/api/http.ts:22-41`).
+- El 403 usa un mensaje fijo (`:88-94`).
+
+### P5.5 Pruebas y compilación (ejecutadas en esta auditoría)
+
+| Comando | Resultado |
+|---|---|
+| `dotnet test Camion.Api.Tests --artifacts-path <scratchpad>` | **876/876 correctas**, 0 fallos, 52 s. |
+| Conteo en el código del backend | 277 `[Fact]` y 80 `[Theory]` (con 424 `InlineData`). |
+| `npx vitest run` (2 corridas) | **453 de 454: falla 1, la misma en las dos corridas.** |
+| `npx vitest run tests/InventarioLista.test.tsx` (sola) | Falla igual (24 de 25). No depende de la carga de la máquina. |
+| `npx tsc -p tsconfig.app.json --noEmit` | Sin errores. |
+| `npm run build` | No se ejecutó, para no escribir en `dist/`. |
+
+**Hay una prueba del frontend que falla y conviene corregirla antes de P5**
+
+- **Qué falla.** La prueba "25 vehículos: página 1 de 2…" (`frontend/tests/InventarioLista.test.tsx:212-223`). Espera 20 títulos `h3` en la página y encuentra 21.
+- **Causa probable.** El `<h3>Horario de atención</h3>` del pie del portal (`frontend/src/components/PiePortal.tsx:75`), añadido en el commit `8212c63`.
+- **La bitácora ya no coincide.** `docs/coordinacion/BITACORA.md:323` dice 453/453, pero es de antes de ese commit. En HEAD ya no se cumple.
+- **Cómo arreglarlo.** Que la prueba busque los `h3` solo dentro del listado, o cambiar el nivel del título del pie.
+
+### P5.6 Riesgos para P5
+
+1. **El esquema de `solicitudes` contradice D-9.** Exige usuario y correo.
+   - Hace falta la migración **013**, reversible y con respaldo previo, que vuelva opcionales esos dos campos.
+   - Si P5b usa la misma tabla, la 013 también debe ampliar `CK_Sol_Tipo`.
+   - Tampoco sabemos si la tabla existe en la base real.
+2. **No hay limitación de peticiones.** El contacto sería el primer endpoint anónimo que escribe datos de negocio; hoy solo el login y los registros escriben sin sesión. Sin límite, queda expuesto a spam.
+3. **Hay que decidir quién genera `clave_idempotencia`** (el navegador o el servidor). Como es `NOT NULL UNIQUE`, esa clave es la que evita leads duplicados por doble clic.
+4. **Mostrar el teléfono del asesor en el detalle** rompería la regla de `CatalogoContracts.cs:4` y expondría datos personales. Hace falta una decisión explícita.
+5. **Hay una prueba del frontend fallando en HEAD** (ver P5.5).
+
+### P5.7 Ambigüedades de negocio
+
+- **D-46 (PENDIENTE, aún sin commit).** ¿Qué pasa con los leads abiertos si el asesor pierde el plan, es bloqueado o deja de ser dueño del vehículo?
+  - Bloquea CA-P5-50 a CA-P5-53.
+  - D-46 cita `docs/criterios/criterios-P5-leads.md`, pero el archivo está en `docs/criterios/criterios-P5-leads.md`.
+- **Sin decisión registrada:**
+  - ¿El detalle público muestra el WhatsApp del asesor dueño, o solo un formulario que crea el lead (quizá junto al WhatsApp del administrador que ya está en el pie)?
+  - ¿El contacto se envía solo con el formulario, o también abre un enlace `wa.me`?
+- **P5b (D-6).** ¿Los avisos "Vende tu camión" y "Seguro" van en la misma tabla `solicitudes`, con tipos nuevos, o en tablas propias? La respuesta cambia el diseño de la migración 013.

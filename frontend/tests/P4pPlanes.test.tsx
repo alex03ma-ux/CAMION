@@ -22,8 +22,9 @@ async function filaDe(nombre: string) {
 
 describe('Lista de planes', () => {
   it('muestra precio con miles, duración en meses y días, cupo, tipo, estado en texto y suscripciones vivas', async () => {
-    const { api } = renderPlanes({ [RUTA_PLANES]: LISTA })
+    const { api, user } = renderPlanes({ [RUTA_PLANES]: LISTA })
     const fila = await filaDe('Básico')
+    await user.selectOptions(screen.getByLabelText('Mostrar'), 'todos')
     expect(within(fila).getByText('$ 150.000')).toBeInTheDocument()
     expect(within(fila).getByText('3 meses')).toBeInTheDocument()
     expect(within(fila).getByText('90 días')).toBeInTheDocument()
@@ -51,6 +52,7 @@ describe('Crear plan', () => {
   it('campos obligatorios con asterisco (D-31) y "= N días" al escribir la duración (D-35)', async () => {
     const { user } = renderPlanes({ [RUTA_PLANES]: LISTA })
     await filaDe('Básico')
+    await user.click(screen.getByRole('button', { name: 'Crear plan' }))
     expect(screen.getByText('Campo obligatorio')).toBeInTheDocument()
     for (const etiqueta of ['Nombre', 'Precio (COP)', 'Duración en meses', 'Cupo de publicaciones']) {
       expect(screen.getByLabelText(etiqueta)).toHaveAttribute('aria-required', 'true')
@@ -65,10 +67,11 @@ describe('Crear plan', () => {
   it('validación local: no envía y marca cada campo', async () => {
     const { user, api } = renderPlanes({ [RUTA_PLANES]: LISTA })
     await filaDe('Básico')
+    await user.click(screen.getByRole('button', { name: 'Crear plan' }))
     await user.type(screen.getByLabelText('Nombre'), 'A')
     await user.type(screen.getByLabelText('Duración en meses'), '40')
     await user.type(screen.getByLabelText('Cupo de publicaciones'), '0')
-    await user.click(screen.getByRole('button', { name: 'Crear plan' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar plan' }))
     expect(screen.getByText('Escribe el nombre del plan (2 a 100 caracteres).')).toBeInTheDocument()
     expect(screen.getByText('Escribe el precio en pesos (0 o más, sin decimales).')).toBeInTheDocument()
     expect(screen.getByText('Escribe la duración en meses (de 1 a 36).')).toBeInTheDocument()
@@ -83,6 +86,7 @@ describe('Crear plan', () => {
       [RUTA_PLANES]: [LISTA, { status: 200, body: { items: [PLAN_BASICO, PLAN_VIEJO, plan(9, 'Prueba gratis')] } }],
     })
     await filaDe('Básico')
+    await user.click(screen.getByRole('button', { name: 'Crear plan' }))
     await user.type(screen.getByLabelText('Nombre'), '  Prueba gratis ')
     fireEvent.change(screen.getByLabelText('Precio (COP)'), { target: { value: '1.250.000' } })
     expect(screen.getByLabelText('Precio (COP)')).toHaveValue('1.250.000')
@@ -90,7 +94,7 @@ describe('Crear plan', () => {
     await user.type(screen.getByLabelText('Cupo de publicaciones'), '5')
     await user.click(screen.getByLabelText('Es un plan de prueba'))
     // El POST comparte ruta con el GET: la segunda respuesta de la lista sirve también de 201.
-    await user.click(screen.getByRole('button', { name: 'Crear plan' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar plan' }))
     await waitFor(() => expect(api.llamadas.filter((l) => l.init?.method === 'POST')).toHaveLength(1))
     const post = api.llamadas.find((l) => l.init?.method === 'POST')
     expect(JSON.parse(String(post?.init?.body))).toEqual({
@@ -103,7 +107,8 @@ describe('Crear plan', () => {
     })
     expect(await screen.findByText('Se creó el plan Prueba gratis.')).toBeInTheDocument()
     expect(await filaDe('Prueba gratis')).toBeInTheDocument()
-    expect(screen.getByLabelText('Nombre')).toHaveValue('')
+    expect(screen.queryByLabelText('Nombre')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Crear plan' })).toBeInTheDocument()
   })
 
   it('409 nombre duplicado: el mensaje queda bajo el nombre', async () => {
@@ -111,11 +116,12 @@ describe('Crear plan', () => {
       [RUTA_PLANES]: [LISTA, { status: 409, body: { error: 'Ya existe un plan con ese nombre.' } }],
     })
     await filaDe('Básico')
+    await user.click(screen.getByRole('button', { name: 'Crear plan' }))
     await user.type(screen.getByLabelText('Nombre'), 'básico')
     await user.type(screen.getByLabelText('Precio (COP)'), '0')
     await user.type(screen.getByLabelText('Duración en meses'), '1')
     await user.type(screen.getByLabelText('Cupo de publicaciones'), '1')
-    await user.click(screen.getByRole('button', { name: 'Crear plan' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar plan' }))
     const nombre = screen.getByLabelText('Nombre')
     await waitFor(() => expect(nombre).toHaveAttribute('aria-invalid', 'true'))
     expect(nombre).toHaveAccessibleDescription('Ya existe un plan con ese nombre.')
@@ -133,11 +139,12 @@ describe('Crear plan', () => {
       ],
     })
     await filaDe('Básico')
+    await user.click(screen.getByRole('button', { name: 'Crear plan' }))
     await user.type(screen.getByLabelText('Nombre'), 'Nuevo')
     await user.type(screen.getByLabelText('Precio (COP)'), '10')
     await user.type(screen.getByLabelText('Duración en meses'), '12')
     await user.type(screen.getByLabelText('Cupo de publicaciones'), '3')
-    await user.click(screen.getByRole('button', { name: 'Crear plan' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar plan' }))
     expect(await screen.findByText('Máximo 36 meses.')).toBeInTheDocument()
     expect(screen.getByLabelText('Duración en meses')).toHaveAttribute('aria-invalid', 'true')
   })
@@ -201,9 +208,59 @@ describe('Editar y activar/inactivar', () => {
   it('Activar un plan inactivo llama a /activar', async () => {
     const ruta = `${RUTA_PLANES}/3/activar`
     const { user, api } = renderPlanes({ [RUTA_PLANES]: LISTA, [ruta]: { status: 200, body: PLAN_VIEJO } })
+    await filaDe('Básico')
+    await user.selectOptions(screen.getByLabelText('Mostrar'), 'inactivos')
     await user.click(within(await filaDe('Antiguo')).getByRole('button', { name: 'Activar el plan Antiguo' }))
     await user.click(within(screen.getByRole('dialog', { name: 'Activar plan' })).getByRole('button', { name: 'Activar' }))
     await waitFor(() => expect(api.llamadasA(ruta)).toHaveLength(1))
     expect(await screen.findByText('Se activó el plan Antiguo.')).toBeInTheDocument()
+  })
+})
+
+describe('Organización de la pantalla (pedido de la responsable, 2026-11-04)', () => {
+  it('al entrar solo se ven los planes activos, sin formulario; el filtro muestra inactivos o todos', async () => {
+    const { user } = renderPlanes({ [RUTA_PLANES]: LISTA })
+    await filaDe('Básico')
+    expect(screen.queryByRole('rowheader', { name: 'Antiguo' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /Planes registrados/ })).toHaveTextContent('(1)')
+    expect(screen.queryByLabelText('Nombre')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Mostrar')).toHaveValue('activos')
+
+    await user.selectOptions(screen.getByLabelText('Mostrar'), 'inactivos')
+    expect(await filaDe('Antiguo')).toBeInTheDocument()
+    expect(screen.queryByRole('rowheader', { name: 'Básico' })).not.toBeInTheDocument()
+
+    await user.selectOptions(screen.getByLabelText('Mostrar'), 'todos')
+    expect(screen.getByRole('rowheader', { name: 'Básico' })).toBeInTheDocument()
+    expect(screen.getByRole('rowheader', { name: 'Antiguo' })).toBeInTheDocument()
+  })
+
+  it('"Crear plan" muestra el formulario vacío; "Cancelar" lo oculta sin guardar y lo deja en blanco', async () => {
+    const { user, api } = renderPlanes({ [RUTA_PLANES]: LISTA })
+    await filaDe('Básico')
+    await user.click(screen.getByRole('button', { name: 'Crear plan' }))
+    expect(screen.getByRole('heading', { name: 'Nuevo plan' })).toHaveFocus()
+    expect(screen.queryByRole('button', { name: 'Crear plan' })).not.toBeInTheDocument()
+    await user.type(screen.getByLabelText('Nombre'), 'Borrador')
+    await user.type(screen.getByLabelText('Precio (COP)'), '5000')
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(screen.queryByLabelText('Nombre')).not.toBeInTheDocument()
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Crear plan' })).toHaveFocus())
+    expect(api.llamadas.filter((l) => l.init?.method === 'POST' || l.init?.method === 'PUT')).toHaveLength(0)
+
+    await user.click(screen.getByRole('button', { name: 'Crear plan' }))
+    expect(screen.getByLabelText('Nombre')).toHaveValue('')
+    expect(screen.getByLabelText('Precio (COP)')).toHaveValue('')
+  })
+
+  it('"Editar" abre el formulario con el plan; "Cancelar" lo cierra sin enviar el PUT', async () => {
+    const { user, api } = renderPlanes({ [RUTA_PLANES]: LISTA })
+    await user.click(within(await filaDe('Básico')).getByRole('button', { name: 'Editar el plan Básico' }))
+    expect(screen.getByLabelText('Precio (COP)')).toHaveValue('150.000')
+    await user.clear(screen.getByLabelText('Nombre'))
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(screen.queryByLabelText('Nombre')).not.toBeInTheDocument()
+    expect(api.llamadasA(`${RUTA_PLANES}/1`)).toHaveLength(0)
   })
 })

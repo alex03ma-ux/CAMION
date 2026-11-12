@@ -14,8 +14,12 @@ public sealed class CatalogoDetalleTests(CatalogoReferencia referencia) : IClass
     private static readonly string[] ClavesDetalle =
     [
         "capacidadCargaKg", "carroceria", "cilindrajeCc", "combustible", "departamento", "descripcionComercial",
-        "descripcionTecnica", "destacado", "estadoComercial", "fotoPortada", "fotos", "kilometraje", "linea", "marca",
-        "modeloAnio", "municipio", "negociable", "pesoBrutoKg", "precioCop", "publicadaEn", "slug", "tipo", "titulo"
+        "descripcionTecnica", "destacado",
+        // P5 (CA-P5-11): indicador booleano del dueño, false sin token.
+        "esPropio", "estadoComercial", "fotoPortada", "fotos", "kilometraje", "linea", "marca",
+        "modeloAnio", "municipio", "negociable", "pesoBrutoKg", "precioCop", "publicadaEn", "slug", "tipo", "titulo",
+        // P5 (D-47): enlace wa.me del asesor dueño o del portal; es el único dato de contacto del detalle.
+        "whatsapp"
     ];
 
     // Cuerpo común del 404 (se compara ya interpretado: el serializador escapa los caracteres no ASCII).

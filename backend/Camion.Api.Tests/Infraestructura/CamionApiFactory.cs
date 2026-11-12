@@ -50,6 +50,11 @@ public sealed class CamionApiFactory : WebApplicationFactory<Program>
             "Server=127.0.0.1;Port=1;Database=prueba_inexistente;User=prueba_ficticia");
         builder.UseSetting("Jwt:Key", JwtKey);
         builder.UseSetting("Media:Ruta", CarpetaMedia);
+        // P5 (CA-P5-20, CA-P5-21): límites del contacto público muy altos para que las pruebas no se vuelvan frágiles
+        // (todas llegan sin IP). ContactosLimitesTests los baja con su propia configuración.
+        builder.UseSetting("Contactos:LimiteVentanaCorta", "100000");
+        builder.UseSetting("Contactos:LimiteDiario", "100000");
+        builder.UseSetting("Contactos:LimiteTelefonoDia", "100000");
         // Además de la configuración, se sustituye el almacén por uno con la carpeta temporal (después de Program).
         builder.ConfigureTestServices(services =>
             services.AddSingleton<IAlmacenFotos>(new AlmacenFotosLocal(CarpetaMedia)));

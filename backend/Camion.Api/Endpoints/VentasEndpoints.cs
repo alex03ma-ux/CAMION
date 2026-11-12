@@ -205,6 +205,10 @@ public static class VentasEndpoints
                 ["motivo"] = motivo
             };
             if (quitados > 0) nuevos["destacadoQuitado"] = true;
+            // P5 (D-34, D-46 B, CA-P5-52): los leads abiertos del dueño anterior siguen al vehículo.
+            var leadsMovidos = await Camion.Api.Leads.BarridoLeads.SeguirVehiculoAsync(db, id, anterior, destino,
+                actor.UsuarioId, ahora, ct);
+            if (leadsMovidos > 0) nuevos["leadsMovidos"] = leadsMovidos;
             Auditoria.AgregarVehiculo(db, actor.UsuarioId, id, Auditoria.Reasignar,
                 new Dictionary<string, object?> { ["asesorId"] = anterior }, nuevos, ahora);
             await db.SaveChangesAsync(ct);

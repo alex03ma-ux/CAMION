@@ -167,14 +167,17 @@ describe('Detalle', () => {
     )
   })
 
-  it('CA-SE005-08 / CA-D03-02 con sesión de comprador: mismo detalle, sin botones de gestión ni contacto, sin token', async () => {
+  // P5 (D-3, D-47): el comprador ya puede contactar (formulario "Enviar" y enlace de WhatsApp); lo que se
+  // sigue comprobando es que no tenga botones de gestión y que el catálogo se pida sin token.
+  it('CA-SE005-08 / CA-D03-02 con sesión de comprador: mismo detalle, sin botones de gestión, catálogo sin token', async () => {
     guardarSesionFicticia(Date.now() + 2 * 60 * 60 * 1000)
     const api = abrirDetalle(detalle(V1, { fotos: FOTOS }), {
       '/api/auth/me': { status: 200, body: PERFIL_FICTICIO },
     })
     await screen.findByRole('heading', { level: 1, name: V1.titulo })
     const nombres = screen.getAllByRole('button').map((b) => b.textContent + ' ' + (b.getAttribute('aria-label') ?? ''))
-    for (const n of nombres) expect(n).not.toMatch(/contactar|editar|eliminar|vendido|destacar|ocultar/i)
+    for (const n of nombres) expect(n).not.toMatch(/editar|eliminar|vendido|destacar|ocultar|publicar/i)
+    expect(screen.getByRole('button', { name: 'Enviar' })).toBeInTheDocument()
     for (const l of api.llamadas.filter((x) => x.url.startsWith('/api/catalogo'))) {
       expect(cabecera(l.init, 'Authorization')).toBeUndefined()
     }

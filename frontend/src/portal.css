@@ -784,3 +784,123 @@ form.admin-portada-form {
   width: auto;
   padding: 12px 20px;
 }
+
+/* ---- P5: contacto en la ficha del vehículo, autorización de datos y página de privacidad ---- */
+.contacto-intro {
+  margin: 0 0 12px;
+  line-height: 1.5;
+  color: var(--gris-texto);
+}
+
+.boton-whatsapp {
+  display: block;
+  padding: 13px 16px;
+  border-radius: 9px;
+  background: #128c4a;
+  color: #fff;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+}
+
+.boton-whatsapp:hover {
+  background: #0d6b38;
+}
+
+.boton-whatsapp:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* El formulario va dentro de la tarjeta blanca de la ficha: sin la caja de los formularios de la cuenta. */
+.cat-detalle-info form.contacto-form {
+  position: relative;
+  max-width: none;
+  margin: 16px 0 0;
+  padding: 0;
+  box-shadow: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.contacto-form .campo-ayuda {
+  margin-top: 6px;
+}
+
+.contacto-aviso:focus {
+  outline: none;
+}
+
+.campo-autorizacion {
+  margin-top: 16px;
+}
+
+.autorizacion-casilla {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.autorizacion-casilla input[type='checkbox'] {
+  flex: none;
+  margin-top: 3px;
+}
+
+.autorizacion-casilla label {
+  margin: 0;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.autorizacion-casilla a {
+  color: var(--rojo-oscuro);
+  font-weight: 600;
+}
+
+/* Campo trampa: presente en el DOM, fuera de la vista (no display:none, que algunos robots detectan). */
+.campo-trampa {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.franja-borrador {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 2px dashed #b54708;
+  border-radius: 9px;
+  background: #fffaeb;
+  color: #7a2e0e;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+
+.privacidad-cuerpo {
+  max-width: 720px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(20, 38, 62, 0.08);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.privacidad-cuerpo a {
+  color: var(--rojo-oscuro);
+  font-weight: 600;
+}
+
+/* P5 (CA-P5-11): aviso al asesor en su propia publicación, en lugar del formulario de contacto. */
+.cat-aviso-propio {
+  margin: 18px 0;
+  padding: 12px 14px;
+  border-left: 4px solid var(--rojo);
+  border-radius: 8px;
+  background: #f6f6f6;
+  color: #222;
+}
+

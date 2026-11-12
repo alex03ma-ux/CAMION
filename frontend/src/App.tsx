@@ -28,6 +28,7 @@ import { AdminPortada } from './components/AdminPortada'
 import { AdminPlanes } from './components/AdminPlanes'
 import { AdminSuscripciones } from './components/AdminSuscripciones'
 import { AdminUsuarios } from './components/AdminUsuarios'
+import { Contactos } from './components/Contactos'
 import type { DatosAviso } from './components/Aviso'
 import { Aviso } from './components/Aviso'
 import { DetalleVehiculo } from './components/DetalleVehiculo'
@@ -39,9 +40,11 @@ import { LoginForm } from './components/LoginForm'
 import { MisPublicaciones } from './components/MisPublicaciones'
 import { NavAdmin } from './components/NavAdmin'
 import { PerfilPanel } from './components/PerfilPanel'
+import { Privacidad } from './components/Privacidad'
 import { RegistroForm } from './components/RegistroForm'
 import { Resultados } from './components/Resultados'
 import {
+  esRutaContactos,
   esRutaInventario,
   HASH_CUENTA,
   HASH_REGISTRO,
@@ -94,6 +97,8 @@ function tituloDocumento(ruta: Ruta): string {
   if (ruta.nombre === 'inventarioNuevo') return `Registrar vehículo | ${NOMBRE_PORTAL}`
   if (ruta.nombre === 'inventarioVehiculo') return `Editar vehículo | ${NOMBRE_PORTAL}`
   if (ruta.nombre === 'publicaciones') return `Mis publicaciones | ${NOMBRE_PORTAL}`
+  if (ruta.nombre === 'contactos' || ruta.nombre === 'contacto') return `Contactos | ${NOMBRE_PORTAL}`
+  if (ruta.nombre === 'privacidad') return `Política de tratamiento de datos | ${NOMBRE_PORTAL}`
   return NOMBRE_PORTAL
 }
 
@@ -181,6 +186,7 @@ export default function App() {
 
   // Al caducar el token (2 h) se termina la sesión aunque haya actividad.
   const sesionActiva = vista.tipo === 'perfil' || vista.tipo === 'admin' ? vista.sesion : null
+  const perfilActivo = vista.tipo === 'perfil' || vista.tipo === 'admin' ? vista.perfil : null
   useEffect(() => {
     if (!sesionActiva) return
     const restante = msHastaCaducidad(sesionActiva)
@@ -271,7 +277,8 @@ export default function App() {
   // P4a: el inventario exige sesión; sin ella se va al login de #/cuenta
   // (si la sesión terminó, allí se ve el aviso "Tu sesión terminó...").
   // P4b: "Mis publicaciones" también exige sesión.
-  const enInventario = esRutaInventario(ruta) || ruta.nombre === 'publicaciones'
+  // P5: los contactos también.
+  const enInventario = esRutaInventario(ruta) || ruta.nombre === 'publicaciones' || esRutaContactos(ruta)
   useEffect(() => {
     if (enInventario && !conSesion) navegar(HASH_CUENTA)
   }, [enInventario, conSesion])
@@ -295,13 +302,22 @@ export default function App() {
             onReintentarOpciones={reintentarOpcionesFiltros}
           />
         )}
-        {ruta.nombre === 'vehiculo' && <DetalleVehiculo key={ruta.slug} slug={ruta.slug} />}
+        {ruta.nombre === 'vehiculo' && (
+          <DetalleVehiculo
+            key={ruta.slug}
+            slug={ruta.slug}
+            sesion={sesionActiva && perfilActivo ? { token: sesionActiva.accessToken, perfil: perfilActivo } : null}
+          />
+        )}
+        {ruta.nombre === 'privacidad' && <Privacidad />}
         {ruta.nombre === 'cuenta' && renderCuenta()}
         {(ruta.nombre === 'inventario' ||
           ruta.nombre === 'inventarioNuevo' ||
           ruta.nombre === 'inventarioVehiculo') &&
           renderInventario(ruta)}
         {ruta.nombre === 'publicaciones' && renderPublicaciones()}
+        {/* Lista y detalle en el mismo sitio: los filtros se conservan al ir y volver del detalle. */}
+        {esRutaContactos(ruta) && renderContactos(ruta.nombre === 'contacto' ? ruta.id : undefined)}
       </main>
       <PiePortal tipos={tipos} conSesion={conSesion} />
     </>
@@ -367,6 +383,39 @@ export default function App() {
         )}
         {(vista.tipo === 'login' || vista.tipo === 'registro') && (
           <p role="status">Inicia sesión para ver tus publicaciones.</p>
+        )}
+      </div>
+    )
+  }
+
+  function renderContactos(id: number | undefined) {
+    if (vista.tipo === 'perfil' || vista.tipo === 'admin') {
+      return (
+        <Contactos
+          key={vista.perfil.usuarioId}
+          token={vista.sesion.accessToken}
+          perfil={vista.perfil}
+          id={id}
+          onSesionTerminada={alTerminarSesionAdmin}
+        />
+      )
+    }
+    return (
+      <div className="cat-pagina inv-pagina">
+        <h1 tabIndex={-1} className="inv-titulo">
+          Contactos
+        </h1>
+        {vista.tipo === 'verificando' && <p role="status">Verificando tu sesión...</p>}
+        {vista.tipo === 'sinConexion' && (
+          <>
+            <Aviso aviso={{ tipo: 'error', texto: vista.mensaje }} />
+            <p>
+              <a href={HASH_CUENTA}>Ir a mi cuenta</a>
+            </p>
+          </>
+        )}
+        {(vista.tipo === 'login' || vista.tipo === 'registro') && (
+          <p role="status">Inicia sesión para ver tus contactos.</p>
         )}
       </div>
     )

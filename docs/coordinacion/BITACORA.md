@@ -342,3 +342,45 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - con quién se comparten los datos.
 - La declaración de consignación al publicar queda PROPUESTA (D-45).
 - **D-45, respuesta de la responsable.** No se pide la declaración de consignación al publicar ni la autorización para bancos y aseguradoras en la plataforma: es manejo interno. La plataforma solo pone en contacto a usuario y asesor. Queda por confirmar el alcance de P6 al planearla.
+
+## 2026-11-04 — P5 Leads y contactos (rama `feature/p5-leads`, apilada sobre `feature/diseno-portal`)
+- HU-029 a HU-033, HU-071 parcial, HU-061/062; RN-CL-001 a 004, RN-SE-003/004/005/006, RN-NO-002 parcial; D-7, D-9, D-44, D-46 (B), D-47, D-48 y D-49 (detalles técnicos del coordinador).
+- Criterios en `docs/criterios/criterios-P5-leads.md` (CA-P5-01 a 64), contrato en `P5-contrato-api.md`, evidencia en `P5-evidencia.md`.
+- **IMPLEMENTADO y PROBADO (pruebas automáticas; sin prueba con la API real):**
+  - formulario "Contactar" en la ficha del vehículo, sin cuenta o con cuenta, con casilla de autorización de datos sin marcar y prueba de la autorización guardada en la misma transacción (D-44);
+  - botón "Escribir por WhatsApp" con el número del asesor dueño o, si no hay uno válido, el del portal (D-47, D-49);
+  - límites por IP y por teléfono, campo trampa, tope de 8 KB y contactos repetidos agregados al lead abierto; el límite por teléfono cuenta también los repetidos (B-1);
+  - asignación automática al asesor dueño con plan vigente; si no, a Administración (D-7);
+  - "Mis contactos" del asesor y "Contactos" del administrador, con filtros, detalle, notas, cierre con resultado e historial; reasignar y reabrir solo el administrador; aviso "Contactos (N nuevos)" en el panel (D-48);
+  - barrido bajo demanda de D-46 (plan vencido, asesor bloqueado, vehículo reasignado);
+  - el asesor dueño no ve el formulario en su propia publicación (`esPropio`, CA-P5-11).
+- Migración `013_p5_leads` (con su archivo SUBIR): crea `leads`, `eventos_lead` y `consentimientos_datos`. **APLICADA el 2026-11-05** (ver abajo).
+- **Pruebas ejecutadas:** `dotnet test` 962/962 (agente de backend); `npx vitest run` 528/528 (coordinador); `tsc -b` y `npm run build` OK. Las pruebas de API usan SQLite en memoria y no tocan `camion_ventas`. Se corrigió la inestabilidad de vitest (`maxWorkers: '50%'`, `testTimeout: 15_000`). E2E y prueba manual: NO EJECUTADAS.
+- **Revisión de seguridad** (`REVISION-SEGURIDAD-P5.md`): CON OBSERVACIONES, sin hallazgos críticos ni altos. M-1 (IP detrás de un proxy) y B-4 (MySqlConnector) pasan a INF-2; B-1 corregido; B-2 aceptado (D-49); B-3 aceptado; B-5 se cubre con el paso 3 del procedimiento.
+- **DOCUMENTADO:** D-49, fila INF-2 del backlog, cierre de la evidencia y guía `docs/manual/P5-contactos.md`.
+- **Pendientes:**
+  - INF-2 antes de publicar en internet;
+  - la revisión legal (D-44): P5 no sale a internet sin una versión aprobada de la política.
+- PR: por abrir contra `main`, sin merge.
+- **Pantalla de Planes reorganizada (pedido de la responsable, 2026-11-04; HU-049 a HU-051).**
+  - Al entrar se ven solo los planes activos; el filtro "Mostrar" deja ver los inactivos o todos.
+  - El formulario está oculto hasta pulsar "Crear plan", que ahora va arriba. Su botón de envío se llama "Guardar plan".
+  - "Cancelar" descarta lo escrito sin guardar, vacía y oculta el formulario. Sirve también al editar, en lugar de "Cancelar edición".
+  - Cada ayuda queda justo debajo de su campo; antes quedaban desalineadas.
+  - Pruebas: `npx vitest run` 531/531 (3 nuevas; las de crear plan ahora abren el formulario antes). `tsc -b` y `npm run build` OK.
+  - También se arregló una prueba intermitente de P5 (CA-P5-57), que buscaba un texto repetido en lugar del aviso.
+  - Revisión en pantalla: la responsable la revisó con su cuenta de administradora y respondió "Ya lo revisé" (2026-11-05), sin reportar fallas.
+- **Migración 013 aplicada (2026-11-05).**
+  - Respaldo previo: `C:\Respaldo_CAMION\camion_ventas_antes_013_p5_20261105_1023.sql` (129 KB, 44 tablas, termina en "Dump completed"). Se generó con `mysqldump --result-file` para evitar el UTF-16 de la redirección de PowerShell.
+  - La responsable importó `013_p5_leads.sql` desde phpMyAdmin. El primer intento no se ejecutó porque no había archivo seleccionado; el segundo sí.
+  - Verificación de solo lectura: 3 tablas nuevas vacías, 5 CHECK y 9 llaves foráneas; `publicaciones` sigue con 13 filas.
+- **Clave JWT rotada (2026-11-05).** La clave anterior quedó expuesta al pegarla en el chat. La responsable generó una nueva y la guardó ella misma con `dotnet user-secrets`. Las sesiones abiertas con la clave anterior dejaron de valer.
+- **Prueba manual P5: PROBADO por la responsable (2026-11-05), respuesta "Todo bien".**
+  - El asesor de prueba (Xavi Quintero, aprobado, plan vigente) quedó como dueño del vehículo JAC JRR 2024 (`jac-jrr-2024-14`), creado por la administradora y reasignado a él.
+  - En su propia publicación vio el aviso en lugar del formulario (CA-P5-11).
+  - Contactos 2 y 3, enviados sin cuenta: se asignaron solos a Xavi. Él les agregó notas y los cerró ("Duplicado o inválido", "No interesado"). La administradora los reabrió con un motivo.
+  - Contacto 1, en una publicación con plan vencido: fue a Administración y la administradora lo reasignó con un motivo.
+  - Historial verificado en `eventos_lead`: CREADO, ASIGNADO, NOTA, CERRADO, REABIERTO, REASIGNADO, con su actor.
+  - 3 autorizaciones guardadas en `consentimientos_datos`, todas con la versión `BORRADOR-2026-11-04`.
+  - El botón de WhatsApp usó el número del portal porque el teléfono de Xavi tiene 9 dígitos (D-49).
+  - Quedan datos de prueba en `camion_ventas`: los contactos 1 a 3 y el vehículo 21. Se limpian antes de producción.

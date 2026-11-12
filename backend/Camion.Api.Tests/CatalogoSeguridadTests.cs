@@ -31,7 +31,9 @@ public sealed class CatalogoSeguridadTests(CatalogoReferencia referencia) : ICla
         return d;
     }
 
-    private async Task AfirmarIgualQueAnonimo(string? token, string quien)
+    // P5 (CA-P5-11): única diferencia admitida: "esPropio":true en el detalle de una publicación del asesor dueño del token.
+    // Fuera de esas URL el cuerpo debe ser idéntico; en ellas, idéntico salvo ese valor.
+    private async Task AfirmarIgualQueAnonimo(string? token, string quien, ISet<string>? propias = null)
     {
         var anonimo = await Respuestas(null);
         var conToken = await Respuestas(token);
@@ -39,7 +41,13 @@ public sealed class CatalogoSeguridadTests(CatalogoReferencia referencia) : ICla
         {
             Assert.True(conToken[url].Item1 is not (HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden), $"{quien} {url}: {(int)conToken[url].Item1}");
             Assert.Equal(anonimo[url].Item1, conToken[url].Item1);
-            Assert.Equal(anonimo[url].Item2, conToken[url].Item2);
+            if (propias?.Contains(url) == true && anonimo[url].Item1 == HttpStatusCode.OK)
+            {
+                Assert.Contains("\"esPropio\":true", conToken[url].Item2);
+                Assert.Equal(anonimo[url].Item2, conToken[url].Item2.Replace("\"esPropio\":true", "\"esPropio\":false"));
+            }
+            else
+                Assert.Equal(anonimo[url].Item2, conToken[url].Item2);
         }
     }
 
@@ -60,7 +68,12 @@ public sealed class CatalogoSeguridadTests(CatalogoReferencia referencia) : ICla
         var a1 = Ref.Datos.A1.Usuario.Id;
         var asesor = Ref.Firmar(a1, 0, "ASESOR");
         Assert.Equal(HttpStatusCode.OK, (await Ayudas.Me(Ref.Cliente, asesor)).StatusCode);
-        await AfirmarIgualQueAnonimo(asesor, "asesor");
+        // P5 (CA-P5-11): en el detalle de sus propias publicaciones visibles, el asesor dueño recibe "esPropio":true.
+        var propias = (await Ref.Leer(db => db.Publicaciones.Where(p => p.AsesorId == Ref.Datos.A1.Perfil.Id)
+                .Select(p => p.SlugPublico).ToListAsync()))
+            .Select(slug => "/api/catalogo/publicaciones/" + slug).ToHashSet();
+        Assert.Contains(Consultas, propias.Contains);
+        await AfirmarIgualQueAnonimo(asesor, "asesor", propias);
 
         var adminId = Guid.NewGuid().ToString();
         await Ref.Db(db =>
@@ -148,6 +161,8 @@ public sealed class CatalogoSeguridadTests(CatalogoReferencia referencia) : ICla
         foreach (var a in new[] { d.A1, d.A2, d.A3, d.A4 })
             prohibidosEnValores.AddRange(new[] { a.Usuario.Id, a.Usuario.Email!, a.Usuario.PhoneNumber!, a.Usuario.NombreCompleto,
                 a.Perfil.NumeroDocumento, a.Perfil.NombreComercial! });
+        // P5 (D-47): el detalle trae además "whatsapp" (enlace wa.me con el celular normalizado del asesor); el teléfono tal
+        // como se registró, el correo, el documento y el nombre siguen prohibidos (ContactosTests.Whatsapp_del_asesor).
         var clavesProhibidas = new[] { "id", "vehiculoId", "publicacionId", "asesorId", "usuarioId", "email", "telefono",
             "nombreCompleto", "numeroDocumento", "nombreComercial", "motivoOcultamiento", "suscripcionId", "planId", "archivoClave" };
 

@@ -95,10 +95,7 @@ public static partial class ValidacionAuth
         else if (email.Length == 0 || !FormatoEmail().IsMatch(email))
             errores["email"] = [MensajeEmail];
 
-        var telefono = (telefonoBruto ?? "").Trim();
-        if (telefono.Length is < 7 or > 25 ||
-            !FormatoTelefono().IsMatch(telefono) ||
-            telefono.Count(char.IsAsciiDigit) < 7)
+        if (!TelefonoValido(telefonoBruto))
             errores["telefono"] = [MensajeTelefono];
 
         var password = ErroresPassword(passwordBruto ?? "");
@@ -107,6 +104,44 @@ public static partial class ValidacionAuth
 
         return errores;
     }
+
+    /// <summary>
+    /// Regla genérica del registro (P1/P2): de 7 a 25 caracteres, solo dígitos, espacio y + - ( ), con al menos 7 dígitos.
+    /// Pública desde P5 para reutilizarla; el comportamiento del registro no cambia.
+    /// </summary>
+    public static bool TelefonoValido(string? telefonoBruto)
+    {
+        var telefono = (telefonoBruto ?? "").Trim();
+        return telefono.Length is >= 7 and <= 25 &&
+               FormatoTelefono().IsMatch(telefono) &&
+               telefono.Count(char.IsAsciiDigit) >= 7;
+    }
+
+    /// <summary>
+    /// P5 (CA-P5-04, CA-P5-05): teléfono colombiano de 10 dígitos, celular (empieza por 3) o fijo (empieza por 60),
+    /// opcionalmente precedido de 57 o +57. Usa los caracteres admitidos por <see cref="TelefonoValido"/>; el + solo al
+    /// principio. Devuelve el número normalizado "+57XXXXXXXXXX" o null si no es válido.
+    /// </summary>
+    public static string? NormalizarTelefonoColombia(string? telefonoBruto)
+    {
+        var telefono = (telefonoBruto ?? "").Trim();
+        if (telefono.Length is < 7 or > 25 || !FormatoTelefono().IsMatch(telefono)) return null;
+        if (telefono.LastIndexOf('+') > 0) return null;
+        var digitos = new string(telefono.Where(char.IsAsciiDigit).ToArray());
+        if (digitos.Length == 12 && digitos.StartsWith("57", StringComparison.Ordinal)) digitos = digitos[2..];
+        else if (telefono.StartsWith('+')) return null; // +XX con otro indicativo: extranjero.
+        if (digitos.Length != 10) return null;
+        var celular = digitos[0] == '3';
+        var fijo = digitos.StartsWith("60", StringComparison.Ordinal);
+        return celular || fijo ? "+57" + digitos : null;
+    }
+
+    /// <summary>P5 (D-47): un número normalizado "+57…" es celular si empieza por 3 (wa.me solo sirve con celulares).</summary>
+    public static bool EsCelularColombia(string? normalizado) =>
+        normalizado is { Length: 13 } && normalizado.StartsWith("+573", StringComparison.Ordinal);
+
+    /// <summary>Formato de correo del registro (P1), público desde P5. Recibe el correo ya normalizado.</summary>
+    public static bool EmailValido(string email) => FormatoEmail().IsMatch(email);
 
     // Mismo criterio que Identity: mayúscula, minúscula y dígito ASCII.
     public static List<string> ErroresPassword(string password)

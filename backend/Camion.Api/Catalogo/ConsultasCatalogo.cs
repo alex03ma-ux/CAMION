@@ -23,18 +23,26 @@ public static class ConsultasCatalogo
     public static IQueryable<Publicacion> Visibles(CamionDbContext db, DateTime ahora)
     {
         var vigentes = DatosP4b.SuscripcionesVigentes(db, ahora);
-        return db.Publicaciones.AsNoTracking().Where(p =>
+        return Contactables(db, ahora).Where(p =>
+            vigentes.Any(s => s.AsesorId == p.AsesorId) &&
+            db.PerfilesAsesor.Any(a => a.Id == p.AsesorId &&
+                db.Users.Any(u => u.Id == a.UsuarioId && u.EstadoCuenta == EstadosCuenta.Activa)));
+    }
+
+    /// <summary>
+    /// P5 (CA-P5-09, CA-P5-26, CA-P5-27): publicaciones que admiten un contacto. Son las condiciones 1, 2, 3, 5 y 7 de
+    /// <see cref="Visibles"/>, sin la 4 (cuenta del asesor ACTIVA) ni la 6 (plan vigente): un contacto enviado desde una
+    /// página abierta antes de que venciera el plan o se bloqueara al asesor se acepta y va a Administración (D-7).
+    /// </summary>
+    public static IQueryable<Publicacion> Contactables(CamionDbContext db, DateTime ahora) =>
+        db.Publicaciones.AsNoTracking().Where(p =>
             p.EstadoPublicacion == Publicacion.Publicada &&
             (p.EstadoComercial == Publicacion.Disponible || p.EstadoComercial == Publicacion.Reservado) &&
             p.Vigencias.Any(v => v.Inicio <= ahora) &&
-            vigentes.Any(s => s.AsesorId == p.AsesorId) &&
-            db.PerfilesAsesor.Any(a => a.Id == p.AsesorId &&
-                db.Users.Any(u => u.Id == a.UsuarioId && u.EstadoCuenta == EstadosCuenta.Activa)) &&
             (p.Vehiculo!.PrecioCop ?? p.PrecioCop) != null && (p.Vehiculo.PrecioCop ?? p.PrecioCop) > 0 &&
             p.Titulo != null && p.Titulo.Trim() != "" &&
             p.PublicadaEn != null &&
             (p.Vehiculo.Estado == Vehiculo.Activo || p.Vehiculo.Estado == Vehiculo.Reservado));
-    }
 
     /// <summary>
     /// Visibles con la marca de destacado (fila ACTIVA en publicaciones_destacadas con inicio &lt;= ahora &lt; fin) y el

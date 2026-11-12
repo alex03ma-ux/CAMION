@@ -12,13 +12,14 @@ El estado funcional de cada módulo se toma de `ESTADO-REAL.md`, no de este arch
 | P4a | Inventario de vehículos (HU-013 a HU-022) | CRUD del inventario por categoría, placa única, precio y precio anterior, estados, fotos, /media | EN REVISIÓN (rama publicada; migración 004 por aplicar, D-23) | `feature/p4a-inventario` |
 | P4p | Planes y suscripciones mínimos (D-26; HU-049 a HU-051, HU-066 a HU-069) | Planes; suscripción activada a mano por el administrador; consulta del asesor; auditoría. Pantalla de marcas y modelos (D-27), con edición de las categorías de cada modelo (D-32) | EN REVISIÓN (rama publicada sobre P4a; migración 011 por aplicar) | `feature/p4p-planes` |
 | P4b | Publicaciones (HU-023 a HU-028) y marcar vendido (HU-064, D-22) | Crear, modificar, inactivar, renovar y destacar con plan activo y cupo; vencimiento a 30 días; reasignar un vehículo a otro asesor (solo el administrador, con motivo y auditoría, D-34); qué pasa al cambiar la categoría de un vehículo publicado (D-33) | EN REVISIÓN (rama publicada sobre P4p; migración 012 por aplicar) | `feature/p4b-publicaciones` |
-| P5 | Leads y contactos | Captura anónima; asignación al asesor dueño solo con plan vigente, si no al administrador (D-7); seguimiento trazable | PENDIENTE (nombre y teléfono, D-9) | — |
+| P5 | Leads y contactos | Captura anónima; asignación al asesor dueño solo con plan vigente, si no al administrador (D-7); seguimiento trazable | EN REVISIÓN (rama publicada sobre diseño del portal; migración 013 por aplicar) | `feature/p5-leads` |
 | P5b | Avisos "Vende tu camión" y "Compra tu seguro todo riesgo" (HU-N01, HU-N02) | Formularios públicos sin cuenta, validaciones (500 caracteres, teléfono), solicitudes visibles solo para el administrador (D-6) | PENDIENTE (nombre y teléfono, D-9) | — |
 | P6 | Créditos y búsquedas | Formularios, estados, asignación al administrador (D-7), notificaciones y seguimiento | PENDIENTE | — |
 | P7 | Ventas, planes y administración | Historial, reversión, parametrización, panel administrativo | PENDIENTE | — |
 | P8 | Reportes, marketing e integraciones | Indicadores e integraciones aprobadas; pruebas y operación | PENDIENTE | — |
 | P2b | "Solicitar ser asesor" desde la cuenta de comprador (D-15) | Un comprador pide pasar a asesor con el mismo correo; queda Pendiente hasta aprobación | PENDIENTE | — |
 | INF-1 | CI en GitHub Actions (build + pruebas en cada PR) | Flujo verde en un PR de prueba | PENDIENTE | — |
+| INF-2 | Antes de publicar en internet: ForwardedHeaders con KnownProxies y límite por IP agrupando IPv6 /64 (M-1 de REVISION-SEGURIDAD-P5); actualizar MySqlConnector (B-4) | Límite por IP real detrás del proxy; MySqlConnector sin avisos en `dotnet list package --vulnerable`; `dotnet test` completo | PENDIENTE | — |
 
 ## Primer encargo (P1, tras P0)
 
