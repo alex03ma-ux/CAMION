@@ -332,6 +332,8 @@ export function AdminSuscripciones({ token, onSesionTerminada, consulta }: Admin
         }
         setLista(respuesta)
         setCargando(false)
+        // D-67: tras anular un pago, la sección "Pagos" muestra la suscripción ya actualizada.
+        setPagosDe((actual) => (actual ? (respuesta.items.find((s) => s.id === actual.id) ?? actual) : actual))
       })
       .catch((error: unknown) => {
         if (control.signal.aborted) return
@@ -836,6 +838,7 @@ export function AdminSuscripciones({ token, onSesionTerminada, consulta }: Admin
           precioPlan={precioDePlan(pagosDe.plan.id)}
           onSesionTerminada={onSesionTerminada}
           onCerrar={cerrarPagos}
+          onSuscripcionCambiada={() => setRecarga((r) => r + 1)}
         />
       )}
 

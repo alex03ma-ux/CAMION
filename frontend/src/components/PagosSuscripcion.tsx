@@ -1,10 +1,17 @@
 // P7 (D-61 B; CA-P7-30, CA-P7-31) — Pagos de una suscripción, solo para el administrador: lista con su total,
 // "Registrar pago" (pago posterior) y "Anular" con motivo en el diálogo de confirmación. La API vuelve a
 // comprobarlo todo (SoloAdministrador; 404 si no existe; 409 si el pago ya está anulado).
+// D-67: anular deshace lo que el pago dio. Antes de abrir el diálogo se consulta el efecto
+// (GET /efecto-anulacion) y el diálogo dice qué pasará; si está bloqueado, se muestra el motivo y no se ofrece.
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { ApiError, MENSAJE_INESPERADO } from '../api/http'
 import {
   anularPago,
+  AVISO_QUEDARA_VENCIDA,
+  MENSAJE_ANULACION_BLOQUEADA,
+  obtenerEfectoAnulacion,
+  textoEfectoAnulacion,
+  type EfectoAnulacion,
   erroresPagoDe,
   formularioPagoInicial,
   hayErroresPago,
@@ -37,18 +44,33 @@ type PagosSuscripcionProps = {
   precioPlan: number | null
   onSesionTerminada: () => void
   onCerrar: () => void
+  /** D-67: la anulación cambió la suscripción (fecha, estado o plan): hay que recargar la lista. */
+  onSuscripcionCambiada?: () => void
 }
 
 type Carga = { estado: 'cargando' } | { estado: 'ok'; datos: ListaPagos } | { estado: 'error'; aviso: DatosAviso }
 
-type DialogoAnular = { pago: PagoItem; enviando: boolean; erroresMotivo: string[]; error: DatosAviso | null }
+type DialogoAnular = {
+  pago: PagoItem
+  efecto: EfectoAnulacion
+  enviando: boolean
+  erroresMotivo: string[]
+  error: DatosAviso | null
+}
 
 /** Fecha AAAA-MM-DD como fecha local (sin correr el día por la zona horaria). */
 function fechaPagoTexto(valor: string | null): string {
   return valor ? formatearFechaSuscripcion(`${valor}T12:00:00`) : '—'
 }
 
-export function PagosSuscripcion({ token, suscripcion, precioPlan, onSesionTerminada, onCerrar }: PagosSuscripcionProps) {
+export function PagosSuscripcion({
+  token,
+  suscripcion,
+  precioPlan,
+  onSesionTerminada,
+  onCerrar,
+  onSuscripcionCambiada,
+}: PagosSuscripcionProps) {
   const [carga, setCarga] = useState<Carga>({ estado: 'cargando' })
   const [recarga, setRecarga] = useState(0)
   const [resultado, setResultado] = useState<DatosAviso | null>(null)
@@ -57,6 +79,9 @@ export function PagosSuscripcion({ token, suscripcion, precioPlan, onSesionTermi
   const [errorFormulario, setErrorFormulario] = useState<DatosAviso | null>(null)
   const [guardando, setGuardando] = useState(false)
   const [dialogo, setDialogo] = useState<DialogoAnular | null>(null)
+  // D-67: pago cuyo efecto se está consultando y pagos que no se pueden anular (con su motivo).
+  const [consultando, setConsultando] = useState<number | null>(null)
+  const [bloqueados, setBloqueados] = useState<Map<number, string>>(new Map())
   const titulo = useRef<HTMLHeadingElement>(null)
   const botonRegistrar = useRef<HTMLButtonElement>(null)
   const origenDialogo = useRef<HTMLButtonElement | null>(null)
@@ -144,10 +169,30 @@ export function PagosSuscripcion({ token, suscripcion, precioPlan, onSesionTermi
     }
   }
 
-  function abrirAnular(pago: PagoItem, boton: HTMLButtonElement) {
+  async function abrirAnular(pago: PagoItem, boton: HTMLButtonElement) {
+    if (consultando !== null) return
     origenDialogo.current = boton
     setResultado(null)
-    setDialogo({ pago, enviando: false, erroresMotivo: [], error: null })
+    setConsultando(pago.id)
+    try {
+      const efecto = await obtenerEfectoAnulacion(token, pago.id)
+      setConsultando(null)
+      if (efecto.bloqueadoPor !== null) {
+        const motivo = efecto.mensaje ?? MENSAJE_ANULACION_BLOQUEADA
+        setBloqueados((m) => new Map(m).set(pago.id, motivo))
+        setResultado({ tipo: 'error', texto: motivo })
+        origenDialogo.current = null
+        window.setTimeout(() => titulo.current?.focus(), 0)
+        return
+      }
+      setDialogo({ pago, efecto, enviando: false, erroresMotivo: [], error: null })
+    } catch (error) {
+      setConsultando(null)
+      origenDialogo.current = null
+      if (es401(error)) return
+      setResultado({ tipo: 'error', texto: error instanceof ApiError ? error.mensaje : MENSAJE_INESPERADO })
+      if (error instanceof ApiError && error.status === 404) setRecarga((r) => r + 1)
+    }
   }
 
   function cerrarAnular() {
@@ -164,8 +209,13 @@ export function PagosSuscripcion({ token, suscripcion, precioPlan, onSesionTermi
       await anularPago(token, dialogo.pago.id, motivo)
       setDialogo(null)
       origenDialogo.current = null
-      setResultado({ tipo: 'exito', texto: 'Se anuló el pago. Queda en la lista como "Anulado".' })
+      setResultado({
+        tipo: 'exito',
+        texto: `Se anuló el pago. Queda en la lista como "Anulado". ${textoEfectoAnulacion(dialogo.efecto)}`,
+      })
       setRecarga((r) => r + 1)
+      // D-67: la suscripción pudo cambiar de fecha, estado o plan.
+      if (dialogo.efecto.tipo !== 'SOLO_PAGO') onSuscripcionCambiada?.()
       window.setTimeout(() => titulo.current?.focus(), 0)
     } catch (error) {
       if (es401(error)) {
@@ -184,6 +234,7 @@ export function PagosSuscripcion({ token, suscripcion, precioPlan, onSesionTermi
         setDialogo(null)
         origenDialogo.current = null
         setResultado({ tipo: 'error', texto: error.mensaje })
+        if (error.status === 409) setBloqueados((m) => new Map(m).set(dialogo.pago.id, error.mensaje))
         setRecarga((r) => r + 1)
         window.setTimeout(() => titulo.current?.focus(), 0)
         return
@@ -269,14 +320,21 @@ export function PagosSuscripcion({ token, suscripcion, precioPlan, onSesionTermi
                         <td>
                           {anulado ? (
                             <span className="dato-secundario">Sin acciones</span>
+                          ) : bloqueados.has(p.id) ? (
+                            // D-67: no se ofrece anular; se explica por qué.
+                            <span className="dato-secundario inv-texto-largo">
+                              No se puede anular: {bloqueados.get(p.id)}
+                            </span>
                           ) : (
                             <button
                               type="button"
                               className="boton-peligro"
-                              disabled={dialogo !== null}
-                              onClick={(e) => abrirAnular(p, e.currentTarget)}
+                              disabled={dialogo !== null || consultando !== null}
+                              aria-busy={consultando === p.id}
+                              onClick={(e) => void abrirAnular(p, e.currentTarget)}
                             >
-                              Anular <span className="sr-only">el pago de {formatoCop(p.valorCop)} del {fechaPagoTexto(p.fechaPago)}</span>
+                              {consultando === p.id ? 'Consultando...' : 'Anular'}{' '}
+                              <span className="sr-only">el pago de {formatoCop(p.valorCop)} del {fechaPagoTexto(p.fechaPago)}</span>
                             </button>
                           )}
                         </td>
@@ -340,7 +398,12 @@ export function PagosSuscripcion({ token, suscripcion, precioPlan, onSesionTermi
       {dialogo && (
         <DialogoConfirmacion
           titulo="Anular pago"
-          descripcion={`¿Anular el pago de ${formatoCop(dialogo.pago.valorCop)} del ${fechaPagoTexto(dialogo.pago.fechaPago)}? Quedará en la lista como "Anulado" y no se suma al total. La suscripción no cambia.`}
+          descripcion={`¿Anular el pago de ${formatoCop(dialogo.pago.valorCop)} del ${fechaPagoTexto(dialogo.pago.fechaPago)}? ${textoEfectoAnulacion(dialogo.efecto)} El pago quedará en la lista como "Anulado" y no se suma al total.`}
+          contenido={
+            dialogo.efecto.quedaraVencida ? (
+              <Aviso aviso={{ tipo: 'advertencia', texto: AVISO_QUEDARA_VENCIDA }} />
+            ) : undefined
+          }
           textoBoton="Anular pago"
           textoEnviando="Anulando..."
           peligro
