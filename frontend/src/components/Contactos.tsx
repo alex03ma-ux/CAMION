@@ -45,6 +45,8 @@ type ContactosProps = {
   /** Id del contacto abierto (#/contactos/<id>); sin id, la lista. */
   id?: number
   onSesionTerminada: () => void
+  /** P7 (CA-P7-46): filtros iniciales desde el panel (estado, responsable, origen). */
+  consulta?: string
 }
 
 /** Título de la sección según el rol (asesor: los suyos; administrador: todos). */
@@ -52,7 +54,7 @@ export function tituloContactos(esAdmin: boolean): string {
   return esAdmin ? 'Contactos' : 'Mis contactos'
 }
 
-export function Contactos({ token, perfil, id, onSesionTerminada }: ContactosProps) {
+export function Contactos({ token, perfil, id, onSesionTerminada, consulta }: ContactosProps) {
   const modo = modoInventario(perfil.roles)
   if (modo === null) {
     return (
@@ -67,7 +69,15 @@ export function Contactos({ token, perfil, id, onSesionTerminada }: ContactosPro
       </div>
     )
   }
-  return <PanelContactos token={token} esAdmin={modo === 'administrador'} id={id} onSesionTerminada={onSesionTerminada} />
+  return (
+    <PanelContactos
+      token={token}
+      esAdmin={modo === 'administrador'}
+      id={id}
+      consulta={consulta}
+      onSesionTerminada={onSesionTerminada}
+    />
+  )
 }
 
 const FILTROS_INICIALES: FiltrosLeads = {
@@ -84,22 +94,45 @@ const FILTROS_INICIALES: FiltrosLeads = {
 type Borrador = { estado: string; responsable: string; origen: string; desde: string; hasta: string }
 const BORRADOR_INICIAL: Borrador = { estado: '', responsable: '', origen: '', desde: '', hasta: '' }
 const CAMPOS_FILTRO = ['estado', 'responsable', 'origen', 'desde', 'hasta'] as const
+
+/** Filtros iniciales desde la consulta del hash; el asesor solo puede filtrar por estado. */
+function filtrosDesdeConsulta(consulta: string | undefined, esAdmin: boolean): FiltrosLeads {
+  if (!consulta) return FILTROS_INICIALES
+  const p = new URLSearchParams(consulta)
+  const estado = (p.get('estado') ?? '').toUpperCase()
+  const origen = (p.get('origen') ?? '').toUpperCase()
+  const responsable = p.get('responsable') ?? ''
+  return {
+    ...FILTROS_INICIALES,
+    estado: estado in NOMBRES_ESTADO_LEAD ? (estado as EstadoLead) : '',
+    origen: esAdmin && ORIGENES_LEAD.includes(origen as OrigenLead) ? (origen as OrigenLead) : '',
+    responsable:
+      esAdmin && (responsable.toUpperCase() === RESPONSABLE_ADMINISTRACION || /^\d{1,15}$/.test(responsable))
+        ? responsable.toUpperCase()
+        : '',
+  }
+}
 type ErroresFiltro = Partial<Record<(typeof CAMPOS_FILTRO)[number], string[]>>
 
 function PanelContactos({
   token,
   esAdmin,
   id,
+  consulta,
   onSesionTerminada,
 }: {
   token: string
   esAdmin: boolean
   id: number | undefined
+  consulta: string | undefined
   onSesionTerminada: () => void
 }) {
   // Los filtros viven aquí para conservarse al ir al detalle y volver a la lista.
-  const [filtros, setFiltros] = useState<FiltrosLeads>(FILTROS_INICIALES)
-  const [borrador, setBorrador] = useState<Borrador>(BORRADOR_INICIAL)
+  const [filtros, setFiltros] = useState<FiltrosLeads>(() => filtrosDesdeConsulta(consulta, esAdmin))
+  const [borrador, setBorrador] = useState<Borrador>(() => {
+    const f = filtrosDesdeConsulta(consulta, esAdmin)
+    return { ...BORRADOR_INICIAL, estado: f.estado, responsable: f.responsable, origen: f.origen }
+  })
   const [vehiculo, setVehiculo] = useState<VehiculoFiltro | null>(null)
   const [asesores, setAsesores] = useState<ResumenAsesor[]>([])
 

@@ -30,6 +30,8 @@ type AdminUsuariosProps = {
   /** 401: la sesión ya no vale (igual que en P1). */
   onSesionTerminada: () => void
   onVolver: () => void
+  /** P7 (CA-P7-46): filtros iniciales desde el panel, p. ej. `rol=ASESOR&estado=PENDIENTE`. */
+  consulta?: string
 }
 
 const OPCIONES_ESTADO: readonly { valor: EstadoCuenta; nombre: string }[] = [
@@ -73,6 +75,19 @@ const FILTROS_INICIALES: FiltrosUsuarios = {
   buscar: '',
   pagina: 1,
   tamano: TAMANO_PAGINA,
+}
+
+/** Filtros iniciales desde la consulta del hash; sin consulta, los de siempre (pendientes). */
+function filtrosDesdeConsulta(consulta: string | undefined): FiltrosUsuarios {
+  if (!consulta) return FILTROS_INICIALES
+  const p = new URLSearchParams(consulta)
+  const estado = (p.get('estado') ?? '').toUpperCase()
+  const rol = (p.get('rol') ?? '').toUpperCase()
+  return {
+    ...FILTROS_INICIALES,
+    estado: OPCIONES_ESTADO.some((o) => o.valor === estado) ? (estado as EstadoCuenta) : '',
+    rol: OPCIONES_ROL.some((o) => o.valor === rol) ? rol : '',
+  }
 }
 
 function esAsesor(u: UsuarioAdmin): boolean {
@@ -144,12 +159,12 @@ export function AdminUsuarios({
   usuarioIdPropio,
   onSesionTerminada,
   onVolver,
+  consulta,
 }: AdminUsuariosProps) {
-  const [filtros, setFiltros] = useState<FiltrosUsuarios>(FILTROS_INICIALES)
-  const [borrador, setBorrador] = useState({
-    estado: FILTROS_INICIALES.estado as string,
-    rol: FILTROS_INICIALES.rol,
-    buscar: FILTROS_INICIALES.buscar,
+  const [filtros, setFiltros] = useState<FiltrosUsuarios>(() => filtrosDesdeConsulta(consulta))
+  const [borrador, setBorrador] = useState(() => {
+    const f = filtrosDesdeConsulta(consulta)
+    return { estado: f.estado as string, rol: f.rol, buscar: f.buscar }
   })
   const [recarga, setRecarga] = useState(0)
   const [lista, setLista] = useState<ListaUsuarios | null>(null)

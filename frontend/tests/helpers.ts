@@ -20,6 +20,8 @@ export function simularFetch(
     [RUTA_FILTROS]: FILTROS_SIN_DATOS,
     // D-42: el inicio pregunta por la foto de portada; por defecto no hay (se ve la ilustración).
     [RUTA_PORTADA]: { status: 200, body: { url: null } },
+    // P7 (D-63 A): el pie lee los datos de contacto; por defecto, los valores confirmados de D-42.
+    [RUTA_CONTACTO_PORTAL]: CONTACTO_PORTAL_POR_DEFECTO,
     ...rutasPropias,
   }
   const llamadas: Llamada[] = []
@@ -48,6 +50,22 @@ export function simularFetch(
     /** Llamadas a /api/auth/* (login, me, logout, registro). */
     llamadasAuth: () => llamadas.filter((l) => l.url.startsWith('/api/auth/')),
   }
+}
+
+/** P7 (D-63 A): GET anónimo de los datos de contacto del pie. */
+export const RUTA_CONTACTO_PORTAL = '/api/portal/contacto'
+
+/** Respuesta por defecto de /api/portal/contacto (valores de D-42, sin redes). */
+export const CONTACTO_PORTAL_POR_DEFECTO: RespuestaSimulada = {
+  status: 200,
+  body: {
+    whatsapp: '3166152907',
+    whatsappEnlace: 'https://wa.me/573166152907',
+    correo: 'vc.automotores@gmail.com',
+    horario: ['Lunes a viernes: 9:00 a. m. a 5:00 p. m.', 'Sábados: 9:00 a. m. a 3:00 p. m.'],
+    instagram: null,
+    tiktok: null,
+  },
 }
 
 /** D-42: GET anónimo de la foto de portada del inicio. */

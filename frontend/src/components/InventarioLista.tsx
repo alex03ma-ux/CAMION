@@ -43,6 +43,17 @@ type InventarioListaProps = {
   /** Aviso que dejó otra pantalla (p. ej. tras registrar un vehículo). */
   avisoInicial: DatosAviso | null
   onSesionTerminada: () => void
+  /** P7 (CA-P7-46): filtros desde la consulta del hash (enlaces del panel), p. ej. `estado=ACTIVO`. */
+  consulta?: string
+}
+
+const ESTADOS_CONSULTA = ['ACTIVO', 'RESERVADO', 'INACTIVO', 'VENDIDO']
+
+/** Filtros iniciales: los de la consulta (si trae un estado válido) o los últimos usados. */
+function filtrosDeInicio(consulta: string | undefined): FiltrosInventario {
+  if (!consulta) return ultimosFiltros
+  const estado = (new URLSearchParams(consulta).get('estado') ?? '').toUpperCase()
+  return ESTADOS_CONSULTA.includes(estado) ? { ...FILTROS_INICIALES, estado } : ultimosFiltros
 }
 
 const FILTROS_INICIALES: FiltrosInventario = {
@@ -114,13 +125,12 @@ export function InventarioLista({
   catalogos,
   avisoInicial,
   onSesionTerminada,
+  consulta,
 }: InventarioListaProps) {
-  const [filtros, setFiltros] = useState<FiltrosInventario>(ultimosFiltros)
-  const [borrador, setBorrador] = useState({
-    estado: ultimosFiltros.estado,
-    tipoId: ultimosFiltros.tipoId,
-    q: ultimosFiltros.q,
-    asesorId: ultimosFiltros.asesorId,
+  const [filtros, setFiltros] = useState<FiltrosInventario>(() => filtrosDeInicio(consulta))
+  const [borrador, setBorrador] = useState(() => {
+    const f = filtrosDeInicio(consulta)
+    return { estado: f.estado, tipoId: f.tipoId, q: f.q, asesorId: f.asesorId }
   })
   const [recarga, setRecarga] = useState(0)
   const [lista, setLista] = useState<ListaInventario | null>(null)

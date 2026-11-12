@@ -417,7 +417,8 @@ describe('Acceso público y comprador en solo lectura', () => {
       expect(screen.queryByLabelText('Contraseña')).not.toBeInTheDocument()
       expect(screen.queryByText(/Inicia sesión|regístrate/i)).not.toBeInTheDocument()
     }
-    expect(api.llamadas.every((l) => l.url.startsWith('/api/catalogo/'))).toBe(true)
+    // P7 (CA-P7-42): además del catálogo, solo la lectura pública del contacto del pie (fuera de /api/catalogo).
+    expect(api.llamadas.every((l) => l.url.startsWith('/api/catalogo/') || l.url === '/api/portal/contacto')).toBe(true)
     for (const l of api.llamadas) expect(cabecera(l.init, 'Authorization')).toBeUndefined()
   })
 

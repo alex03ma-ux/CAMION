@@ -24,6 +24,8 @@ import {
 import { esAdministrador } from './auth/roles'
 import { usePeticion } from './catalogo/usePeticion'
 import { AdminCatalogos } from './components/AdminCatalogos'
+import { AdminInicio } from './components/AdminInicio'
+import { AdminParametros } from './components/AdminParametros'
 import { AdminPortada } from './components/AdminPortada'
 import { AdminPlanes } from './components/AdminPlanes'
 import { AdminSuscripciones } from './components/AdminSuscripciones'
@@ -47,6 +49,7 @@ import { Privacidad } from './components/Privacidad'
 import { RegistroForm } from './components/RegistroForm'
 import { Resultados } from './components/Resultados'
 import { SolicitudCredito, TITULO_CREDITO, TITULO_CREDITO_VEHICULO } from './components/SolicitudCredito'
+import { Ventas } from './components/Ventas'
 import {
   esRutaContactos,
   esRutaInventario,
@@ -109,6 +112,7 @@ function tituloDocumento(ruta: Ruta): string {
     return `${ruta.slug === null ? TITULO_CREDITO : TITULO_CREDITO_VEHICULO} | ${NOMBRE_PORTAL}`
   if (ruta.nombre === 'buscoVehiculo') return `${TITULO_BUSQUEDA} | ${NOMBRE_PORTAL}`
   if (ruta.nombre === 'misSolicitudes') return `${TITULO_MIS_SOLICITUDES} | ${NOMBRE_PORTAL}`
+  if (ruta.nombre === 'ventas') return `Mis ventas | ${NOMBRE_PORTAL}`
   return NOMBRE_PORTAL
 }
 
@@ -282,6 +286,7 @@ export default function App() {
   // P4p: al entrar en una sección del administrador (#/cuenta/planes…) se deja la vista "admin"
   // del botón "Administrar usuarios", para que "Mi perfil" (#/cuenta) vuelva al perfil.
   const seccionAdmin: SeccionAdmin | undefined = ruta.nombre === 'cuenta' ? ruta.seccion : undefined
+  const consultaSeccion: string | undefined = ruta.nombre === 'cuenta' ? ruta.consulta : undefined
   useEffect(() => {
     if (seccionAdmin === undefined) return
     setVista((v) => (v.tipo === 'admin' ? { tipo: 'perfil', sesion: v.sesion, perfil: v.perfil } : v))
@@ -295,7 +300,8 @@ export default function App() {
     esRutaInventario(ruta) ||
     ruta.nombre === 'publicaciones' ||
     esRutaContactos(ruta) ||
-    ruta.nombre === 'misSolicitudes'
+    ruta.nombre === 'misSolicitudes' ||
+    ruta.nombre === 'ventas'
   useEffect(() => {
     if (enInventario && !conSesion) navegar(HASH_CUENTA)
   }, [enInventario, conSesion])
@@ -353,7 +359,12 @@ export default function App() {
           renderInventario(ruta)}
         {ruta.nombre === 'publicaciones' && renderPublicaciones()}
         {/* Lista y detalle en el mismo sitio: los filtros se conservan al ir y volver del detalle. */}
-        {esRutaContactos(ruta) && renderContactos(ruta.nombre === 'contacto' ? ruta.id : undefined)}
+        {esRutaContactos(ruta) &&
+          renderContactos(
+            ruta.nombre === 'contacto' ? ruta.id : undefined,
+            ruta.nombre === 'contactos' ? ruta.consulta : undefined,
+          )}
+        {ruta.nombre === 'ventas' && renderVentas(ruta.consulta)}
       </main>
       <PiePortal tipos={tipos} conSesion={conSesion} />
     </>
@@ -456,14 +467,50 @@ export default function App() {
     )
   }
 
-  function renderContactos(id: number | undefined) {
+  /** P7 (D-62 c A): "Mis ventas" del asesor en #/ventas (el administrador ve todas). */
+  function renderVentas(consulta: string | undefined) {
+    if (vista.tipo === 'perfil' || vista.tipo === 'admin') {
+      return (
+        <Ventas
+          key={`${vista.perfil.usuarioId}|${consulta ?? ''}`}
+          token={vista.sesion.accessToken}
+          perfil={vista.perfil}
+          consulta={consulta}
+          nivel="pagina"
+          onSesionTerminada={alTerminarSesionAdmin}
+        />
+      )
+    }
+    return (
+      <div className="cat-pagina inv-pagina">
+        <h1 tabIndex={-1} className="inv-titulo">
+          Mis ventas
+        </h1>
+        {vista.tipo === 'verificando' && <p role="status">Verificando tu sesión...</p>}
+        {vista.tipo === 'sinConexion' && (
+          <>
+            <Aviso aviso={{ tipo: 'error', texto: vista.mensaje }} />
+            <p>
+              <a href={HASH_CUENTA}>Ir a mi cuenta</a>
+            </p>
+          </>
+        )}
+        {(vista.tipo === 'login' || vista.tipo === 'registro') && (
+          <p role="status">Inicia sesión para ver tus ventas.</p>
+        )}
+      </div>
+    )
+  }
+
+  function renderContactos(id: number | undefined, consulta: string | undefined) {
     if (vista.tipo === 'perfil' || vista.tipo === 'admin') {
       return (
         <Contactos
-          key={vista.perfil.usuarioId}
+          key={`${vista.perfil.usuarioId}|${consulta ?? ''}`}
           token={vista.sesion.accessToken}
           perfil={vista.perfil}
           id={id}
+          consulta={consulta}
           onSesionTerminada={alTerminarSesionAdmin}
         />
       )
@@ -546,7 +593,7 @@ export default function App() {
         />
       )}
 
-      {vista.tipo === 'perfil' && seccionAdmin !== undefined && renderSeccionAdmin(seccionAdmin)}
+      {vista.tipo === 'perfil' && seccionAdmin !== undefined && renderSeccionAdmin(seccionAdmin, consultaSeccion)}
 
       {vista.tipo === 'perfil' && seccionAdmin === undefined && (
         <PerfilPanel
@@ -579,7 +626,7 @@ export default function App() {
   }
 
   /** P4p: Usuarios, Planes, Suscripciones y Catálogos; solo con el rol ADMINISTRADOR según /me. */
-  function renderSeccionAdmin(seccion: SeccionAdmin) {
+  function renderSeccionAdmin(seccion: SeccionAdmin, consulta: string | undefined) {
     if (vista.tipo !== 'perfil') return null
     if (!esAdministrador(vista.perfil.roles)) {
       return (
@@ -596,8 +643,12 @@ export default function App() {
     return (
       <>
         <NavAdmin actual={seccion} />
+        {/* P7 (D-64 A): panel de contadores. */}
+        {seccion === 'inicio' && <AdminInicio token={token} onSesionTerminada={alTerminarSesionAdmin} />}
         {seccion === 'usuarios' && (
           <AdminUsuarios
+            key={consulta ?? ''}
+            consulta={consulta}
             token={token}
             usuarioIdPropio={vista.perfil.usuarioId}
             onSesionTerminada={alTerminarSesionAdmin}
@@ -606,10 +657,28 @@ export default function App() {
         )}
         {seccion === 'planes' && <AdminPlanes token={token} onSesionTerminada={alTerminarSesionAdmin} />}
         {seccion === 'suscripciones' && (
-          <AdminSuscripciones token={token} onSesionTerminada={alTerminarSesionAdmin} />
+          <AdminSuscripciones
+            key={consulta ?? ''}
+            consulta={consulta}
+            token={token}
+            onSesionTerminada={alTerminarSesionAdmin}
+          />
+        )}
+        {/* P7 (D-62 A): historial de todas las ventas. */}
+        {seccion === 'ventas' && (
+          <Ventas
+            key={consulta ?? ''}
+            token={token}
+            perfil={vista.perfil}
+            consulta={consulta}
+            nivel="seccion"
+            onSesionTerminada={alTerminarSesionAdmin}
+          />
         )}
         {seccion === 'catalogos' && <AdminCatalogos token={token} onSesionTerminada={alTerminarSesionAdmin} />}
         {seccion === 'portada' && <AdminPortada token={token} onSesionTerminada={alTerminarSesionAdmin} />}
+        {/* P7 (D-63 A): datos de contacto del portal. */}
+        {seccion === 'parametros' && <AdminParametros token={token} onSesionTerminada={alTerminarSesionAdmin} />}
       </>
     )
   }

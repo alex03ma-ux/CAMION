@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import type { PerfilUsuario } from '../api/auth'
 import { MINUTOS_INACTIVIDAD } from '../auth/inactivity'
 import { esAdministrador, nombreRol, ROL_ASESOR, tieneRol } from '../auth/roles'
-import { hashSeccionAdmin, HASH_INVENTARIO, HASH_MIS_SOLICITUDES, HASH_PUBLICACIONES } from '../rutas'
+import { hashSeccionAdmin, HASH_INVENTARIO, HASH_MIS_SOLICITUDES, HASH_PUBLICACIONES, HASH_VENTAS } from '../rutas'
 import { EnlaceContactos } from './EnlaceContactos'
 import { textoAccesoInventario } from './InventarioPagina'
 import { MiSuscripcion } from './MiSuscripcion'
@@ -74,6 +74,12 @@ export function PerfilPanel({
           {esAdministrador(perfil.roles) ? 'Publicaciones' : 'Mis publicaciones'}
         </a>
       )}
+      {/* P7 (D-62 c A): "Mis ventas" del asesor; el administrador las ve en Administración, Ventas. */}
+      {accesoInventario && !esAdministrador(perfil.roles) && (
+        <a className="inv-boton-enlace inv-boton-bloque inv-boton-secundario" href={HASH_VENTAS}>
+          Mis ventas
+        </a>
+      )}
       {/* P5 (D-48): asesor y administrador; un comprador no lo ve (la API responde 403). */}
       {accesoInventario && token !== undefined && (
         <EnlaceContactos
@@ -89,6 +95,10 @@ export function PerfilPanel({
       )}
       {verAdministracion && (
         <nav className="perfil-admin-enlaces" aria-label="Más administración">
+          {/* P7 (D-64 A): el panel de contadores es la primera sección. */}
+          <a className="inv-boton-enlace inv-boton-secundario" href={hashSeccionAdmin('inicio')}>
+            Inicio del administrador
+          </a>
           <a className="inv-boton-enlace inv-boton-secundario" href={hashSeccionAdmin('planes')}>
             Planes
           </a>
@@ -98,8 +108,14 @@ export function PerfilPanel({
           <a className="inv-boton-enlace inv-boton-secundario" href={hashSeccionAdmin('catalogos')}>
             Catálogos
           </a>
+          <a className="inv-boton-enlace inv-boton-secundario" href={hashSeccionAdmin('ventas')}>
+            Ventas
+          </a>
           <a className="inv-boton-enlace inv-boton-secundario" href={hashSeccionAdmin('portada')}>
             Portada
+          </a>
+          <a className="inv-boton-enlace inv-boton-secundario" href={hashSeccionAdmin('parametros')}>
+            Parámetros
           </a>
         </nav>
       )}
