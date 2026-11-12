@@ -2,13 +2,20 @@
 // D-7, D-46 B, D-48). El asesor ve solo los suyos ("Mis contactos"); el administrador ve todos ("Contactos").
 // Un comprador ve "No tienes permiso" sin llamar a /api/leads. La interfaz solo oculta: la API protege cada
 // acción (401, 403, 404 si el contacto no es suyo, 409 si el estado cambió).
+// P5b: el administrador ve también los avisos "Vende tu camión" y "Seguro todo riesgo", con su origen y un filtro
+// por origen (CA-P5b-37). El asesor no ve nada nuevo: la API nunca le entrega avisos (CA-P5b-46).
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import type { PerfilUsuario } from '../api/auth'
+import { nombreTipoVehiculo } from '../api/avisos'
 import { ApiError, MENSAJE_INESPERADO, MENSAJE_SIN_PERMISO } from '../api/http'
 import { obtenerCatalogosInventario, type ResumenAsesor } from '../api/inventario'
 import {
+  esAviso,
   listarLeads,
   NOMBRES_ESTADO_LEAD,
+  NOMBRES_ORIGEN,
+  nombreOrigen,
+  ORIGENES_LEAD,
   nombreEstadoLead,
   nombreEstadoVehiculo,
   nombreResponsable,
@@ -21,6 +28,7 @@ import {
   type FiltrosLeads,
   type LeadItem,
   type ListaLeads,
+  type OrigenLead,
 } from '../api/leads'
 import { formatoMiles } from '../catalogo/formato'
 import { HASH_CUENTA, hashContacto } from '../rutas'
@@ -63,6 +71,7 @@ export function Contactos({ token, perfil, id, onSesionTerminada }: ContactosPro
 const FILTROS_INICIALES: FiltrosLeads = {
   estado: '',
   responsable: '',
+  origen: '',
   vehiculoId: '',
   desde: '',
   hasta: '',
@@ -70,9 +79,10 @@ const FILTROS_INICIALES: FiltrosLeads = {
   tamano: TAMANO_PAGINA_LEADS,
 }
 
-type Borrador = { estado: string; responsable: string; desde: string; hasta: string }
-const BORRADOR_INICIAL: Borrador = { estado: '', responsable: '', desde: '', hasta: '' }
-type ErroresFiltro = Partial<Record<'estado' | 'responsable' | 'desde' | 'hasta', string[]>>
+type Borrador = { estado: string; responsable: string; origen: string; desde: string; hasta: string }
+const BORRADOR_INICIAL: Borrador = { estado: '', responsable: '', origen: '', desde: '', hasta: '' }
+const CAMPOS_FILTRO = ['estado', 'responsable', 'origen', 'desde', 'hasta'] as const
+type ErroresFiltro = Partial<Record<(typeof CAMPOS_FILTRO)[number], string[]>>
 
 function PanelContactos({
   token,
@@ -126,7 +136,9 @@ function PanelContactos({
         onSesionTerminada={onSesionTerminada}
         onFiltrarVehiculo={(v) => {
           setVehiculo(v)
-          setFiltros((f) => ({ ...f, vehiculoId: String(v.vehiculoId), pagina: 1 }))
+          // Los avisos no tienen vehículo (CA-P5b-44): el filtro por origen se quita para no dejar la lista vacía.
+          setBorrador((d) => ({ ...d, origen: '' }))
+          setFiltros((f) => ({ ...f, vehiculoId: String(v.vehiculoId), origen: '', pagina: 1 }))
         }}
       />
     )
@@ -204,7 +216,7 @@ function ListaContactos({
           const porCampo: ErroresFiltro = {}
           const otros: string[] = []
           for (const [campo, mensajes] of Object.entries(error.errores)) {
-            const clave = (['estado', 'responsable', 'desde', 'hasta'] as const).find(
+            const clave = CAMPOS_FILTRO.find(
               (c) => c === campo.toLowerCase(),
             )
             if (clave) porCampo[clave] = mensajes
@@ -235,6 +247,7 @@ function ListaContactos({
       ...f,
       estado: borrador.estado as EstadoLead | '',
       responsable: esAdmin ? borrador.responsable : '',
+      origen: esAdmin ? (borrador.origen as OrigenLead | '') : '',
       desde: borrador.desde,
       hasta: borrador.hasta,
       pagina: 1,
@@ -262,7 +275,12 @@ function ListaContactos({
   const totalPaginas = lista ? Math.max(1, Math.ceil(lista.total / Math.max(1, lista.tamano))) : 1
   const paginaActual = lista?.pagina ?? filtros.pagina
   const hayFiltros =
-    filtros.estado !== '' || filtros.responsable !== '' || filtros.vehiculoId !== '' || filtros.desde !== '' || filtros.hasta !== ''
+    filtros.estado !== '' ||
+    filtros.responsable !== '' ||
+    filtros.origen !== '' ||
+    filtros.vehiculoId !== '' ||
+    filtros.desde !== '' ||
+    filtros.hasta !== ''
   const opcionesResponsable = [
     { valor: RESPONSABLE_ADMINISTRACION, nombre: 'Administración' },
     ...asesores.map((a) => ({ valor: a.id, nombre: a.nombre || `Asesor ${a.id}` })),
@@ -275,7 +293,7 @@ function ListaContactos({
       </h1>
       <p className="inv-intro">
         {esAdmin
-          ? 'Todos los contactos que llegan desde el portal. Los de Administración los atiende cualquier administrador.'
+          ? 'Todos los contactos que llegan desde el portal: los de la ficha de cada vehículo y las solicitudes "Vende tu camión" y "Seguro todo riesgo". Los de Administración los atiende cualquier administrador.'
           : 'Las personas que te escribieron desde la ficha de tus vehículos publicados. Ábrelos para ver el historial, añadir notas o cerrarlos.'}
       </p>
 
@@ -302,6 +320,18 @@ function ListaContactos({
             opciones={opcionesResponsable}
             textoVacio="Todos los responsables"
             errores={erroresFiltro.responsable}
+            requerido={false}
+          />
+        )}
+        {esAdmin && (
+          <CampoSelect
+            id="lead-filtro-origen"
+            etiqueta="Origen"
+            valor={borrador.origen}
+            onCambio={(v) => setBorrador((b) => ({ ...b, origen: v }))}
+            opciones={ORIGENES_LEAD.map((o) => ({ valor: o, nombre: NOMBRES_ORIGEN[o] }))}
+            textoVacio="Todos los orígenes"
+            errores={erroresFiltro.origen}
             requerido={false}
           />
         )}
@@ -411,6 +441,14 @@ function TarjetaContacto({ lead, esAdmin }: { lead: LeadItem; esAdmin: boolean }
           {lead.nombre || 'Sin nombre'}
           {lead.nuevo && <span className="lead-nuevo"> Nuevo</span>}
         </h3>
+        {esAdmin && (
+          <p>
+            <span className={esAviso(lead.origen) ? 'lead-origen lead-origen-aviso' : 'lead-origen'}>
+              <span className="sr-only">Origen: </span>
+              {nombreOrigen(lead.origen)}
+            </span>
+          </p>
+        )}
         <p>
           <span className={`estado ${abierto ? 'estado-pendiente' : 'estado-activa'}`}>
             <span className="sr-only">Estado: </span>
@@ -421,12 +459,18 @@ function TarjetaContacto({ lead, esAdmin }: { lead: LeadItem; esAdmin: boolean }
           <div>
             <dt>Vehículo</dt>
             <dd>
-              {lead.vehiculo.titulo || '—'}
-              {lead.vehiculo.estadoVehiculo && (
+              {lead.vehiculo ? lead.vehiculo.titulo || '—' : 'Sin vehículo asociado'}
+              {lead.vehiculo?.estadoVehiculo && (
                 <span className="dato-secundario">{nombreEstadoVehiculo(lead.vehiculo.estadoVehiculo)}</span>
               )}
             </dd>
           </div>
+          {lead.origen === 'SEGURO_TODO_RIESGO' && lead.tipoVehiculo && (
+            <div>
+              <dt>Tipo de vehículo</dt>
+              <dd>{nombreTipoVehiculo(lead.tipoVehiculo)}</dd>
+            </div>
+          )}
           <div>
             <dt>Recibido</dt>
             <dd>{formatearFechaHora(lead.creadoEn)}</dd>

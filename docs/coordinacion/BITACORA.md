@@ -384,3 +384,58 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - 3 autorizaciones guardadas en `consentimientos_datos`, todas con la versión `BORRADOR-2026-11-04`.
   - El botón de WhatsApp usó el número del portal porque el teléfono de Xavi tiene 9 dígitos (D-49).
   - Quedan datos de prueba en `camion_ventas`: los contactos 1 a 3 y el vehículo 21. Se limpian antes de producción.
+
+## 2026-11-06 — P5b Avisos (rama `feature/p5b-avisos`, apilada sobre `feature/p5-leads`)
+- HU-N01 ("Vende tu camión") y HU-N02 ("Compra tu seguro todo riesgo"); D-3, D-6, D-7, D-9, D-31, D-42, D-44, D-46, D-50 a D-53; RN-SE-003/004/005/006.
+- Criterios en `docs/criterios/criterios-P5b-avisos.md` (CA-P5b-01 a 62), contrato en `P5b-contrato-api.md`, evidencia en `P5b-evidencia.md`.
+- **Decisiones TOMADAS por la responsable (2026-11-06), todas según la recomendación:**
+  - D-50: (a) B, tipo de vehículo del seguro Camión / Carro / Maquinaria / Otro; (b) A, "Vende tu camión" sin ciudad, marca ni año; (c) A, correo opcional y teléfono con la regla de P5.
+  - D-51: A, dos bloques en la portada y columna "Servicios" en el pie; menú y franja sin cambios.
+  - D-52: A, los avisos nunca se reasignan a un asesor (409 y `CK_Lead_AvisoAdmin`).
+  - D-53: A, sin lista propia del comprador en P5b; "Mis solicitudes" pasa a P6.
+- **IMPLEMENTADO y PROBADO (pruebas automáticas; sin prueba con la API real):**
+  - un aviso es un lead sin publicación y con `origen`; reutiliza historial, autorización de datos, notas, cierre y reapertura de P5;
+  - `POST /api/avisos/vende-tu-camion` y `/seguro-todo-riesgo`, anónimas, con los límites de P5 compartidos (por IP y por teléfono), campo trampa, 8 KB y avisos repetidos agregados;
+  - siempre a Administración; el asesor nunca los ve; el barrido D-46 y la reasignación de vehículos no los mueven;
+  - en "Contactos" del administrador: etiqueta y filtro "Origen", detalle sin vehículo, cierre "Solicitud atendida" (`ATENDIDA`) y sin "Reasignar" en los avisos;
+  - pantallas `#/vende-tu-camion` y `#/seguro-todo-riesgo` con contador de 500 caracteres, casilla de autorización y accesos de D-51.
+- Migración `014_p5b_avisos` (con su archivo SUBIR): solo `ALTER TABLE leads` (`publicacion_id` admite nulo, columnas `origen` y `tipo_vehiculo`, CHECK `CK_Lead_Origen` y `CK_Lead_AvisoAdmin`, `ATENDIDA` en `CK_Lead_Resultado`, dos índices). **NO APLICADA.**
+- **Commits** (`git log feature/p5-leads..HEAD`, 15):
+  - `f92b64b` criterios y D-50 a D-53 pendientes; `e8b17fc` D-50 a D-53 tomadas; `cdbdf48` contrato de la API;
+  - `dfb120c` migración 014; `505b4c9` corrección de `CK_Lead_Origen` (seguro sin tipo, detectado por CA-P5b-62);
+  - `c2dabed` endpoints de los avisos y `/api/leads` con origen; `577fb24` pruebas de integración;
+  - `f4e760e` pantallas públicas; `58bde7c` bloques de la portada y columna "Servicios"; `25255fd` bandeja con origen y cierre por origen; `8c70945` pruebas de pantallas;
+  - `2330957` revisión de seguridad; `508f2b5` corrección del ayudante de prueba `esPropio`; `1fa8540` pruebas de QA; `4c871ef` evidencia.
+- **Pruebas ejecutadas por QA:** `dotnet test` 1029/1029; `npx vitest run` 576/576; `npx tsc -b`, `npx tsc -p tsconfig.test.json --noEmit` y `npm run build` correctos. Las pruebas de API usan SQLite en memoria y no tocan `camion_ventas`. Sin defectos en el código de producción; O-1 (el ayudante de prueba no compilaba con `tsconfig.test.json`) corregido.
+- **NO EJECUTADO:** E2E (Playwright no instalado), la migración 014 en MariaDB (CA-P5b-59 y 60) y la prueba manual de la responsable.
+- **Revisión de seguridad** (`REVISION-SEGURIDAD-P5b.md`): CON OBSERVACIONES, sin hallazgos críticos, altos ni medios nuevos. M-1 de P5 (IP detrás de un proxy) cubre ahora también los avisos y sigue en INF-2. Hallazgos bajos:
+  - B-1 (un tercero que conoce el teléfono puede añadir texto al aviso abierto de otra persona): aceptado, mismo diseño de P5; propuesta de mostrar el evento repetido como "sin verificar", sin cambio de código ahora.
+  - B-2 (bloqueo dirigido por teléfono con el tope compartido): aceptado; se mitiga con el límite por IP cuando se resuelva M-1 (INF-2).
+  - B-3 (conteo y búsqueda del repetido sin bloqueo): aceptado y documentado; lo cubre el cierre "Contacto duplicado o inválido".
+  - B-4 (el archivo SUBIR no trae `USE` y no se puede repetir): se trata en el procedimiento; seleccionar `camion_ventas` antes de importar y, si falla, no reimportar el archivo entero.
+  - B-5 (ventana sin `CK_Lead_Resultado` entre el DROP y el ADD): aceptado; riesgo bajo con la API detenida.
+  - 0 vulnerabilidades en npm; MySqlConnector 2.3.7 sigue en INF-2.
+- **DOCUMENTADO:** criterios con D-50 a D-53 CONFIRMADOS, "Actualización P5b" en `ESTADO-REAL.md` (y corrección de estado de la sección P5), backlog y guía `docs/manual/P5b-avisos.md`.
+- **Pendientes:**
+  - aplicar la 014 con respaldo nuevo previo (`mysqldump --result-file` a `C:\Respaldo_CAMION\`), con la API detenida; **en phpMyAdmin hay que seleccionar antes la base `camion_ventas`, porque el archivo SUBIR no trae `USE`**;
+  - la prueba manual de la responsable (pasos en `docs/manual/P5b-avisos.md`);
+  - INF-2 antes de publicar en internet;
+  - la revisión legal (D-44): los avisos no salen a internet sin una versión aprobada de la política.
+- PR: por abrir contra `main`, sin merge. Rama publicada en `origin/feature/p5b-avisos`.
+- **Migración 014 aplicada (2026-11-09).**
+  - Respaldo previo: `C:\Respaldo_CAMION\camion_ventas_antes_014_p5b_20261109_1406.sql` (142 KB, 47 tablas, termina en "Dump completed").
+  - La API estaba detenida. La responsable seleccionó `camion_ventas` en phpMyAdmin e importó `014_p5b_avisos_SUBIR.sql`, con mensaje verde.
+  - Verificación de solo lectura:
+    - columnas `origen` y `tipo_vehiculo`;
+    - `publicacion_id` admite NULL;
+    - 5 CHECK, entre ellos `CK_Lead_Origen`, `CK_Lead_AvisoAdmin` y `CK_Lead_Resultado` con ATENDIDA;
+    - índices `IX_Lead_Origen` e `IX_Lead_AvisoDuplicado`;
+    - los 3 leads anteriores quedaron como CONTACTO_VEHICULO;
+    - 14 publicaciones.
+- **API en Windows.** El Control de aplicaciones de Windows (Smart App Control) bloqueó `Camion.Api.exe` recién compilado al usar `dotnet run`. No se cambió esa protección. La API se arranca con `dotnet bin\Debug\net8.0\Camion.Api.dll` desde `backend\Camion.Api`, con `ASPNETCORE_ENVIRONMENT=Development` y `ASPNETCORE_URLS=http://localhost:5080`.
+- **Ajuste pedido en la prueba (2026-11-09).** Después de enviar, el formulario se quedaba vacío y sin salida. Ahora se oculta y ofrece tres opciones: "Volver al inicio", "Ver vehículos" y "Enviar otra solicitud" (commit 12dea7e). Pruebas: `npx vitest run` 577/577, `tsc -b`, `tsc -p tsconfig.test.json` y `npm run build` OK.
+- **Prueba manual P5b: PROBADO por la responsable (2026-11-10), respuesta "Todo bien".**
+  - En la base hay 2 avisos "Vende tu camión" y 1 de seguro (Maquinaria), todos sin publicación y en Administración, sin asesor.
+  - Cada aviso tiene su autorización de datos con su formulario.
+  - En `eventos_lead` no hay notas, cierres ni reaperturas de los avisos. Esa parte de la guía no quedó ejercida a mano; la cubren las pruebas automáticas.
+  - Los avisos 4 a 6 quedan como datos de prueba, junto con los leads 1 a 3. Se limpian antes de producción.

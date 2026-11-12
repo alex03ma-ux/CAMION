@@ -224,6 +224,13 @@ Nota: la matriz oficial de 87 HU **no tiene una HU de "Registrar usuario/comprad
 
 ## Actualización P5 — 2026-11-04 — commit ae12c0b (rama feature/diseno-portal)
 
+> **Corrección de estado (2026-11-06, documentador).** Esta sección describe el código **antes** de construir P5 (commit `ae12c0b`) y por eso dice "NO INICIADO". Ya no es el estado actual. Estado vigente de P5 en `feature/p5-leads` (fuente: `BITACORA.md`, sección "2026-11-04 — P5 Leads y contactos", y `docs/criterios/P5-evidencia.md`):
+> - **IMPLEMENTADO y PROBADO**: contacto desde la ficha del vehículo con autorización de datos (D-44), botón de WhatsApp (D-47, D-49), límites anti-abuso, asignación al asesor dueño con plan vigente o a Administración (D-7), "Mis contactos" y "Contactos" con notas, cierre, reapertura y reasignación, y barrido D-46. Pruebas ejecutadas: `dotnet test` 962/962, `npx vitest run` 528/528 (531/531 tras el ajuste de Planes), `tsc -b` y `npm run build` correctos.
+> - **Migración 013 APLICADA en `camion_ventas` el 2026-11-05**, con respaldo previo `C:\Respaldo_CAMION\camion_ventas_antes_013_p5_20261105_1023.sql`.
+> - **Prueba manual PROBADA por la responsable el 2026-11-05** ("Todo bien").
+> - Sin E2E. Pendientes: INF-2 y la revisión legal (D-44).
+> - Las subsecciones P5.1 a P5.7 se conservan como registro histórico de la auditoría; no se reescribieron.
+
 Esta es una auditoría solo para P5 (Leads y contactos).
 
 - **Commit auditado:** `ae12c0b3673d3319852025a7795934cc466e6b89`, el HEAD de `feature/diseno-portal`.
@@ -402,3 +409,42 @@ Esta es una auditoría solo para P5 (Leads y contactos).
   - ¿El detalle público muestra el WhatsApp del asesor dueño, o solo un formulario que crea el lead (quizá junto al WhatsApp del administrador que ya está en el pie)?
   - ¿El contacto se envía solo con el formulario, o también abre un enlace `wa.me`?
 - **P5b (D-6).** ¿Los avisos "Vende tu camión" y "Seguro" van en la misma tabla `solicitudes`, con tipos nuevos, o en tablas propias? La respuesta cambia el diseño de la migración 013.
+
+## Actualización P5b — 2026-11-06 — commit 4c871ef (rama feature/p5b-avisos)
+
+Redactado por el documentador a partir de lo verificado por los demás agentes: `docs/criterios/criterios-P5b-avisos.md`, `docs/criterios/P5b-contrato-api.md`, `docs/criterios/P5b-evidencia.md`, `docs/coordinacion/REVISION-SEGURIDAD-P5b.md` y D-50 a D-53. **No es una auditoría nueva del `auditor-codigo`.**
+
+- **Rama:** `feature/p5b-avisos`, apilada sobre `feature/p5-leads` (`b057c1d`). 15 commits hasta `4c871ef`.
+- **HU:** HU-N01 ("Vende tu camión") y HU-N02 ("Compra tu seguro todo riesgo"), definidas en D-6.
+
+### P5b.1 Qué está IMPLEMENTADO y PROBADO (pruebas automáticas)
+
+- **Modelo:** un aviso es un lead sin publicación, con `origen` (`VENDE_TU_CAMION` o `SEGURO_TODO_RIESGO`) y, en el seguro, `tipo_vehiculo` (`CAMION`, `CARRO`, `MAQUINARIA`, `OTRO`; D-50 a B). Reutiliza `leads`, `eventos_lead` y `consentimientos_datos` de P5.
+- **API:** `POST /api/avisos/vende-tu-camion` y `POST /api/avisos/seguro-todo-riesgo`, anónimas, con límite por IP compartido con el contacto de P5, límite por teléfono compartido, campo trampa, tope de 8 KB y avisos repetidos agregados al abierto del mismo origen y teléfono.
+- **Validaciones:** nombre de 2 a 150; teléfono colombiano celular o fijo (regla de P5, D-50 c A); correo opcional; descripción obligatoria de hasta 500 caracteres; tipo de vehículo en lista cerrada; casilla de autorización obligatoria con prueba guardada en la misma transacción (D-44). Sin ciudad, marca ni año (D-50 b A).
+- **Asignación:** siempre a Administración (D-6, D-7). No se reasignan a un asesor: 409 en la API y `CK_Lead_AvisoAdmin` en la base (D-52 A). El barrido D-46 y la reasignación de vehículos no los mueven.
+- **`/api/leads`:** campo y filtro `origen`, detalle sin vehículo, resultado de cierre nuevo `ATENDIDA` ("Solicitud atendida") solo para avisos. El asesor nunca ve avisos (404 en detalle y acciones).
+- **Frontend:** pantallas `#/vende-tu-camion` y `#/seguro-todo-riesgo`; dos bloques en la portada y columna "Servicios" en el pie (D-51 A); en "Contactos" del administrador, etiqueta y filtro "Origen", detalle "Sin vehículo asociado", cierre con "Solicitud atendida" y sin "Reasignar" en los avisos. El comprador no tiene lista propia de avisos (D-53 A; "Mis solicitudes" pasa a P6).
+- **Migración `014_p5b_avisos`** (con su archivo `_SUBIR`): IMPLEMENTADA, **NO APLICADA** en `camion_ventas`. Solo `ALTER TABLE leads`; BAJAR comentada y protegida por conteos.
+
+### P5b.2 Pruebas ejecutadas por QA (2026-11-06)
+
+| Comando | Resultado |
+|---|---|
+| `dotnet test` (`backend/Camion.Api.Tests`) | 1029/1029 |
+| `npx vitest run` | 576/576 |
+| `npx tsc -b` | Correcto |
+| `npx tsc -p tsconfig.test.json --noEmit` | Correcto (tras corregir el ayudante de prueba `catalogoDatos.ts`) |
+| `npm run build` | Correcto |
+
+Cobertura: 60 de 62 criterios con prueba automática (CA-P5b-58 en parte); CA-P5b-59 y 60 solo manuales. Detalle en `P5b-evidencia.md`.
+
+### P5b.3 Qué NO está probado
+
+- **E2E:** NO EJECUTADO (Playwright no está instalado).
+- **Migración 014 en MariaDB:** NO APLICADA; CA-P5b-59 y 60 quedan para la prueba manual. La revisión de seguridad la analizó solo de forma estática contra la estructura real.
+- **Prueba manual de la responsable:** PENDIENTE; requiere la 014 aplicada.
+
+### P5b.4 Riesgo de despliegue
+
+La API de esta rama **no debe arrancar contra `camion_ventas` sin la migración 014**: lee `origen` y `tipo_vehiculo`, que aún no existen en la base.

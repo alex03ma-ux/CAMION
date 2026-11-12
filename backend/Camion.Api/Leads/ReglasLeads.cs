@@ -45,6 +45,16 @@ public static class ReglasLeads
     public const string MensajeDemasiadoGrande = "La solicitud es demasiado grande.";
     public const string MensajeMuchas = "Has enviado muchas solicitudes. Intenta de nuevo en unos minutos.";
 
+    // P5b (HU-N01, HU-N02; docs/criterios/P5b-contrato-api.md).
+    public const string MensajeExitoAviso = "¡Listo! Recibimos tu solicitud. Te contactaremos pronto por teléfono o WhatsApp.";
+    public const string MensajeDescripcion = "Describe tu vehículo (máximo 500 caracteres).";
+    public const string MensajeDescripcionLarga = "La descripción no puede pasar de 500 caracteres.";
+    public const string MensajeTipoVehiculo = "Elige el tipo de vehículo.";
+    public const string MensajeSeguro = "Solicitud de seguro todo riesgo";
+    public const string MensajeOrigen = "Origen no válido.";
+    public const string MensajeResultadoNoAplica = "Ese resultado no aplica a esta solicitud.";
+    public const string MensajeAvisoAdministracion = "Esta solicitud la atiende siempre la administración.";
+
     public const string MensajeNoEncontrado = "Contacto no encontrado.";
     public const string MensajeNota = "La nota debe tener entre 5 y 500 caracteres.";
     public const string MensajeCerrado = "Este contacto está cerrado.";
@@ -101,6 +111,61 @@ public static class ReglasLeads
         return errores;
     }
 
+    public sealed record DatosAviso(string Origen, string Nombre, string Telefono, string? Correo, string Mensaje,
+        string? TipoVehiculo);
+
+    /// <summary>CA-P5b-03 a CA-P5b-09 y CA-P5b-19 (HU-N01).</summary>
+    public static Dictionary<string, string[]> ValidarVendeTuCamion(VendeTuCamionRequest r, out DatosAviso? datos)
+    {
+        datos = null;
+        var errores = ValidarTitular(r.Nombre, r.Telefono, r.Correo, r.AutorizacionDatos,
+            out var nombre, out var telefono, out var correo);
+        var descripcion = (r.Descripcion ?? "").Trim();
+        if (descripcion.Length == 0) errores["descripcion"] = [MensajeDescripcion];
+        else if (descripcion.Length > MaxMensaje) errores["descripcion"] = [MensajeDescripcionLarga];
+        if (errores.Count == 0)
+            datos = new DatosAviso(Lead.OrigenVendeTuCamion, nombre, telefono!, correo, descripcion, null);
+        return errores;
+    }
+
+    /// <summary>CA-P5b-13 a CA-P5b-17 y CA-P5b-19 (HU-N02, D-50 a).</summary>
+    public static Dictionary<string, string[]> ValidarSeguro(SeguroTodoRiesgoRequest r, out DatosAviso? datos)
+    {
+        datos = null;
+        var errores = ValidarTitular(r.Nombre, r.Telefono, r.Correo, r.AutorizacionDatos,
+            out var nombre, out var telefono, out var correo);
+        var tipo = (r.TipoVehiculo ?? "").Trim().ToUpperInvariant();
+        if (!Lead.TiposVehiculo.Contains(tipo)) errores["tipoVehiculo"] = [MensajeTipoVehiculo];
+        if (errores.Count == 0)
+            datos = new DatosAviso(Lead.OrigenSeguroTodoRiesgo, nombre, telefono!, correo, MensajeSeguro, tipo);
+        return errores;
+    }
+
+    /// <summary>CA-P5b-26: texto del evento CONTACTO_REPETIDO de un seguro.</summary>
+    public static string TextoSeguroRepetido(string? tipo) => MensajeSeguro + ". Tipo de vehículo: " + (tipo switch
+    {
+        "CAMION" => "Camión",
+        "CARRO" => "Carro",
+        "MAQUINARIA" => "Maquinaria",
+        _ => "Otro"
+    }) + ".";
+
+    // Nombre, teléfono, correo y autorización: las mismas reglas del contacto de P5 (D-9, D-44, D-50 c).
+    private static Dictionary<string, string[]> ValidarTitular(string? nombreCrudo, string? telefonoCrudo, string? correoCrudo,
+        bool? autorizacion, out string nombre, out string? telefono, out string? correo)
+    {
+        var errores = new Dictionary<string, string[]>();
+        nombre = (nombreCrudo ?? "").Trim();
+        if (nombre.Length is < 2 or > 150) errores["nombre"] = [MensajeNombre];
+        telefono = ValidacionAuth.NormalizarTelefonoColombia(telefonoCrudo);
+        if (telefono is null) errores["telefono"] = [MensajeTelefono];
+        var c = ValidacionAuth.NormalizarEmail(correoCrudo);
+        if (c.Length > 254 || (c.Length > 0 && !ValidacionAuth.EmailValido(c))) errores["correo"] = [MensajeCorreo];
+        correo = c.Length == 0 ? null : c;
+        if (autorizacion != true) errores["autorizacionDatos"] = [MensajeAutorizacion];
+        return errores;
+    }
+
     /// <summary>CA-P5-38: nota de 5 a 500 caracteres (tras quitar espacios).</summary>
     public static Dictionary<string, string[]> ValidarNota(string? texto)
     {
@@ -110,13 +175,20 @@ public static class ReglasLeads
     }
 
     /// <summary>CA-P5-39: resultado de la lista; OTRO exige observación de 5 a 500; los demás la admiten hasta 500.</summary>
-    public static Dictionary<string, string[]> ValidarCierre(CerrarLeadRequest? r, out string? resultado, out string? observacion)
+    /// P5b (CA-P5b-41): un resultado de la lista que no corresponde al origen del lead da "Ese resultado no aplica".
+    public static Dictionary<string, string[]> ValidarCierre(CerrarLeadRequest? r, string origen, out string? resultado,
+        out string? observacion)
     {
         var errores = new Dictionary<string, string[]>();
         resultado = (r?.Resultado ?? "").Trim().ToUpperInvariant();
         if (!Lead.Resultados.Contains(resultado))
         {
             errores["resultado"] = [MensajeResultado];
+            resultado = null;
+        }
+        else if (!(Lead.EsAviso(origen) ? Lead.ResultadosAviso : Lead.ResultadosContacto).Contains(resultado))
+        {
+            errores["resultado"] = [MensajeResultadoNoAplica];
             resultado = null;
         }
         observacion = ValidacionAuth.NormalizarOpcional(r?.Observacion);

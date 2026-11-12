@@ -153,6 +153,8 @@ type CampoAreaTextoProps = {
   requerido?: boolean
   /** P5: para mover el foco al primer campo con error. */
   ref?: Ref<HTMLTextAreaElement>
+  /** P5b (CA-P5b-07, 55): contador "N/máx." en aria-live en lugar de "Llevas N."; exige maxLength. */
+  contador?: boolean
 }
 
 /** P4b: área de texto con etiqueta, ayuda con el conteo de caracteres y errores asociados. */
@@ -168,11 +170,18 @@ export function CampoAreaTexto({
   deshabilitado = false,
   requerido = true,
   ref,
+  contador = false,
 }: CampoAreaTextoProps) {
   const idError = `${id}-error`
   const idAyuda = `${id}-ayuda`
+  const idContador = `${id}-contador`
+  const conContador = contador && maxLength !== undefined
   const tieneErrores = errores.length > 0
-  const describedBy = [ayuda !== undefined ? idAyuda : undefined, tieneErrores ? idError : undefined]
+  const describedBy = [
+    ayuda !== undefined ? idAyuda : undefined,
+    conContador ? idContador : undefined,
+    tieneErrores ? idError : undefined,
+  ]
     .filter(Boolean)
     .join(' ')
 
@@ -196,7 +205,13 @@ export function CampoAreaTexto({
       />
       {ayuda !== undefined && (
         <p id={idAyuda} className="campo-ayuda">
-          {ayuda} Llevas {valor.trim().length}.
+          {conContador ? ayuda : `${ayuda} Llevas ${valor.trim().length}.`}
+        </p>
+      )}
+      {conContador && (
+        <p id={idContador} className="campo-ayuda campo-contador" aria-live="polite">
+          {valor.length}/{maxLength}
+          <span className="sr-only"> caracteres</span>
         </p>
       )}
       <ListaErrores id={idError} errores={errores} />

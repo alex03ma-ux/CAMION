@@ -31,6 +31,7 @@ import { AdminUsuarios } from './components/AdminUsuarios'
 import { Contactos } from './components/Contactos'
 import type { DatosAviso } from './components/Aviso'
 import { Aviso } from './components/Aviso'
+import { AvisoPublico } from './components/AvisoPublico'
 import { DetalleVehiculo } from './components/DetalleVehiculo'
 import { PiePortal } from './components/PiePortal'
 import { Encabezado } from './components/Encabezado'
@@ -99,6 +100,8 @@ function tituloDocumento(ruta: Ruta): string {
   if (ruta.nombre === 'publicaciones') return `Mis publicaciones | ${NOMBRE_PORTAL}`
   if (ruta.nombre === 'contactos' || ruta.nombre === 'contacto') return `Contactos | ${NOMBRE_PORTAL}`
   if (ruta.nombre === 'privacidad') return `Política de tratamiento de datos | ${NOMBRE_PORTAL}`
+  if (ruta.nombre === 'vendeTuCamion') return `Vende tu camión | ${NOMBRE_PORTAL}`
+  if (ruta.nombre === 'seguroTodoRiesgo') return `Compra tu seguro todo riesgo | ${NOMBRE_PORTAL}`
   return NOMBRE_PORTAL
 }
 
@@ -187,6 +190,9 @@ export default function App() {
   // Al caducar el token (2 h) se termina la sesión aunque haya actividad.
   const sesionActiva = vista.tipo === 'perfil' || vista.tipo === 'admin' ? vista.sesion : null
   const perfilActivo = vista.tipo === 'perfil' || vista.tipo === 'admin' ? vista.perfil : null
+  // P5: formularios públicos (contacto de la ficha y avisos de P5b): con sesión se prellenan y se liga la cuenta.
+  const sesionFormulario =
+    sesionActiva && perfilActivo ? { token: sesionActiva.accessToken, perfil: perfilActivo } : null
   useEffect(() => {
     if (!sesionActiva) return
     const restante = msHastaCaducidad(sesionActiva)
@@ -306,10 +312,17 @@ export default function App() {
           <DetalleVehiculo
             key={ruta.slug}
             slug={ruta.slug}
-            sesion={sesionActiva && perfilActivo ? { token: sesionActiva.accessToken, perfil: perfilActivo } : null}
+            sesion={sesionFormulario}
           />
         )}
         {ruta.nombre === 'privacidad' && <Privacidad />}
+        {/* P5b (D-6, D-51 A): avisos públicos; sin cuenta o con cualquier sesión. */}
+        {ruta.nombre === 'vendeTuCamion' && (
+          <AvisoPublico key="VENDE_TU_CAMION" variante="VENDE_TU_CAMION" sesion={sesionFormulario} />
+        )}
+        {ruta.nombre === 'seguroTodoRiesgo' && (
+          <AvisoPublico key="SEGURO_TODO_RIESGO" variante="SEGURO_TODO_RIESGO" sesion={sesionFormulario} />
+        )}
         {ruta.nombre === 'cuenta' && renderCuenta()}
         {(ruta.nombre === 'inventario' ||
           ruta.nombre === 'inventarioNuevo' ||

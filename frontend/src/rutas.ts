@@ -14,6 +14,8 @@
 //   #/contactos         P5: contactos (leads) del asesor; el administrador ve todos
 //   #/contactos/<id>    P5: detalle de un contacto con su historial
 //   #/privacidad        P5 (D-44): política de tratamiento de datos (borrador en revisión legal)
+//   #/vende-tu-camion   P5b (HU-N01, D-51): aviso "Vende tu camión", sin cuenta
+//   #/seguro-todo-riesgo P5b (HU-N02, D-51): aviso "Compra tu seguro todo riesgo", sin cuenta
 // Cualquier otra ruta muestra el inicio. Nunca se pone el token en la URL.
 import { useEffect, useState } from 'react'
 import { CLAVES_FILTROS, FILTROS_VACIOS, type FiltrosCatalogo } from './api/catalogo'
@@ -30,6 +32,8 @@ export type Ruta =
   | { nombre: 'contactos' }
   | { nombre: 'contacto'; id: number }
   | { nombre: 'privacidad' }
+  | { nombre: 'vendeTuCamion' }
+  | { nombre: 'seguroTodoRiesgo' }
 
 /** P4p: secciones del administrador dentro de "Mi cuenta". */
 export type SeccionAdmin = 'usuarios' | 'planes' | 'suscripciones' | 'catalogos' | 'portada'
@@ -49,6 +53,8 @@ export const HASH_INVENTARIO_NUEVO = '#/inventario/nuevo'
 export const HASH_PUBLICACIONES = '#/publicaciones'
 export const HASH_CONTACTOS = '#/contactos'
 export const HASH_PRIVACIDAD = '#/privacidad'
+export const HASH_VENDE_TU_CAMION = '#/vende-tu-camion'
+export const HASH_SEGURO_TODO_RIESGO = '#/seguro-todo-riesgo'
 
 /** `#/contactos/<id>`. */
 export function hashContacto(id: number): string {
@@ -123,6 +129,8 @@ export function leerRuta(hash: string): Ruta {
   if (camino === '/publicaciones') return { nombre: 'publicaciones' }
   if (camino === '/contactos') return { nombre: 'contactos' }
   if (camino === '/privacidad') return { nombre: 'privacidad' }
+  if (camino === '/vende-tu-camion') return { nombre: 'vendeTuCamion' }
+  if (camino === '/seguro-todo-riesgo') return { nombre: 'seguroTodoRiesgo' }
   const contacto = /^\/contactos\/(\d{1,15})$/.exec(camino)
   if (contacto) {
     const id = Number(contacto[1])

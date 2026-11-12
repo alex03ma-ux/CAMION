@@ -16,11 +16,32 @@ public sealed class Lead
     public const string VehiculoNoDisponible = "VEHICULO_NO_DISPONIBLE";
     public const string DuplicadoInvalido = "DUPLICADO_INVALIDO";
     public const string Otro = "OTRO";
+    // P5b (CA-P5b-41, migración 014): "Solicitud atendida", solo para los avisos.
+    public const string Atendida = "ATENDIDA";
     public static readonly string[] Resultados =
+        [VentaConcretada, NoInteresado, NoRespondio, VehiculoNoDisponible, DuplicadoInvalido, Otro, Atendida];
+    public static readonly string[] ResultadosContacto =
         [VentaConcretada, NoInteresado, NoRespondio, VehiculoNoDisponible, DuplicadoInvalido, Otro];
+    public static readonly string[] ResultadosAviso = [Atendida, NoInteresado, NoRespondio, DuplicadoInvalido, Otro];
+
+    // P5b (HU-N01, HU-N02, D-6, migración 014): un aviso es un lead sin publicación. Mismos códigos que
+    // consentimientos_datos.formulario. CK_Lead_Origen y CK_Lead_AvisoAdmin (D-52 A) los protegen en la base.
+    public const string OrigenContactoVehiculo = "CONTACTO_VEHICULO";
+    public const string OrigenVendeTuCamion = "VENDE_TU_CAMION";
+    public const string OrigenSeguroTodoRiesgo = "SEGURO_TODO_RIESGO";
+    public static readonly string[] Origenes = [OrigenContactoVehiculo, OrigenVendeTuCamion, OrigenSeguroTodoRiesgo];
+
+    // D-50 (a): tipo de vehículo del seguro.
+    public static readonly string[] TiposVehiculo = ["CAMION", "CARRO", "MAQUINARIA", "OTRO"];
+
+    public static bool EsAviso(string origen) => origen != OrigenContactoVehiculo;
 
     public long Id { get; set; }
-    public long PublicacionId { get; set; }
+    // Null solo en los avisos (P5b).
+    public long? PublicacionId { get; set; }
+    public string Origen { get; set; } = OrigenContactoVehiculo;
+    // Solo en SEGURO_TODO_RIESGO.
+    public string? TipoVehiculo { get; set; }
     public string? UsuarioId { get; set; }
     public string Nombre { get; set; } = "";
     public string Telefono { get; set; } = "";
