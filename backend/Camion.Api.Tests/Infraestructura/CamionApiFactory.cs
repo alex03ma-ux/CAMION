@@ -1,8 +1,10 @@
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using Camion.Api.Data;
+using Camion.Api.Media;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,6 +30,13 @@ public sealed class CamionApiFactory : WebApplicationFactory<Program>
 
     public ConcurrentQueue<string> Logs { get; } = new();
 
+    /// <summary>
+    /// P4a (D-20): carpeta temporal única para las fotos (Media:Ruta). Nunca C:\CAMION_media. Se borra en Dispose,
+    /// junto con <see cref="CarpetaFueraDeMedia"/> (carpeta hermana para probar rutas que salen de la raíz).
+    /// </summary>
+    public string CarpetaMedia { get; } = Path.Combine(Path.GetTempPath(), $"camion_media_pruebas_{Guid.NewGuid():N}");
+    public string CarpetaFueraDeMedia => CarpetaMedia + "_fuera";
+
     public CamionApiFactory()
     {
         _conexionViva = new SqliteConnection(_cadenaSqlite);
@@ -40,6 +49,10 @@ public sealed class CamionApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("ConnectionStrings:CamionDatabase",
             "Server=127.0.0.1;Port=1;Database=prueba_inexistente;User=prueba_ficticia");
         builder.UseSetting("Jwt:Key", JwtKey);
+        builder.UseSetting("Media:Ruta", CarpetaMedia);
+        // Además de la configuración, se sustituye el almacén por uno con la carpeta temporal (después de Program).
+        builder.ConfigureTestServices(services =>
+            services.AddSingleton<IAlmacenFotos>(new AlmacenFotosLocal(CarpetaMedia)));
 
         builder.ConfigureServices(services =>
         {
@@ -58,7 +71,17 @@ public sealed class CamionApiFactory : WebApplicationFactory<Program>
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);
-        if (disposing) _conexionViva.Dispose();
+        if (!disposing) return;
+        _conexionViva.Dispose();
+        foreach (var carpeta in new[] { CarpetaMedia, CarpetaFueraDeMedia })
+        {
+            try
+            {
+                if (Directory.Exists(carpeta)) Directory.Delete(carpeta, recursive: true);
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+        }
     }
 }
 

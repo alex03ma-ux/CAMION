@@ -27,6 +27,7 @@ import {
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo, CampoSelect } from './Campo'
 import { ReglasPassword } from './ReglasPassword'
+import { NotaObligatorio } from './NotaObligatorio'
 
 type RegistroFormProps = {
   /** Se llama tras 201 con el mensaje del servidor y el correo usado. */
@@ -186,6 +187,7 @@ export function RegistroForm({ onRegistrado, onIrALogin }: RegistroFormProps) {
       <h2 ref={titulo} tabIndex={-1}>
         Crear cuenta
       </h2>
+      <NotaObligatorio />
 
       <fieldset className="selector-cuenta" disabled={enviando}>
         <legend>Tipo de cuenta</legend>

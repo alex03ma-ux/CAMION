@@ -20,7 +20,7 @@ type CampoProps = {
   errores?: string[]
   autoComplete?: string
   maxLength?: number
-  inputMode?: 'text' | 'email' | 'tel' | 'numeric' | 'search'
+  inputMode?: 'text' | 'email' | 'tel' | 'numeric' | 'search' | 'decimal'
   /** Ids de textos de ayuda adicionales (p. ej. la lista de reglas). */
   describidoPor?: string
   deshabilitado?: boolean
@@ -53,7 +53,9 @@ export function Campo({
 
   return (
     <div className="campo">
-      <label htmlFor={id}>{etiqueta}</label>
+      <label htmlFor={id} className={requerido ? 'campo-obligatorio' : undefined}>
+        {etiqueta}
+      </label>
       <input
         ref={ref}
         id={id}
@@ -111,7 +113,9 @@ export function CampoSelect({
 
   return (
     <div className="campo">
-      <label htmlFor={id}>{etiqueta}</label>
+      <label htmlFor={id} className={requerido ? 'campo-obligatorio' : undefined}>
+        {etiqueta}
+      </label>
       <select
         ref={ref}
         id={id}

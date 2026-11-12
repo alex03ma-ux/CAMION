@@ -4,6 +4,9 @@
 //   #/vehiculo/<slug>   Detalle
 //   #/cuenta            Login / registro / perfil / panel de administración
 //   #/cuenta/registro   Lo mismo, abriendo el formulario de registro
+//   #/inventario        P4a: inventario del asesor (propio) o del administrador (general)
+//   #/inventario/nuevo  P4a: registrar un vehículo
+//   #/inventario/<id>   P4a: editar un vehículo y sus fotos
 // Cualquier otra ruta muestra el inicio. Nunca se pone el token en la URL.
 import { useEffect, useState } from 'react'
 import { CLAVES_FILTROS, FILTROS_VACIOS, type FiltrosCatalogo } from './api/catalogo'
@@ -13,11 +16,30 @@ export type Ruta =
   | { nombre: 'buscar'; filtros: FiltrosCatalogo }
   | { nombre: 'vehiculo'; slug: string }
   | { nombre: 'cuenta'; registro: boolean }
+  | { nombre: 'inventario' }
+  | { nombre: 'inventarioNuevo' }
+  | { nombre: 'inventarioVehiculo'; id: number }
 
 export const HASH_INICIO = '#/'
 export const HASH_BUSCAR = '#/buscar'
 export const HASH_CUENTA = '#/cuenta'
 export const HASH_REGISTRO = '#/cuenta/registro'
+export const HASH_INVENTARIO = '#/inventario'
+export const HASH_INVENTARIO_NUEVO = '#/inventario/nuevo'
+
+/** `#/inventario/<id>` (id entero positivo). */
+export function hashInventarioVehiculo(id: number): string {
+  return `${HASH_INVENTARIO}/${id}`
+}
+
+/** true si la ruta es una de las pantallas del inventario (exigen sesión). */
+export function esRutaInventario(ruta: Ruta): boolean {
+  return (
+    ruta.nombre === 'inventario' ||
+    ruta.nombre === 'inventarioNuevo' ||
+    ruta.nombre === 'inventarioVehiculo'
+  )
+}
 
 const INICIO: Ruta = { nombre: 'inicio' }
 
@@ -61,6 +83,13 @@ export function leerRuta(hash: string): Ruta {
   if (camino === '/buscar') return { nombre: 'buscar', filtros: leerFiltros(consulta) }
   if (camino === '/cuenta') return { nombre: 'cuenta', registro: false }
   if (camino === '/cuenta/registro') return { nombre: 'cuenta', registro: true }
+  if (camino === '/inventario') return { nombre: 'inventario' }
+  if (camino === '/inventario/nuevo') return { nombre: 'inventarioNuevo' }
+  const inventario = /^\/inventario\/(\d{1,15})$/.exec(camino)
+  if (inventario) {
+    const id = Number(inventario[1])
+    if (Number.isSafeInteger(id) && id > 0) return { nombre: 'inventarioVehiculo', id }
+  }
   const vehiculo = /^\/vehiculo\/([^/]+)$/.exec(camino)
   if (vehiculo) {
     try {

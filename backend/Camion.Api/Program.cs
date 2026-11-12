@@ -5,6 +5,7 @@ using Camion.Api.Comandos;
 using Camion.Api.Contracts;
 using Camion.Api.Data;
 using Camion.Api.Endpoints;
+using Camion.Api.Media;
 using Camion.Api.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -75,10 +76,16 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(Roles.PoliticaSoloAdministrador, policy => policy.RequireAuthenticatedUser().RequireRole(Roles.Administrador));
     options.AddPolicy(Roles.PoliticaSoloAsesor, policy => policy.RequireAuthenticatedUser().RequireRole(Roles.Asesor));
     options.AddPolicy(Roles.PoliticaAutenticado, policy => policy.RequireAuthenticatedUser());
+    options.AddPolicy(Roles.PoliticaAsesorOAdministrador,
+        policy => policy.RequireAuthenticatedUser().RequireRole(Roles.Asesor, Roles.Administrador));
 });
 builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, RespuestaAutorizacion>();
 // P3: hora inyectable para la regla de vigencia del catálogo (las pruebas la fijan).
 builder.Services.AddSingleton(TimeProvider.System);
+// P4a (D-20): fotos en una carpeta fuera del repositorio (Media:Ruta; por defecto C:\CAMION_media).
+// Las pruebas sustituyen IAlmacenFotos por una carpeta temporal.
+builder.Services.AddSingleton<IAlmacenFotos>(sp =>
+    new AlmacenFotosLocal(sp.GetRequiredService<IConfiguration>()["Media:Ruta"]));
 // JSON malformado o con tipos incorrectos: el framework lanza BadHttpRequestException y se responde con el formato común.
 builder.Services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = true);
 var app = builder.Build();
@@ -166,6 +173,8 @@ app.MapGet("/health/database", async (IConfiguration configuration, Cancellation
 app.MapAuthEndpoints(jwtKey);
 app.MapAdminUsuariosEndpoints();
 app.MapCatalogoEndpoints();
+app.MapInventarioEndpoints();
+app.MapMediaEndpoints();
 
 app.Run();
 

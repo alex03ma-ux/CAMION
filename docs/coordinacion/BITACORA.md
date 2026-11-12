@@ -118,3 +118,103 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - Conteos después: 7 usuarios (+1 asesor DEMO), 12 publicaciones DEMO, 12 vehículos y 2 destacadas. Por categoría: Camión 5, Carro 3, Carrocería 2, Maquinaria 2. Tildes guardadas en UTF-8 correcto.
 - Prueba manual de P3 hecha por la responsable con los datos DEMO: inicio con destacados y recientes, las cuatro categorías, filtros con "Limpiar", búsqueda, detalle, etiqueta "Reservado" y carrocería sin kilometraje. Todo según lo esperado.
 - Pendiente: ejecutar la sección BAJAR del script DEMO (con respaldo nuevo) antes de cargar datos reales en P4. Las publicaciones DEMO dejan de verse solas a los 30 días.
+
+## 2026-10-27 — P4a Inventario de vehículos
+- Rama `feature/p4a-inventario` desde `main` (`de4c7fb`). Contrato `docs/criterios/P4a-contrato-api.md`, 120 criterios en `docs/criterios/P4a.md`.
+- Decisiones:
+  - TOMADAS: D-20 (fotos), D-21 (planes en P7), D-22 (vendido en P4b), D-23 (migración 004), D-24 (retirar el DEMO tras P4b), D-25 y D-26.
+  - D-25: línea obligatoria, placa de maquinaria de hasta 8 caracteres y capacidad en kg.
+  - D-26: P4p antes de P4b.
+  - PENDIENTE: D-27 (marcas y modelos).
+  - Nota sobre D-22: la respuesta decía "A", pero el texto pedía meterlo en P4b, y se registró P4b.
+- Backend:
+  - `/api/inventario` (política AsesorOAdministrador) con validación por categoría, placa normalizada y única, precio con precio anterior, estados, y auditoría de solo los campos que cambian.
+  - Fotos en `Media:Ruta` (por defecto `C:\CAMION_media`): se validan por su contenido, hasta 5 MB y 10 por vehículo; se sirven en `/media` de forma segura.
+  - Condición 7 en el catálogo.
+- Migración `database/migraciones/004_p4a_inventario.sql` escrita y sin aplicar (D-23).
+- Frontend: rutas `#/inventario`, lista, formulario por categoría y gestión de fotos.
+- Defectos hallados por las pruebas y corregidos:
+  - el peso y la capacidad no admitían decimales;
+  - "1.5" se leía como 15.
+- Los agentes de pruebas se cortaron por el límite de uso. Las pruebas de la API que dejaron estaban completas, y el coordinador las terminó, las ajustó a D-25 y las ejecutó.
+- Resultados ejecutados:
+  - `dotnet test`: 650/650.
+  - `npm test`: 312/312.
+  - `npm run build`: correcto.
+- Revisión de seguridad (coordinador):
+  - sin secretos ni dependencias nuevas;
+  - permisos por rol;
+  - `/media` protegido contra rutas fuera de la carpeta;
+  - fotos validadas por su contenido;
+  - la migración 004 solo añade, y su BAJAR (comentado) solo quita lo que añadió.
+- Limitaciones:
+  - SQLite no reproduce los bloqueos de fila de MariaDB.
+  - El portal sigue mostrando el precio y las fotos de la publicación hasta P4b.
+  - Prueba manual pendiente de la migración 004 y de D-27.
+- D-27 TOMADA (C): añadido `database/catalogos/005_marcas_lineas_iniciales.sql`, sin aplicar. Tiene 33 marcas y 137 modelos, solo INSERT idempotente, y su BAJAR (comentado) solo borra lo que el script añadió y ningún vehículo usa. La pantalla de marcas y modelos pasa a P4p. D-22 confirmada.
+- D-23 y D-27 aplicadas en `camion_ventas` (2026-10-27):
+  - Respaldo previo hecho por el coordinador principal: `C:\Respaldo_CAMION\camion_ventas_antes_004_005_20261027_193917.sql` (39 tablas), con la API apagada.
+  - Conteos antes: 7 usuarios, 12 vehículos, 12 publicaciones, 3 fotos_publicacion, 7 marcas, 12 líneas, 2 tipos de carrocería.
+  - Primer intento: importar `004_p4a_inventario.sql` completo en phpMyAdmin falló en una consulta de VERIFICACIÓN ANTES (#1109 "Tabla desconocida 'vehiculos' in information_schema": phpMyAdmin cambia la base activa después de consultar information_schema). No se aplicó nada; comprobado.
+  - Se importó la sección SUBIR (líneas 80-185, idéntica) en un archivo aparte y luego `005_marcas_lineas_iniciales.sql`, ambos sin errores.
+  - Verificación posterior hecha por el coordinador principal: 12 vehículos, 12 publicaciones y 3 fotos (sin cambios); 12 vehículos ACTIVO, todos con precio; los CHECK, UNIQUE y FK de la 004 presentes; 4 materiales, 6 tipos de máquina, 7 tipos de carrocería, 34 marcas y 139 líneas.
+  - Lección para próximas migraciones: en phpMyAdmin, importar solo la sección SUBIR; las verificaciones las hace el coordinador con el cliente mysql.
+- Mejora de UX pedida en la prueba manual de P4a:
+  - botón final "Listo, volver a mi inventario" (o "Listo, volver al inventario" para el administrador), debajo de las fotos;
+  - mensajes de éxito que dicen el siguiente paso al crear, guardar y subir fotos;
+  - el vehículo recién creado o guardado aparece resaltado en la lista, con el texto "Recién guardado".
+  - `npm test`: 315/315. `npm run build`: correcto.
+- D-28 y D-29 TOMADAS:
+  - Reserva con nota obligatoria. Migración `006_p4a_nota_reserva` sin aplicar, con la parte SUBIR en un archivo aparte.
+  - Combustibles y DIVIPOLA del DANE (script 007: 33 entidades y 1.122 municipios, desde datos.gov.co `gdxc-w37w`, datos del 2025-01-24).
+  - Modelos recientes (script 008, PROPUESTO): 254 modelos nuevos y la marca Develon, con fuentes por marca. Kenworth e Isuzu se omiten por falta de fuente verificable.
+- La API estaba en marcha (prueba manual) y bloqueaba el build. No se detuvo: las pruebas se compilaron en una carpeta aparte (`--artifacts-path`).
+- Resultados: `dotnet test` 655/655; `npm test` 316/316; `npm run build` correcto.
+- D-28 y D-29 aplicadas en `camion_ventas` (2026-10-27). La responsable importó las secciones SUBIR en phpMyAdmin (Chrome), sin errores.
+  - 006 y 007:
+    - Respaldo previo hecho por el coordinador principal, con la API apagada: `C:\Respaldo_CAMION\camion_ventas_antes_006_007_20261027_210736.sql` (42 tablas).
+    - Conteos antes: 14 vehículos, 4 fotos_vehiculo, 1 combustible, 1 departamento y 2 municipios.
+    - Después: 14 vehículos y 4 fotos (sin cambios); existe `vehiculos.nota_reserva` VARCHAR(500) NULL; 5 combustibles (Diésel, Eléctrico, Gas (GNV), Gasolina, Híbrido); 33 departamentos y 1122 municipios de la DIVIPOLA (Medellín 05001 y Envigado 05266 del DEMO conservados).
+  - 008: la responsable aprobó la lista completa, PROPUESTO → aprobado.
+    - Respaldo previo: `C:\Respaldo_CAMION\camion_ventas_antes_008_20261027_211123.sql`.
+    - Antes: 34 marcas y 139 líneas. Después: 35 marcas (+Develon) y 393 líneas (+254); 14 vehículos y 4 fotos, sin cambios.
+- Defecto de la prueba manual: los camiones 13 a 16 quedaron con `placa` NULL en `camion_ventas`.
+  - **No se pudo reproducir.** Con pruebas automáticas, el frontend sí envía la placa del camión, como asesor y como administrador, y la API la guarda al crear y al editar en Carro, Camión y Maquinaria. También rechaza la misma placa entre categorías distintas.
+  - Pista: si en un camión se escribió `MAQ12345` (8 caracteres), el formulario lo habría rechazado. Que se guardara sin aviso indica que el campo llegó vacío al enviar.
+  - Salvaguardas añadidas:
+    - el frontend compara la placa enviada con la devuelta y avisa si no coinciden; si coinciden, el éxito dice "Placa: …";
+    - el servidor registra `placa_no_guardada` en el log.
+  - Pruebas añadidas para cada categoría.
+- D-30 TOMADA (al menos una foto):
+  - Creación atómica en multipart con 1 a 10 fotos.
+  - La última foto no se puede borrar.
+  - Un PUT sobre un vehículo sin fotos da 409; en la interfaz se pide subir una foto antes.
+- Resultados: `dotnet test` 684/684; `npm test` 329/329; `npm run build` correcto. La API en marcha no se detuvo: las pruebas se compilaron en una carpeta aparte.
+- La placa sigue faltando en el camión 19, creado con `f76121d`. Investigación hecha:
+  - En un **navegador real** (el integrado, con la API simulada en el propio navegador, sin tocar la base), el formulario envía `"placa":"ABC123"` en el multipart de un camión con carrocería, en dos órdenes de llenado distintos.
+  - La API guarda esa misma petición (pruebas con carrocería y con peso y capacidad).
+  - **Causa no confirmada.** Los indicios (en su equipo se "guardó" `MAQ12345` en un camión, cosa que el formulario rechaza) apuntan a que la caja mostraba un valor que el estado de React no tenía, por ejemplo por el autocompletado del navegador.
+  - Defensas añadidas:
+    - al guardar, el formulario lee de la pantalla los valores de las cajas de texto (hay una prueba que falla sin la defensa: la edición con un valor puesto sin evento);
+    - el servidor registra `placaRecibida=si/no` al crear;
+    - siguen el aviso "La placa no se guardó" y el log `placa_no_guardada`.
+- D-31 TOMADA (asterisco en los campos obligatorios). D-32 PENDIENTE (modelos por categoría).
+- D-32 TOMADA (A), modelos por categoría.
+  - Migración 009 (`lineas_tipos`) y script 010: las 393 líneas reales, leídas en solo lectura, quedan clasificadas en 170 de Maquinaria, 113 de Carro y el resto de Camión y Carrocería. Hay 56 dudosas, marcadas PROPUESTO en `docs/catalogos-010-clasificacion.md`. Ambos están sin aplicar.
+  - API: rechaza un modelo de otra categoría (400 en `lineaId`) y los catálogos traen `tipoIds` por modelo.
+  - Formulario: filtra los modelos por categoría y limpia el modelo al cambiar de categoría.
+  - Tres vehículos de prueba usan un modelo de otra categoría y se corrigen editándolos: la máquina 17 (ELF 100), un camión con Kia Picanto y otro con Mazda CX-5.
+- Un commit con `git add frontend` habría incluido `frontend/respaldos/`. El sistema de permisos lo bloqueó y desde entonces se añaden los archivos uno a uno.
+- Resultados: `dotnet test` 693/693; `npm test` 338/338; tipos y `npm run build` correctos.
+- D-32 aplicada en `camion_ventas` (2026-10-27).
+  - La responsable aceptó la clasificación propuesta, incluidas las 56 dudosas.
+  - Respaldo previo: `C:\Respaldo_CAMION\camion_ventas_antes_009_010_20261027_230515.sql` (42 tablas), con la API apagada.
+  - La responsable importó en phpMyAdmin `009_p4a_lineas_tipos_SUBIR.sql` y `010_clasificacion_lineas_SUBIR.sql`, sin errores.
+  - Verificación del coordinador principal: 19 vehículos, 393 líneas, 35 marcas y 7 fotos (sin cambios); 393 filas en `lineas_tipos` y 0 líneas sin categoría (Camión 96, Carro 113, Carrocería 14, Maquinaria 170).
+- D-33 TOMADA: el dueño y el administrador pueden cambiar la categoría (409 si hay una publicación activa).
+  - Cuando la marca no tiene modelos de la categoría, el mensaje explica qué hacer.
+  - Las pruebas de componente encontraron un fallo y se corrigió: al editar, la categoría salía del detalle y no del formulario.
+- Revisión de otros campos bloqueados al editar:
+  - un **VENDIDO** queda en solo lectura (regla D-22/HU-064);
+  - el **asesor propietario** no se puede cambiar al editar (se elige solo al crear). Ninguna regla escrita lo exige: se pregunta a la responsable (D-34).
+- Resultados: `dotnet test` 696/696; `npm test` 340/340, con `--testTimeout=30000` porque el equipo estaba cargado (con el límite normal fallaban algunas por tiempo y pasaban al repetirlas); tipos y `npm run build` correctos.

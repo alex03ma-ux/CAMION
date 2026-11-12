@@ -3,6 +3,7 @@ import { iniciarSesion, MENSAJE_LOGIN_FALTAN_DATOS, type LoginResponse } from '.
 import { ApiError, MENSAJE_INESPERADO } from '../api/http'
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo } from './Campo'
+import { NotaObligatorio } from './NotaObligatorio'
 
 /**
  * P2: un 403 con `estado` (contraseña correcta, cuenta no activa) se muestra con
@@ -89,6 +90,7 @@ export function LoginForm({
       <h2 ref={titulo} tabIndex={-1}>
         Iniciar sesión
       </h2>
+      <NotaObligatorio />
 
       <Aviso aviso={aviso} />
 

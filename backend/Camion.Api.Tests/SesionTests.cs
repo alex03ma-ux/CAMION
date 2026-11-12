@@ -183,18 +183,19 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
         }
     }
 
-    [Fact(DisplayName = "CA-SE006-03/05/13, CA-061-15, CA-N03-R04, CA-SE005-06 (C-P3-8), CA-D03-05: anónimos solo registros, login, /health y los 4 GET del catálogo; /api/admin exige SoloAdministrador; ninguna ruta edita auditoría")]
+    [Fact(DisplayName = "CA-SE006-03/05/13, CA-061-15, CA-N03-R04, CA-SE005-06 (C-P3-8), CA-D03-05, P4a: anónimos solo registros, login, /health, los 4 GET del catálogo y GET /media; /api/admin exige SoloAdministrador; /api/inventario exige AsesorOAdministrador; ninguna ruta edita auditoría")]
     public async Task Inventario_de_endpoints()
     {
         var todos = Endpoints(factory.Services).ToList();
         var anonimos = todos.Where(e => e.Metadata.GetMetadata<IAuthorizeData>() is null)
             .Select(e => $"{Metodo(e)} /{e.RoutePattern.RawText!.TrimStart('/')}").OrderBy(x => x, StringComparer.Ordinal).ToArray();
         // P2: se añade el registro de asesor (anónimo, D-3). P3 (C-P3-8): las 4 rutas GET anónimas del catálogo público.
+        // P4a (D-20): GET /media/{**ruta}, anónimo porque el catálogo público muestra las fotos.
         Assert.Equal(new[]
         {
             "GET /api/catalogo/filtros", "GET /api/catalogo/inicio", "GET /api/catalogo/publicaciones",
             "GET /api/catalogo/publicaciones/{slug}",
-            "GET /health", "GET /health/database", "POST /api/auth/login",
+            "GET /health", "GET /health/database", "GET /media/{**ruta}", "POST /api/auth/login",
             "POST /api/auth/registro/asesor", "POST /api/auth/registro/comprador"
         }, anonimos);
 
@@ -208,13 +209,27 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
             Assert.Empty(e.Metadata.GetOrderedMetadata<IAuthorizeData>());
         }
 
+        // P4a (D-20): /media tiene una sola ruta, GET, anónima de forma explícita y sin política.
+        var media = todos.Where(e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("media", StringComparison.Ordinal)).ToList();
+        var unicaMedia = Assert.Single(media);
+        Assert.Equal("GET", Metodo(unicaMedia));
+        Assert.NotNull(unicaMedia.Metadata.GetMetadata<IAllowAnonymous>());
+        Assert.Empty(unicaMedia.Metadata.GetOrderedMetadata<IAuthorizeData>());
+
         var modifican = todos.Where(e => Metodo(e) is "POST" or "PUT" or "PATCH" or "DELETE")
-            .Select(e => "/" + e.RoutePattern.RawText!.TrimStart('/')).OrderBy(x => x, StringComparer.Ordinal).ToArray();
+            .Select(e => $"{Metodo(e)} /{e.RoutePattern.RawText!.TrimStart('/')}").OrderBy(x => x, StringComparer.Ordinal).ToArray();
         Assert.Equal(new[]
         {
-            "/api/admin/usuarios/{id}/aprobar", "/api/admin/usuarios/{id}/bloquear", "/api/admin/usuarios/{id}/desbloquear",
-            "/api/admin/usuarios/{id}/rechazar", "/api/admin/usuarios/{id}/reconsiderar",
-            "/api/auth/login", "/api/auth/logout", "/api/auth/registro/asesor", "/api/auth/registro/comprador"
+            "DELETE /api/inventario/vehiculos/{id}/fotos/{fotoId}",
+            "POST /api/admin/usuarios/{id}/aprobar", "POST /api/admin/usuarios/{id}/bloquear", "POST /api/admin/usuarios/{id}/desbloquear",
+            "POST /api/admin/usuarios/{id}/rechazar", "POST /api/admin/usuarios/{id}/reconsiderar",
+            "POST /api/auth/login", "POST /api/auth/logout", "POST /api/auth/registro/asesor", "POST /api/auth/registro/comprador",
+            // P4a: crear, 4 cambios de estado y subir foto.
+            "POST /api/inventario/vehiculos", "POST /api/inventario/vehiculos/{id}/fotos",
+            "POST /api/inventario/vehiculos/{id}/inactivar", "POST /api/inventario/vehiculos/{id}/liberar",
+            "POST /api/inventario/vehiculos/{id}/reactivar", "POST /api/inventario/vehiculos/{id}/reservar",
+            // P4a: editar y reordenar fotos.
+            "PUT /api/inventario/vehiculos/{id}", "PUT /api/inventario/vehiculos/{id}/fotos/orden"
         }, modifican);
 
         // CA-SE006-13: toda ruta bajo /api/admin exige SoloAdministrador (5 acciones + la lista).
@@ -226,15 +241,34 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
             Assert.True(politicas.Contains("SoloAdministrador"),
                 $"{Metodo(e)} {e.RoutePattern.RawText} no exige SoloAdministrador (políticas: {string.Join(",", politicas)})");
         }
-        // Las tres políticas con nombre existen.
+
+        // P4a (RN-SE-006, D-7): toda ruta bajo /api/inventario exige AsesorOAdministrador y ninguna permite anónimos
+        // (3 GET: lista, detalle y catálogos; 9 que modifican).
+        var inventario = todos.Where(e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/inventario", StringComparison.Ordinal)).ToList();
+        Assert.Equal(12, inventario.Count);
+        Assert.Equal(new[] { "/api/inventario/catalogos", "/api/inventario/vehiculos", "/api/inventario/vehiculos/{id}" },
+            inventario.Where(e => Metodo(e) == "GET").Select(e => "/" + e.RoutePattern.RawText!.TrimStart('/'))
+                .OrderBy(x => x, StringComparer.Ordinal).ToArray());
+        foreach (var e in inventario)
+        {
+            var politicas = e.Metadata.GetOrderedMetadata<IAuthorizeData>().Select(a => a.Policy).ToArray();
+            Assert.True(politicas.Contains("AsesorOAdministrador"),
+                $"{Metodo(e)} {e.RoutePattern.RawText} no exige AsesorOAdministrador (políticas: {string.Join(",", politicas)})");
+            Assert.Null(e.Metadata.GetMetadata<IAllowAnonymous>());
+        }
+
+        // Las cuatro políticas con nombre existen.
         var proveedor = factory.Services.GetRequiredService<IAuthorizationPolicyProvider>();
-        foreach (var nombre in new[] { "SoloAdministrador", "SoloAsesor", "Autenticado" })
+        foreach (var nombre in new[] { "SoloAdministrador", "SoloAsesor", "Autenticado", "AsesorOAdministrador" })
             Assert.NotNull(await proveedor.GetPolicyAsync(nombre));
 
         // CA-061-15: ninguna ruta permite editar o borrar auditoría ni historial.
         Assert.DoesNotContain(todos, e => e.RoutePattern.RawText!.Contains("auditoria", StringComparison.OrdinalIgnoreCase) ||
                                           e.RoutePattern.RawText!.Contains("historial", StringComparison.OrdinalIgnoreCase));
-        Assert.DoesNotContain(todos, e => Metodo(e) is "PUT" or "PATCH" or "DELETE");
+        // Ninguna ruta usa PATCH; PUT y DELETE solo existen en /api/inventario (P4a).
+        Assert.DoesNotContain(todos, e => Metodo(e) == "PATCH");
+        Assert.DoesNotContain(todos, e => Metodo(e) is "PUT" or "DELETE" &&
+            !e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/inventario/", StringComparison.Ordinal));
 
         // /health es anónimo (no se prueba /health/database: intentaría conectar con MariaDB).
         Assert.Equal(HttpStatusCode.OK, (await _c.GetAsync("/health")).StatusCode);

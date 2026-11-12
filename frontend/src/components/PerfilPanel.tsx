@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react'
 import type { PerfilUsuario } from '../api/auth'
 import { MINUTOS_INACTIVIDAD } from '../auth/inactivity'
 import { esAdministrador, nombreRol } from '../auth/roles'
+import { HASH_INVENTARIO } from '../rutas'
+import { textoAccesoInventario } from './InventarioPagina'
 
 type PerfilPanelProps = {
   perfil: PerfilUsuario
@@ -25,6 +27,8 @@ export function PerfilPanel({
   const roles = perfil.roles.map(nombreRol).join(', ')
   // Solo oculta el acceso: la API vuelve a comprobar el rol en cada petición.
   const verAdministracion = onAbrirAdministracion !== undefined && esAdministrador(perfil.roles)
+  // P4a: "Mi inventario" (asesor) o "Inventario" (administrador); un comprador no lo ve.
+  const accesoInventario = textoAccesoInventario(perfil.roles)
 
   return (
     <section aria-labelledby="perfil-titulo">
@@ -42,6 +46,11 @@ export function PerfilPanel({
       <p className="form-ayuda">
         Por seguridad, la sesión se cierra sola tras {MINUTOS_INACTIVIDAD} minutos sin actividad.
       </p>
+      {accesoInventario && (
+        <a className="inv-boton-enlace inv-boton-bloque" href={HASH_INVENTARIO}>
+          {accesoInventario}
+        </a>
+      )}
       {verAdministracion && (
         <button type="button" onClick={onAbrirAdministracion} disabled={cerrando}>
           Administrar usuarios
