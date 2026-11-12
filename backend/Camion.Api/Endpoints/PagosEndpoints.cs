@@ -61,14 +61,25 @@ public static class PagosEndpoints
             if (!await db.Pagos.AsNoTracking().AnyAsync(p => p.Id == id, ct))
                 return Results.NotFound(new ErrorResponse(ReglasPagos.MensajeNoEncontrado));
             var errores = ValidacionAuth.ValidarMotivo(request?.Motivo, obligatorio: true);
+            // B-3: sin saltos de línea ni caracteres de control (los espacios de los extremos se quitan antes).
+            if (errores.Count == 0 && ValidacionAuth.TieneControl(request!.Motivo!.Trim()))
+                errores["motivo"] = [ReglasPagos.MensajeMotivoControl];
             if (errores.Count > 0) return Results.BadRequest(new ErrorResponse(ReglasP4p.MensajeRevisar, errores));
             var motivo = ValidacionAuth.NormalizarOpcional(request!.Motivo)!;
             var adminId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
             var ahora = reloj.GetUtcNow().UtcDateTime;
 
             await using var tx = await db.Database.BeginTransactionAsync(ct);
-            // UPDATE condicionado: de dos anulaciones simultáneas solo una cambia la fila (la otra recibe 409).
-            var cambiadas = await db.Pagos.Where(p => p.Id == id && p.Estado != Pago.Anulado)
+            // B-4: se audita el estado real anterior (también PENDIENTE, APROBADO o RECHAZADO del script 002).
+            var actual = await db.Pagos.AsNoTracking().Where(p => p.Id == id)
+                .Select(p => new { p.Estado, p.FechaPago, p.Medio }).SingleAsync(ct);
+            var estadoAnterior = actual.Estado;
+            if (estadoAnterior == Pago.Anulado) return Results.Conflict(new ErrorResponse(ReglasPagos.MensajeYaAnulado));
+            // Un pago antiguo del script 002 sin fecha ni medio no cabe en CK_Pago_Registro como ANULADO.
+            if (actual.FechaPago is null || actual.Medio is null)
+                return Results.Conflict(new ErrorResponse(ReglasPagos.MensajeNoAnulable));
+            // UPDATE condicionado al estado leído: de dos anulaciones simultáneas solo una cambia la fila (la otra recibe 409).
+            var cambiadas = await db.Pagos.Where(p => p.Id == id && p.Estado == estadoAnterior)
                 .ExecuteUpdateAsync(x => x
                     .SetProperty(p => p.Estado, Pago.Anulado)
                     .SetProperty(p => p.AnuladoPor, adminId)
@@ -76,7 +87,7 @@ public static class PagosEndpoints
                     .SetProperty(p => p.MotivoAnulacion, motivo), ct);
             if (cambiadas == 0) return Results.Conflict(new ErrorResponse(ReglasPagos.MensajeYaAnulado));
             Auditoria.AgregarEvento(db, adminId, Auditoria.EntidadPago, id.ToString(CultureInfo.InvariantCulture),
-                Auditoria.Anular, new Dictionary<string, object?> { ["estado"] = Pago.Registrado },
+                Auditoria.Anular, new Dictionary<string, object?> { ["estado"] = estadoAnterior },
                 new Dictionary<string, object?> { ["estado"] = Pago.Anulado, ["motivo"] = motivo }, ahora);
             await db.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);

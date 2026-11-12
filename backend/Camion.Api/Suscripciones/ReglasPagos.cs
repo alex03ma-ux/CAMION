@@ -1,4 +1,5 @@
 using System.Globalization;
+using Camion.Api.Auth;
 using Camion.Api.Contracts;
 using Camion.Api.Models;
 using Camion.Api.Publicaciones;
@@ -13,9 +14,12 @@ public static class ReglasPagos
     public const string MensajeMedio = "Elige el medio de pago.";
     public const string MensajeReferencia = "La referencia no puede tener más de 100 caracteres ni los signos < >.";
     public const string MensajeReferenciaOtro = "Escribe la referencia: es obligatoria si el medio es Otro.";
+    public const string MensajeReferenciaControl = "La referencia no puede tener saltos de línea ni caracteres de control.";
+    public const string MensajeMotivoControl = "El motivo no puede tener saltos de línea ni caracteres de control.";
     public const string MensajePlanSinPrecio = "Este plan no tiene precio: no se registra un pago.";
     public const string MensajeNoEncontrado = "Pago no encontrado.";
     public const string MensajeYaAnulado = "Este pago ya está anulado.";
+    public const string MensajeNoAnulable = "Este pago no tiene fecha o medio registrados: no se puede anular.";
 
     public const int MaxReferencia = 100;
     public const decimal ValorMaximo = 9_999_999_999_999m;   // DECIMAL(15,2)
@@ -42,6 +46,8 @@ public static class ReglasPagos
         var referencia = (r.Referencia ?? "").Trim();
         if (referencia.Length > MaxReferencia || referencia.IndexOfAny(['<', '>']) >= 0)
             errores["referencia"] = [MensajeReferencia];
+        else if (ValidacionAuth.TieneControl(referencia))
+            errores["referencia"] = [MensajeReferenciaControl];
         else if (referencia.Length == 0 && medio == Pago.Otro)
             errores["referencia"] = [MensajeReferenciaOtro];
 
