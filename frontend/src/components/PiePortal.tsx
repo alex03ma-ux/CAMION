@@ -1,14 +1,5 @@
-import { useEffect, useState } from 'react'
 import { categoriasDisponibles, type OpcionCatalogo } from '../api/catalogo'
-import {
-  CONTACTO_PORTAL_RESPALDO,
-  enlaceRedSeguro,
-  formatearCelular,
-  HOSTS_INSTAGRAM,
-  HOSTS_TIKTOK,
-  obtenerContactoPortal,
-  type ContactoPortal,
-} from '../api/parametros'
+import { enlaceRedSeguro, formatearCelular, HOSTS_INSTAGRAM, HOSTS_TIKTOK } from '../api/parametros'
 import {
   HASH_BUSCAR,
   HASH_BUSCO_VEHICULO,
@@ -20,6 +11,7 @@ import {
 } from '../rutas'
 import { LogoPortal } from './Encabezado'
 import { IconoInstagram, IconoTiktok } from './IconosPortal'
+import { useContactoPortal } from './useContactoPortal'
 
 type PiePortalProps = {
   tipos: readonly OpcionCatalogo[]
@@ -43,16 +35,8 @@ export const HORARIO_ATENCION = [
  * páginas legales e Instagram/TikTok se añaden cuando la responsable los entregue (D-42); no se inventan.
  */
 export function PiePortal({ tipos, conSesion }: PiePortalProps) {
-  const [contacto, setContacto] = useState<ContactoPortal>(CONTACTO_PORTAL_RESPALDO)
-  useEffect(() => {
-    const control = new AbortController()
-    obtenerContactoPortal(control.signal)
-      .then((c) => setContacto(c))
-      .catch(() => {
-        // Sin conexión o respuesta no válida: se mantienen los valores de respaldo (D-42).
-      })
-    return () => control.abort()
-  }, [])
+  // P7: valores vigentes; si la lectura falla, los de respaldo (D-42).
+  const contacto = useContactoPortal()
   // CA-P7-39, 41: Instagram y TikTok solo con un enlace válido de su red.
   const instagram = enlaceRedSeguro(contacto.instagram, HOSTS_INSTAGRAM)
   const tiktok = enlaceRedSeguro(contacto.tiktok, HOSTS_TIKTOK)
