@@ -235,3 +235,24 @@ export function IlustracionCamion({ className }: PropsIcono) {
     </svg>
   )
 }
+
+/** P7 (D-42, D-63 A): Instagram del pie; decorativo (el enlace lleva su nombre accesible). */
+export function IconoInstagram(p: PropsIcono) {
+  return (
+    <Icono {...p} vista="0 0 24 24">
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="0.6" />
+    </Icono>
+  )
+}
+
+/** P7: TikTok del pie (nota musical simplificada); decorativo. */
+export function IconoTiktok(p: PropsIcono) {
+  return (
+    <Icono {...p} vista="0 0 24 24">
+      <path d="M14 3v11.5a3.5 3.5 0 1 1-3.5-3.5" />
+      <path d="M14 3c.5 2.6 2.4 4.5 5 4.8" />
+    </Icono>
+  )
+}

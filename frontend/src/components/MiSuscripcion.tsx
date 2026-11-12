@@ -62,6 +62,10 @@ export function MiSuscripcion({ token, onSesionTerminada }: MiSuscripcionProps) 
       )}
       {estado.tipo === 'ok' && estado.datos.tieneSuscripcion && (
         <>
+          {/* P7 (D-64 b A, CA-P7-50): aviso de vencimiento solo cuando lo envía el servidor. */}
+          {estado.datos.avisoVencimiento && estado.datos.mensajeVencimiento && (
+            <Aviso aviso={{ tipo: 'advertencia', texto: estado.datos.mensajeVencimiento }} />
+          )}
           <dl className="perfil-datos">
             <dt>Plan</dt>
             <dd>{estado.datos.plan.nombre || '—'}</dd>
