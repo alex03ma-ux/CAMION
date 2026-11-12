@@ -229,6 +229,11 @@ app.MapAvisosEndpoints();
 // P6: crédito y búsqueda públicos y "Mis solicitudes" del comprador (HU-034 a HU-042, D-53 a D-59).
 app.MapSolicitudesEndpoints();
 app.MapMisSolicitudesEndpoints();
+// P7: historial de ventas, pagos del plan, parámetros de contacto y panel (D-61 B, D-62 A, D-63 A, D-64 A).
+app.MapVentasListaEndpoints();
+app.MapPagosEndpoints();
+app.MapParametrosEndpoints();
+app.MapPanelEndpoints();
 
 app.Run();
 

@@ -191,7 +191,10 @@ public static class CatalogoEndpoints
                                    EsAdmin = db.UserRoles.Any(ur => ur.UserId == u.Id &&
                                        db.Roles.Any(r => r.Id == ur.RoleId && r.NormalizedName == Camion.Api.Auth.Roles.Administrador))
                                }).FirstAsync(ct);
-            var whatsapp = Camion.Api.Leads.ReglasLeads.EnlaceWhatsapp(dueno.PhoneNumber, dueno.EsAdmin, opciones.Value.WhatsappPortal);
+            // P7 (D-63 A, CA-P7-40): el WhatsApp del portal sale del parámetro; appsettings.json es el respaldo.
+            var whatsappPortal = await Camion.Api.Parametros.ParametrosPortal.WhatsappConIndicativoAsync(db,
+                opciones.Value.WhatsappPortal, ct);
+            var whatsapp = Camion.Api.Leads.ReglasLeads.EnlaceWhatsapp(dueno.PhoneNumber, dueno.EsAdmin, whatsappPortal);
             // P5 (CA-P5-11): true solo con un token válido del asesor dueño (para ocultar el formulario); sin id del dueño.
             var usuarioId = principal.Identity?.IsAuthenticated == true
                 ? principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
