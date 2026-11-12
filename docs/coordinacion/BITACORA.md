@@ -504,3 +504,10 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - "Mis solicitudes" y la vista del asesor: sin rastro en la base, porque son lecturas. La responsable dijo "Todo bien".
   - Los leads 7 y 8 quedan como datos de prueba, junto con los 1 a 6. Se limpian antes de producción.
 
+## 2026-11-12 — P4a a P6 unidos a `main`
+- La responsable creó desde GitHub las PR [#6](https://github.com/alex03ma-ux/CAMION/pull/6) a [#12](https://github.com/alex03ma-ux/CAMION/pull/12) (P4a, P4p, P4b, rediseño del portal, P5, P5b y P6), con el título y la descripción preparados por el coordinador, y **las unió a `main` en orden** entre las 19:50 y las 19:54 UTC. Verificado con la API pública de GitHub: las 7 tienen `merged_at`.
+- No hubo revisión en GitHub entre crear y unir cada PR. Cada fase ya tenía pruebas automáticas, revisión de seguridad, migración aplicada con respaldo y revisión en pantalla de la responsable. Se le explicó que basta con "Create pull request" si quiere revisar antes de unir.
+- `main` queda en `d3238dd` y su contenido es idéntico a `feature/p6-creditos`. Las próximas fases salen de `main` actualizado.
+- Backlog: P0 a P6 pasan a APROBADO con su PR (P0 a P3 estaban unidos desde las PR #2 a #5 y el backlog no lo reflejaba).
+- Siguen pendientes antes de publicar en internet: INF-2, la revisión legal (D-44) y borrar los datos de prueba de `camion_ventas` (leads 1 a 8 y vehículo 21).
+
