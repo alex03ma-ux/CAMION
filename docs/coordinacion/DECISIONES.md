@@ -823,3 +823,17 @@ Detectadas al escribir `docs/criterios/criterios-P7-ventas-admin.md` (2026-11-12
 - **Pago antiguo sin fecha o sin medio** (filas anteriores a P7): no se puede anular; la API responde 409 (B-4).
 - **Filtros de Suscripciones** `vista=porVencer` y `vista=vencidasSinRenovar`, con la misma consulta que los contadores del panel; los enlaces del panel los usan (O-5, CA-P7-46).
 - Detalle en "Cambios al contrato" de `P7-contrato-api.md`.
+
+## D-67 — Anular el pago de una renovación también deshace sus días · TOMADA (2026-11-13)
+- Contexto: en la prueba manual de P7, la responsable anuló el pago de la renovación de un asesor y el plan conservó los 30 días extra. Hasta ahora "Anular" solo anulaba el registro del pago (D-61 B, D-66). En sus palabras: "si yo anulo ese pago, los días adicionales que vienen con el pago tampoco deberían existir".
+- Opciones que se le presentaron: A) anular solo corrige el pago, como estaba; B) anular el pago deshace también lo que ese pago dio; C) un botón aparte "Deshacer renovación".
+- **Decisión (responsable, 2026-11-13): B**, con estas reglas:
+  - pago de una **renovación**: la fecha de vencimiento vuelve a la de antes de esa renovación;
+  - pago de una **asignación**: la suscripción queda cancelada;
+  - pago de un **cambio de plan**: la suscripción vuelve al plan y a la fecha anteriores al cambio;
+  - pago **posterior** (sin renovación): solo se anula el pago;
+  - solo se puede anular el pago del movimiento más reciente de la suscripción; si hubo otro después, primero se anula ese;
+  - si la fecha restaurada ya pasó, la suscripción queda vencida y sus publicaciones dejan de verse (D-41);
+  - el aviso de confirmación dice exactamente qué pasará; el motivo es obligatorio y todo se audita.
+- Para corregir un pago mal escrito: se anula, lo que deshace la renovación, y se renueva de nuevo con los datos correctos.
+- Nota: el pago 1 (renovación de Xavi Quintero) se anuló antes de esta regla y su renovación se conserva. Es un dato de prueba; se limpia antes de producción.
