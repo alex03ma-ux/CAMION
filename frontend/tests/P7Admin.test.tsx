@@ -62,6 +62,30 @@ function pago(id: number, extra: Record<string, unknown> = {}) {
   }
 }
 
+const RUTA_EFECTO_1 = '/api/admin/pagos/1/efecto-anulacion'
+
+/** D-67: respuesta de GET /efecto-anulacion. */
+function efecto(extra: Record<string, unknown> = {}) {
+  return {
+    status: 200,
+    body: {
+      pagoId: 1,
+      tipo: 'SOLO_PAGO',
+      suscripcionId: 11,
+      nuevoEstado: 'ACTIVA',
+      nuevaFinVigencia: '2026-12-30T12:00:00Z',
+      nuevoPlan: null,
+      quedaraVencida: false,
+      suscripcionCanceladaId: null,
+      bloqueadoPor: null,
+      mensaje: null,
+      ...extra,
+    },
+  }
+}
+
+const fechaLarga = (iso: string) => new Intl.DateTimeFormat('es-CO', { dateStyle: 'long' }).format(Date.parse(iso))
+
 function venta(id: number, extra: Record<string, unknown> = {}) {
   return {
     id,
@@ -210,6 +234,7 @@ describe('Pagos de la suscripción (CA-P7-30, 31)', () => {
         { status: 200, body: { items: [pago(1), anulado], totalPagadoCop: 150000 } },
       ],
       '/api/admin/pagos/1/anular': { status: 200, body: pago(1, { estado: 'ANULADO' }) },
+      [RUTA_EFECTO_1]: efecto(),
     })
     const boton = await screen.findByRole('button', { name: 'Pagos de Asesor Uno' })
     await user.click(boton)
@@ -236,7 +261,7 @@ describe('Pagos de la suscripción (CA-P7-30, 31)', () => {
 
     // Anular: motivo obligatorio en el diálogo existente.
     await user.click(within(seccion).getByRole('button', { name: /^Anular el pago de \$ 150\.000/ }))
-    const dialogo = screen.getByRole('dialog', { name: 'Anular pago' })
+    const dialogo = await screen.findByRole('dialog', { name: 'Anular pago' })
     await user.click(within(dialogo).getByRole('button', { name: 'Anular pago' }))
     expect(within(dialogo).getByText('Escribe el motivo (5 a 500 caracteres).')).toBeInTheDocument()
     expect(api.llamadasA('/api/admin/pagos/1/anular')).toHaveLength(0)
@@ -244,7 +269,7 @@ describe('Pagos de la suscripción (CA-P7-30, 31)', () => {
     await user.click(within(dialogo).getByRole('button', { name: 'Anular pago' }))
     await waitFor(() => expect(api.llamadasA('/api/admin/pagos/1/anular')).toHaveLength(1))
     expect(cuerpoDe(api, '/api/admin/pagos/1/anular')).toEqual({ motivo: 'Pago duplicado' })
-    expect(await screen.findByText('Se anuló el pago. Queda en la lista como "Anulado".')).toBeInTheDocument()
+    expect(await screen.findByText(/^Se anuló el pago\. Queda en la lista como "Anulado"\./)).toBeInTheDocument()
   })
 
   it('409 al anular un pago ya anulado: cierra el diálogo y muestra el mensaje', async () => {
@@ -252,15 +277,37 @@ describe('Pagos de la suscripción (CA-P7-30, 31)', () => {
       [RUTA_SUSCRIPCIONES]: paginaDe([ACTIVA]),
       [RUTA_PAGOS]: { status: 200, body: { items: [pago(1)], totalPagadoCop: 150000 } },
       '/api/admin/pagos/1/anular': { status: 409, body: { error: 'Este pago ya está anulado.' } },
+      [RUTA_EFECTO_1]: efecto(),
     })
     await user.click(await screen.findByRole('button', { name: 'Pagos de Asesor Uno' }))
     const seccion = await screen.findByRole('region', { name: /Pagos de Asesor Uno/ })
     await user.click(await within(seccion).findByRole('button', { name: /^Anular el pago/ }))
-    const dialogo = screen.getByRole('dialog', { name: 'Anular pago' })
+    const dialogo = await screen.findByRole('dialog', { name: 'Anular pago' })
     await user.type(within(dialogo).getByLabelText('Motivo'), 'Error de digitación')
     await user.click(within(dialogo).getByRole('button', { name: 'Anular pago' }))
     expect(await screen.findByText('Este pago ya está anulado.')).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('D-67: tras un 409 el pago queda sin "Anular" y con el motivo', async () => {
+    const { user } = renderSuscripciones({
+      [RUTA_SUSCRIPCIONES]: paginaDe([ACTIVA]),
+      [RUTA_PAGOS]: { status: 200, body: { items: [pago(1)], totalPagadoCop: 150000 } },
+      [RUTA_EFECTO_1]: efecto({ tipo: 'DESHACER_RENOVACION' }),
+      '/api/admin/pagos/1/anular': {
+        status: 409,
+        body: { error: 'Después de este pago hubo otra asignación, renovación o cambio de plan en esta suscripción. Anula primero el pago de ese movimiento.' },
+      },
+    })
+    await user.click(await screen.findByRole('button', { name: 'Pagos de Asesor Uno' }))
+    const seccion = await screen.findByRole('region', { name: /Pagos de Asesor Uno/ })
+    await user.click(await within(seccion).findByRole('button', { name: /^Anular el pago/ }))
+    const dialogo = await screen.findByRole('dialog', { name: 'Anular pago' })
+    await user.type(within(dialogo).getByLabelText('Motivo'), 'Error de digitación')
+    await user.click(within(dialogo).getByRole('button', { name: 'Anular pago' }))
+    expect(await within(seccion).findByRole('alert')).toHaveTextContent(/Anula primero el pago de ese movimiento\./)
+    expect(within(seccion).queryByRole('button', { name: /^Anular el pago/ })).not.toBeInTheDocument()
+    expect(within(seccion).getByText(/^No se puede anular:/)).toBeInTheDocument()
   })
 
   it('401 al cargar los pagos termina la sesión', async () => {
@@ -270,6 +317,96 @@ describe('Pagos de la suscripción (CA-P7-30, 31)', () => {
     })
     await user.click(await screen.findByRole('button', { name: 'Pagos de Asesor Uno' }))
     await waitFor(() => expect(onSesionTerminada).toHaveBeenCalled())
+  })
+})
+
+describe('D-67: anular un pago deshace lo que dio', () => {
+  async function abrirDialogo(respuestaEfecto: ReturnType<typeof efecto>, extra: Rutas = {}) {
+    const ctx = renderSuscripciones({
+      [RUTA_SUSCRIPCIONES]: paginaDe([ACTIVA]),
+      [RUTA_PAGOS]: { status: 200, body: { items: [pago(1)], totalPagadoCop: 150000 } },
+      [RUTA_EFECTO_1]: respuestaEfecto,
+      ...extra,
+    })
+    await ctx.user.click(await screen.findByRole('button', { name: 'Pagos de Asesor Uno' }))
+    const seccion = await screen.findByRole('region', { name: /Pagos de Asesor Uno/ })
+    await ctx.user.click(await within(seccion).findByRole('button', { name: /^Anular el pago/ }))
+    return { ...ctx, seccion }
+  }
+
+  it.each([
+    ['DESHACER_RENOVACION', {}, `La suscripción volverá a vencer el ${fechaLarga('2026-12-30T12:00:00Z')}.`],
+    ['CANCELAR_ASIGNACION', { nuevoEstado: 'CANCELADA' }, 'La suscripción quedará cancelada.'],
+    [
+      'DESHACER_CAMBIO_PLAN',
+      { nuevoPlan: { id: 1, nombre: 'Básico' }, suscripcionId: 10, suscripcionCanceladaId: 11 },
+      `La suscripción volverá al plan Básico, con vencimiento el ${fechaLarga('2026-12-30T12:00:00Z')}.`,
+    ],
+    ['SOLO_PAGO', {}, 'Solo se anula el pago; la fecha no cambia.'],
+  ])('%s: el diálogo dice qué pasará', async (tipo, extra, texto) => {
+    const { api } = await abrirDialogo(efecto({ tipo, ...extra }))
+    const dialogo = await screen.findByRole('dialog', { name: 'Anular pago' })
+    expect(dialogo).toHaveTextContent(texto)
+    expect(within(dialogo).queryByText(/Quedará vencida/)).not.toBeInTheDocument()
+    expect(api.llamadasA(RUTA_EFECTO_1)).toHaveLength(1)
+    expect(api.llamadasA('/api/admin/pagos/1/anular')).toHaveLength(0)
+  })
+
+  it('quedaraVencida: aviso destacado en el diálogo', async () => {
+    await abrirDialogo(efecto({ tipo: 'DESHACER_RENOVACION', quedaraVencida: true, nuevaFinVigencia: '2026-11-01T12:00:00Z' }))
+    const dialogo = await screen.findByRole('dialog', { name: 'Anular pago' })
+    expect(within(dialogo).getByRole('alert')).toHaveTextContent(
+      'Quedará vencida y sus publicaciones dejarán de verse en el portal.',
+    )
+    expect(within(dialogo).getByLabelText('Motivo')).toHaveFocus()
+  })
+
+  it.each([['MOVIMIENTO_POSTERIOR'], ['SIN_MOVIMIENTO'], ['SIN_DATOS'], ['YA_ANULADO']])(
+    'bloqueadoPor %s: no abre el diálogo, muestra el mensaje y quita "Anular"',
+    async (bloqueo) => {
+      const mensaje = `Mensaje del servidor para ${bloqueo}.`
+      const { seccion, api } = await abrirDialogo(efecto({ bloqueadoPor: bloqueo, mensaje }))
+      expect(await within(seccion).findByRole('alert')).toHaveTextContent(mensaje)
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(within(seccion).queryByRole('button', { name: /^Anular el pago/ })).not.toBeInTheDocument()
+      expect(within(seccion).getByText(`No se puede anular: ${mensaje}`)).toBeInTheDocument()
+      expect(api.llamadasA('/api/admin/pagos/1/anular')).toHaveLength(0)
+    },
+  )
+
+  it('tras anular recarga la lista de suscripciones con la nueva fecha', async () => {
+    const restaurada = { ...ACTIVA, finVigencia: '2026-12-01T12:00:00Z', diasRestantes: 19 }
+    const ctx = renderSuscripciones({
+      [RUTA_SUSCRIPCIONES]: [paginaDe([ACTIVA]), paginaDe([restaurada])],
+      [RUTA_PAGOS]: [
+        { status: 200, body: { items: [pago(1)], totalPagadoCop: 150000 } },
+        { status: 200, body: { items: [pago(1, { estado: 'ANULADO' })], totalPagadoCop: 0 } },
+      ],
+      [RUTA_EFECTO_1]: efecto({ tipo: 'DESHACER_RENOVACION', nuevaFinVigencia: '2026-12-01T12:00:00Z' }),
+      '/api/admin/pagos/1/anular': { status: 200, body: pago(1, { estado: 'ANULADO' }) },
+    })
+    await ctx.user.click(await screen.findByRole('button', { name: 'Pagos de Asesor Uno' }))
+    const seccion = await screen.findByRole('region', { name: /Pagos de Asesor Uno/ })
+    await ctx.user.click(await within(seccion).findByRole('button', { name: /^Anular el pago/ }))
+    const dialogo = await screen.findByRole('dialog', { name: 'Anular pago' })
+    await ctx.user.type(within(dialogo).getByLabelText('Motivo'), 'Renovación por error')
+    await ctx.user.click(within(dialogo).getByRole('button', { name: 'Anular pago' }))
+    await waitFor(() => expect(ctx.api.llamadasA(RUTA_SUSCRIPCIONES)).toHaveLength(2))
+    expect(await screen.findByText('19 días')).toBeInTheDocument()
+    expect(await within(seccion).findByText('Total pagado: $ 0')).toBeInTheDocument()
+    expect(within(seccion).getByText(/La suscripción volverá a vencer el/)).toBeInTheDocument()
+  })
+
+  it('SOLO_PAGO: no recarga la lista de suscripciones', async () => {
+    const ctx = await abrirDialogo(efecto(), {
+      '/api/admin/pagos/1/anular': { status: 200, body: pago(1, { estado: 'ANULADO' }) },
+    })
+    const dialogo = await screen.findByRole('dialog', { name: 'Anular pago' })
+    await ctx.user.type(within(dialogo).getByLabelText('Motivo'), 'Pago duplicado')
+    await ctx.user.click(within(dialogo).getByRole('button', { name: 'Anular pago' }))
+    await waitFor(() => expect(ctx.api.llamadasA('/api/admin/pagos/1/anular')).toHaveLength(1))
+    expect(await screen.findByText(/Solo se anula el pago; la fecha no cambia\./)).toBeInTheDocument()
+    expect(ctx.api.llamadasA(RUTA_SUSCRIPCIONES)).toHaveLength(1)
   })
 })
 
