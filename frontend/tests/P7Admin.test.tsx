@@ -10,6 +10,7 @@ import { AdminSuscripciones } from '../src/components/AdminSuscripciones'
 import { HistorialVentasVehiculo } from '../src/components/HistorialVentasVehiculo'
 import { MiSuscripcion } from '../src/components/MiSuscripcion'
 import { PiePortal } from '../src/components/PiePortal'
+import { Privacidad } from '../src/components/Privacidad'
 import { leerRuta } from '../src/rutas'
 import { simularFetch, TOKEN_FICTICIO } from './helpers'
 import {
@@ -95,6 +96,9 @@ describe('Validación del pago en cliente (CA-P7-29)', () => {
     ])
     expect(validarPago({ ...valido, referencia: '<b>' }, '2026-11-12').referencia).toBeDefined()
     expect(validarPago({ ...valido, referencia: 'x'.repeat(101) }, '2026-11-12').referencia).toBeDefined()
+    expect(validarPago({ ...valido, referencia: 'TRX\n1' }, '2026-11-12').referencia).toEqual([
+      'La referencia no puede tener saltos de línea ni caracteres de control.',
+    ])
   })
 })
 
@@ -423,6 +427,13 @@ describe('Validación de los parámetros (CA-P7-37, 41)', () => {
     expect(validarContactoPortal({ ...ok, whatsapp: '+57 316 615 2907' })).toEqual({})
     expect(validarContactoPortal({ ...ok, whatsapp: '601 234 5678' }).whatsapp).toBeDefined()
     expect(validarContactoPortal({ ...ok, correo: 'sin-arroba' }).correo).toBeDefined()
+    // B-2: misma regla estricta que el servidor.
+    for (const malo of ['a?b@x.co', 'a&b@x.co', 'a;b@x.co', 'a,b@x.co', 'a:b@x.co', 'a/b@x.co', 'a<b@x.co',
+      'a"b@x.co', "a'b@x.co", 'a%b@x.co', 'a b@x.co', 'a..b@x.co', 'a@x', 'a@x.c', '.a@x.co']) {
+      expect(validarContactoPortal({ ...ok, correo: malo }).correo).toEqual(['Escribe un correo válido.'])
+    }
+    expect(validarContactoPortal({ ...ok, correo: 'vc.automotores+ventas@gmail.com' })).toEqual({})
+    expect(validarContactoPortal({ ...ok, horario: ['Lunes\tcerrado'] }).horario).toBeDefined()
     expect(validarContactoPortal({ ...ok, horario: [''] }).horario).toBeDefined()
     expect(validarContactoPortal({ ...ok, horario: ['a', 'b', 'c', 'd', 'e'] }).horario).toBeDefined()
     expect(validarContactoPortal({ ...ok, horario: ['<b>x</b>'] }).horario).toBeDefined()
@@ -530,6 +541,27 @@ describe('Pie del portal (CA-P7-36, 38, 39, 41)', () => {
   })
 })
 
+describe('Privacidad lee el contacto del portal', () => {
+  it('usa los valores del servidor', async () => {
+    simularFetch({
+      '/api/portal/contacto': {
+        status: 200,
+        body: { ...CONTACTO_ADMIN, whatsapp: '3001234567', whatsappEnlace: 'https://wa.me/573001234567', correo: 'datos@ejemplo.test' },
+      },
+    })
+    render(<Privacidad />)
+    expect(await screen.findByRole('link', { name: 'datos@ejemplo.test' })).toHaveAttribute('href', 'mailto:datos@ejemplo.test')
+    expect(screen.getByRole('link', { name: /300 123 4567/ })).toHaveAttribute('href', 'https://wa.me/573001234567')
+  })
+
+  it('si la lectura falla, usa el respaldo de D-42', async () => {
+    simularFetch({ '/api/portal/contacto': { red: true } })
+    render(<Privacidad />)
+    expect(await screen.findByRole('link', { name: /316 615 2907/ })).toHaveAttribute('href', 'https://wa.me/573166152907')
+    expect(screen.getByRole('link', { name: 'vc.automotores@gmail.com' })).toBeInTheDocument()
+  })
+})
+
 // ---------------------------------------------------------------- Panel "Inicio" (D-64 A)
 
 const PANEL = {
@@ -578,9 +610,14 @@ describe('Panel Inicio del administrador (CA-P7-45 a 49, 51)', () => {
       'href',
       '#/contactos?estado=ABIERTO&responsable=ADMINISTRACION&origen=VENDE_TU_CAMION',
     )
+    // O-5: los dos contadores de suscripciones abren la lista con la misma consulta del panel.
     expect(screen.getByRole('link', { name: /Suscripciones vencidas/ })).toHaveAttribute(
       'href',
-      '#/cuenta/suscripciones?estado=VENCIDA',
+      '#/cuenta/suscripciones?vista=vencidasSinRenovar',
+    )
+    expect(screen.getByRole('link', { name: /vencen en los próximos 7 días/ })).toHaveAttribute(
+      'href',
+      '#/cuenta/suscripciones?vista=porVencer',
     )
     expect(screen.getByRole('link', { name: /Vehículos en estado Activo/ })).toHaveAttribute('href', '#/inventario?estado=ACTIVO')
     expect(screen.getByRole('link', { name: /Ventas vigentes/ })).toHaveAttribute(
@@ -603,16 +640,35 @@ describe('Panel Inicio del administrador (CA-P7-45 a 49, 51)', () => {
     expect(screen.getByLabelText('Rol')).toHaveValue('ASESOR')
   })
 
-  it('el enlace de suscripciones vencidas abre la lista con ese estado', async () => {
-    const filtrada = '/api/admin/suscripciones?estado=VENCIDA&pagina=1&tamano=20'
+  it('O-5: "vencidas sin renovar" abre Suscripciones con vista, la muestra y permite quitarla', async () => {
+    const filtrada = '/api/admin/suscripciones?vista=vencidasSinRenovar&pagina=1&tamano=20'
     const { user, api } = abrirApp('#/cuenta/inicio', ['ADMINISTRADOR'], {
       '/api/admin/panel': { status: 200, body: PANEL },
       ...BASE,
       [filtrada]: paginaDe([]),
+      [RUTA_SUSCRIPCIONES]: paginaDe([ACTIVA]),
     })
     await user.click(await screen.findByRole('link', { name: /Suscripciones vencidas/ }))
     await waitFor(() => expect(api.llamadasA(filtrada)).toHaveLength(1))
-    expect(screen.getByLabelText('Estado')).toHaveValue('VENCIDA')
+    expect(await screen.findByText('Vencidas sin renovar')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Quitar este filtro' }))
+    await waitFor(() => expect(window.location.hash).toBe('#/cuenta/suscripciones'))
+    await waitFor(() => expect(api.llamadasA(RUTA_SUSCRIPCIONES)).toHaveLength(1))
+    expect(screen.queryByRole('button', { name: 'Quitar este filtro' })).not.toBeInTheDocument()
+  })
+
+  it('O-5: la vista se combina con el filtro de estado y un 400 muestra "Vista no válida."', async () => {
+    const conEstado = '/api/admin/suscripciones?estado=ACTIVA&vista=porVencer&pagina=1&tamano=20'
+    const { user, api } = abrirApp('#/cuenta/suscripciones?vista=porvencer', ['ADMINISTRADOR'], {
+      ...BASE,
+      '/api/admin/suscripciones?vista=porVencer&pagina=1&tamano=20': paginaDe([ACTIVA]),
+      [conEstado]: { status: 400, body: { error: 'Revisa los filtros.', errores: { vista: ['Vista no válida.'] } } },
+    })
+    expect(await screen.findByText('Vencen en los próximos 7 días')).toBeInTheDocument()
+    await user.selectOptions(screen.getByLabelText('Estado'), 'Activa')
+    await user.click(screen.getByRole('button', { name: 'Aplicar filtros' }))
+    await waitFor(() => expect(api.llamadasA(conEstado)).toHaveLength(1))
+    expect(await screen.findByText('Revisa los filtros. Vista no válida.')).toBeInTheDocument()
   })
 
   it.each([['ASESOR'], ['COMPRADOR']])('%s en #/cuenta/inicio: sin permiso, sin llamada y sin enlace en su perfil', async (rol) => {
@@ -658,6 +714,41 @@ describe('Aviso de vencimiento en "Mi suscripción" (CA-P7-50)', () => {
     })
     render(<MiSuscripcion token={TOKEN_FICTICIO} />)
     expect(await screen.findByRole('alert')).toHaveTextContent('Tu plan vence en 3 días.')
+    // O-1 (CA-P7-26): WhatsApp del portal con texto breve y sin datos personales.
+    const enlace = await screen.findByRole('link', { name: /Escribir por WhatsApp para renovar/ })
+    await waitFor(() => expect(enlace.getAttribute('href')).toMatch(/^https:\/\/wa\.me\/573166152907\?text=/))
+    const texto = decodeURIComponent(enlace.getAttribute('href')!.split('?text=')[1])
+    expect(texto).toBe('Hola, quiero renovar mi plan de asesor en Financiamos Tu Camión.')
+    expect(enlace).toHaveAttribute('target', '_blank')
+  })
+
+  it('plan vencido: ofrece el enlace con el WhatsApp guardado en Parámetros', async () => {
+    simularFetch({
+      '/api/asesor/suscripcion': {
+        status: 200,
+        body: { ...base, estadoEfectivo: 'VENCIDA', vigente: false, diasRestantes: 0, avisoVencimiento: false, mensajeVencimiento: null },
+      },
+      '/api/portal/contacto': {
+        status: 200,
+        body: { ...CONTACTO_ADMIN, whatsapp: '3001234567', whatsappEnlace: 'https://wa.me/573001234567' },
+      },
+    })
+    render(<MiSuscripcion token={TOKEN_FICTICIO} />)
+    const enlace = await screen.findByRole('link', { name: /Escribir por WhatsApp para renovar/ })
+    await waitFor(() => expect(enlace.getAttribute('href')).toMatch(/^https:\/\/wa\.me\/573001234567\?text=/))
+  })
+
+  it('si falla la lectura del contacto, el enlace usa el WhatsApp de respaldo', async () => {
+    simularFetch({
+      '/api/asesor/suscripcion': {
+        status: 200,
+        body: { ...base, estadoEfectivo: 'VENCIDA', vigente: false, diasRestantes: 0 },
+      },
+      '/api/portal/contacto': { red: true },
+    })
+    render(<MiSuscripcion token={TOKEN_FICTICIO} />)
+    const enlace = await screen.findByRole('link', { name: /Escribir por WhatsApp para renovar/ })
+    expect(enlace.getAttribute('href')).toMatch(/^https:\/\/wa\.me\/573166152907\?text=/)
   })
 
   it('sin aviso del servidor no muestra nada, y el asesor no ve pagos', async () => {
@@ -667,6 +758,7 @@ describe('Aviso de vencimiento en "Mi suscripción" (CA-P7-50)', () => {
     render(<MiSuscripcion token={TOKEN_FICTICIO} />)
     expect(await screen.findByText('Básico')).toBeInTheDocument()
     expect(screen.queryByText(/vence en/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /WhatsApp para renovar/ })).not.toBeInTheDocument()
     expect(screen.queryByText(/Pago/)).not.toBeInTheDocument()
     expect(api.llamadas.some((l) => l.url.includes('/pagos'))).toBe(false)
   })
