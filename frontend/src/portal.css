@@ -667,6 +667,13 @@ form.cat-busqueda-portada {
   }
 }
 
+/* Tres accesos en una fila en pantallas anchas (vender, seguro y "Busco un vehículo", D-56 d B). */
+@media (min-width: 1000px) {
+  .cat-avisos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 .cat-aviso-bloque {
   display: flex;
   align-items: flex-start;

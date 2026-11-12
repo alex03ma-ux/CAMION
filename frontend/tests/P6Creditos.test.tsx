@@ -89,8 +89,11 @@ describe('Rutas y accesos del portal (CA-P6-02, 03, 26)', () => {
     expect(within(banda).getByRole('link', { name: /Quiero un crédito/ })).toHaveAttribute('href', '#/credito')
     const servicios = screen.getByRole('region', { name: 'Nuestros servicios' })
     expect(within(servicios).queryAllByRole('link')).toHaveLength(0)
-    // D-56 d A: la portada no ofrece la búsqueda (solo el catálogo y el pie).
-    expect(within(screen.getByRole('main')).queryByRole('link', { name: 'Busco un vehículo' })).not.toBeInTheDocument()
+    // D-56 (d) B (responsable, 2026-11-12): la portada también ofrece la búsqueda, además del catálogo y el pie.
+    expect(within(screen.getByRole('main')).getByRole('link', { name: /Busco un vehículo/ })).toHaveAttribute(
+      'href',
+      '#/busco-un-vehiculo',
+    )
   })
 
   it('el pie ofrece "Busco un vehículo" en Servicios y el menú principal no cambia', async () => {

@@ -369,6 +369,9 @@ describe('Accesos en el portal (D-51 A, CA-P5b-54)', () => {
     expect(within(vende).getByRole('link', { name: /Vende tu camión/ })).toHaveAttribute('href', '#/vende-tu-camion')
     const seguro = screen.getByRole('region', { name: 'Asegura tu vehículo todo riesgo' })
     expect(within(seguro).getByRole('link', { name: /Compra tu seguro/ })).toHaveAttribute('href', '#/seguro-todo-riesgo')
+    // D-56 (d) B (responsable, 2026-11-12): "Busco un vehículo" también visible en la portada.
+    const busco = screen.getByRole('region', { name: '¿No encuentras el vehículo que buscas?' })
+    expect(within(busco).getByRole('link', { name: /Busco un vehículo/ })).toHaveAttribute('href', '#/busco-un-vehiculo')
     const servicios = screen.getByRole('region', { name: 'Nuestros servicios' })
     expect(within(servicios).queryAllByRole('link')).toHaveLength(0)
   })

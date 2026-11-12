@@ -677,6 +677,7 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
   - Recomendación: A. Aparece donde la persona no encuentra lo que busca, sin recargar la portada (D-42).
 - Impacto en el esquema: (a) A necesita la tabla `leads_busqueda`; (b) A necesita la tabla `busqueda_vehiculos` y dos tipos de evento nuevos.
 - **Decisión (responsable, 2026-11-10): las recomendaciones.** (a) A, (b) A, (c) A, (d) A.
+- **Cambio (responsable, 2026-11-12): (d) pasa a B.** Al probar no encontró el acceso: "ese botón ahí no se ve, ni se nota que es para que un cliente pueda acceder; si son servicios deben ser accesibles, visibles, fáciles de encontrar". Se añade un tercer bloque "¿No encuentras el vehículo que buscas?" en la portada, junto a los de D-51; siguen el catálogo y el pie.
 
 ## D-57 — Estados y resultados de cierre de créditos y búsquedas · TOMADA (2026-11-10)
 - **Contradicción:** D-4 (TOMADA) fija los estados del crédito Registrado → Asignado → Gestionado → Cerrado. Los leads de P5 y P5b usan ABIERTO/CERRADO. Además, con D-7 el paso a "Asignado" ocurre al instante (siempre al administrador), y con D-45 la gestión ocurre fuera del portal. La v3.0 no define estados de búsqueda.
