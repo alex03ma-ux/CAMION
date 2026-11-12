@@ -1,9 +1,21 @@
 // P4p — Suscripciones de los asesores (HU-066 a HU-069, RN-SU-001 a RN-SU-005; D-4, D-26, D-35, D-36).
 // El administrador asigna, renueva, cambia de plan, suspende, reactiva y cancela. La interfaz solo
 // ofrece las acciones válidas del contrato; la API vuelve a comprobarlas (409 si no se puede).
+// P7 (D-61 B; CA-P7-27 a 31): al asignar, renovar o cambiar de plan con precio se ofrece "Pago recibido"
+// (opcional); cada fila tiene "Pagos" con la lista, el total, "Registrar pago" y "Anular".
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { ApiError, MENSAJE_INESPERADO } from '../api/http'
 import { obtenerCatalogosInventario, type ResumenAsesor } from '../api/inventario'
+import {
+  erroresPagoDe,
+  formularioPagoInicial,
+  hayErroresPago,
+  pagoDesdeFormulario,
+  validarPago,
+  type CampoPago,
+  type ErroresPago,
+  type FormularioPago,
+} from '../api/pagos'
 import { listarPlanes, type Plan } from '../api/planes'
 import {
   accionesSuscripcion,
@@ -11,6 +23,7 @@ import {
   ejecutarAccionSuscripcion,
   ESTADOS_FILTRO,
   formatearFechaSuscripcion,
+  type EstadoSuscripcion,
   listarSuscripciones,
   MENSAJE_ELIGE_ASESOR,
   MENSAJE_ELIGE_PLAN,
@@ -27,12 +40,118 @@ import {
 import { formatoMiles } from '../catalogo/formato'
 import { Aviso, type DatosAviso } from './Aviso'
 import { CampoSelect } from './Campo'
+import { CamposPago } from './CamposPago'
 import { DialogoConfirmacion } from './DialogoAccion'
 import { NotaObligatorio } from './NotaObligatorio'
+import { PagosSuscripcion } from './PagosSuscripcion'
 
 type AdminSuscripcionesProps = {
   token: string
   onSesionTerminada: () => void
+  /** P7 (CA-P7-46): filtros iniciales desde el panel, p. ej. `estado=VENCIDA`. */
+  consulta?: string
+}
+
+/** Filtros iniciales a partir de la consulta del hash; ignora valores desconocidos. */
+export function filtrosSuscripcionesDesdeConsulta(consulta: string | undefined): FiltrosSuscripciones {
+  const p = new URLSearchParams(consulta ?? '')
+  const estado = (p.get('estado') ?? '').toUpperCase()
+  const asesorId = p.get('asesorId') ?? ''
+  return {
+    ...FILTROS_INICIALES,
+    estado: ESTADOS_FILTRO.includes(estado as EstadoSuscripcion) ? estado : '',
+    asesorId: /^\d{1,15}$/.test(asesorId) ? asesorId : '',
+  }
+}
+
+/** Estado del bloque "Pago recibido" (asignar, renovar, cambiar de plan). */
+type EstadoPago = {
+  /** El administrador decide si anota el pago ahora (opcional, visible si el plan tiene precio). */
+  registrar: boolean
+  datos: FormularioPago
+  errores: ErroresPago
+}
+
+function pagoInicial(precio: number | null): EstadoPago {
+  return { registrar: true, datos: formularioPagoInicial(precio), errores: {} }
+}
+
+/** El bloque de pago se ofrece si el plan tiene precio (o si no se conoce: la API decide). */
+function ofrecePago(precio: number | null | undefined): boolean {
+  return precio === null || (precio !== undefined && precio > 0)
+}
+
+const SUFIJOS_PAGO: Record<CampoPago, string> = {
+  valorCop: 'valor',
+  fechaPago: 'fecha',
+  medio: 'medio',
+  referencia: 'referencia',
+}
+
+function enfocarPrimerErrorPago(prefijo: string, errores: ErroresPago) {
+  const campo = (['valorCop', 'fechaPago', 'medio', 'referencia'] as const).find((c) => errores[c]?.length)
+  if (campo) document.getElementById(`${prefijo}-${SUFIJOS_PAGO[campo]}`)?.focus()
+}
+
+type BloquePagoProps = {
+  id: string
+  pago: EstadoPago
+  precio: number | null
+  deshabilitado: boolean
+  onCambio: (pago: EstadoPago) => void
+}
+
+/** Sección "Pago recibido" con la casilla para anotarlo ahora o después (D-61 B). */
+function BloquePago({ id, pago, precio, deshabilitado, onCambio }: BloquePagoProps) {
+  return (
+    <fieldset className="pago-fieldset">
+      <legend>Pago recibido</legend>
+      <div className="campo-casilla">
+        <input
+          id={`${id}-registrar`}
+          type="checkbox"
+          checked={pago.registrar}
+          onChange={(e) => onCambio({ ...pago, registrar: e.target.checked, errores: {} })}
+          disabled={deshabilitado}
+          aria-describedby={`${id}-registrar-ayuda`}
+        />
+        <label htmlFor={`${id}-registrar`}>Anotar ahora el pago recibido</label>
+      </div>
+      <p id={`${id}-registrar-ayuda`} className="campo-ayuda">
+        {pago.registrar
+          ? 'Se guarda junto con la suscripción. Si aún no tienes el pago, desmarca la casilla: podrás anotarlo después en "Pagos".'
+          : 'No se anotará ningún pago. Podrás registrarlo después en "Pagos" de esta suscripción.'}
+      </p>
+      {pago.registrar && (
+        <CamposPago
+          id={id}
+          valor={pago.datos}
+          onCambio={(campo, v) =>
+            onCambio({
+              ...pago,
+              datos: { ...pago.datos, [campo]: v },
+              errores: {
+                ...pago.errores,
+                [campo]: undefined,
+                ...(campo === 'medio' ? { referencia: undefined } : {}),
+                pago: undefined,
+              },
+            })
+          }
+          errores={pago.errores}
+          precioPlan={precio}
+          deshabilitado={deshabilitado}
+        />
+      )}
+      {pago.errores.pago && pago.errores.pago.length > 0 && (
+        <ul className="campo-errores">
+          {pago.errores.pago.map((m) => (
+            <li key={m}>{m}</li>
+          ))}
+        </ul>
+      )}
+    </fieldset>
+  )
 }
 
 export const TEXTOS_ACCION_SUSCRIPCION: Record<
@@ -121,15 +240,20 @@ type Dialogo = {
   enviando: boolean
   erroresMotivo: string[]
   error: DatosAviso | null
+  /** P7: solo renovar y cambiar de plan. */
+  pago: EstadoPago
 }
 
-export function AdminSuscripciones({ token, onSesionTerminada }: AdminSuscripcionesProps) {
+export function AdminSuscripciones({ token, onSesionTerminada, consulta }: AdminSuscripcionesProps) {
   const [asesores, setAsesores] = useState<ResumenAsesor[]>([])
   const [planesActivos, setPlanesActivos] = useState<Plan[]>([])
   const [errorOpciones, setErrorOpciones] = useState<DatosAviso | null>(null)
 
-  const [filtros, setFiltros] = useState<FiltrosSuscripciones>(FILTROS_INICIALES)
-  const [borrador, setBorrador] = useState({ asesorId: '', estado: '' })
+  const [filtros, setFiltros] = useState<FiltrosSuscripciones>(() => filtrosSuscripcionesDesdeConsulta(consulta))
+  const [borrador, setBorrador] = useState(() => {
+    const f = filtrosSuscripcionesDesdeConsulta(consulta)
+    return { asesorId: f.asesorId, estado: f.estado }
+  })
   const [lista, setLista] = useState<ListaSuscripciones | null>(null)
   const [cargando, setCargando] = useState(true)
   const [errorCarga, setErrorCarga] = useState<DatosAviso | null>(null)
@@ -140,8 +264,12 @@ export function AdminSuscripciones({ token, onSesionTerminada }: AdminSuscripcio
   const [erroresAsignacion, setErroresAsignacion] = useState<{ asesorId?: string[]; planId?: string[] }>({})
   const [avisoAsignacion, setAvisoAsignacion] = useState<DatosAviso | null>(null)
   const [asignando, setAsignando] = useState(false)
+  const [pagoAsignacion, setPagoAsignacion] = useState<EstadoPago>(() => pagoInicial(null))
 
   const [dialogo, setDialogo] = useState<Dialogo | null>(null)
+  // P7: suscripción con la sección "Pagos" abierta.
+  const [pagosDe, setPagosDe] = useState<Suscripcion | null>(null)
+  const origenPagos = useRef<HTMLButtonElement | null>(null)
 
   const titulo = useRef<HTMLHeadingElement>(null)
   const tituloLista = useRef<HTMLHeadingElement>(null)
@@ -239,14 +367,30 @@ export function AdminSuscripciones({ token, onSesionTerminada }: AdminSuscripcio
     }
     const asesor = asesores.find((a) => a.id === asignacion.asesorId)
     const plan = planesActivos.find((p) => String(p.id) === asignacion.planId)
+    // P7 (CA-P7-27, 28): pago solo si el plan tiene precio y el administrador lo anota ahora.
+    const conPago = ofrecePago(plan ? plan.precioCop : null) && pagoAsignacion.registrar
+    if (conPago) {
+      const erroresPago = validarPago(pagoAsignacion.datos)
+      setPagoAsignacion((p) => ({ ...p, errores: erroresPago }))
+      if (hayErroresPago(erroresPago)) {
+        enfocarPrimerErrorPago('asignar-pago', erroresPago)
+        return
+      }
+    }
     setAsignando(true)
     try {
-      await asignarPlan(token, asignacion.asesorId, Number(asignacion.planId))
+      await asignarPlan(
+        token,
+        asignacion.asesorId,
+        Number(asignacion.planId),
+        conPago ? pagoDesdeFormulario(pagoAsignacion.datos) : null,
+      )
       setAsignando(false)
       setAsignacion({ asesorId: '', planId: '' })
+      setPagoAsignacion(pagoInicial(null))
       setAvisoAsignacion({
         tipo: 'exito',
-        texto: `Se asignó el plan ${plan?.nombre ?? ''} a ${asesor?.nombre ?? 'el asesor'}.`,
+        texto: `Se asignó el plan ${plan?.nombre ?? ''} a ${asesor?.nombre ?? 'el asesor'}.${conPago ? ' Se registró el pago.' : ''}`,
       })
       setRecarga((r) => r + 1)
     } catch (error) {
@@ -259,6 +403,12 @@ export function AdminSuscripciones({ token, onSesionTerminada }: AdminSuscripcio
           asesorId: porCampo.asesorId.length ? porCampo.asesorId : undefined,
           planId: porCampo.planId.length ? porCampo.planId : undefined,
         })
+        // P7 (CA-P7-29): errores del pago junto a su campo; nada se creó.
+        const erroresPago = erroresPagoDe(error)
+        if (hayErroresPago(erroresPago)) {
+          setPagoAsignacion((p) => ({ ...p, errores: erroresPago }))
+          enfocarPrimerErrorPago('asignar-pago', erroresPago)
+        }
       }
       // 409: ya tiene una suscripción viva (o el plan ya no está activo).
       setAvisoAsignacion({ tipo: 'error', texto })
@@ -276,7 +426,35 @@ export function AdminSuscripciones({ token, onSesionTerminada }: AdminSuscripcio
       enviando: false,
       erroresMotivo: [],
       error: null,
+      pago: pagoInicial(accion === 'renovar' ? precioDePlan(suscripcion.plan.id) : null),
     })
+  }
+
+  /** Precio de un plan activo; null si no se conoce (p. ej. un plan ya inactivo). */
+  function precioDePlan(id: number | null | undefined): number | null {
+    if (id === null || id === undefined) return null
+    const plan = planesActivos.find((p) => p.id === id)
+    return plan ? plan.precioCop : null
+  }
+
+  /** Precio del plan que quedará tras renovar o cambiar; undefined si aún no se eligió (cambiar de plan). */
+  function precioDialogo(d: Dialogo): number | null | undefined {
+    if (d.accion === 'renovar') return precioDePlan(d.planId ? Number(d.planId) : d.suscripcion.plan.id)
+    if (d.accion === 'cambiar-plan') return d.planId ? precioDePlan(Number(d.planId)) : undefined
+    return undefined
+  }
+
+  function abrirPagos(suscripcion: Suscripcion, boton: HTMLButtonElement) {
+    origenPagos.current = boton
+    setResultado(null)
+    setPagosDe(suscripcion)
+  }
+
+  function cerrarPagos() {
+    setPagosDe(null)
+    const boton = origenPagos.current
+    origenPagos.current = null
+    window.setTimeout(() => boton?.focus(), 0)
   }
 
   function cancelarDialogo() {
@@ -302,13 +480,34 @@ export function AdminSuscripciones({ token, onSesionTerminada }: AdminSuscripcio
       document.getElementById('dialogo-plan')?.focus()
       return
     }
-    setDialogo({ ...dialogo, enviando: true, erroresPlan: [], erroresMotivo: [], error: null })
+    const conPago =
+      (accion === 'renovar' || accion === 'cambiar-plan') && ofrecePago(precioDialogo(dialogo)) && dialogo.pago.registrar
+    if (conPago) {
+      const erroresPago = validarPago(dialogo.pago.datos)
+      if (hayErroresPago(erroresPago)) {
+        setDialogo({ ...dialogo, pago: { ...dialogo.pago, errores: erroresPago } })
+        enfocarPrimerErrorPago('dialogo-pago', erroresPago)
+        return
+      }
+    }
+    setDialogo({
+      ...dialogo,
+      enviando: true,
+      erroresPlan: [],
+      erroresMotivo: [],
+      error: null,
+      pago: { ...dialogo.pago, errores: {} },
+    })
     try {
       const actualizada = await ejecutarAccionSuscripcion(token, suscripcion.id, accion, {
         planId: planId ? Number(planId) : null,
         motivo,
+        pago: conPago ? pagoDesdeFormulario(dialogo.pago.datos) : null,
       })
-      terminarAccion({ tipo: 'exito', texto: exito(accion, suscripcion.asesor.nombre || 'el asesor', actualizada) })
+      terminarAccion({
+        tipo: 'exito',
+        texto: `${exito(accion, suscripcion.asesor.nombre || 'el asesor', actualizada)}${conPago ? ' Se registró el pago.' : ''}`,
+      })
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         setDialogo(null)
@@ -318,6 +517,8 @@ export function AdminSuscripciones({ token, onSesionTerminada }: AdminSuscripcio
       if (error instanceof ApiError && error.status === 400) {
         const motivoErr = erroresDe(error, 'motivo')
         const planErr = erroresDe(error, 'planId')
+        const pagoErr = erroresPagoDe(error)
+        const hayPago = hayErroresPago(pagoErr)
         setDialogo(
           (d) =>
             d && {
@@ -325,9 +526,11 @@ export function AdminSuscripciones({ token, onSesionTerminada }: AdminSuscripcio
               enviando: false,
               erroresMotivo: motivoErr,
               erroresPlan: planErr,
-              error: motivoErr.length || planErr.length ? null : { tipo: 'error', texto: error.mensaje },
+              pago: { ...d.pago, errores: pagoErr },
+              error: motivoErr.length || planErr.length || hayPago ? null : { tipo: 'error', texto: error.mensaje },
             },
         )
+        if (hayPago) window.setTimeout(() => enfocarPrimerErrorPago('dialogo-pago', pagoErr), 0)
         return
       }
       if (error instanceof ApiError && [403, 404, 409].includes(error.status)) {
@@ -349,6 +552,7 @@ export function AdminSuscripciones({ token, onSesionTerminada }: AdminSuscripcio
 
   const totalPaginas = lista ? Math.max(1, Math.ceil(lista.total / Math.max(1, lista.tamano))) : 1
   const paginaActual = lista?.pagina ?? filtros.pagina
+  const planAsignado = planesActivos.find((p) => String(p.id) === asignacion.planId) ?? null
 
   function contenidoDialogo(d: Dialogo) {
     if (d.accion !== 'renovar' && d.accion !== 'cambiar-plan') return undefined
@@ -362,7 +566,16 @@ export function AdminSuscripciones({ token, onSesionTerminada }: AdminSuscripcio
           id="dialogo-plan"
           etiqueta={d.accion === 'renovar' ? 'Plan para la renovación' : 'Plan nuevo'}
           valor={d.planId}
-          onCambio={(v) => setDialogo((x) => x && { ...x, planId: v, erroresPlan: [] })}
+          onCambio={(v) =>
+            setDialogo((x) => {
+              if (!x) return x
+              // P7: el valor del pago toma el precio del plan elegido.
+              const id = v ? Number(v) : x.accion === 'renovar' ? x.suscripcion.plan.id : null
+              const precio = precioDePlan(id)
+              const valorCop = precio !== null && precio > 0 ? String(precio) : x.pago.datos.valorCop
+              return { ...x, planId: v, erroresPlan: [], pago: { ...x.pago, datos: { ...x.pago.datos, valorCop } } }
+            })
+          }
           opciones={opciones}
           textoVacio={
             d.accion === 'renovar'
@@ -373,6 +586,15 @@ export function AdminSuscripciones({ token, onSesionTerminada }: AdminSuscripcio
           requerido={d.accion === 'cambiar-plan'}
           deshabilitado={d.enviando}
         />
+        {ofrecePago(precioDialogo(d)) && (
+          <BloquePago
+            id="dialogo-pago"
+            pago={d.pago}
+            precio={precioDialogo(d) ?? null}
+            deshabilitado={d.enviando}
+            onCambio={(pago) => setDialogo((x) => x && { ...x, pago })}
+          />
+        )}
       </>
     )
   }
@@ -412,6 +634,12 @@ export function AdminSuscripciones({ token, onSesionTerminada }: AdminSuscripcio
             onCambio={(v) => {
               setAsignacion((a) => ({ ...a, planId: v }))
               setErroresAsignacion((e) => ({ ...e, planId: undefined }))
+              // P7: el valor del pago toma el precio del plan elegido.
+              setPagoAsignacion((p) => ({
+                ...p,
+                errores: {},
+                datos: { ...p.datos, valorCop: formularioPagoInicial(precioDePlan(v ? Number(v) : null)).valorCop },
+              }))
             }}
             opciones={opcionesPlan}
             textoVacio={opcionesPlan.length ? 'Elige un plan' : 'No hay planes activos'}
@@ -419,6 +647,18 @@ export function AdminSuscripciones({ token, onSesionTerminada }: AdminSuscripcio
             deshabilitado={asignando}
           />
         </div>
+        {planAsignado && ofrecePago(planAsignado.precioCop) && (
+          <BloquePago
+            id="asignar-pago"
+            pago={pagoAsignacion}
+            precio={planAsignado.precioCop}
+            deshabilitado={asignando}
+            onCambio={setPagoAsignacion}
+          />
+        )}
+        {planAsignado && !ofrecePago(planAsignado.precioCop) && (
+          <p className="form-ayuda">Este plan no tiene precio: no se registra un pago.</p>
+        )}
         <Aviso aviso={avisoAsignacion} />
         <div className="admin-botones">
           <button type="submit" disabled={asignando}>
@@ -507,11 +747,17 @@ export function AdminSuscripciones({ token, onSesionTerminada }: AdminSuscripcio
                     <td>{formatearFechaSuscripcion(s.finVigencia)}</td>
                     <td>{acciones.length > 0 ? textoDiasRestantes(s.diasRestantes) : '—'}</td>
                     <td>
-                      {acciones.length === 0 ? (
-                        <span className="dato-secundario">Sin acciones</span>
-                      ) : (
-                        <div className="acciones-fila">
-                          {acciones.map((accion) => (
+                      <div className="acciones-fila">
+                        <button
+                          type="button"
+                          className="secondary-button"
+                          aria-expanded={pagosDe?.id === s.id}
+                          disabled={dialogo !== null}
+                          onClick={(e) => (pagosDe?.id === s.id ? cerrarPagos() : abrirPagos(s, e.currentTarget))}
+                        >
+                          Pagos <span className="sr-only">de {nombre}</span>
+                        </button>
+                        {acciones.map((accion) => (
                             <button
                               key={accion}
                               type="button"
@@ -522,9 +768,8 @@ export function AdminSuscripciones({ token, onSesionTerminada }: AdminSuscripcio
                               {TEXTOS_ACCION_SUSCRIPCION[accion].boton}{' '}
                               <span className="sr-only">de {nombre}</span>
                             </button>
-                          ))}
-                        </div>
-                      )}
+                        ))}
+                      </div>
                     </td>
                   </tr>
                 )
@@ -556,6 +801,17 @@ export function AdminSuscripciones({ token, onSesionTerminada }: AdminSuscripcio
             Siguiente
           </button>
         </nav>
+      )}
+
+      {pagosDe && (
+        <PagosSuscripcion
+          key={pagosDe.id}
+          token={token}
+          suscripcion={pagosDe}
+          precioPlan={precioDePlan(pagosDe.plan.id)}
+          onSesionTerminada={onSesionTerminada}
+          onCerrar={cerrarPagos}
+        />
       )}
 
       {dialogo && (
