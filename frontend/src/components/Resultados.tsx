@@ -12,7 +12,7 @@ import type { ErroresPorCampo } from '../api/http'
 import { textoTotal } from '../catalogo/formato'
 import type { EstadoPeticion } from '../catalogo/usePeticion'
 import { usePeticion } from '../catalogo/usePeticion'
-import { HASH_BUSCAR, hashBuscar, navegar, recordarBusqueda } from '../rutas'
+import { HASH_BUSCAR, HASH_BUSCO_VEHICULO, hashBuscar, navegar, recordarBusqueda } from '../rutas'
 import { Aviso } from './Aviso'
 import { Filtros } from './Filtros'
 import { Paginacion } from './Paginacion'
@@ -160,6 +160,7 @@ export function Resultados({ filtros, hash, opciones, onReintentarOpciones }: Re
               <button type="button" className="cat-boton" onClick={limpiar}>
                 Limpiar filtros
               </button>
+              <AccesoBusqueda />
             </div>
           )}
 
@@ -183,8 +184,23 @@ export function Resultados({ filtros, hash, opciones, onReintentarOpciones }: Re
               totalPaginas={totalPaginas}
             />
           )}
+
+          {estado.estado === 'ok' && estado.datos.items.length > 0 && <AccesoBusqueda />}
         </section>
       </div>
     </div>
+  )
+}
+
+/** P6 (D-56 d A, CA-P6-26): "Busco un vehículo" cuando no hay resultados y al final de la lista. */
+function AccesoBusqueda() {
+  return (
+    <aside className="cat-busqueda-acceso" aria-labelledby="busqueda-acceso-titulo">
+      <h2 id="busqueda-acceso-titulo">¿No encuentras lo que buscas?</h2>
+      <p>Cuéntanos qué vehículo necesitas y te contactamos con opciones.</p>
+      <a className="cat-aviso-boton" href={HASH_BUSCO_VEHICULO}>
+        Busco un vehículo
+      </a>
+    </aside>
   )
 }

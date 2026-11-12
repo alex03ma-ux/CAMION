@@ -239,7 +239,8 @@ function lista(valor: unknown): unknown[] {
   return Array.isArray(valor) ? valor : []
 }
 
-function aTarjeta(valor: unknown): TarjetaVehiculo | null {
+/** P6: también la usan las coincidencias y "Mis solicitudes" (mismo formato del catálogo). */
+export function aTarjeta(valor: unknown): TarjetaVehiculo | null {
   if (!esObjetoJson(valor)) return null
   const slug = texto(valor.slug)
   const marca = textoONulo(valor.marca)
@@ -273,7 +274,7 @@ function aTarjeta(valor: unknown): TarjetaVehiculo | null {
   }
 }
 
-function aTarjetas(valor: unknown): TarjetaVehiculo[] {
+export function aTarjetas(valor: unknown): TarjetaVehiculo[] {
   return lista(valor)
     .map(aTarjeta)
     .filter((t): t is TarjetaVehiculo => t !== null)

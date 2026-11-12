@@ -439,3 +439,68 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - Cada aviso tiene su autorización de datos con su formulario.
   - En `eventos_lead` no hay notas, cierres ni reaperturas de los avisos. Esa parte de la guía no quedó ejercida a mano; la cubren las pruebas automáticas.
   - Los avisos 4 a 6 quedan como datos de prueba, junto con los leads 1 a 3. Se limpian antes de producción.
+
+## 2026-11-12 — P6 Créditos y búsquedas (rama `feature/p6-creditos`, apilada sobre `feature/p5b-avisos`)
+- HU-034 a HU-042, HU-071 y HU-072 (aviso dentro del panel), HU-061/062 y "Mis solicitudes" (D-53); RN-BU-001/002, RN-CO-006/007/008, RN-NO-003, RN-SE-003/004/006; D-3, D-7, D-9, D-44, D-45, D-48, D-53 a D-60.
+- Criterios en `docs/criterios/criterios-P6-creditos.md` (CA-P6-01 a 80), contrato en `P6-contrato-api.md`, evidencia en `P6-evidencia.md`.
+- **Decisiones TOMADAS por la responsable (2026-11-10):**
+  - D-54: A, el crédito es una solicitud de contacto con seguimiento mínimo; la gestión ante bancos es interna (D-45).
+  - D-55: **B (no la recomendada)**, el crédito pide solo nombre, teléfono, correo opcional y comentario opcional; sin monto, cuota, ingresos ni tipo de vehículo; no existe `leads_credito`.
+  - D-56: A en (a) a (d), categoría obligatoria y resto opcional; el administrador relaciona vehículos y el comprador con cuenta los ve; sin coincidencias automáticas; acceso desde el catálogo y el pie.
+  - D-57: A, estados mostrados Registrado / En gestión / Cerrado; crédito sin "aprobado" ni "no aprobado"; resultados propios de la búsqueda.
+  - D-58: A, créditos y búsquedas nunca se reasignan y el asesor no los ve.
+  - D-59: las recomendaciones, solo por `usuario_id`, sin notas, responsable ni resultado, solo lectura, solo COMPRADOR.
+  - D-60 (coordinador, técnica): crédito solo sobre publicación visible, `departamento_id` y presupuesto `BIGINT`, ruta de listas pública, 409 al retirar en búsqueda cerrada y en coincidencias sin criterios, "En gestión" tras reabrir y repetidos solo del mismo origen y del mismo usuario.
+- **IMPLEMENTADO y PROBADO (pruebas automáticas; sin prueba con la API real):**
+  - crédito y búsqueda como leads `CREDITO` y `BUSQUEDA`, siempre en Administración; reutilizan historial, autorización de datos, notas, cierre, reapertura y contador de nuevos de P5;
+  - `POST /api/creditos` (portada o ficha), `POST /api/busquedas` y `GET /api/catalogo/listas-busqueda`, anónimas, con los límites compartidos, campo trampa y 8 KB; los campos financieros se ignoran y no quedan en ninguna tabla ni en el registro técnico (D-55 B);
+  - en "Contactos" del administrador: etiquetas y filtro "Crédito" y "Búsqueda", criterios legibles, "Ver coincidencias", relacionar (hasta 10) y retirar, cierre con resultados por origen y sin "Reasignar";
+  - pantallas `#/credito`, `#/busco-un-vehiculo` y `#/mis-solicitudes`; banda "Quiero un crédito" de la portada y botón "Solicitar crédito para este vehículo" en la ficha;
+  - el asesor no ve créditos ni búsquedas, tampoco los de sus vehículos.
+- Migración `015_p6_creditos_busquedas` (con su archivo SUBIR): amplía `CK_Lead_Origen`, `CK_Lead_Resultado`, `CK_Consent_Formulario` y `CK_EvLead_Tipo`, añade `IX_Lead_Usuario` y crea `leads_busqueda` y `busqueda_vehiculos`. **NO APLICADA.**
+- **Commits** (`git log feature/p5b-avisos..HEAD`, 24):
+  - `463a2ce` criterios y D-54 a D-59 pendientes; `eb0d3ef` D-54 a D-59 tomadas; `ebe2ffd` criterios ajustados a D-55 B; `901b5b3` contrato de la API;
+  - `948d3b9` migración 015; `3dae855` crédito, búsqueda, gestión y "Mis solicitudes" en la API; `7dd786e` pruebas de integración;
+  - `7395ff2` servicios del frontend; `4cd5dd1` pantallas públicas y "Mis solicitudes"; `74f5876` panel del administrador; `e31b734` pruebas de pantallas;
+  - `ae8ce60` ruta de listas de la búsqueda; `82b018b` contrato con esa ruta; `5171f36` el formulario usa la ruta; `f2adf48` sus pruebas;
+  - `4e5936a` revisión de seguridad; `b423312` y `ea9de97` pruebas de QA; `e07fe45` evidencia;
+  - `35129b1` repetidos por origen y por usuario (M-P6-1, O-1); `c2573b8` coincidencias sin criterios responde 409; `b581751` sus pruebas; `f3013e2` contratos P6 y P5b con la regla de D-60; `ca1a9e1` D-60.
+- **Pruebas ejecutadas:** `dotnet test` 1118/1118, tras las correcciones de M-P6-1, O-1 y coincidencias (QA había registrado 1110/1110 antes de ellas); `npx vitest run` 643/643; `npx tsc -b`, `npx tsc -p tsconfig.test.json --noEmit` y `npm run build` correctos. Las pruebas de API usan SQLite en memoria y no tocan `camion_ventas`. QA no encontró defectos frente al contrato; O-1 se resolvió con D-60 y O-3 (nombres de campo en los criterios) se corrigió en el documento.
+- **NO EJECUTADO:** E2E (Playwright no instalado), la migración 015 en MariaDB (CA-P6-77 y 78) y la prueba manual de la responsable.
+- **Revisión de seguridad** (`REVISION-SEGURIDAD-P6.md`): CON OBSERVACIONES, sin hallazgos críticos ni altos.
+  - M-P6-1 (un contacto desde la ficha quedaba dentro de un crédito de esa ficha y no llegaba al asesor): **corregido** en `35129b1`, con prueba en `b581751`.
+  - M-1 de P5 (IP detrás de un proxy) cubre ahora también `/api/creditos` y `/api/busquedas`; sigue en INF-2.
+  - B-1 (un tercero que conoce el teléfono puede añadir texto a una solicitud abierta): aceptado, mismo diseño de P5b; la marca "sin verificar" va al backlog (P6-B).
+  - B-2 (bloqueo dirigido por teléfono): aceptado; se mitiga con INF-2.
+  - B-3 (carreras sin bloqueo): aceptado para el conteo y el repetido; la carrera al relacionar va al backlog (P6-B).
+  - B-4 (rutas de vehículos relacionados sin la política de administrador): hoy correcto por el alcance y la comprobación interna; defensa en profundidad al backlog (P6-B).
+  - B-5 (coincidencias responde 500 sin criterios): corregido en `c2573b8` (409, D-60).
+  - B-6 (listas de la búsqueda sin límite): al backlog (P6-B), junto con INF-2.
+  - B-7 (SUBIR sin `USE` y no repetible) y B-9 (BAJAR puede fallar al quitar `IX_Lead_Usuario`): se tratan en el procedimiento de la migración.
+  - B-8 (ventanas sin CHECK entre DROP y ADD): aceptado; riesgo bajo con la API detenida.
+  - Sin secretos ni dependencias nuevas; 0 vulnerabilidades en npm; MySqlConnector 2.3.7 sigue en INF-2.
+- **DOCUMENTADO:** criterios con D-60 y O-3, corrección de "Actualización P5b" y "Actualización P6" en `ESTADO-REAL.md`, backlog (P6 y P6-B), nota P6 y finalidades de la política de datos, y guía `docs/manual/P6-creditos.md`.
+- **Pendientes:**
+  - aplicar la 015 con respaldo nuevo previo (`mysqldump --result-file` a `C:\Respaldo_CAMION\`), con la API detenida y seleccionando antes `camion_ventas` en phpMyAdmin;
+  - la prueba manual de la responsable (pasos en `docs/manual/P6-creditos.md`);
+  - INF-2 antes de publicar en internet;
+  - la revisión legal (D-44). La política ya no prevé datos financieros: por D-55 B el portal no los recoge.
+- PR: por abrir contra `main`, sin merge. Rama sin publicar.
+- **Migración 015 aplicada (2026-11-12).**
+  - Respaldo previo: `C:\Respaldo_CAMION\camion_ventas_antes_015_p6_20261112_1140.sql` (145 KB, 47 tablas, termina en "Dump completed").
+  - La API estaba detenida. La responsable seleccionó `camion_ventas` en phpMyAdmin e importó `015_p6_creditos_busquedas_SUBIR.sql`.
+  - Verificación de solo lectura:
+    - tablas `leads_busqueda` y `busqueda_vehiculos` creadas y vacías;
+    - `CK_Lead_Origen` con CREDITO y BUSQUEDA;
+    - `CK_Lead_Resultado` con REMITIDO_ENTIDAD, VEHICULO_ENCONTRADO y SIN_VEHICULO;
+    - CHECK de consentimientos y eventos ampliados;
+    - índice `IX_Lead_Usuario`;
+    - datos intactos: 6 leads, 20 eventos, 6 consentimientos y 14 publicaciones.
+  - La API se compiló y se arrancó con la `.dll`; la ruta pública de listas responde.
+- **Cambio pedido en la prueba (2026-11-12, D-56 d pasa a B).** La responsable no encontraba "Busco un vehículo". Se añade un tercer bloque en la portada, junto a los de D-51 (commit c7d7b75). Pruebas: `npx vitest run` 643/643, `tsc -b`, `tsc -p tsconfig.test.json` y `npm run build` OK; revisado en el navegador a 1280 px.
+- **Prueba manual P6: PROBADO EN PARTE por la responsable (2026-11-12), respuesta "Todo bien".**
+  - En la base hay 2 créditos desde la portada: uno sin cuenta (lead 7) y otro con cuenta de comprador (lead 8). Ambos están en Administración y tienen su autorización de datos con formulario CREDITO.
+  - NO EJERCIDO a mano (sin rastro en la base): crédito desde una ficha, búsqueda, coincidencias, relacionar y retirar, notas, cierre y reapertura de créditos y búsquedas. Lo cubren las pruebas automáticas (1118 + 643).
+  - "Mis solicitudes" y la vista del asesor: sin rastro en la base, porque son lecturas. La responsable dijo "Todo bien".
+  - Los leads 7 y 8 quedan como datos de prueba, junto con los 1 a 6. Se limpian antes de producción.
+

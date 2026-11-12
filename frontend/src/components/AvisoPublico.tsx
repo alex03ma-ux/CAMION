@@ -21,11 +21,11 @@ import {
 } from '../api/avisos'
 import { CORREO_MAX, MENSAJE_CONTACTO_FALLO, MENSAJE_REVISA_DATOS, NOMBRE_MAX, TELEFONO_MAX } from '../api/contactos'
 import { ApiError } from '../api/http'
-import { HASH_BUSCAR, HASH_INICIO } from '../rutas'
 import { AutorizacionDatos } from './AutorizacionDatos'
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo, CampoAreaTexto, CampoSelect } from './Campo'
 import { NotaObligatorio } from './NotaObligatorio'
+import { CampoTrampa, ConfirmacionSolicitud } from './SolicitudComun'
 
 /** Sesión del visitante, si la tiene (comprador, asesor o administrador). */
 export type SesionAviso = { token: string; perfil: PerfilUsuario }
@@ -189,22 +189,7 @@ export function AvisoPublico({ variante, sesion }: AvisoPublicoProps) {
       {enviado === null && <p className="aviso-publico-intro">{textos.intro}</p>}
 
       {enviado !== null ? (
-        <section className="contacto-form aviso-publico-form aviso-confirmacion" aria-label="Solicitud enviada">
-          <div ref={refConfirmacion} tabIndex={-1} className="contacto-aviso">
-            <Aviso aviso={{ tipo: 'exito', texto: enviado }} />
-          </div>
-          <div className="aviso-confirmacion-acciones">
-            <a className="inv-boton-enlace" href={HASH_INICIO}>
-              Volver al inicio
-            </a>
-            <a className="inv-boton-enlace inv-boton-secundario" href={HASH_BUSCAR}>
-              Ver vehículos
-            </a>
-            <button type="button" className="secondary-button aviso-confirmacion-otra" onClick={enviarOtra}>
-              Enviar otra solicitud
-            </button>
-          </div>
-        </section>
+        <ConfirmacionSolicitud ref={refConfirmacion} mensaje={enviado} onEnviarOtra={enviarOtra} />
       ) : (
       <form
         className="contacto-form aviso-publico-form"
@@ -293,18 +278,7 @@ export function AvisoPublico({ variante, sesion }: AvisoPublicoProps) {
         />
 
         {/* Campo trampa: fuera de la vista, del orden de tabulación y de los lectores de pantalla (CA-P5b-57). */}
-        <div className="campo-trampa" aria-hidden="true">
-          <label htmlFor={id('sitio-web')}>Sitio web (deja este campo vacío)</label>
-          <input
-            id={id('sitio-web')}
-            name="sitioWeb"
-            type="text"
-            tabIndex={-1}
-            autoComplete="off"
-            value={sitioWeb}
-            onChange={(e) => setSitioWeb(e.target.value)}
-          />
-        </div>
+        <CampoTrampa id={id('sitio-web')} valor={sitioWeb} onCambio={setSitioWeb} />
 
         <div ref={refAviso} tabIndex={-1} className="contacto-aviso">
           <Aviso aviso={aviso} />

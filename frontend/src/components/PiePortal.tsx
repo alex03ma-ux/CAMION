@@ -1,6 +1,7 @@
 import { categoriasDisponibles, type OpcionCatalogo } from '../api/catalogo'
 import {
   HASH_BUSCAR,
+  HASH_BUSCO_VEHICULO,
   HASH_CUENTA,
   HASH_REGISTRO,
   HASH_SEGURO_TODO_RIESGO,
@@ -48,7 +49,7 @@ export function PiePortal({ tipos, conSesion }: PiePortalProps) {
             </li>
           </ul>
         </nav>
-        {/* P5b (D-51 A): columna "Servicios" con los dos avisos públicos. */}
+        {/* P5b (D-51 A): columna "Servicios" con los dos avisos públicos. P6 (D-56 d A): y "Busco un vehículo". */}
         <nav className="cat-pie-columna" aria-label="Servicios en el pie de página">
           <h2>Servicios</h2>
           <ul>
@@ -57,6 +58,9 @@ export function PiePortal({ tipos, conSesion }: PiePortalProps) {
             </li>
             <li>
               <a href={HASH_SEGURO_TODO_RIESGO}>Compra tu seguro todo riesgo</a>
+            </li>
+            <li>
+              <a href={HASH_BUSCO_VEHICULO}>Busco un vehículo</a>
             </li>
           </ul>
         </nav>

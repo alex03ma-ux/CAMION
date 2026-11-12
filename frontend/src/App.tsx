@@ -32,6 +32,7 @@ import { Contactos } from './components/Contactos'
 import type { DatosAviso } from './components/Aviso'
 import { Aviso } from './components/Aviso'
 import { AvisoPublico } from './components/AvisoPublico'
+import { BusquedaVehiculo, TITULO_BUSQUEDA } from './components/BusquedaVehiculo'
 import { DetalleVehiculo } from './components/DetalleVehiculo'
 import { PiePortal } from './components/PiePortal'
 import { Encabezado } from './components/Encabezado'
@@ -39,11 +40,13 @@ import { Inicio } from './components/Inicio'
 import { InventarioPagina } from './components/InventarioPagina'
 import { LoginForm } from './components/LoginForm'
 import { MisPublicaciones } from './components/MisPublicaciones'
+import { MisSolicitudes, TITULO_MIS_SOLICITUDES } from './components/MisSolicitudes'
 import { NavAdmin } from './components/NavAdmin'
 import { PerfilPanel } from './components/PerfilPanel'
 import { Privacidad } from './components/Privacidad'
 import { RegistroForm } from './components/RegistroForm'
 import { Resultados } from './components/Resultados'
+import { SolicitudCredito, TITULO_CREDITO, TITULO_CREDITO_VEHICULO } from './components/SolicitudCredito'
 import {
   esRutaContactos,
   esRutaInventario,
@@ -102,6 +105,10 @@ function tituloDocumento(ruta: Ruta): string {
   if (ruta.nombre === 'privacidad') return `Política de tratamiento de datos | ${NOMBRE_PORTAL}`
   if (ruta.nombre === 'vendeTuCamion') return `Vende tu camión | ${NOMBRE_PORTAL}`
   if (ruta.nombre === 'seguroTodoRiesgo') return `Compra tu seguro todo riesgo | ${NOMBRE_PORTAL}`
+  if (ruta.nombre === 'credito')
+    return `${ruta.slug === null ? TITULO_CREDITO : TITULO_CREDITO_VEHICULO} | ${NOMBRE_PORTAL}`
+  if (ruta.nombre === 'buscoVehiculo') return `${TITULO_BUSQUEDA} | ${NOMBRE_PORTAL}`
+  if (ruta.nombre === 'misSolicitudes') return `${TITULO_MIS_SOLICITUDES} | ${NOMBRE_PORTAL}`
   return NOMBRE_PORTAL
 }
 
@@ -283,8 +290,12 @@ export default function App() {
   // P4a: el inventario exige sesión; sin ella se va al login de #/cuenta
   // (si la sesión terminó, allí se ve el aviso "Tu sesión terminó...").
   // P4b: "Mis publicaciones" también exige sesión.
-  // P5: los contactos también.
-  const enInventario = esRutaInventario(ruta) || ruta.nombre === 'publicaciones' || esRutaContactos(ruta)
+  // P5: los contactos también. P6: "Mis solicitudes" también.
+  const enInventario =
+    esRutaInventario(ruta) ||
+    ruta.nombre === 'publicaciones' ||
+    esRutaContactos(ruta) ||
+    ruta.nombre === 'misSolicitudes'
   useEffect(() => {
     if (enInventario && !conSesion) navegar(HASH_CUENTA)
   }, [enInventario, conSesion])
@@ -323,6 +334,18 @@ export default function App() {
         {ruta.nombre === 'seguroTodoRiesgo' && (
           <AvisoPublico key="SEGURO_TODO_RIESGO" variante="SEGURO_TODO_RIESGO" sesion={sesionFormulario} />
         )}
+        {/* P6 (D-54, D-56, D-58 A): crédito y búsqueda públicos; sin cuenta o con cualquier sesión. */}
+        {ruta.nombre === 'credito' && (
+          <SolicitudCredito key={ruta.slug ?? 'portada'} slug={ruta.slug} sesion={sesionFormulario} />
+        )}
+        {ruta.nombre === 'buscoVehiculo' && (
+          <BusquedaVehiculo
+            opciones={opcionesFiltros}
+            onReintentarOpciones={reintentarOpcionesFiltros}
+            sesion={sesionFormulario}
+          />
+        )}
+        {ruta.nombre === 'misSolicitudes' && renderMisSolicitudes()}
         {ruta.nombre === 'cuenta' && renderCuenta()}
         {(ruta.nombre === 'inventario' ||
           ruta.nombre === 'inventarioNuevo' ||
@@ -396,6 +419,38 @@ export default function App() {
         )}
         {(vista.tipo === 'login' || vista.tipo === 'registro') && (
           <p role="status">Inicia sesión para ver tus publicaciones.</p>
+        )}
+      </div>
+    )
+  }
+
+  function renderMisSolicitudes() {
+    if (vista.tipo === 'perfil' || vista.tipo === 'admin') {
+      return (
+        <MisSolicitudes
+          key={vista.perfil.usuarioId}
+          token={vista.sesion.accessToken}
+          perfil={vista.perfil}
+          onSesionTerminada={alTerminarSesionAdmin}
+        />
+      )
+    }
+    return (
+      <div className="cat-pagina inv-pagina">
+        <h1 tabIndex={-1} className="inv-titulo">
+          {TITULO_MIS_SOLICITUDES}
+        </h1>
+        {vista.tipo === 'verificando' && <p role="status">Verificando tu sesión...</p>}
+        {vista.tipo === 'sinConexion' && (
+          <>
+            <Aviso aviso={{ tipo: 'error', texto: vista.mensaje }} />
+            <p>
+              <a href={HASH_CUENTA}>Ir a mi cuenta</a>
+            </p>
+          </>
+        )}
+        {(vista.tipo === 'login' || vista.tipo === 'registro') && (
+          <p role="status">Inicia sesión para ver tus solicitudes.</p>
         )}
       </div>
     )

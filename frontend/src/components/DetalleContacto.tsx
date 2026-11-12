@@ -3,19 +3,24 @@
 // y, solo para el administrador, reabrir (CA-P5-41), reasignar (CA-P5-44) y la prueba de autorización (CA-P5-16).
 // P5b: un aviso no tiene vehículo ("Sin vehículo asociado"), muestra la descripción o el tipo de vehículo, ofrece
 // sus propios resultados de cierre (CA-P5b-41) y nunca se reasigna (D-52 A, CA-P5b-43).
+// P6: créditos y búsquedas muestran Registrado / En gestión / Cerrado (D-57 a A) y sus resultados (D-57 b A); el
+// crédito, su vehículo con precio y enlace si sigue visible (CA-P6-41); la búsqueda, sus criterios, vehículos
+// relacionados y coincidencias (CA-P6-42, 50 a 56). Nunca se reasignan (D-58 A) ni muestran datos financieros (D-55 B).
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { nombreTipoVehiculo } from '../api/avisos'
 import { ApiError, MENSAJE_INESPERADO } from '../api/http'
 import type { ResumenAsesor } from '../api/inventario'
 import {
   agregarNota,
+  AYUDA_NOTA_SIN_FINANCIEROS,
   cerrarLead,
   erroresDeCampo,
   esAviso,
+  esSolicitudGestion,
+  estadoMostrado,
   formatearFechaHora,
   MENSAJE_DESTINO,
   MENSAJE_RESULTADO,
-  nombreEstadoLead,
   nombreEstadoPublicacionLead,
   nombreEstadoVehiculo,
   nombreEvento,
@@ -36,8 +41,10 @@ import {
   type LeadDetalle,
   type ResultadoCierre,
 } from '../api/leads'
+import { formatoCop } from '../catalogo/formato'
 import { HASH_CONTACTOS, hashVehiculo, navegar } from '../rutas'
 import { Aviso, type DatosAviso } from './Aviso'
+import { BusquedaAdmin } from './BusquedaAdmin'
 import { CampoAreaTexto, CampoSelect } from './Campo'
 import { DialogoConfirmacion } from './DialogoAccion'
 import { NotaObligatorio } from './NotaObligatorio'
@@ -273,6 +280,17 @@ export function DetalleContacto({
   const ocupado = dialogo !== null || enviandoNota
   const aviso = lead !== null && esAviso(lead.origen)
   const vehiculo = lead?.vehiculo ?? null
+  const esBusqueda = lead?.origen === 'BUSQUEDA'
+  // P6 (CA-P6-41): el detalle dice si el vehículo se ve hoy en el portal; si no llega, la regla de P5.
+  const vehiculoVisible = vehiculo !== null && (vehiculo.visible ?? vehiculo.estadoPublicacion === 'PUBLICADA')
+  const tituloMensaje =
+    lead?.origen === 'VENDE_TU_CAMION'
+      ? 'Descripción del vehículo'
+      : lead?.origen === 'CREDITO'
+        ? 'Comentario'
+        : lead?.origen === 'BUSQUEDA'
+          ? 'Descripción de lo que busca'
+          : 'Mensaje'
 
   return (
     <div className="cat-pagina inv-pagina contactos">
@@ -315,7 +333,7 @@ export function DetalleContacto({
             <p>
               <span className={`estado ${abierto ? 'estado-pendiente' : 'estado-activa'}`}>
                 <span className="sr-only">Estado: </span>
-                {nombreEstadoLead(lead.estado)}
+                {estadoMostrado(lead)}
               </span>
             </p>
             <dl className="inv-datos">
@@ -374,15 +392,28 @@ export function DetalleContacto({
                 <strong>Observación del cierre:</strong> {lead.observacionCierre}
               </p>
             )}
-            <h3 className="lead-subtitulo">
-              {lead.origen === 'VENDE_TU_CAMION' ? 'Descripción del vehículo' : 'Mensaje'}
-            </h3>
+            <h3 className="lead-subtitulo">{tituloMensaje}</h3>
             <p className="lead-mensaje inv-texto-largo">{lead.mensaje || '—'}</p>
             <p className="campo-ayuda">
               Los datos que dejó la persona no se pueden cambiar. Si hay que corregir algo, anótalo como nota.
             </p>
           </section>
 
+          {esBusqueda && (
+            <BusquedaAdmin
+              token={token}
+              lead={lead}
+              abierto={abierto}
+              ocupado={ocupado}
+              onActualizado={terminar}
+              onErrorEstado={(error) => {
+                if (alError401(error)) return true
+                return errorDeEstado(error)
+              }}
+            />
+          )}
+
+          {!esBusqueda && (
           <section className="inv-resumen" aria-labelledby="lead-vehiculo-titulo">
             <h2 id="lead-vehiculo-titulo" className="inv-resumen-titulo">
               Vehículo
@@ -396,6 +427,12 @@ export function DetalleContacto({
                     <dt>Vehículo</dt>
                     <dd>{vehiculo.titulo || '—'}</dd>
                   </div>
+                  {vehiculo.precioCop !== null && (
+                    <div>
+                      <dt>Precio publicado</dt>
+                      <dd>{formatoCop(vehiculo.precioCop)}</dd>
+                    </div>
+                  )}
                   <div>
                     <dt>Estado del vehículo</dt>
                     <dd>{vehiculo.estadoVehiculo ? nombreEstadoVehiculo(vehiculo.estadoVehiculo) : '—'}</dd>
@@ -404,11 +441,14 @@ export function DetalleContacto({
                     <dt>Publicación</dt>
                     <dd>
                       {vehiculo.estadoPublicacion ? nombreEstadoPublicacionLead(vehiculo.estadoPublicacion) : '—'}
+                      {vehiculo.visible === false && (
+                        <span className="dato-secundario">Ya no se ve en el portal</span>
+                      )}
                     </dd>
                   </div>
                 </dl>
                 <div className="acciones-fila">
-                  {vehiculo.estadoPublicacion === 'PUBLICADA' && vehiculo.slug && (
+                  {vehiculoVisible && vehiculo.slug && (
                     <a
                       className="inv-boton-enlace inv-boton-pequeno inv-boton-secundario"
                       href={hashVehiculo(vehiculo.slug)}
@@ -432,6 +472,7 @@ export function DetalleContacto({
               </>
             )}
           </section>
+          )}
 
           <section className="inv-resumen" aria-labelledby="lead-acciones-titulo">
             <h2 id="lead-acciones-titulo" className="inv-resumen-titulo">
@@ -451,7 +492,11 @@ export function DetalleContacto({
                   }}
                   errores={erroresNota}
                   maxLength={TEXTO_MAX}
-                  ayuda="De 5 a 500 caracteres."
+                  ayuda={
+                    esSolicitudGestion(lead.origen)
+                      ? `De 5 a 500 caracteres. ${AYUDA_NOTA_SIN_FINANCIEROS}`
+                      : 'De 5 a 500 caracteres.'
+                  }
                   deshabilitado={enviandoNota}
                 />
                 <button type="submit" className="inv-boton-auto" disabled={ocupado}>

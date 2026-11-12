@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import type { PerfilUsuario } from '../api/auth'
 import { MINUTOS_INACTIVIDAD } from '../auth/inactivity'
 import { esAdministrador, nombreRol, ROL_ASESOR, tieneRol } from '../auth/roles'
-import { hashSeccionAdmin, HASH_INVENTARIO, HASH_PUBLICACIONES } from '../rutas'
+import { hashSeccionAdmin, HASH_INVENTARIO, HASH_MIS_SOLICITUDES, HASH_PUBLICACIONES } from '../rutas'
 import { EnlaceContactos } from './EnlaceContactos'
 import { textoAccesoInventario } from './InventarioPagina'
 import { MiSuscripcion } from './MiSuscripcion'
@@ -39,6 +39,8 @@ export function PerfilPanel({
   const accesoInventario = textoAccesoInventario(perfil.roles)
   // P4p: el asesor ve su suscripción; la API (SoloAsesor) lo vuelve a comprobar.
   const verSuscripcion = token !== undefined && tieneRol(perfil.roles, ROL_ASESOR)
+  // P6 (D-59 d): "Mis solicitudes" solo para el comprador; la API (SoloComprador) lo vuelve a comprobar.
+  const verMisSolicitudes = tieneRol(perfil.roles, 'COMPRADOR')
 
   return (
     <section aria-labelledby="perfil-titulo">
@@ -56,6 +58,11 @@ export function PerfilPanel({
       <p className="form-ayuda">
         Por seguridad, la sesión se cierra sola tras {MINUTOS_INACTIVIDAD} minutos sin actividad.
       </p>
+      {verMisSolicitudes && (
+        <a className="inv-boton-enlace inv-boton-bloque" href={HASH_MIS_SOLICITUDES}>
+          Mis solicitudes
+        </a>
+      )}
       {verSuscripcion && <MiSuscripcion token={token} onSesionTerminada={onSesionTerminada} />}
       {accesoInventario && (
         <a className="inv-boton-enlace inv-boton-bloque" href={HASH_INVENTARIO}>

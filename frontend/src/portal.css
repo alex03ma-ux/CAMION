@@ -667,6 +667,13 @@ form.cat-busqueda-portada {
   }
 }
 
+/* Tres accesos en una fila en pantallas anchas (vender, seguro y "Busco un vehículo", D-56 d B). */
+@media (min-width: 1000px) {
+  .cat-avisos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 .cat-aviso-bloque {
   display: flex;
   align-items: flex-start;
@@ -1061,4 +1068,176 @@ form.admin-portada-form {
   .aviso-confirmacion-acciones .aviso-confirmacion-otra {
     width: 100%;
   }
+}
+
+/* ---- P6: crédito, "Busco un vehículo" y "Mis solicitudes" ---- */
+.credito-vehiculo {
+  max-width: 640px;
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  border-left: 4px solid var(--rojo);
+  border-radius: 8px;
+  background: #f6f6f6;
+  color: var(--negro);
+  overflow-wrap: anywhere;
+}
+
+.credito-vehiculo-etiqueta {
+  font-weight: 700;
+}
+
+.credito-vehiculo a {
+  color: var(--rojo-oscuro);
+  font-weight: 600;
+}
+
+/* Acceso al crédito en la ficha, debajo del formulario de contacto. */
+.credito-ficha {
+  margin: 20px 0 0;
+  padding: 16px;
+  border: 2px solid var(--gris-borde);
+  border-left: 6px solid var(--rojo);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.credito-ficha h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+}
+
+.credito-ficha p {
+  margin: 0 0 12px;
+  line-height: 1.5;
+  color: var(--gris-texto);
+}
+
+.credito-ficha-boton {
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.aviso-confirmacion-whatsapp {
+  margin-top: 16px;
+}
+
+.busqueda-grupo {
+  min-width: 0;
+  margin: 0 0 16px;
+  padding: 0;
+  border: 0;
+}
+
+.busqueda-grupo legend {
+  margin: 8px 0 4px;
+  padding: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--negro);
+}
+
+.busqueda-fila {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 12px;
+}
+
+.busqueda-fila .campo input,
+.busqueda-fila .campo select {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 360px) {
+  .busqueda-fila {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* "Busco un vehículo" en el catálogo: sin resultados y al final de la lista (D-56 d A). */
+.cat-busqueda-acceso {
+  margin: 24px 0 0;
+  padding: 18px 20px;
+  border: 2px solid var(--gris-borde);
+  border-left: 6px solid var(--rojo);
+  border-radius: 12px;
+  background: #fff;
+  text-align: left;
+}
+
+.cat-busqueda-acceso h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+  color: var(--negro);
+}
+
+.cat-busqueda-acceso p {
+  margin: 0 0 12px;
+  color: var(--gris-texto);
+}
+
+/* Detalle de una búsqueda en el panel: relacionados y coincidencias. */
+.busqueda-relacionados {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.busqueda-relacionado {
+  padding: 12px 14px;
+  border: 1px solid var(--gris-borde);
+  border-radius: 10px;
+  background: #fff;
+  overflow-wrap: anywhere;
+}
+
+.busqueda-relacionado p {
+  margin: 0 0 6px;
+}
+
+.busqueda-relacionado-titulo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+}
+
+.busqueda-relacionado-titulo a {
+  color: var(--rojo-oscuro);
+  font-weight: 700;
+}
+
+.busqueda-coincidencias {
+  margin-top: 16px;
+}
+
+/* "Mis solicitudes" del comprador. */
+.mis-solicitudes-lista {
+  padding: 0;
+  list-style: none;
+}
+
+.mi-solicitud-recomendados {
+  margin-top: 12px;
+}
+
+.mi-solicitud-recomendados h4 {
+  margin: 0 0 10px;
+  font-size: 17px;
+}
+
+.mis-solicitudes-accesos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding: 0;
+  list-style: none;
+}
+
+.mis-solicitudes-accesos a {
+  color: var(--rojo-oscuro);
+  font-weight: 700;
 }

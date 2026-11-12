@@ -412,6 +412,13 @@ Esta es una auditoría solo para P5 (Leads y contactos).
 
 ## Actualización P5b — 2026-11-06 — commit 4c871ef (rama feature/p5b-avisos)
 
+> **Corrección de estado (2026-11-12, documentador).** Esta sección se escribió el 2026-11-06, antes de aplicar la migración y de la prueba manual. Estado vigente (fuente: `BITACORA.md`, sección "2026-11-06 — P5b Avisos"):
+> - **Migración 014 APLICADA en `camion_ventas` el 2026-11-09**, con la API detenida y respaldo previo `C:\Respaldo_CAMION\camion_ventas_antes_014_p5b_20261109_1406.sql`; verificación de solo lectura correcta.
+> - **Prueba manual PROBADA por la responsable el 2026-11-10** ("Todo bien"). Notas, cierres y reaperturas de avisos no se ejercieron a mano; los cubren las pruebas automáticas.
+> - Ajuste posterior (commit `12dea7e`): tras enviar, el formulario se oculta y ofrece tres salidas; `npx vitest run` 577/577.
+> - Sigue sin E2E. Pendientes: INF-2 y la revisión legal (D-44).
+> - Por eso, lo que dicen P5b.1 ("NO APLICADA"), P5b.3 y P5b.4 ya no es el estado actual; se conserva como registro histórico.
+
 Redactado por el documentador a partir de lo verificado por los demás agentes: `docs/criterios/criterios-P5b-avisos.md`, `docs/criterios/P5b-contrato-api.md`, `docs/criterios/P5b-evidencia.md`, `docs/coordinacion/REVISION-SEGURIDAD-P5b.md` y D-50 a D-53. **No es una auditoría nueva del `auditor-codigo`.**
 
 - **Rama:** `feature/p5b-avisos`, apilada sobre `feature/p5-leads` (`b057c1d`). 15 commits hasta `4c871ef`.
@@ -448,3 +455,43 @@ Cobertura: 60 de 62 criterios con prueba automática (CA-P5b-58 en parte); CA-P5
 ### P5b.4 Riesgo de despliegue
 
 La API de esta rama **no debe arrancar contra `camion_ventas` sin la migración 014**: lee `origen` y `tipo_vehiculo`, que aún no existen en la base.
+
+## Actualización P6 — 2026-11-12 — commit ca1a9e1 (rama feature/p6-creditos)
+
+Redactado por el documentador a partir de lo verificado por los demás agentes: `docs/criterios/criterios-P6-creditos.md`, `docs/criterios/P6-contrato-api.md`, `docs/criterios/P6-evidencia.md`, `docs/coordinacion/REVISION-SEGURIDAD-P6.md`, D-54 a D-60 y el historial de la rama. **No es una auditoría nueva del `auditor-codigo`.**
+
+- **Rama:** `feature/p6-creditos`, apilada sobre `feature/p5b-avisos` (`7908e4a`). 24 commits hasta `ca1a9e1`. Sin publicar.
+- **HU:** HU-034 a HU-042, HU-071 y HU-072 (solo aviso dentro del panel), más "Mis solicitudes" (D-53).
+
+### P6.1 Qué está IMPLEMENTADO y PROBADO (pruebas automáticas)
+
+- **Modelo:** un crédito o una búsqueda es un lead con `origen = CREDITO` o `BUSQUEDA`, siempre en Administración. El crédito no tiene tabla propia ni datos financieros (D-55 B): solo nombre, teléfono, correo opcional y comentario opcional. La búsqueda guarda sus criterios en `leads_busqueda` y los vehículos relacionados en `busqueda_vehiculos` (D-56 a y b, A).
+- **API pública:** `POST /api/creditos` (desde la portada o desde la ficha, solo con publicación visible; D-60), `POST /api/busquedas` y `GET /api/catalogo/listas-busqueda`, anónimas, con los límites compartidos de P5 y P5b (por IP y por teléfono), campo trampa y tope de 8 KB. Campos financieros o manipulados se ignoran y no se guardan en ninguna tabla ni en el registro técnico.
+- **Repetidos (D-60):** solo se agrega a una solicitud abierta del mismo origen y del mismo `usuario_id`, en contacto, avisos, crédito y búsqueda. Corrige M-P6-1 (un contacto desde la ficha ya no se pierde dentro de un crédito de esa ficha) y O-1 (el comprador con sesión siempre ve su envío en "Mis solicitudes").
+- **Gestión (`/api/leads`):** filtro y etiquetas "Crédito" y "Búsqueda"; estados mostrados Registrado / En gestión / Cerrado (D-57 a A); notas, cierre con resultados por origen ("Remitido a entidad financiera"; "Encontró vehículo", "Sin vehículo disponible"; D-57 b A), reapertura; nunca se reasignan (409, D-58 A). "Ver coincidencias" bajo demanda (409 si no hay criterios, D-60), relacionar hasta 10 vehículos visibles y retirar sin borrar la fila. Sin coincidencias automáticas ni avisos externos (D-56 c A, D-48).
+- **Permisos:** el asesor nunca ve créditos ni búsquedas, tampoco los pedidos desde sus vehículos (D-58 A); el comprador recibe 403 en `/api/leads`.
+- **"Mis solicitudes":** `GET /api/mis-solicitudes` y `/{id}`, solo COMPRADOR, solo lo enviado con su sesión, de solo lectura, sin notas, responsable ni resultado (D-59).
+- **Frontend:** `#/credito` (banda "Quiero un crédito" de la portada y botón "Solicitar crédito para este vehículo" en la ficha), `#/busco-un-vehiculo` (en el catálogo sin resultados, al final de los resultados y en la columna "Servicios" del pie), panel del administrador con créditos y búsquedas, y `#/mis-solicitudes` desde "Mi cuenta" del comprador.
+- **Migración `015_p6_creditos_busquedas`** (con su archivo `_SUBIR`): IMPLEMENTADA, **NO APLICADA** en `camion_ventas`. Amplía cuatro CHECK, añade `IX_Lead_Usuario` y crea `leads_busqueda` y `busqueda_vehiculos`; BAJAR comentada y protegida por conteos.
+
+### P6.2 Pruebas ejecutadas
+
+| Comando | Resultado |
+|---|---|
+| `dotnet test` (`backend/Camion.Api.Tests`), tras las correcciones de M-P6-1, O-1 y coincidencias (commits `35129b1` a `f3013e2`) | 1118/1118 |
+| `npx vitest run` | 643/643 |
+| `npx tsc -b` | Correcto |
+| `npx tsc -p tsconfig.test.json --noEmit` | Correcto |
+| `npm run build` | Correcto (aviso de Vite por un paquete de más de 500 kB, O-5, no bloqueante) |
+
+Cobertura (QA, antes de las correcciones): 78 de 80 criterios con prueba automática (CA-P6-36 en parte); CA-P6-77 y 78 solo manuales. Las pruebas de API usan SQLite en memoria y no tocan `camion_ventas`. Detalle en `P6-evidencia.md`.
+
+### P6.3 Qué NO está probado
+
+- **E2E:** NO EJECUTADO (Playwright no está instalado).
+- **Migración 015 en MariaDB:** NO APLICADA; CA-P6-77 y 78 quedan para la prueba manual. La revisión de seguridad la analizó solo de forma estática contra la estructura y los datos reales.
+- **Prueba manual de la responsable:** PENDIENTE; requiere la 015 aplicada. Pasos en `docs/manual/P6-creditos.md`.
+
+### P6.4 Riesgo de despliegue
+
+La API de esta rama **no debe arrancar contra `camion_ventas` sin la migración 015**: lee `leads_busqueda` y `busqueda_vehiculos`, y guarda orígenes que los CHECK actuales rechazan.

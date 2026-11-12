@@ -84,7 +84,9 @@ public static class AvisosEndpoints
         // CA-P5b-26, CA-P5b-27: mismo origen y mismo teléfono con un aviso ABIERTO -> contacto repetido en su historial.
         var existente = await db.Leads.AsNoTracking()
             .Where(l => l.Origen == datos.Origen && l.PublicacionId == null && l.Telefono == datos.Telefono &&
-                        l.Estado == Lead.Abierto)
+                        l.Estado == Lead.Abierto &&
+                        // D-60: solo con el mismo usuario (o ambos anónimos).
+                        (usuarioId == null ? l.UsuarioId == null : l.UsuarioId == usuarioId))
             .OrderByDescending(l => l.Id).Select(l => (long?)l.Id).FirstOrDefaultAsync(ct);
         if (existente is { } leadId)
         {

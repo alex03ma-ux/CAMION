@@ -3,16 +3,29 @@
 // solo el administrador. La interfaz solo oculta: la API vuelve a comprobar el rol y el responsable (404 si no es suyo).
 // P5b (docs/criterios/P5b-contrato-api.md): los avisos "Vende tu camión" y "Seguro todo riesgo" son leads sin
 // vehículo, con `origen` y (el seguro) `tipoVehiculo`; tienen sus propios resultados de cierre y nunca se reasignan (D-52).
+// P6 (docs/criterios/P6-contrato-api.md): créditos y búsquedas son leads de Administración (D-58 A) con estado mostrado
+// Registrado / En gestión / Cerrado (D-57 a A), resultados propios (D-57 b A) y, en la búsqueda, criterios y vehículos
+// relacionados por el administrador (D-56 b A). Sin monto, cuota ni ingresos (D-55 B).
 import { MENSAJE_SESION_TERMINADA } from './auth'
+import { aTarjeta, type TarjetaVehiculo } from './catalogo'
 import { ApiError, esObjetoJson, MENSAJE_INESPERADO, peticion } from './http'
 
 // ---- Tipos del contrato ----
 
 export type EstadoLead = 'ABIERTO' | 'CERRADO'
 
-/** P5b: de dónde viene la solicitud. */
-export type OrigenLead = 'CONTACTO_VEHICULO' | 'VENDE_TU_CAMION' | 'SEGURO_TODO_RIESGO'
-export const ORIGENES_LEAD: readonly OrigenLead[] = ['CONTACTO_VEHICULO', 'VENDE_TU_CAMION', 'SEGURO_TODO_RIESGO']
+/** P5b: de dónde viene la solicitud. P6: también CREDITO y BUSQUEDA. */
+export type OrigenLead = 'CONTACTO_VEHICULO' | 'VENDE_TU_CAMION' | 'SEGURO_TODO_RIESGO' | 'CREDITO' | 'BUSQUEDA'
+export const ORIGENES_LEAD: readonly OrigenLead[] = [
+  'CONTACTO_VEHICULO',
+  'VENDE_TU_CAMION',
+  'SEGURO_TODO_RIESGO',
+  'CREDITO',
+  'BUSQUEDA',
+]
+
+/** P6 (D-57 a A): estado mostrado de créditos y búsquedas; null en los demás orígenes. */
+export type EstadoGestion = 'REGISTRADO' | 'EN_GESTION' | 'CERRADO'
 
 export type ResponsableLead = {
   tipo: 'ASESOR' | 'ADMINISTRACION'
@@ -28,7 +41,43 @@ export type VehiculoLead = {
   slug: string
   estadoVehiculo: string
   estadoPublicacion: string
+  /** P6: precio que muestra el portal; solo en el detalle (null en la lista). */
+  precioCop: number | null
+  /** P6: si hoy se ve en el portal; solo en el detalle. Se enlaza a la ficha solo si es true. */
+  visible: boolean | null
 }
+
+/** P6 (CA-P6-42): criterios de una búsqueda, con nombres legibles. */
+export type CriteriosBusqueda = {
+  tipoId: number
+  tipo: string
+  marca: string | null
+  linea: string | null
+  anioDesde: number | null
+  anioHasta: number | null
+  presupuestoMaximo: number | null
+  departamento: string | null
+  municipio: string | null
+}
+
+/** P6 (CA-P6-50, 56): vehículo relacionado vigente, con su estado actual. */
+export type VehiculoRelacionado = {
+  publicacionId: number
+  vehiculoId: number
+  titulo: string
+  slug: string
+  precioCop: number | null
+  estadoVehiculo: string
+  estadoPublicacion: string
+  visible: boolean
+  nota: string | null
+  relacionadoEn: string
+  relacionadoPor: string | null
+}
+
+/** P6 (CA-P6-51): publicación visible que cumple los criterios de la búsqueda. */
+export type Coincidencia = { publicacionId: number; relacionado: boolean; vehiculo: TarjetaVehiculo }
+export type ListaCoincidencias = { items: Coincidencia[]; total: number }
 
 export type LeadItem = {
   id: number
@@ -48,6 +97,8 @@ export type LeadItem = {
   responsable: ResponsableLead
   resultadoCierre: string | null
   cerradoEn: string | null
+  /** P6: solo en CREDITO y BUSQUEDA. */
+  estadoGestion: EstadoGestion | null
 }
 
 export type EventoLead = {
@@ -69,6 +120,10 @@ export type LeadDetalle = LeadItem & {
   eventos: EventoLead[]
   /** Solo para el administrador; null para el asesor (CA-P5-16). */
   consentimientos: ConsentimientoLead[] | null
+  /** P6: solo en BUSQUEDA. */
+  busqueda: CriteriosBusqueda | null
+  /** P6: solo en BUSQUEDA ([] si no hay). */
+  vehiculosRelacionados: VehiculoRelacionado[] | null
 }
 
 export type ListaLeads = { items: LeadItem[]; total: number; pagina: number; tamano: number }
@@ -94,6 +149,9 @@ export type ResultadoCierre =
   | 'VEHICULO_NO_DISPONIBLE'
   | 'DUPLICADO_INVALIDO'
   | 'ATENDIDA'
+  | 'REMITIDO_ENTIDAD'
+  | 'VEHICULO_ENCONTRADO'
+  | 'SIN_VEHICULO'
   | 'OTRO'
 
 // ---- Constantes y textos ----
@@ -115,6 +173,11 @@ export const MENSAJE_MOTIVO_LEAD = 'Escribe el motivo (5 a 500 caracteres).'
 export const MENSAJE_DESTINO = 'Elige el nuevo responsable.'
 export const MENSAJE_RESULTADO_NO_APLICA = 'Ese resultado no aplica a esta solicitud.'
 export const MENSAJE_AVISO_SIN_REASIGNAR = 'Esta solicitud la atiende siempre la administración.'
+export const MENSAJE_NOTA_RELACION = 'La nota no puede pasar de 300 caracteres.'
+export const NOTA_RELACION_MAX = 300
+/** CA-P6-43: recordatorio en la nota de créditos y búsquedas (D-45). */
+export const AYUDA_NOTA_SIN_FINANCIEROS =
+  'No escribas datos financieros del cliente (ingresos, deudas, reportes en centrales).'
 
 /** CA-P5-36: la pantalla muestra el texto, no el código. */
 export const NOMBRES_ESTADO_LEAD: Record<EstadoLead, string> = {
@@ -129,22 +192,54 @@ export const RESULTADOS_CIERRE: readonly { valor: ResultadoCierre; nombre: strin
   { valor: 'VEHICULO_NO_DISPONIBLE', nombre: 'El vehículo ya no está disponible' },
   { valor: 'DUPLICADO_INVALIDO', nombre: 'Contacto duplicado o inválido' },
   { valor: 'ATENDIDA', nombre: 'Solicitud atendida' },
+  { valor: 'REMITIDO_ENTIDAD', nombre: 'Remitido a entidad financiera' },
+  { valor: 'VEHICULO_ENCONTRADO', nombre: 'Encontró vehículo' },
+  { valor: 'SIN_VEHICULO', nombre: 'Sin vehículo disponible' },
   { valor: 'OTRO', nombre: 'Otro' },
 ]
 
-/** P5b (CA-P5b-41): resultados que solo aplican a un contacto de vehículo o solo a un aviso. */
-const SOLO_VEHICULO: readonly ResultadoCierre[] = ['VENTA_CONCRETADA', 'VEHICULO_NO_DISPONIBLE']
-const SOLO_AVISO: readonly ResultadoCierre[] = ['ATENDIDA']
+/**
+ * Resultados válidos por origen, en el orden en que se ofrecen (tablas de los contratos P5b y P6;
+ * CA-P5b-41, CA-P6-45, CA-P6-46).
+ */
+const RESULTADOS_POR_ORIGEN: Record<OrigenLead, readonly ResultadoCierre[]> = {
+  CONTACTO_VEHICULO: ['VENTA_CONCRETADA', 'NO_INTERESADO', 'NO_RESPONDIO', 'VEHICULO_NO_DISPONIBLE', 'DUPLICADO_INVALIDO', 'OTRO'],
+  VENDE_TU_CAMION: ['NO_INTERESADO', 'NO_RESPONDIO', 'DUPLICADO_INVALIDO', 'ATENDIDA', 'OTRO'],
+  SEGURO_TODO_RIESGO: ['NO_INTERESADO', 'NO_RESPONDIO', 'DUPLICADO_INVALIDO', 'ATENDIDA', 'OTRO'],
+  CREDITO: ['REMITIDO_ENTIDAD', 'ATENDIDA', 'NO_INTERESADO', 'NO_RESPONDIO', 'DUPLICADO_INVALIDO', 'OTRO'],
+  BUSQUEDA: ['VEHICULO_ENCONTRADO', 'SIN_VEHICULO', 'NO_INTERESADO', 'NO_RESPONDIO', 'DUPLICADO_INVALIDO', 'OTRO'],
+}
 
-/** true si la solicitud es un aviso de P5b (sin vehículo; siempre de Administración, D-52). */
+/**
+ * true si la solicitud la atiende siempre la administración y nunca se reasigna: avisos de P5b (D-52 A),
+ * créditos y búsquedas (D-58 A).
+ */
 export function esAviso(origen: OrigenLead): boolean {
   return origen !== 'CONTACTO_VEHICULO'
 }
 
-/** Resultados de cierre válidos para el origen (tabla del contrato P5b). */
+/** P6: créditos y búsquedas muestran Registrado / En gestión / Cerrado (D-57 a A). */
+export function esSolicitudGestion(origen: OrigenLead): boolean {
+  return origen === 'CREDITO' || origen === 'BUSQUEDA'
+}
+
+/** Resultados de cierre válidos para el origen. */
 export function resultadosCierrePara(origen: OrigenLead): readonly { valor: ResultadoCierre; nombre: string }[] {
-  const excluidos = esAviso(origen) ? SOLO_VEHICULO : SOLO_AVISO
-  return RESULTADOS_CIERRE.filter((r) => !excluidos.includes(r.valor))
+  return RESULTADOS_POR_ORIGEN[origen].map(
+    (valor) => RESULTADOS_CIERRE.find((r) => r.valor === valor) ?? { valor, nombre: valor },
+  )
+}
+
+/** P6 (D-57 a A): etiquetas del estado mostrado de créditos y búsquedas. */
+export const NOMBRES_ESTADO_GESTION: Record<EstadoGestion, string> = {
+  REGISTRADO: 'Registrado',
+  EN_GESTION: 'En gestión',
+  CERRADO: 'Cerrado',
+}
+
+/** Estado que se muestra: el derivado en créditos y búsquedas; el de P5 en los demás. */
+export function estadoMostrado(lead: Pick<LeadItem, 'estado' | 'estadoGestion'>): string {
+  return lead.estadoGestion !== null ? NOMBRES_ESTADO_GESTION[lead.estadoGestion] : nombreEstadoLead(lead.estado)
 }
 
 /** CA-P5b-37: etiqueta del origen en la bandeja del administrador. */
@@ -152,6 +247,8 @@ export const NOMBRES_ORIGEN: Record<OrigenLead, string> = {
   CONTACTO_VEHICULO: 'Contacto de vehículo',
   VENDE_TU_CAMION: 'Vende tu camión',
   SEGURO_TODO_RIESGO: 'Seguro todo riesgo',
+  CREDITO: 'Crédito',
+  BUSQUEDA: 'Búsqueda',
 }
 
 const NOMBRES_EVENTO: Record<string, string> = {
@@ -162,6 +259,8 @@ const NOMBRES_EVENTO: Record<string, string> = {
   REASIGNADO: 'Reasignado',
   CERRADO: 'Cerrado',
   REABIERTO: 'Reabierto',
+  VEHICULO_RELACIONADO: 'Vehículo relacionado',
+  VEHICULO_RETIRADO: 'Vehículo retirado',
 }
 
 const NOMBRES_ESTADO_VEHICULO: Record<string, string> = {
@@ -182,6 +281,8 @@ const NOMBRES_FORMULARIO: Record<string, string> = {
   CONTACTO_VEHICULO: 'Contacto desde la ficha del vehículo',
   VENDE_TU_CAMION: 'Vende tu camión',
   SEGURO_TODO_RIESGO: 'Seguro todo riesgo',
+  CREDITO: 'Solicitud de crédito',
+  BUSQUEDA: 'Busco un vehículo',
   REGISTRO_COMPRADOR: 'Registro de comprador',
   INSCRIPCION_ASESOR: 'Inscripción de asesor',
 }
@@ -287,6 +388,15 @@ function numero(valor: unknown): number {
   return typeof valor === 'number' && Number.isFinite(valor) ? valor : 0
 }
 
+function numeroONulo(valor: unknown): number | null {
+  return typeof valor === 'number' && Number.isFinite(valor) ? valor : null
+}
+
+function leerEstadoGestion(valor: unknown): EstadoGestion | null {
+  const codigo = texto(valor).trim().toUpperCase()
+  return codigo === 'REGISTRADO' || codigo === 'EN_GESTION' || codigo === 'CERRADO' ? codigo : null
+}
+
 function idTexto(valor: unknown): string | null {
   if (typeof valor === 'number' && Number.isFinite(valor)) return String(valor)
   if (typeof valor === 'string' && valor.trim() !== '') return valor
@@ -318,6 +428,40 @@ function leerVehiculo(valor: unknown): VehiculoLead | null {
     slug: texto(v.slug),
     estadoVehiculo: texto(v.estadoVehiculo),
     estadoPublicacion: texto(v.estadoPublicacion),
+    precioCop: numeroONulo(v.precioCop),
+    visible: typeof v.visible === 'boolean' ? v.visible : null,
+  }
+}
+
+function leerBusqueda(valor: unknown): CriteriosBusqueda | null {
+  if (!esObjetoJson(valor)) return null
+  return {
+    tipoId: numero(valor.tipoId),
+    tipo: texto(valor.tipo),
+    marca: textoONulo(valor.marca),
+    linea: textoONulo(valor.linea),
+    anioDesde: numeroONulo(valor.anioDesde),
+    anioHasta: numeroONulo(valor.anioHasta),
+    presupuestoMaximo: numeroONulo(valor.presupuestoMaximo),
+    departamento: textoONulo(valor.departamento),
+    municipio: textoONulo(valor.municipio),
+  }
+}
+
+function leerRelacionado(valor: unknown): VehiculoRelacionado | null {
+  if (!esObjetoJson(valor) || typeof valor.publicacionId !== 'number') return null
+  return {
+    publicacionId: valor.publicacionId,
+    vehiculoId: numero(valor.vehiculoId),
+    titulo: texto(valor.titulo),
+    slug: texto(valor.slug),
+    precioCop: numeroONulo(valor.precioCop),
+    estadoVehiculo: texto(valor.estadoVehiculo),
+    estadoPublicacion: texto(valor.estadoPublicacion),
+    visible: valor.visible === true,
+    nota: textoONulo(valor.nota),
+    relacionadoEn: texto(valor.relacionadoEn),
+    relacionadoPor: textoONulo(valor.relacionadoPor),
   }
 }
 
@@ -338,6 +482,7 @@ function leerItem(valor: unknown): LeadItem | null {
     responsable: leerResponsable(valor.responsable) ?? { tipo: 'ADMINISTRACION', asesorId: null, nombre: null },
     resultadoCierre: textoONulo(valor.resultadoCierre),
     cerradoEn: textoONulo(valor.cerradoEn),
+    estadoGestion: leerEstadoGestion(valor.estadoGestion),
   }
 }
 
@@ -380,6 +525,10 @@ function leerDetalle(valor: unknown): LeadDetalle {
     cerradoPor: textoONulo(valor.cerradoPor),
     eventos,
     consentimientos,
+    busqueda: leerBusqueda(valor.busqueda),
+    vehiculosRelacionados: Array.isArray(valor.vehiculosRelacionados)
+      ? valor.vehiculosRelacionados.map(leerRelacionado).filter((v): v is VehiculoRelacionado => v !== null)
+      : null,
   }
 }
 
@@ -465,6 +614,34 @@ export function reasignarLead(token: string, id: number, destino: string, motivo
       ? { administracion: true, motivo }
       : { asesorId: Number(destino), motivo }
   return accion(token, id, 'reasignar', body)
+}
+
+/** P6 (CA-P6-51): GET /api/leads/{id}/coincidencias — ayuda bajo demanda; no crea nada. */
+export async function obtenerCoincidencias(token: string, id: number, signal?: AbortSignal): Promise<ListaCoincidencias> {
+  const datos = await peticion(`${BASE}/${id}/coincidencias`, { token, signal, mensajesPorCodigo: MENSAJES_COMUNES })
+  if (!esObjetoJson(datos) || !Array.isArray(datos.items)) throw respuestaInvalida()
+  const items = datos.items.flatMap((i): Coincidencia[] => {
+    if (!esObjetoJson(i) || typeof i.publicacionId !== 'number') return []
+    const vehiculo = aTarjeta(i.vehiculo)
+    return vehiculo ? [{ publicacionId: i.publicacionId, relacionado: i.relacionado === true, vehiculo }] : []
+  })
+  return { items, total: numero(datos.total) }
+}
+
+/** P6 (CA-P6-50): POST /api/leads/{id}/vehiculos — relaciona una publicación visible a la búsqueda. */
+export function relacionarVehiculo(token: string, id: number, publicacionId: number, nota: string): Promise<LeadDetalle> {
+  const limpia = nota.trim()
+  return accion(token, id, 'vehiculos', { publicacionId, nota: limpia === '' ? null : limpia })
+}
+
+/** P6 (CA-P6-53): POST /api/leads/{id}/vehiculos/{publicacionId}/retirar — sin cuerpo. */
+export async function retirarVehiculo(token: string, id: number, publicacionId: number): Promise<LeadDetalle> {
+  const datos = await peticion(`${BASE}/${id}/vehiculos/${publicacionId}/retirar`, {
+    method: 'POST',
+    token,
+    mensajesPorCodigo: MENSAJES_COMUNES,
+  })
+  return leerDetalle(datos)
 }
 
 /** Errores del servidor para un campo concreto (sin importar mayúsculas). */

@@ -53,6 +53,9 @@ public static class Auditoria
     public const string Nota = "NOTA";
     public const string Cerrar = "CERRAR";
     public const string Reabrir = "REABRIR";
+    // P6 (HU-036, D-56 b A): relacionar y retirar un vehículo de una búsqueda.
+    public const string RelacionarVehiculo = "RELACIONAR_VEHICULO";
+    public const string RetirarVehiculo = "RETIRAR_VEHICULO";
 
     // Solo agrega la fila al contexto; se guarda en la misma transacción que el cambio auditado.
     public static void Agregar(CamionDbContext db, string? actorId, string usuarioAfectadoId, string accion,

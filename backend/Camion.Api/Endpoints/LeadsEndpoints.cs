@@ -18,6 +18,8 @@ public static class LeadsEndpoints
 {
     private const int TamanoPorDefecto = 20;
     private const int TamanoMaximo = 100;
+    // P6 (CA-P6-51): coincidencias devueltas como máximo.
+    private const int MaxCoincidencias = 20;
     // Las fechas de los filtros son días de Colombia (UTC-5, sin horario de verano).
     private static readonly TimeSpan DesfaseColombia = TimeSpan.FromHours(5);
 
@@ -114,7 +116,7 @@ public static class LeadsEndpoints
                 await db.Leads.Where(l => l.Id == id).ExecuteUpdateAsync(s => s.SetProperty(l => l.VistoPorResponsable, true), ct);
                 fila.Visto = true;
             }
-            return Results.Ok(await DetalleAsync(db, fila, actor, ct));
+            return Results.Ok(await DetalleAsync(db, fila, actor, reloj.GetUtcNow().UtcDateTime, ct));
         });
 
         // CA-P5-37, CA-P5-38: nota de seguimiento del responsable (asesor asignado o administrador).
@@ -136,7 +138,118 @@ public static class LeadsEndpoints
             Auditoria.AgregarEvento(db, actor.UsuarioId, Auditoria.EntidadLead, BarridoLeads.Id(id), Auditoria.Nota, null,
                 new Dictionary<string, object?> { ["longitud"] = texto.Length }, ahora);
             await db.SaveChangesAsync(ct);
-            return Results.Json(await DetalleAsync(db, id, actor, ct), statusCode: StatusCodes.Status201Created);
+            return Results.Json(await DetalleAsync(db, id, actor, ahora, ct), statusCode: StatusCodes.Status201Created);
+        });
+
+        // P6 (CA-P6-51, D-56 c A): "Ver coincidencias" bajo demanda; publicaciones visibles que cumplen los criterios.
+        leads.MapGet("/{id}/coincidencias", async (long id, ClaimsPrincipal principal, CamionDbContext db, TimeProvider reloj,
+            CancellationToken ct) =>
+        {
+            var (actor, lead, ahora, error) = await PrepararAsync(principal, db, reloj, id, ct);
+            if (error is not null) return error;
+            if (!actor!.EsAdmin) return SinPermiso();
+            if (lead!.Origen != Lead.OrigenBusqueda) return Results.Conflict(new ErrorResponse(ReglasLeads.MensajeSoloBusqueda));
+            // Una búsqueda sin fila de criterios (dato incoherente; la API siempre la crea) -> 409 controlado, nunca 500.
+            var c = await db.LeadsBusqueda.AsNoTracking().FirstOrDefaultAsync(b => b.LeadId == id, ct);
+            if (c is null) return Results.Conflict(new ErrorResponse(ReglasLeads.MensajeSinCriterios));
+
+            var consulta = ConsultasCatalogo.VisiblesConDestacado(db, ahora)
+                .Where(x => x.Publicacion.Vehiculo!.TipoVehiculoId == c.TipoVehiculoId);
+            if (c.MarcaId is { } marca) consulta = consulta.Where(x => x.Publicacion.Vehiculo!.MarcaId == marca);
+            if (c.LineaId is { } linea) consulta = consulta.Where(x => x.Publicacion.Vehiculo!.LineaId == linea);
+            if (c.AnioDesde is { } desde) consulta = consulta.Where(x => x.Publicacion.Vehiculo!.ModeloAnio >= desde);
+            if (c.AnioHasta is { } hasta) consulta = consulta.Where(x => x.Publicacion.Vehiculo!.ModeloAnio <= hasta);
+            if (c.PresupuestoMaxCop is { } tope)
+            {
+                var maximo = (decimal)tope;
+                consulta = consulta.Where(x => x.Precio <= maximo);
+            }
+            if (c.MunicipioId is { } municipio) consulta = consulta.Where(x => x.Publicacion.Vehiculo!.MunicipioId == municipio);
+            else if (c.DepartamentoId is { } departamento)
+                consulta = consulta.Where(x => x.Publicacion.Vehiculo!.Municipio!.DepartamentoId == departamento);
+
+            var total = await consulta.CountAsync(ct);
+            var filas = await ConsultasCatalogo.ATarjetas(consulta.OrderByDescending(x => x.Destacado)
+                    .ThenByDescending(x => x.Publicacion.PublicadaEn).ThenBy(x => x.Publicacion.SlugPublico))
+                .Take(MaxCoincidencias).ToListAsync(ct);
+            var relacionadas = await RelacionadasVigentes(db, id).Select(r => r.PublicacionId).ToListAsync(ct);
+            return Results.Ok(new CoincidenciasResponse(
+                filas.Select(f => new CoincidenciaItem(f.Id, relacionadas.Contains(f.Id), ConsultasCatalogo.Tarjeta(f))).ToArray(),
+                total));
+        });
+
+        // P6 (HU-036, CA-P6-50, CA-P6-52, CA-P6-54, CA-P6-55): el administrador relaciona una publicación visible.
+        leads.MapPost("/{id}/vehiculos", async (long id, RelacionarVehiculoRequest? request, ClaimsPrincipal principal,
+            CamionDbContext db, TimeProvider reloj, CancellationToken ct) =>
+        {
+            var (actor, lead, ahora, error) = await PrepararAsync(principal, db, reloj, id, ct);
+            if (error is not null) return error;
+            if (!actor!.EsAdmin) return SinPermiso();
+            if (lead!.Origen != Lead.OrigenBusqueda) return Results.Conflict(new ErrorResponse(ReglasLeads.MensajeSoloBusqueda));
+            var errores = new Dictionary<string, string[]>();
+            if (request?.PublicacionId is not ({ } pid and > 0)) errores["publicacionId"] = [ReglasLeads.MensajeElegirVehiculo];
+            var nota = ValidacionAuth.NormalizarOpcional(request?.Nota);
+            if (nota is { Length: > BusquedaVehiculo.MaxNota }) errores["nota"] = [ReglasLeads.MensajeNotaRelacion];
+            if (errores.Count > 0) return Results.BadRequest(new ErrorResponse(ReglasLeads.MensajeRevisar, errores));
+            if (lead.Estado == Lead.Cerrado) return Results.Conflict(new ErrorResponse(ReglasLeads.MensajeBusquedaCerrada));
+
+            var publicacionId = request!.PublicacionId!.Value;
+            var titulo = await ConsultasCatalogo.Visibles(db, ahora).Where(p => p.Id == publicacionId)
+                .Select(p => p.Titulo).FirstOrDefaultAsync(ct);
+            if (titulo is null) return Results.Conflict(new ErrorResponse(ReglasLeads.MensajeNoPublicado));
+            var fila = await db.BusquedaVehiculos.FirstOrDefaultAsync(r => r.LeadId == id && r.PublicacionId == publicacionId, ct);
+            if (fila is { RetiradoEn: null }) return Results.Conflict(new ErrorResponse(ReglasLeads.MensajeYaRelacionado));
+            if (await RelacionadasVigentes(db, id).CountAsync(ct) >= BusquedaVehiculo.MaxVigentes)
+                return Results.Conflict(new ErrorResponse(ReglasLeads.MensajeTopeRelacionados));
+
+            if (fila is null)
+            {
+                fila = new BusquedaVehiculo { LeadId = id, PublicacionId = publicacionId };
+                db.BusquedaVehiculos.Add(fila);
+            }
+            // Relacionar de nuevo una retirada reactiva la misma fila (UNIQUE lead + publicación).
+            fila.Nota = nota;
+            fila.RelacionadoPor = actor.UsuarioId;
+            fila.RelacionadoEn = ahora;
+            fila.RetiradoPor = null;
+            fila.RetiradoEn = null;
+            lead.ActualizadoEn = ahora;
+            db.EventosLead.Add(new EventoLead
+            {
+                LeadId = id, Tipo = EventoLead.VehiculoRelacionado, ActorUsuarioId = actor.UsuarioId,
+                Texto = Recortar(titulo), CreadoEn = ahora
+            });
+            Auditoria.AgregarEvento(db, actor.UsuarioId, Auditoria.EntidadLead, BarridoLeads.Id(id), Auditoria.RelacionarVehiculo,
+                null, new Dictionary<string, object?> { ["publicacionId"] = publicacionId }, ahora);
+            await db.SaveChangesAsync(ct);
+            return Results.Json(await DetalleAsync(db, id, actor, ahora, ct), statusCode: StatusCodes.Status201Created);
+        });
+
+        // P6 (CA-P6-53): retirar una relación vigente; la fila se conserva marcada como retirada.
+        leads.MapPost("/{id}/vehiculos/{publicacionId}/retirar", async (long id, long publicacionId, ClaimsPrincipal principal,
+            CamionDbContext db, TimeProvider reloj, CancellationToken ct) =>
+        {
+            var (actor, lead, ahora, error) = await PrepararAsync(principal, db, reloj, id, ct);
+            if (error is not null) return error;
+            if (!actor!.EsAdmin) return SinPermiso();
+            if (lead!.Origen != Lead.OrigenBusqueda) return Results.Conflict(new ErrorResponse(ReglasLeads.MensajeSoloBusqueda));
+            if (lead.Estado == Lead.Cerrado) return Results.Conflict(new ErrorResponse(ReglasLeads.MensajeBusquedaCerrada));
+            var fila = await db.BusquedaVehiculos.Include(r => r.Publicacion)
+                .FirstOrDefaultAsync(r => r.LeadId == id && r.PublicacionId == publicacionId && r.RetiradoEn == null, ct);
+            if (fila is null) return Results.NotFound(new ErrorResponse(ReglasLeads.MensajeNoRelacionado));
+
+            fila.RetiradoPor = actor.UsuarioId;
+            fila.RetiradoEn = ahora;
+            lead.ActualizadoEn = ahora;
+            db.EventosLead.Add(new EventoLead
+            {
+                LeadId = id, Tipo = EventoLead.VehiculoRetirado, ActorUsuarioId = actor.UsuarioId,
+                Texto = Recortar(fila.Publicacion?.Titulo), CreadoEn = ahora
+            });
+            Auditoria.AgregarEvento(db, actor.UsuarioId, Auditoria.EntidadLead, BarridoLeads.Id(id), Auditoria.RetirarVehiculo,
+                null, new Dictionary<string, object?> { ["publicacionId"] = publicacionId }, ahora);
+            await db.SaveChangesAsync(ct);
+            return Results.Ok(await DetalleAsync(db, id, actor, ahora, ct));
         });
 
         // HU-033, CA-P5-39, CA-P5-40: cierre con resultado.
@@ -164,7 +277,7 @@ public static class LeadsEndpoints
                 new Dictionary<string, object?> { ["estado"] = Lead.Abierto },
                 new Dictionary<string, object?> { ["estado"] = Lead.Cerrado, ["resultado"] = resultado }, ahora);
             await db.SaveChangesAsync(ct);
-            return Results.Ok(await DetalleAsync(db, id, actor, ct));
+            return Results.Ok(await DetalleAsync(db, id, actor, ahora, ct));
         });
 
         // CA-P5-41: solo el administrador reabre, con motivo; vuelve a ABIERTO con el mismo responsable.
@@ -194,7 +307,7 @@ public static class LeadsEndpoints
                 new Dictionary<string, object?> { ["estado"] = Lead.Cerrado, ["resultado"] = resultadoAnterior },
                 new Dictionary<string, object?> { ["estado"] = Lead.Abierto, ["motivo"] = motivo }, ahora);
             await db.SaveChangesAsync(ct);
-            return Results.Ok(await DetalleAsync(db, id, actor, ct));
+            return Results.Ok(await DetalleAsync(db, id, actor, ahora, ct));
         }).RequireAuthorization(Roles.PoliticaSoloAdministrador);
 
         // D-7, CA-P5-44 a CA-P5-48: reasignación manual auditada (quién, cuándo, de quién a quién y por qué).
@@ -231,7 +344,7 @@ public static class LeadsEndpoints
             lead.ActualizadoEn = ahora;
             BarridoLeads.AgregarReasignacion(db, id, actor.UsuarioId, anterior, destino, motivo, automatico: false, ahora);
             await db.SaveChangesAsync(ct);
-            return Results.Ok(await DetalleAsync(db, id, actor, ct));
+            return Results.Ok(await DetalleAsync(db, id, actor, ahora, ct));
         }).RequireAuthorization(Roles.PoliticaSoloAdministrador);
 
         return app;
@@ -286,6 +399,8 @@ public static class LeadsEndpoints
             CerradoEn = l.CerradoEn,
             Origen = l.Origen,
             TipoVehiculo = l.TipoVehiculo,
+            // P6 (D-57 a A): "En gestión" = al menos una nota.
+            ConNotas = db.EventosLead.Any(e => e.LeadId == l.Id && e.Tipo == EventoLead.Nota),
             // P5b: los avisos no tienen publicación; los campos del vehículo quedan nulos.
             PublicacionId = l.PublicacionId,
             VehiculoId = l.Publicacion == null ? null : (long?)l.Publicacion.VehiculoId,
@@ -299,7 +414,8 @@ public static class LeadsEndpoints
     private static LeadItem Item(FilaLead f, InventarioEndpoints.Actor actor) => new(
         f.Id, f.Estado, f.Nombre, f.Telefono, f.Correo, f.Mensaje, ConsultasCatalogo.Utc(f.CreadoEn), Nuevo(f, actor),
         Vehiculo(f), Responsable(f.ResponsableAsesorId, f.ResponsableNombre), f.ResultadoCierre,
-        f.CerradoEn is { } c ? ConsultasCatalogo.Utc(c) : null, f.Origen, f.TipoVehiculo);
+        f.CerradoEn is { } c ? ConsultasCatalogo.Utc(c) : null, f.Origen, f.TipoVehiculo,
+        ReglasLeads.EstadoGestion(f.Origen, f.Estado, f.ConNotas));
 
     private static bool Nuevo(FilaLead f, InventarioEndpoints.Actor actor) =>
         f.Estado == Lead.Abierto && !f.Visto && EsResponsable(actor, f.ResponsableAsesorId);
@@ -317,14 +433,14 @@ public static class LeadsEndpoints
         : new ResponsableLead(ReglasLeads.ResponsableAsesor, asesorId, nombre);
 
     private static async Task<LeadDetalle> DetalleAsync(CamionDbContext db, long id, InventarioEndpoints.Actor actor,
-        CancellationToken ct)
+        DateTime ahora, CancellationToken ct)
     {
         var fila = await Proyectar(db, db.Leads.AsNoTracking().Where(l => l.Id == id)).FirstAsync(ct);
-        return await DetalleAsync(db, fila, actor, ct);
+        return await DetalleAsync(db, fila, actor, ahora, ct);
     }
 
     private static async Task<LeadDetalle> DetalleAsync(CamionDbContext db, FilaLead f, InventarioEndpoints.Actor actor,
-        CancellationToken ct)
+        DateTime ahora, CancellationToken ct)
     {
         var eventos = await db.EventosLead.AsNoTracking().Where(e => e.LeadId == f.Id)
             .OrderBy(e => e.CreadoEn).ThenBy(e => e.Id).ToListAsync(ct);
@@ -365,11 +481,66 @@ public static class LeadsEndpoints
         }
 
         var item = Item(f, actor);
+        // P6 (CA-P6-41): precio mostrado y si el vehículo sigue visible (para enlazar a la ficha).
+        var vehiculo = item.Vehiculo;
+        if (vehiculo is not null)
+        {
+            var precio = await db.Publicaciones.AsNoTracking().Where(p => p.Id == vehiculo.PublicacionId)
+                .Select(p => p.Vehiculo!.PrecioCop ?? p.PrecioCop).FirstOrDefaultAsync(ct);
+            var visible = await ConsultasCatalogo.Visibles(db, ahora).AnyAsync(p => p.Id == vehiculo.PublicacionId, ct);
+            vehiculo = vehiculo with { PrecioCop = precio is { } v ? ConsultasCatalogo.Pesos(v) : null, Visible = visible };
+        }
+        // P6 (CA-P6-42, CA-P6-50, CA-P6-56): criterios y relaciones vigentes de una búsqueda.
+        BusquedaCriterios? busqueda = null;
+        IReadOnlyList<VehiculoRelacionadoItem>? relacionados = null;
+        if (f.Origen == Lead.OrigenBusqueda)
+        {
+            busqueda = await ReglasBusqueda.CriteriosAsync(db, f.Id, ct);
+            relacionados = await RelacionadosAsync(db, f.Id, ahora, ct);
+        }
         return new LeadDetalle(item.Id, item.Estado, item.Nombre, item.Telefono, item.Correo, item.Mensaje, item.CreadoEn,
-            item.Nuevo, item.Vehiculo, item.Responsable, item.ResultadoCierre, item.CerradoEn, item.Origen, item.TipoVehiculo,
+            item.Nuevo, vehiculo, item.Responsable, item.ResultadoCierre, item.CerradoEn, item.Origen, item.TipoVehiculo,
             f.ObservacionCierre,
-            f.CerradoPor is null ? null : nombresUsuario.GetValueOrDefault(f.CerradoPor), items, consentimientos);
+            f.CerradoPor is null ? null : nombresUsuario.GetValueOrDefault(f.CerradoPor), items, consentimientos,
+            item.EstadoGestion, busqueda, relacionados);
     }
+
+    private static IQueryable<BusquedaVehiculo> RelacionadasVigentes(CamionDbContext db, long leadId) =>
+        db.BusquedaVehiculos.AsNoTracking().Where(r => r.LeadId == leadId && r.RetiradoEn == null);
+
+    /// <summary>CA-P6-56: relaciones vigentes con el estado actual del vehículo, de la más reciente a la más antigua.</summary>
+    private static async Task<IReadOnlyList<VehiculoRelacionadoItem>> RelacionadosAsync(CamionDbContext db, long leadId,
+        DateTime ahora, CancellationToken ct)
+    {
+        var filas = await RelacionadasVigentes(db, leadId)
+            .OrderByDescending(r => r.RelacionadoEn).ThenByDescending(r => r.Id)
+            .Select(r => new
+            {
+                r.PublicacionId,
+                r.Publicacion!.VehiculoId,
+                r.Publicacion.Titulo,
+                r.Publicacion.SlugPublico,
+                Precio = r.Publicacion.Vehiculo!.PrecioCop ?? r.Publicacion.PrecioCop,
+                EstadoVehiculo = r.Publicacion.Vehiculo.Estado,
+                r.Publicacion.EstadoPublicacion,
+                r.Publicacion.EstadoComercial,
+                r.Nota,
+                r.RelacionadoEn,
+                Por = db.Users.Where(u => u.Id == r.RelacionadoPor).Select(u => u.NombreCompleto).FirstOrDefault()
+            }).ToListAsync(ct);
+        if (filas.Count == 0) return [];
+        var ids = filas.Select(x => x.PublicacionId).ToList();
+        var visibles = await ConsultasCatalogo.Visibles(db, ahora).Where(p => ids.Contains(p.Id)).Select(p => p.Id).ToListAsync(ct);
+        return filas.Select(x => new VehiculoRelacionadoItem(x.PublicacionId, x.VehiculoId, x.Titulo ?? "", x.SlugPublico,
+            x.Precio is { } v ? ConsultasCatalogo.Pesos(v) : null, x.EstadoVehiculo,
+            x.EstadoPublicacion != Publicacion.Eliminada && x.EstadoComercial == Publicacion.Vendido
+                ? ReglasLeads.EstadoVendida
+                : x.EstadoPublicacion,
+            visibles.Contains(x.PublicacionId), x.Nota, ConsultasCatalogo.Utc(x.RelacionadoEn), x.Por)).ToArray();
+    }
+
+    private static string? Recortar(string? texto) =>
+        texto is null ? null : texto.Length <= ReglasLeads.MaxMensaje ? texto : texto[..ReglasLeads.MaxMensaje];
 
     private static DateOnly? LeerFecha(string? valor, string parametro, Dictionary<string, string[]> errores)
     {
@@ -416,6 +587,7 @@ public static class LeadsEndpoints
         public DateTime? CerradoEn { get; init; }
         public string Origen { get; init; } = Lead.OrigenContactoVehiculo;
         public string? TipoVehiculo { get; init; }
+        public bool ConNotas { get; init; }
         public long? PublicacionId { get; init; }
         public long? VehiculoId { get; init; }
         public string? Titulo { get; init; }

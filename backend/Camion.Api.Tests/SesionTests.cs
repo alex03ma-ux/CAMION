@@ -193,19 +193,22 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
         // P4a (D-20): GET /media/{**ruta}, anónimo porque el catálogo público muestra las fotos.
         Assert.Equal(new[]
         {
-            "GET /api/catalogo/filtros", "GET /api/catalogo/inicio", "GET /api/catalogo/portada", "GET /api/catalogo/publicaciones",
+            "GET /api/catalogo/filtros", "GET /api/catalogo/inicio", "GET /api/catalogo/listas-busqueda", "GET /api/catalogo/portada", "GET /api/catalogo/publicaciones",
             "GET /api/catalogo/publicaciones/{slug}",
             "GET /health", "GET /health/database", "GET /media/{**ruta}", "POST /api/auth/login",
             "POST /api/auth/registro/asesor", "POST /api/auth/registro/comprador",
             // P5 (HU-029, RN-SE-005, D-3): el contacto público, fuera de /api/catalogo.
             "POST /api/contactos",
             // P5b (HU-N01, HU-N02, D-6): los dos avisos públicos.
-            "POST /api/avisos/seguro-todo-riesgo", "POST /api/avisos/vende-tu-camion"
+            "POST /api/avisos/seguro-todo-riesgo", "POST /api/avisos/vende-tu-camion",
+            // P6 (HU-034, HU-039, D-3, D-9): crédito y búsqueda públicos.
+            "POST /api/busquedas", "POST /api/creditos"
         }.OrderBy(x => x, StringComparer.Ordinal).ToArray(), anonimos);
 
         // P3: todo /api/catalogo es GET, permite anónimos de forma explícita y no exige ninguna política.
         var catalogo = todos.Where(e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/catalogo", StringComparison.Ordinal)).ToList();
-        Assert.Equal(5, catalogo.Count);
+        // P6 (HU-034): GET /api/catalogo/listas-busqueda para el formulario "Busco un vehículo".
+        Assert.Equal(6, catalogo.Count);
         foreach (var e in catalogo)
         {
             Assert.Equal("GET", Metodo(e));
@@ -260,7 +263,10 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
             "POST /api/contactos", "POST /api/leads/{id}/notas", "POST /api/leads/{id}/cerrar",
             "POST /api/leads/{id}/reabrir", "POST /api/leads/{id}/reasignar",
             // P5b: los dos avisos públicos (anónimos).
-            "POST /api/avisos/seguro-todo-riesgo", "POST /api/avisos/vende-tu-camion"
+            "POST /api/avisos/seguro-todo-riesgo", "POST /api/avisos/vende-tu-camion",
+            // P6: crédito y búsqueda (anónimos); relacionar y retirar vehículos de una búsqueda (administrador, HU-036).
+            "POST /api/busquedas", "POST /api/creditos", "POST /api/leads/{id}/vehiculos",
+            "POST /api/leads/{id}/vehiculos/{publicacionId}/retirar"
         }.OrderBy(x => x, StringComparer.Ordinal).ToArray(), modifican);
 
         // CA-SE006-13: toda ruta bajo /api/admin exige SoloAdministrador (P2: 5 acciones + la lista; P4p: 4 GET y 18 acciones;
@@ -302,9 +308,10 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
 
         // P5 (RN-SE-006, D-7): toda ruta bajo /api/leads exige AsesorOAdministrador y ninguna permite anónimos (3 GET: lista,
         // resumen y detalle; 4 POST). Reabrir y reasignar exigen además SoloAdministrador (D-7: solo el administrador).
+        // P6: coincidencias (GET), relacionar y retirar (POST); el rol se comprueba dentro (asesor 404 en búsquedas, CA-P6-61).
         var leads = todos.Where(e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/leads", StringComparison.Ordinal)).ToList();
-        Assert.Equal(7, leads.Count);
-        Assert.Equal(new[] { "/api/leads", "/api/leads/resumen", "/api/leads/{id}" },
+        Assert.Equal(10, leads.Count);
+        Assert.Equal(new[] { "/api/leads", "/api/leads/resumen", "/api/leads/{id}", "/api/leads/{id}/coincidencias" },
             leads.Where(e => Metodo(e) == "GET").Select(e => "/" + e.RoutePattern.RawText!.TrimStart('/').TrimEnd('/'))
                 .OrderBy(x => x, StringComparer.Ordinal).ToArray());
         foreach (var e in leads)
@@ -322,8 +329,10 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
         // de limitación de peticiones. P5b (CA-P5b-24): /api/avisos tiene dos rutas POST, anónimas y con la misma marca (el
         // cupo por IP es compartido). Ninguna otra ruta lleva esa marca.
         var contactos = Assert.Single(todos, e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/contactos", StringComparison.Ordinal));
-        var avisos = todos.Where(e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/avisos", StringComparison.Ordinal)).ToList();
-        Assert.Equal(2, avisos.Count);
+        // P6 (CA-P6-30): POST /api/creditos y POST /api/busquedas comparten la misma marca.
+        var avisos = todos.Where(e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/avisos", StringComparison.Ordinal) ||
+                                      e.RoutePattern.RawText!.TrimStart('/') is "api/creditos" or "api/busquedas").ToList();
+        Assert.Equal(4, avisos.Count);
         foreach (var e in avisos.Append(contactos))
         {
             Assert.Equal("POST", Metodo(e));
@@ -336,8 +345,18 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
 
         // Las cuatro políticas con nombre existen.
         var proveedor = factory.Services.GetRequiredService<IAuthorizationPolicyProvider>();
-        foreach (var nombre in new[] { "SoloAdministrador", "SoloAsesor", "Autenticado", "AsesorOAdministrador" })
+        foreach (var nombre in new[] { "SoloAdministrador", "SoloAsesor", "Autenticado", "AsesorOAdministrador", "SoloComprador" })
             Assert.NotNull(await proveedor.GetPolicyAsync(nombre));
+
+        // P6 (D-59 d, CA-P6-74): /api/mis-solicitudes tiene dos GET (lista y detalle) y exige SoloComprador.
+        var mias = todos.Where(e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/mis-solicitudes", StringComparison.Ordinal)).ToList();
+        Assert.Equal(2, mias.Count);
+        foreach (var e in mias)
+        {
+            Assert.Equal("GET", Metodo(e));
+            Assert.Contains("SoloComprador", e.Metadata.GetOrderedMetadata<IAuthorizeData>().Select(a => a.Policy));
+            Assert.Null(e.Metadata.GetMetadata<IAllowAnonymous>());
+        }
 
         // CA-061-15: ninguna ruta permite editar o borrar auditoría ni historial.
         Assert.DoesNotContain(todos, e => e.RoutePattern.RawText!.Contains("auditoria", StringComparison.OrdinalIgnoreCase) ||

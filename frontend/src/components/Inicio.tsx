@@ -10,7 +10,8 @@ import { obtenerPortada } from '../api/portada'
 import { usePeticion } from '../catalogo/usePeticion'
 import {
   HASH_BUSCAR,
-  HASH_REGISTRO,
+  HASH_BUSCO_VEHICULO,
+  HASH_CREDITO,
   HASH_SEGURO_TODO_RIESGO,
   HASH_VENDE_TU_CAMION,
   hashBuscar,
@@ -169,8 +170,8 @@ export function Inicio({ tipos }: InicioProps) {
           <div className="cat-credito-texto">
             <h2 id="inicio-credito">¿Necesitas crédito para tu camión?</h2>
             <p>Te ayudamos a encontrar el plan de pagos ideal.</p>
-            {/* La solicitud de crédito llega en P5; mientras tanto, el registro (D-42). */}
-            <a className="cat-credito-boton" href={HASH_REGISTRO}>
+            {/* P6 (D-42, CA-P6-02): abre el formulario de crédito, ya no el registro. */}
+            <a className="cat-credito-boton" href={HASH_CREDITO}>
               Quiero un crédito <IconoFlecha />
             </a>
           </div>
@@ -195,6 +196,17 @@ export function Inicio({ tipos }: InicioProps) {
               <p>Déjanos tus datos y te ayudamos con tu seguro todo riesgo.</p>
               <a className="cat-aviso-boton" href={HASH_SEGURO_TODO_RIESGO}>
                 Compra tu seguro <IconoFlecha />
+              </a>
+            </div>
+          </section>
+          {/* D-56 (d) B (responsable, 2026-11-12): "Busco un vehículo" también en la portada, visible y fácil de encontrar. */}
+          <section className="cat-aviso-bloque" aria-labelledby="inicio-busco">
+            <IconoLupa className="cat-aviso-icono" />
+            <div>
+              <h2 id="inicio-busco">¿No encuentras el vehículo que buscas?</h2>
+              <p>Cuéntanos qué necesitas y te contactamos con opciones. No necesitas cuenta.</p>
+              <a className="cat-aviso-boton" href={HASH_BUSCO_VEHICULO}>
+                Busco un vehículo <IconoFlecha />
               </a>
             </div>
           </section>

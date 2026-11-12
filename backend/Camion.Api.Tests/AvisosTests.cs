@@ -413,7 +413,8 @@ public sealed class AvisosTests(P5Fixture fixture) : IClassFixture<P5Fixture>
         Assert.Contains(contacto.Id, soloContactos);
         Assert.DoesNotContain(vende.Id, soloContactos);
         Assert.Contains(seguro.Id, await _api.IdsLeads(_api.Admin.Token, "?origen=SEGURO_TODO_RIESGO&responsable=ADMINISTRACION&tamano=100"));
-        await Error400(await _api.ListaLeads(_api.Admin.Token, "?origen=CREDITO"), "origen", MsgOrigen, MsgFiltros);
+        // P6: CREDITO y BUSQUEDA ya son orígenes válidos; se usa un origen inexistente.
+        await Error400(await _api.ListaLeads(_api.Admin.Token, "?origen=INVENTADO"), "origen", MsgOrigen, MsgFiltros);
         Assert.Equal(new[] { contacto.Id }, await _api.IdsLeads(_api.Admin.Token, "?publicacionId=" + IdDe(pub)));
 
         var detalle = await Esperar(await _api.DetalleLead(_api.Admin.Token, seguro.Id), HttpStatusCode.OK);
@@ -594,7 +595,8 @@ public sealed class AvisosTests(P5Fixture fixture) : IClassFixture<P5Fixture>
             Base(Lead.OrigenSeguroTodoRiesgo, null, null, null),
             Base(Lead.OrigenSeguroTodoRiesgo, null, "MOTO", null),
             Base(Lead.OrigenContactoVehiculo, IdDe(pub), "CAMION", asesor.PerfilId),
-            Base("CREDITO", null, null, null)
+            // P6 (migración 015): CREDITO y BUSQUEDA ya son válidos; se usa un origen inexistente.
+            Base("INVENTADO", null, null, null)
         };
         for (var i = 0; i < malos.Length; i++)
         {
