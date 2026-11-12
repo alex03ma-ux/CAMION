@@ -264,8 +264,8 @@ Antes de contar aplica el barrido de leads de D-46, como `GET /api/leads/resumen
 | `asesoresPendientes` | cuentas con rol ASESOR y estado PENDIENTE | `/api/admin/usuarios?rol=ASESOR&estado=PENDIENTE` |
 | `solicitudes[].abiertas` | leads ABIERTO de ese origen **a cargo de Administración** (sin asesor responsable); siempre los 5 orígenes, en ese orden | `/api/leads` filtrado por origen y responsable Administración |
 | `solicitudes[].nuevas` | de esas, las no vistas | — |
-| `suscripcionesPorVencer` | vigentes con `finVigencia` dentro de los próximos 7 días (`diasRestantes` ≤ 7) | — |
-| `suscripcionesVencidas` | con estado efectivo VENCIDA cuyo asesor no tiene hoy una suscripción vigente | `/api/admin/suscripciones?estado=VENCIDA` (puede incluir vencidas ya reemplazadas) |
+| `suscripcionesPorVencer` | vigentes con `finVigencia` dentro de los próximos 7 días (`diasRestantes` ≤ 7) | `/api/admin/suscripciones?vista=porVencer` |
+| `suscripcionesVencidas` | con estado efectivo VENCIDA cuyo asesor no tiene hoy una suscripción vigente | `/api/admin/suscripciones?vista=vencidasSinRenovar` |
 | `publicacionesVisibles` | las que hoy muestra el portal (regla de P3/P4b) | catálogo público |
 | `vehiculosPorEstado` | conteo por estado, siempre las 4 claves | `/api/inventario/vehiculos?estado=...` |
 | `ventasUltimos30Dias` | ventas VIGENTE con `fechaVenta` ≥ `ventasDesde` (hoy en Colombia menos 29 días: 30 días con hoy) | `/api/ventas?estado=VIGENTE&desde={ventasDesde}` |
@@ -295,4 +295,15 @@ Solo `ALTER TABLE pagos` (0 filas en `camion_ventas`, comprobado en solo lectura
 
 ## Cambios al contrato
 
-(ninguno todavía)
+### 2026-11-12 — correcciones de `REVISION-SEGURIDAD-P7.md` (B-1 a B-4) y `P7-evidencia.md` (O-5)
+
+1. **B-2, correo del portal (PUT `/api/admin/parametros/contacto`).** Regla estricta: parte local con letras y dígitos ASCII y `. _ + -` (empieza por letra o dígito), `@`, dominio con al menos un punto y terminación de 2 a 24 letras; sin `..`, hasta 254. Se rechazan `? & ; , : / < > " ' %` y espacios. Mismo mensaje: "Escribe un correo válido." El horario también rechaza caracteres de control (mismo mensaje de horario).
+2. **B-1, revalidación al leer.** `GET /api/portal/contacto`, `GET /api/admin/parametros/contacto` y el WhatsApp de la ficha pasan el valor guardado otra vez por las reglas del PUT, campo a campo. Un campo que no cumple no se devuelve: WhatsApp, correo y horario vuelven al respaldo (D-42 / `appsettings.json`) e Instagram y TikTok quedan en `null`. El servidor nunca devuelve un correo, enlace o WhatsApp inválido.
+3. **B-3, caracteres de control.** `referencia` del pago: `errores.referencia` = "La referencia no puede tener saltos de línea ni caracteres de control.". `motivo` de anular un pago: `errores.motivo` = "El motivo no puede tener saltos de línea ni caracteres de control." (se comprueba después de la regla de 5 a 500).
+4. **B-4, anular un pago.** La auditoría `ANULAR` guarda como `estado` anterior el estado real de la fila (también `PENDIENTE`, `APROBADO` o `RECHAZADO` del script 002). Un pago sin `fechaPago` o sin `medio` (solo filas antiguas) no se puede anular: **409** "Este pago no tiene fecha o medio registrados: no se puede anular." (`CK_Pago_Registro` lo impediría).
+5. **O-5, CA-P7-46: filtro `vista` en GET `/api/admin/suscripciones`.** Parámetro opcional, sin distinguir mayúsculas:
+   - `vista=porVencer`: vigentes (ACTIVA/REACTIVADA, inicio ≤ ahora < fin) con `finVigencia` ≤ ahora + 7 días. Misma consulta que `suscripcionesPorVencer` del panel.
+   - `vista=vencidasSinRenovar`: estado efectivo VENCIDA y el asesor no tiene hoy una suscripción vigente. Misma consulta que `suscripcionesVencidas` del panel.
+   - Se combina (Y) con `asesorId`, `estado`, `pagina` y `tamano`. Otro valor: 400 `{ "error": "Revisa los filtros.", "errores": { "vista": ["Vista no válida."] } }`.
+   - `estado=VENCIDA` no cambia (sigue incluyendo vencidas ya reemplazadas).
+   - **Enlaces del panel** (la respuesta del panel no cambia): `suscripcionesPorVencer` → `/api/admin/suscripciones?vista=porVencer`; `suscripcionesVencidas` → `/api/admin/suscripciones?vista=vencidasSinRenovar`. En la tabla de la §5, la columna "Lista equivalente" de esas dos filas queda reemplazada por estos filtros.
