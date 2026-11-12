@@ -562,4 +562,31 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - INF-2 antes de publicar en internet;
   - la revisión legal (D-44), que también deja pendientes HU-085 y HU-086.
 - PR: por abrir contra `main`, sin merge. Rama sin publicar.
+- **Migración 016 aplicada (2026-11-12).**
+  - Respaldo previo: `C:\Respaldo_CAMION\camion_ventas_antes_016_p7_20261112_1749.sql` (151 KB, 49 tablas, termina en "Dump completed").
+  - La API estaba detenida. La responsable seleccionó `camion_ventas` en phpMyAdmin e importó `016_p7_pagos_SUBIR.sql`.
+  - Verificación de solo lectura:
+    - columnas nuevas en `pagos`: `fecha_pago`, `medio`, `concepto` y datos de anulación;
+    - 6 CHECK (`CK_Pago_Valor`, `_Estado`, `_Medio`, `_Concepto`, `_Registro` y `_Anulacion`);
+    - `pagos` vacía y el resto de los datos intactos.
+- **Menú del administrador.** La responsable no veía "Inicio": su pestaña conservaba la versión de P6. Se resolvió con Ctrl+Shift+R. Se le explicó cómo llegar al panel (`#/cuenta/inicio` o "Inicio del administrador" en "Mi cuenta").
+- **D-67 (2026-11-13), surgida en la prueba.** La responsable anuló el pago de una renovación de Xavi Quintero y el plan conservó los días extra. Decidió que anular un pago deshace lo que ese pago dio.
+  - Backend: c5f27aa y 2d0479b, sin migración; el estado anterior sale de la auditoría y se registra el evento `DESHACER_PAGO`. Ruta nueva: `GET /api/admin/pagos/{id}/efecto-anulacion`.
+  - Frontend: cfb8637, 23beb0e y 41e2d3c; el diálogo dice qué pasará antes de anular.
+  - Pruebas: `dotnet test` 1248/1248 (una corrida, con `--artifacts-path`); `npx vitest run` 711/711; `tsc -b`, `tsc -p tsconfig.test.json` y `npm run build` OK.
+- **Prueba manual P7: PROBADO EN PARTE por la responsable (2026-11-13), respuesta "Todo bien".**
+  - Verificado en la base (solo lectura):
+    - pago 1: renovación anulada antes de D-67; la renovación se conservó (dato de prueba);
+    - pago 2: renovación registrada y anulada con D-67; la suscripción 2 volvió a vencer el 2027-02-03 (evento `DESHACER_PAGO`).
+  - Revisó en pantalla:
+    - el panel Inicio;
+    - "Mi suscripción" de Xavi: 83 días, sin aviso, correcto porque faltan más de 7;
+    - "Mis ventas" de Xavi: vacía, correcto porque no tiene ventas.
+  - NO EJERCIDO a mano:
+    - cambio de datos de contacto: no hay evento `Parametro CAMBIAR`;
+    - marcar vendido y ver la venta en "Mis ventas";
+    - aviso de vencimiento y botón de WhatsApp, que solo salen con 7 días o menos.
+
+    Lo cubren las pruebas automáticas.
+  - Pendientes: revisión a 375 px, INF-2, INF-3 y D-44.
 
