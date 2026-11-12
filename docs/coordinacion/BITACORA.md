@@ -511,3 +511,55 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
 - Backlog: P0 a P6 pasan a APROBADO con su PR (P0 a P3 estaban unidos desde las PR #2 a #5 y el backlog no lo reflejaba).
 - Siguen pendientes antes de publicar en internet: INF-2, la revisión legal (D-44) y borrar los datos de prueba de `camion_ventas` (leads 1 a 8 y vehículo 21).
 
+## 2026-11-13 — P7 Ventas, pagos, parámetros y panel (rama `feature/p7-ventas-admin`, creada desde `main` en `35ad702`)
+- HU-064 (historial de ventas), HU-066 y HU-067 (pagos del plan), HU-073 y HU-074 (aviso dentro del panel), HU-075 (contadores) y HU-081 (contacto del portal); FN-04, RN-PA-001, RN-RE-001, RN-NO-004/005, RN-SE-003/004/006; D-26, D-36, D-39, D-42, D-45, D-47, D-61 a D-66.
+- Criterios en `docs/criterios/criterios-P7-ventas-admin.md` (CA-P7-01 a 59), contrato en `P7-contrato-api.md`, evidencia en `P7-evidencia.md`.
+- **Decisiones TOMADAS (2026-11-12):**
+  - D-61 (responsable): B, el cobro es fuera del portal y el administrador registra el pago; sin comprobante, pasarela, factura ni contabilidad.
+  - D-62 (responsable): A en (a) a (d). Revierten el dueño o el administrador, sin plazo; revertir deshace la marca de vendido; el asesor ve las ventas de sus vehículos actuales; no se muestra la auditoría.
+  - D-63 (responsable): A, solo los datos de contacto del portal. B cuando se libere D-44; C no.
+  - D-64 (responsable): A en (a) y (b), contadores operativos y aviso de vencimiento dentro del panel.
+  - D-65 (coordinador): A, cita de HU-081 corregida a HU-074 en `P4p-contrato-api.md`.
+  - D-66 (coordinador, técnica): pago opcional al asignar o renovar, ofrecido marcado si el plan tiene precio; pago posterior; referencia obligatoria con "Otro"; 409 al anular un pago antiguo sin fecha o sin medio; filtros `vista=porVencer` y `vista=vencidasSinRenovar`.
+- **IMPLEMENTADO y PROBADO (pruebas automáticas; sin prueba con la API real):**
+  - historial de ventas en `GET /api/ventas` y en el detalle del vehículo, con vigentes y revertidas; pantallas "Ventas" (administrador) y "Mis ventas" (asesor);
+  - pagos del plan: registro al asignar, renovar o cambiar de plan, pago posterior, lista con total y anulación con motivo; solo el administrador;
+  - "Parámetros" con WhatsApp, correo, horario, Instagram y TikTok, que usan el pie, la ficha y Privacidad; lectura pública `GET /api/portal/contacto`;
+  - panel "Inicio" del administrador con contadores enlazados y navegación con Inicio, Ventas y Parámetros;
+  - aviso "Tu plan vence en N días" en "Mi suscripción" y botón "Escribir por WhatsApp para renovar".
+- Migración `016_p7_pagos` (con su archivo SUBIR): solo `ALTER TABLE pagos`, con seis columnas NULL, una FK y los CHECK. **NO APLICADA.**
+- **Commits** (24, de `35ad702` a `8704e52`; tomados del registro local de Git porque el documentador no tuvo terminal):
+  - `d2d96f4` README al día hasta P6; `cf4b9a8` criterios y D-61 a D-64 pendientes; `4326fd8` D-61 a D-64 tomadas; `44e4631` contrato de la API;
+  - `e86b20b` migración 016 y mapeo; `a62416c` pagos y aviso de vencimiento; `f295317` ventas, parámetros y panel; `af4adca` pruebas de la API;
+  - `3edf6a0` pagos en Suscripciones; `7b47cf6` ventas, parámetros, pie y aviso; `ddcd2fc` panel Inicio y navegación; `99f973a` pruebas de pantallas;
+  - `a1c87cc` revisión de seguridad; `0adbc73` y `db91b79` pruebas de QA; `88b8317` evidencia;
+  - `56238ed` correo estricto y revalidación al leer (B-1, B-2); `d68f126` referencia y motivo sin caracteres de control, y auditoría del estado real al anular (B-3, B-4); `b6e2cb1` filtros `vista` (O-5); `9806b51` sus pruebas y el contrato;
+  - `c55bc56` el panel abre Suscripciones con la vista (O-5); `672951d` WhatsApp para renovar y Privacidad con el contacto del portal (O-1); `5f12a1c` correo estricto en el frontend (B-2, B-3); `8704e52` sus pruebas.
+- **Corte del agente de frontend.** El agente de frontend se detuvo por el límite de uso antes de terminar. Después se reanudó y completó las pantallas y sus pruebas.
+- **Pruebas ejecutadas:**
+  - `dotnet test`: 1240/1240, tras las correcciones de B-1 a B-4 y O-5. Antes, QA hizo 7 corridas completas en verde: 3 de 1184 y 4 de 1215.
+  - `npx vitest run`: 699/699.
+  - `npx tsc -b`, `npx tsc -p tsconfig.test.json --noEmit` y `npm run build`: correctos.
+  - Las pruebas de API usan SQLite en memoria y no tocan `camion_ventas`. QA no encontró defectos frente al contrato.
+  - O-1 (falta el WhatsApp para renovar) y O-5 (el número de vencidas no coincidía con su lista) se corrigieron. O-2 (nombre de la acción auditada) se corrigió en los criterios.
+- **Fallo intermitente del backend, no identificado.**
+  - El agente de backend vio 1 fallo de 1184 en una de tres corridas.
+  - QA lo vio una vez más: 1 de 438 en un subconjunto de 10 clases, con `vitest` corriendo a la vez. No quedó el nombre de la prueba, y 12 corridas siguientes con `--logger trx` no lo repitieron.
+  - Hipótesis no comprobada: las pruebas de concurrencia (`Task.WhenAll`) sobre SQLite en memoria, donde el bloqueo de fila se imita bloqueando la tabla entera.
+  - No se corrigió nada porque no se sabe cuál es. Si reaparece, guardar el `.trx`. Va a INF-3.
+- **Pruebas del frontend inestables con carga (O-8).** Con dos `vitest` y `dotnet test` a la vez fallan de 1 a 4 pruebas distintas en cada corrida, porque `findBy*` espera solo 1 s. En una corrida normal pasan todas. No es un defecto del producto. Va a INF-3.
+- **NO EJECUTADO:** E2E (Playwright no instalado), la migración 016 en MariaDB (CA-P7-56) y la prueba manual de la responsable (CA-P7-59).
+- **Revisión de seguridad** (`REVISION-SEGURIDAD-P7.md`): APROBADO, sin hallazgos críticos, altos ni medios.
+  - B-1 (el valor guardado no se revalidaba al leer) y B-2 (correo con `?`, `&` y otros signos): **corregidos** en `56238ed`.
+  - B-3 (caracteres de control en la referencia) y B-4 (auditoría inexacta al anular un pago antiguo): **corregidos** en `d68f126`.
+  - B-5 (SUBIR sin `USE` y no repetible) y B-6 (ventana sin `CK_Pago_Estado`): se tratan en el procedimiento de la migración.
+  - Sin secretos ni dependencias nuevas; 0 vulnerabilidades en npm; M-1 y MySqlConnector 2.3.7 siguen en INF-2.
+- **DOCUMENTADO:** criterios con D-61 a D-64 confirmadas, D-66 y O-2; D-66 en `DECISIONES.md`; "Actualización P7" en `ESTADO-REAL.md`; backlog (P7 e INF-3); README; guía `docs/manual/P7-administracion.md`.
+- **Pendientes:**
+  - aplicar la 016 con un respaldo nuevo previo (`mysqldump --result-file` a `C:\Respaldo_CAMION\`), con la API detenida y seleccionando antes `camion_ventas` en phpMyAdmin;
+  - la prueba manual de la responsable (pasos en `docs/manual/P7-administracion.md`);
+  - revisar las pantallas nuevas a 375 px (móvil);
+  - INF-2 antes de publicar en internet;
+  - la revisión legal (D-44), que también deja pendientes HU-085 y HU-086.
+- PR: por abrir contra `main`, sin merge. Rama sin publicar.
+

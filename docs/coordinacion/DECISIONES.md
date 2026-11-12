@@ -744,7 +744,7 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
 
 ---
 
-# Decisiones de P7 "Ventas, planes y administración" (D-61 a D-65)
+# Decisiones de P7 "Ventas, planes y administración" (D-61 a D-66)
 
 Detectadas al escribir `docs/criterios/criterios-P7-ventas-admin.md` (2026-11-12, analista funcional). Ninguna bloquea el historial de ventas ni la regresión de P4b y P4p. Cada una se escribe con la opción recomendada en los criterios (marcados PENDIENTE D-n).
 
@@ -814,3 +814,12 @@ Detectadas al escribir `docs/criterios/criterios-P7-ventas-admin.md` (2026-11-12
 - Opciones: A) corregir la cita a HU-074 en ese contrato (documentador); B) dejarla y añadir una nota.
 - Recomendación: A. No requiere a la responsable; la puede cerrar el coordinador.
 - **Decisión (coordinador, 2026-11-12): A.** Corregidas las dos citas en `P4p-contrato-api.md`.
+
+## D-66 — Detalles técnicos de P7 decididos por el coordinador · TOMADA (2026-11-12, técnica)
+- Contexto: los tres puntos de la sección "Pendiente" de `docs/criterios/P7-contrato-api.md`, B-4 de `REVISION-SEGURIDAD-P7.md` y O-5 de `P7-evidencia.md`. Son decisiones técnicas y reversibles; no cambian las reglas de negocio de D-61 B ni de D-64 A.
+- **Pago opcional** al asignar o renovar un plan (y al cambiar de plan). La pantalla lo ofrece ya marcado cuando el plan tiene precio; si el administrador lo desmarca, la suscripción se guarda sin pago.
+- **Pago posterior:** se puede registrar un pago después, desde "Pagos" de la suscripción (`POST /api/admin/suscripciones/{id}/pagos`, concepto `POSTERIOR`).
+- **Referencia obligatoria con el medio "Otro"** (CA-P7-29). Con los demás medios es opcional.
+- **Pago antiguo sin fecha o sin medio** (filas anteriores a P7): no se puede anular; la API responde 409 (B-4).
+- **Filtros de Suscripciones** `vista=porVencer` y `vista=vencidasSinRenovar`, con la misma consulta que los contadores del panel; los enlaces del panel los usan (O-5, CA-P7-46).
+- Detalle en "Cambios al contrato" de `P7-contrato-api.md`.

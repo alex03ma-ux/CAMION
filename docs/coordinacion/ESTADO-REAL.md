@@ -495,3 +495,60 @@ Cobertura (QA, antes de las correcciones): 78 de 80 criterios con prueba automá
 ### P6.4 Riesgo de despliegue
 
 La API de esta rama **no debe arrancar contra `camion_ventas` sin la migración 015**: lee `leads_busqueda` y `busqueda_vehiculos`, y guarda orígenes que los CHECK actuales rechazan.
+
+## Actualización P7 — 2026-11-13 — commit 8704e52 (rama feature/p7-ventas-admin)
+
+Redactado por el documentador con lo que verificaron los demás agentes. Fuentes: `docs/criterios/criterios-P7-ventas-admin.md`, `P7-contrato-api.md` (con "Cambios al contrato"), `P7-evidencia.md`, `docs/coordinacion/REVISION-SEGURIDAD-P7.md`, D-61 a D-66 y el historial de la rama. **No es una auditoría nueva del `auditor-codigo`.** El documentador no tuvo terminal: la lista de commits sale del registro local de Git (`.git/logs/HEAD`), no de `git log origin/main..HEAD`.
+
+- **Rama:** `feature/p7-ventas-admin`, creada desde `main` (`35ad702`, con P0 a P6). 24 commits hasta `8704e52`. Sin publicar.
+- **HU:** HU-064 (historial de ventas), HU-066 y HU-067 (pagos del plan), HU-073 y HU-074 (solo aviso dentro del panel), HU-075 (solo contadores operativos) y HU-081 (datos de contacto del portal).
+- **Decisiones:** D-61 B, D-62 A, D-63 A y D-64 A (responsable); D-65 A y D-66 (coordinador).
+
+### P7.1 Qué está IMPLEMENTADO y PROBADO (pruebas automáticas)
+
+- **Historial de ventas (D-62 A):**
+  - `GET /api/ventas` con filtros de fecha, origen, estado y asesor;
+  - `GET /api/inventario/vehiculos/{id}/ventas`, con ventas vigentes y revertidas;
+  - el administrador ve todas; el asesor, las de los vehículos que hoy son suyos (el filtro de asesor se ignora);
+  - pantallas "Ventas" del administrador (`#/cuenta/ventas`) y "Mis ventas" del asesor (`#/ventas`), y "Historial de ventas" en el detalle del vehículo.
+  - La reversión no cambia (P4b). Su acción auditada es `Venta/REVERTIR` (O-2).
+- **Pagos del plan (D-61 B, D-66):**
+  - el administrador anota el pago recibido fuera del portal al asignar, renovar o cambiar de plan: valor, fecha, medio y referencia;
+  - el pago es opcional y se ofrece marcado si el plan tiene precio; se puede registrar después;
+  - "Pagos" de cada suscripción muestra la lista y el total, sin contar los anulados;
+  - anular exige motivo; la fila no se borra y se audita. Un pago antiguo sin fecha o sin medio da 409;
+  - solo el administrador ve o escribe pagos. No hay pasarela, comprobante, factura ni contabilidad.
+- **Parámetros de contacto (HU-081, D-63 A):**
+  - pantalla "Parámetros" (`#/cuenta/parametros`) con WhatsApp, correo, horario (1 a 4 líneas), Instagram y TikTok;
+  - `GET /api/portal/contacto`, anónima y de solo lectura;
+  - el pie, la ficha (botón de WhatsApp de D-47 cuando el vendedor no tiene celular o es el administrador) y la página de Privacidad usan esos valores;
+  - mientras no se guarda nada, se usan los valores de D-42;
+  - el servidor vuelve a validar al leer (B-1) y el correo sigue una regla estricta (B-2).
+- **Panel del administrador (D-64 a A):** sección "Inicio" (`#/cuenta/inicio`) con contadores enlazados a sus listas filtradas, sin nombres ni dinero. Los de suscripciones abren `vista=porVencer` y `vista=vencidasSinRenovar` (D-66, O-5). La navegación del administrador incluye Inicio, Ventas y Parámetros.
+- **Aviso de vencimiento (D-64 b A):** "Mi suscripción" del asesor muestra "Tu plan vence en N días…" cuando faltan 7 días o menos. Con el aviso o con la suscripción vencida, ofrece "Escribir por WhatsApp para renovar", con el WhatsApp del portal (O-1).
+- **Migración `016_p7_pagos`** (con su archivo `_SUBIR`): IMPLEMENTADA, **NO APLICADA** en `camion_ventas`. Solo `ALTER TABLE pagos`: seis columnas NULL, la FK `FK_Pago_AnuladoPor` y los CHECK ampliados y nuevos. BAJAR comentada y protegida por una comprobación. `configuracion_sistema` ya existe y no necesita migración.
+
+### P7.2 Pruebas ejecutadas
+
+| Comando | Resultado |
+|---|---|
+| `dotnet test` (`backend/Camion.Api.Tests`), tras las correcciones B-1 a B-4 y O-5 | 1240/1240 |
+| `dotnet test`, corridas de QA antes de las correcciones | 7 en verde: 3 de 1184 y 4 de 1215 |
+| `npx vitest run` | 699/699 |
+| `npx tsc -b` | Correcto |
+| `npx tsc -p tsconfig.test.json --noEmit` | Correcto |
+| `npm run build` | Correcto (aviso de Vite por un paquete de más de 500 kB, O-4, no bloqueante) |
+
+Cobertura (QA, antes de las correcciones): 53 de 59 criterios con prueba automática que pasa; 3 en parte (22, 26 y 58); 2 solo manuales (56 y 59); 1 no aplica (34). Las pruebas de API usan SQLite en memoria y no tocan `camion_ventas`. Detalle en `P7-evidencia.md`.
+
+### P7.3 Qué NO está probado
+
+- **E2E:** NO EJECUTADO (Playwright no está instalado).
+- **Migración 016 en MariaDB:** NO APLICADA. CA-P7-56 queda para la prueba manual. La revisión de seguridad la analizó solo de forma estática contra la estructura y los datos reales.
+- **Prueba manual de la responsable:** PENDIENTE; requiere la 016 aplicada. Pasos en `docs/manual/P7-administracion.md`.
+- **Fallo intermitente del backend:** 1 fallo sin identificar, visto una vez por el agente de backend (1 de 1184) y una vez por QA (1 de 438, en un subconjunto de 10 clases con la máquina cargada). Hipótesis no comprobada: pruebas de concurrencia sobre SQLite en memoria. Va a INF-3.
+- **Frontend con carga (O-8):** con varias corridas a la vez fallan de 1 a 4 pruebas distintas por las esperas cortas de Testing Library. En una corrida normal pasan todas. Va a INF-3.
+
+### P7.4 Riesgo de despliegue
+
+La API de esta rama **no debe arrancar contra `camion_ventas` sin la migración 016**: mapea las columnas nuevas de `pagos` y fallaría al leer o escribir pagos.

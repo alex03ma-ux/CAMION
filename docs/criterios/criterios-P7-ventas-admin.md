@@ -2,7 +2,16 @@
 
 Ítem del backlog: **P7 "Ventas, planes y administración"**. Criterio de salida (BACKLOG.md y minuta §11): "Historial, reversión, parametrización, panel administrativo". Además, D-21 y D-26 dejaron para P7 la parte de planes y **pagos** que no entró en P4p.
 Rama: `feature/p7-ventas-admin`, creada desde `main` (`35ad702`, con P0 a P6).
-Autor: analista funcional. Fecha: 2026-11-12. Estado del documento: PROPUESTO (pendiente de revisión del coordinador y de las decisiones D-61 a D-65).
+Autor: analista funcional. Fecha: 2026-11-12. Estado del documento: decisiones cerradas. D-61 B, D-62 A, D-63 A y D-64 A (responsable) y D-65 A y D-66 (coordinador) están TOMADAS el 2026-11-12; los criterios que estaban PENDIENTE de D-61 a D-64 pasan a CONFIRMADO. El resultado de cada criterio está en `docs/criterios/P7-evidencia.md`.
+
+**Actualización 2026-11-13 (documentador):**
+- D-66 (técnica, del coordinador) fija cinco puntos que el contrato dejó como "Pendiente":
+  - el pago es opcional al asignar o renovar, y se ofrece marcado cuando el plan tiene precio;
+  - se puede registrar un pago después;
+  - la referencia es obligatoria con el medio "Otro";
+  - un pago antiguo sin fecha o sin medio no se puede anular (409);
+  - filtros `vista=porVencer` y `vista=vencidasSinRenovar`.
+- O-2 de la evidencia: la acción auditada de la reversión se llama `REVERTIR` (entidad `Venta`), no `REVERTIR_VENTA`. Corregido en §2 y en CA-P7-16.
 
 Fuentes leídas:
 - `docs/requisitos/requisitos-funcionales-v3.0.md`: matriz §7 (HU-022, HU-043 a HU-051, HU-061, HU-064 a HU-069, HU-073 a HU-087), FN-01 y FN-04 (§8), RN-VE-014, RN-PL-001/002, RN-SU-001 a 005, RN-RE-001 a 006, RN-PA-001 a 007 (§9), estados (§12-13), integraciones (§14) y restricciones (§15).
@@ -19,7 +28,7 @@ Numeración: matriz de 87 HU (D-1). En ella "Marcar vehículo como vendido" es *
 Marcas:
 - **CONFIRMADO (fuente)**: sale literalmente de una HU, RN, de la minuta o de una decisión TOMADA.
 - **PROPUESTO**: lo infiere el analista; necesita visto bueno del coordinador o de la responsable.
-- **PENDIENTE D-n**: depende de una decisión abierta. Se escribe con la opción recomendada; si la responsable elige otra, el criterio se reescribe.
+- **PENDIENTE D-n**: dependía de una decisión abierta. Ya no queda ninguno: D-61 a D-64 están TOMADAS con la opción recomendada y esos criterios figuran como **CONFIRMADO (D-n)**.
 - **EXISTE**: ya está en el código de `main`; en P7 queda como prueba de regresión.
 
 Cómo se prueba: API = prueba de integración; COMP = prueba de componente del frontend; MAN = prueba manual de la responsable.
@@ -60,7 +69,7 @@ Flujos v3.0: FN-01 "… Lead → Negociación → Venta → Cierre"; FN-04 "Crea
 | Tema | Qué pide la v3.0 y la minuta | Qué existe ya (HEAD `35ad702`) | Qué falta para P7 |
 |---|---|---|---|
 | Marcar vendido | HU-064, RN-VE-014: marcar vendido oculta la publicación; minuta: fecha, precio final, origen y observaciones | Vender desde ACTIVO o RESERVADO; fila en `ventas_vehiculo`; publicación VENDIDA fuera del portal; destacado quitado; nota de reserva borrada; origen de lista fija (D-39); auditoría `Venta/VENDER` | Nada nuevo; solo regresión |
-| Reversión | Minuta: "por asesor propietario con motivo y auditoría; reactivación requiere confirmación y cupo" | Revertir (dueño **o** administrador), motivo 5-500; vehículo ACTIVO; publicación DISPONIBLE y OCULTA; venta marcada con quién, cuándo y por qué; reactivar exige plan vigente (la publicación ya cuenta en el cupo, D-40); auditoría `REVERTIR_VENTA` | Confirmar quién revierte y si hay plazo (D-62 a); diálogo de confirmación en la interfaz (verificar); mostrar las ventas revertidas |
+| Reversión | Minuta: "por asesor propietario con motivo y auditoría; reactivación requiere confirmación y cupo" | Revertir (dueño **o** administrador), motivo 5-500; vehículo ACTIVO; publicación DISPONIBLE y OCULTA; venta marcada con quién, cuándo y por qué; reactivar exige plan vigente (la publicación ya cuenta en el cupo, D-40); auditoría `Venta/REVERTIR` | Confirmar quién revierte y si hay plazo (D-62 a); diálogo de confirmación en la interfaz (verificar); mostrar las ventas revertidas |
 | Historial comercial | Minuta: "se oculta del catálogo y conserva historial"; M11 "historial" | Filas conservadas en `ventas_vehiculo`; filtro `estado=VENDIDO` en el inventario | Lista de ventas (administrador: todas; asesor: las suyas) con filtros; historial de ventas por vehículo, incluidas las revertidas (D-62 c) |
 | Planes | HU-049 a HU-051 | CRUD sin borrado, activar/inactivar, destacados incluidos (D-38) | Nada nuevo |
 | Suscripciones | HU-066 a HU-069, RN-SU-005 30 días | Asignar, renovar (solo admin, D-36), cambiar plan, suspender, reactivar, cancelar; vigencia 30 × meses (D-35); "Mi suscripción" del asesor | Aviso de vencimiento cercano dentro del panel (D-64 b) |
@@ -118,7 +127,7 @@ Queda **fuera**: facturación electrónica, contabilidad, datos del comprador fi
 | ID | Criterio (Dado / Cuando / Entonces) | Marca | Prueba |
 |---|---|---|---|
 | CA-P7-01 | **Dado** un administrador con sesión, **cuando** consulta `GET /api/ventas?pagina=1&tamano=20`, **entonces** recibe 200 con la lista paginada de **todas** las ventas, vigentes y revertidas, ordenadas de la más reciente a la más antigua por fecha de registro, con: id, vehículo (id y título), asesor dueño actual (id y nombre), fecha de venta, precio final, origen (texto de D-39), observaciones, estado "Vigente" o "Revertida", quién y cuándo la registró y, si se revirtió, quién, cuándo y el motivo. | PROPUESTO (base CONFIRMADA: minuta "conserva historial") | API |
-| CA-P7-02 | **Dado** un asesor aprobado, **cuando** consulta la misma lista, **entonces** solo ve las ventas de los vehículos que hoy son suyos (mismo alcance que su inventario), sin el filtro de asesor. | PENDIENTE D-62 c (A) | API |
+| CA-P7-02 | **Dado** un asesor aprobado, **cuando** consulta la misma lista, **entonces** solo ve las ventas de los vehículos que hoy son suyos (mismo alcance que su inventario), sin el filtro de asesor. | CONFIRMADO (D-62 c A) | API |
 | CA-P7-03 | **Dado** el administrador, **cuando** filtra por `desde`/`hasta` (fecha de venta), `origen`, `estado` (VIGENTE/REVERTIDA) y `asesorId`, **entonces** solo recibe las ventas que cumplen todos los filtros. | PROPUESTO | API |
 | CA-P7-04 | **Dado** un filtro inválido (fecha mal escrita, `desde` posterior a `hasta`, origen fuera de la lista de D-39, estado desconocido, página o tamaño fuera de rango), **cuando** consulta, **entonces** recibe 400 `{ error, errores }` con el campo y un mensaje en español, p. ej. "La fecha inicial no puede ser posterior a la final.". | PROPUESTO | API |
 | CA-P7-05 | **Dado** un asesor que envía `asesorId` de otro asesor, **cuando** consulta, **entonces** el filtro se ignora y solo ve lo suyo (como en `/api/publicaciones`). | PROPUESTO | API |
@@ -137,8 +146,8 @@ Queda **fuera**: facturación electrónica, contabilidad, datos del comprador fi
 | ID | Criterio | Marca | Prueba |
 |---|---|---|---|
 | CA-P7-15 | **Dado** un vehículo ACTIVO o RESERVADO del asesor, **cuando** lo marca vendido con fecha (hoy o anterior, no antes de su creación), precio final > 0, origen de la lista y observaciones (obligatorias si el origen es "Otro"), **entonces** queda VENDIDO, su publicación sale del portal, pierde el destacado y se crea una fila de venta auditada. | CONFIRMADO (HU-064, RN-VE-014, D-39) · EXISTE (regresión) | API |
-| CA-P7-16 | **Dado** el dueño de un vehículo VENDIDO, **cuando** revierte con motivo de 5 a 500 caracteres, **entonces** el vehículo vuelve a ACTIVO, la publicación queda DISPONIBLE y OCULTA con ese motivo, la venta queda marcada como revertida (quién, cuándo, por qué) y se audita `REVERTIR_VENTA` con antes y después. | CONFIRMADO (minuta §6) · EXISTE | API |
-| CA-P7-17 | **Dado** el administrador, **cuando** revierte la venta de un vehículo de cualquier asesor, **entonces** se aplica lo mismo que en CA-P7-16. | PENDIENTE D-62 a (A, comportamiento actual) | API |
+| CA-P7-16 | **Dado** el dueño de un vehículo VENDIDO, **cuando** revierte con motivo de 5 a 500 caracteres, **entonces** el vehículo vuelve a ACTIVO, la publicación queda DISPONIBLE y OCULTA con ese motivo, la venta queda marcada como revertida (quién, cuándo, por qué) y se audita la acción `REVERTIR` sobre la entidad `Venta`, con antes y después. | CONFIRMADO (minuta §6) · EXISTE | API |
+| CA-P7-17 | **Dado** el administrador, **cuando** revierte la venta de un vehículo de cualquier asesor, **entonces** se aplica lo mismo que en CA-P7-16. | CONFIRMADO (D-62 a A, comportamiento actual) | API |
 | CA-P7-18 | **Dado** un motivo vacío, de menos de 5 o de más de 500 caracteres, **cuando** se revierte, **entonces** 400 con el error en `motivo` y nada cambia. | CONFIRMADO · EXISTE | API |
 | CA-P7-19 | **Dado** un vehículo que no está VENDIDO, **cuando** se intenta revertir, **entonces** 409 "No se puede revertir la venta de un vehículo en estado <estado>.". | CONFIRMADO · EXISTE | API |
 | CA-P7-20 | **Dado** una venta revertida, **cuando** el dueño quiere volver a mostrar la publicación, **entonces** debe reactivarla: con plan vigente pasa a PUBLICADA (no consume cupo nuevo, D-40); sin plan vigente, 409 con el mensaje de "sin plan" de P4b. | CONFIRMADO (minuta "reactivación requiere confirmación y cupo"; D-40) · EXISTE | API |
@@ -153,41 +162,41 @@ Queda **fuera**: facturación electrónica, contabilidad, datos del comprador fi
 |---|---|---|---|
 | CA-P7-25 | **Dado** el administrador, **cuando** crea, edita, activa o inactiva un plan y asigna, renueva, suspende, reactiva o cancela una suscripción, **entonces** se comporta como en `P4p-contrato-api.md` (regresión). | CONFIRMADO · EXISTE | API |
 | CA-P7-26 | **Dado** un asesor, **cuando** intenta renovar su suscripción por la API, **entonces** 403 (solo el administrador renueva, D-36), y en "Mi suscripción" ve "Para renovar, comunícate con el administrador" con el WhatsApp del portal (parámetro de CA-P7-40). | CONFIRMADO (D-36) + PROPUESTO (texto y enlace) | API, COMP |
-| CA-P7-27 | **Dado** el administrador que asigna o renueva un plan con precio mayor que 0, **cuando** confirma, **entonces** el formulario le pide registrar el pago: valor (por defecto el precio del plan; entero > 0), fecha de pago (hoy o anterior), medio (Transferencia, Consignación, Efectivo, Otro) y referencia opcional (hasta 100 caracteres); suscripción y pago se guardan en la misma transacción. | PENDIENTE D-61 (B) | API, COMP |
-| CA-P7-28 | **Dado** un plan de prueba o de precio 0, **cuando** se asigna, **entonces** no se pide ni se crea pago. | PENDIENTE D-61 (B) | API |
-| CA-P7-29 | **Dado** datos de pago inválidos (valor ≤ 0 o no entero, fecha futura o mal escrita, medio fuera de la lista, "Otro" sin referencia, referencia > 100), **entonces** 400 con el campo y el mensaje, y **no** se crea ni la suscripción ni el pago. | PENDIENTE D-61 (B) | API |
-| CA-P7-30 | **Dado** el administrador, **cuando** abre una suscripción, **entonces** ve su historial de pagos (fecha, valor, medio, referencia, quién lo registró) y el total pagado de esa suscripción. | PENDIENTE D-61 (B) | API, COMP |
-| CA-P7-31 | **Dado** un pago registrado por error, **cuando** el administrador lo anula con motivo (5-500), **entonces** queda como "Anulado" con quién, cuándo y por qué, no se borra, se audita y la suscripción no cambia. | PENDIENTE D-61 (B) + PROPUESTO | API |
-| CA-P7-32 | **Dado** un asesor, comprador o visitante, **cuando** llama a cualquier ruta de pagos, **entonces** 403 o 401; el asesor no ve los pagos en "Mi suscripción". | PENDIENTE D-61 (B) + PROPUESTO | API |
+| CA-P7-27 | **Dado** el administrador que asigna o renueva un plan con precio mayor que 0, **cuando** confirma, **entonces** el formulario le ofrece registrar el pago, con la casilla ya marcada: valor (por defecto el precio del plan; entero > 0), fecha de pago (hoy o anterior), medio (Transferencia, Consignación, Efectivo, Otro) y referencia (hasta 100 caracteres; obligatoria con "Otro"); suscripción y pago se guardan en la misma transacción. El pago es opcional: si se desmarca, la suscripción se guarda sin pago y el pago se puede registrar después desde "Pagos" de la suscripción. | CONFIRMADO (D-61 B, D-66) | API, COMP |
+| CA-P7-28 | **Dado** un plan de prueba o de precio 0, **cuando** se asigna, **entonces** no se pide ni se crea pago. | CONFIRMADO (D-61 B) | API |
+| CA-P7-29 | **Dado** datos de pago inválidos (valor ≤ 0 o no entero, fecha futura o mal escrita, medio fuera de la lista, "Otro" sin referencia, referencia > 100), **entonces** 400 con el campo y el mensaje, y **no** se crea ni la suscripción ni el pago. | CONFIRMADO (D-61 B; "Otro" sin referencia por D-66) | API |
+| CA-P7-30 | **Dado** el administrador, **cuando** abre una suscripción, **entonces** ve su historial de pagos (fecha, valor, medio, referencia, quién lo registró) y el total pagado de esa suscripción, y puede registrar un pago posterior. | CONFIRMADO (D-61 B; pago posterior por D-66) | API, COMP |
+| CA-P7-31 | **Dado** un pago registrado por error, **cuando** el administrador lo anula con motivo (5-500), **entonces** queda como "Anulado" con quién, cuándo y por qué, no se borra, se audita y la suscripción no cambia. Un pago antiguo sin fecha o sin medio no se puede anular: 409. | CONFIRMADO (D-61 B; el 409 por D-66) | API |
+| CA-P7-32 | **Dado** un asesor, comprador o visitante, **cuando** llama a cualquier ruta de pagos, **entonces** 403 o 401; el asesor no ve los pagos en "Mi suscripción". | CONFIRMADO (D-61 B) | API |
 | CA-P7-33 | **Dado** el portal, **entonces** no hay ninguna pantalla ni ruta que reciba datos de tarjeta, cuentas bancarias o pagos en línea, ni que emita facturas. | CONFIRMADO (D-26 "sin pagos en línea"; D-45) | API (inventario de rutas), MAN |
-| CA-P7-34 | **Dado** que la responsable elige D-61 A, **entonces** CA-P7-27 a CA-P7-32 se retiran y la activación manual sigue como hoy (auditada con quién y cuándo). | PENDIENTE D-61 | — |
+| CA-P7-34 | **Dado** que la responsable elige D-61 A, **entonces** CA-P7-27 a CA-P7-32 se retiran y la activación manual sigue como hoy (auditada con quién y cuándo). | No aplica: la responsable eligió D-61 B (CONFIRMADO) | — |
 
 ### 5.4 Parámetros generales (HU-081, RN-PA-001, D-42, D-47, D-63)
 
 | ID | Criterio | Marca | Prueba |
 |---|---|---|---|
-| CA-P7-35 | **Dado** el administrador en "Parámetros", **cuando** abre la pantalla, **entonces** ve los valores vigentes: WhatsApp del portal, correo de contacto, horario de atención (hasta 4 líneas) e Instagram y TikTok (opcionales). | PENDIENTE D-63 (A) | COMP |
-| CA-P7-36 | **Dado** valores válidos, **cuando** guarda, **entonces** 200, el pie del portal muestra los valores nuevos en la siguiente carga y se audita `Parametro/CAMBIAR` con los valores anteriores y nuevos. | PENDIENTE D-63 (A) | API, COMP |
-| CA-P7-37 | **Dado** un WhatsApp que no es un celular colombiano válido (regla de P5), un correo inválido, una línea de horario vacía o de más de 100 caracteres, o un enlace de red social que no empieza por `https://www.instagram.com/` o `https://www.tiktok.com/`, **entonces** 400 con el campo y el mensaje, y nada cambia. | PENDIENTE D-63 (A) + PROPUESTO (límites) | API |
+| CA-P7-35 | **Dado** el administrador en "Parámetros", **cuando** abre la pantalla, **entonces** ve los valores vigentes: WhatsApp del portal, correo de contacto, horario de atención (hasta 4 líneas) e Instagram y TikTok (opcionales). | CONFIRMADO (D-63 A) | COMP |
+| CA-P7-36 | **Dado** valores válidos, **cuando** guarda, **entonces** 200, el pie del portal muestra los valores nuevos en la siguiente carga y se audita `Parametro/CAMBIAR` con los valores anteriores y nuevos. | CONFIRMADO (D-63 A) | API, COMP |
+| CA-P7-37 | **Dado** un WhatsApp que no es un celular colombiano válido (regla de P5), un correo inválido, una línea de horario vacía o de más de 100 caracteres, o un enlace de red social que no empieza por `https://www.instagram.com/` o `https://www.tiktok.com/`, **entonces** 400 con el campo y el mensaje, y nada cambia. | CONFIRMADO (D-63 A) + PROPUESTO (límites) | API |
 | CA-P7-38 | **Dado** que aún no se ha guardado ningún parámetro, **cuando** se carga el portal, **entonces** se usan los valores confirmados de D-42 (WhatsApp 316 615 2907, vc.automotores@gmail.com y el horario confirmado). | CONFIRMADO (D-42) + PROPUESTO (valor por defecto) | API, COMP |
 | CA-P7-39 | **Dado** Instagram o TikTok vacíos, **entonces** el pie no los muestra. | CONFIRMADO (D-42: "no se muestran hasta tener los enlaces") | COMP |
 | CA-P7-40 | **Dado** un nuevo WhatsApp del portal, **cuando** una publicación está a cargo del administrador o el asesor tiene un fijo, **entonces** el botón de WhatsApp de la ficha (D-47, D-49) usa el número nuevo en lugar del de `appsettings.json`. | PROPUESTO | API |
 | CA-P7-41 | **Dado** un valor con etiquetas HTML o `javascript:`, **entonces** se rechaza (400) o se muestra como texto plano; nunca se interpreta. | PROPUESTO (seguridad) | API, COMP |
 | CA-P7-42 | **Dado** la ruta pública de lectura de parámetros, **entonces** es anónima, solo GET, devuelve únicamente los datos de contacto públicos y no va bajo `/api/catalogo` (la prueba `SesionTests` fija sus rutas). | PROPUESTO | API |
 | CA-P7-43 | **Dado** un asesor, comprador o visitante, **cuando** intenta modificar parámetros, **entonces** 403 o 401. | CONFIRMADO (v3.0 §4.1 "Administrar parámetros"; RN-SE-006) | API |
-| CA-P7-44 | **Dado** la pantalla "Parámetros", **entonces** **no** ofrece cambiar los días por mes del plan, el límite de fotos ni su tamaño, los límites anti-abuso, las categorías ni la DIVIPOLA. | PENDIENTE D-63 (A) + CONFIRMADO en parte (RN-SU-005, D-20, D-37) | COMP |
+| CA-P7-44 | **Dado** la pantalla "Parámetros", **entonces** **no** ofrece cambiar los días por mes del plan, el límite de fotos ni su tamaño, los límites anti-abuso, las categorías ni la DIVIPOLA. | CONFIRMADO (D-63 A; RN-SU-005, D-20, D-37) | COMP |
 
 ### 5.5 Panel administrativo e indicadores básicos (HU-075 parcial, HU-073/HU-074 parcial, D-64)
 
 | ID | Criterio | Marca | Prueba |
 |---|---|---|---|
-| CA-P7-45 | **Dado** un administrador que entra a "Mi cuenta", **cuando** abre la sección "Inicio" (`#/cuenta/inicio`), **entonces** ve contadores: asesores pendientes de aprobación; solicitudes abiertas por tipo (contactos a cargo de Administración, "Vende tu camión", seguros, créditos y búsquedas) y cuántas son nuevas; suscripciones que vencen en los próximos 7 días; suscripciones vencidas sin renovar; publicaciones visibles en el portal; vehículos por estado (Activo, Reservado, Inactivo, Vendido); ventas vigentes registradas en los últimos 30 días (cantidad). | PENDIENTE D-64 (A) | API, COMP |
-| CA-P7-46 | **Dado** cada contador, **cuando** el administrador hace clic, **entonces** llega a la lista correspondiente ya filtrada, y el número coincide con el total de esa lista. | PENDIENTE D-64 (A) + PROPUESTO | API, COMP |
+| CA-P7-45 | **Dado** un administrador que entra a "Mi cuenta", **cuando** abre la sección "Inicio" (`#/cuenta/inicio`), **entonces** ve contadores: asesores pendientes de aprobación; solicitudes abiertas por tipo (contactos a cargo de Administración, "Vende tu camión", seguros, créditos y búsquedas) y cuántas son nuevas; suscripciones que vencen en los próximos 7 días; suscripciones vencidas sin renovar; publicaciones visibles en el portal; vehículos por estado (Activo, Reservado, Inactivo, Vendido); ventas vigentes registradas en los últimos 30 días (cantidad). | CONFIRMADO (D-64 a A) | API, COMP |
+| CA-P7-46 | **Dado** cada contador, **cuando** el administrador hace clic, **entonces** llega a la lista correspondiente ya filtrada, y el número coincide con el total de esa lista. Los dos contadores de suscripciones abren Suscripciones con `vista=porVencer` o `vista=vencidasSinRenovar`, la misma consulta del panel (D-66, O-5). | CONFIRMADO (D-64 a A; filtros por D-66) + PROPUESTO | API, COMP |
 | CA-P7-47 | **Dado** un contador en 0, **entonces** se muestra "0" (no se oculta) con un texto en palabras, p. ej. "Sin asesores pendientes". | PROPUESTO | COMP |
 | CA-P7-48 | **Dado** el resumen, **entonces** solo devuelve números; ningún nombre, teléfono ni correo. | PROPUESTO (RN-SE-004) | API |
 | CA-P7-49 | **Dado** un asesor o comprador, **cuando** pide el resumen del panel, **entonces** 403; sin sesión, 401; la sección "Inicio" del administrador no aparece en su navegación. | CONFIRMADO (RN-SE-006) | API, COMP |
-| CA-P7-50 | **Dado** un asesor con plan vigente que vence en 7 días o menos, **cuando** abre "Mi cuenta", **entonces** "Mi suscripción" muestra "Tu plan vence en N días. Para renovarlo, comunícate con el administrador." | PENDIENTE D-64 b (A) | COMP |
-| CA-P7-51 | **Dado** el panel, **entonces** no hay gráficos, filtros por fecha, sumas de dinero ni exportación (quedan para P8, HU-076 a HU-080). | PENDIENTE D-64 (A) | COMP |
+| CA-P7-50 | **Dado** un asesor con plan vigente que vence en 7 días o menos, **cuando** abre "Mi cuenta", **entonces** "Mi suscripción" muestra "Tu plan vence en N días. Para renovarlo, comunícate con el administrador." | CONFIRMADO (D-64 b A) | COMP |
+| CA-P7-51 | **Dado** el panel, **entonces** no hay gráficos, filtros por fecha, sumas de dinero ni exportación (quedan para P8, HU-076 a HU-080). | CONFIRMADO (D-64 a A) | COMP |
 | CA-P7-52 | **Dado** el administrador en cualquier sección, **entonces** la navegación ofrece Inicio, Usuarios, Planes, Suscripciones, Ventas, Inventario, Publicaciones, Contactos, Catálogos, Portada y Parámetros (y Pagos si D-61 es B y no se integra en Suscripciones), con `aria-current` en la actual, usable en móvil. | PROPUESTO | COMP, MAN |
 
 ### 5.6 Transversales: permisos, auditoría, datos y regresión
@@ -213,11 +222,11 @@ Queda **fuera**: facturación electrónica, contabilidad, datos del comprador fi
 | Minuta §6 (historial), M11, D-62 c | CA-P7-01 a 12, 14 | API, COMP, MAN |
 | HU-049 a HU-051, RN-PL-001/002 | CA-P7-25 | API (regresión de P4p) |
 | HU-066 a HU-069, RN-SU-001 a 005, D-35, D-36 | CA-P7-25, 26, 50 | API, COMP |
-| FN-04, v3.0 §14, D-26, D-61 | CA-P7-27 a 34 | API, COMP |
+| FN-04, v3.0 §14, D-26, D-61, D-66 | CA-P7-27 a 34 | API, COMP |
 | HU-081, RN-PA-001, D-42, D-47, D-49, D-63 | CA-P7-35 a 44 | API, COMP |
 | HU-085, HU-086 (D-44) | — (BLOQUEADO) | — |
 | HU-087, HU-076 a HU-080, HU-052 a HU-055 | — (P8) | — |
-| HU-075, RN-RE-001, D-64 a | CA-P7-45 a 49, 51, 52 | API, COMP |
+| HU-075, RN-RE-001, D-64 a, D-66 (filtros `vista`) | CA-P7-45 a 49, 51, 52 | API, COMP |
 | HU-073, HU-074, RN-NO-004/005, D-64 b | CA-P7-45 (contadores de vencimiento), 50 | API, COMP |
 | HU-061, RN-SE-003 | CA-P7-16, 54 | API |
 | RN-SE-004 | CA-P7-12, 48 | API |

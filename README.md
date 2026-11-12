@@ -35,8 +35,20 @@ Estados que usa esta documentación: **IMPLEMENTADO** (el código existe), **PRO
 - Atender todas las solicitudes en "Contactos": contactos, avisos, créditos y búsquedas. Puede añadir notas, cerrar, reabrir, reasignar contactos (con auditoría) y relacionar vehículos con una búsqueda (P5, P5b, P6).
 - El primer administrador se crea con el comando local `promover-admin` (D-13). Ver [`docs/GUIA-ADMINISTRACION.md`](docs/GUIA-ADMINISTRACION.md).
 
+**P7: en la rama `feature/p7-ventas-admin`, pendiente de unir** (todavía no está en `main`)
+- Está **IMPLEMENTADO y PROBADO** con pruebas automáticas. La migración 016 **no está aplicada**, y la prueba manual de la responsable y las pruebas E2E **no se han ejecutado**. Guía en [`docs/manual/P7-administracion.md`](docs/manual/P7-administracion.md).
+- Administrador:
+  - panel "Inicio" con contadores enlazados a sus listas (D-64);
+  - historial de ventas, vigentes y revertidas (D-62);
+  - registro y anulación de los pagos del plan, cobrados fuera del portal (D-61 B, D-66);
+  - "Parámetros" para cambiar el WhatsApp, el correo, el horario, Instagram y TikTok del portal (D-63).
+- Asesor:
+  - "Mis ventas";
+  - en "Mi suscripción", el aviso "Tu plan vence en N días" y el botón de WhatsApp para pedir la renovación.
+
 **Pendiente** (ver [`docs/coordinacion/BACKLOG.md`](docs/coordinacion/BACKLOG.md))
-- P7: ventas, planes y administración. P8: reportes, marketing e integraciones.
+- P7: aplicar la migración 016, la prueba manual y unir a `main`. P8: reportes, marketing e integraciones.
+- INF-3: pruebas intermitentes (un fallo sin identificar en el backend y pruebas del frontend que fallan con la máquina cargada).
 - INF-1: CI en GitHub Actions. INF-2: requisitos antes de publicar en internet.
 - Revisión legal de la política de datos y de los términos (D-44, PROPUESTO). Ningún formulario sale a internet sin ella.
 - Otros: P2b ("Solicitar ser asesor") y P6-B (hallazgos bajos de seguridad).
@@ -82,7 +94,7 @@ Hay una clave opcional, `Media:Ruta`: es la carpeta de las fotos y por defecto v
 3. En phpMyAdmin, **selecciona primero la base `camion_ventas`**: los archivos `_SUBIR` no traen `USE`. Luego entra en *Importar*, elige el archivo y ejecútalo.
 4. Importa los scripts en este orden:
    - `database/002_esquema_inicial_mariadb_10_4.sql` (esquema inicial);
-   - por número, `database/migraciones/` y `database/catalogos/`: 003, 004, 005, 006, 007, 008, 009, 010, 011, 012, 013, 014 y 015.
+   - por número, `database/migraciones/` y `database/catalogos/`: 003, 004, 005, 006, 007, 008, 009, 010, 011, 012, 013, 014, 015 y 016 (la 016 solo con la versión de P7; aún no está aplicada en `camion_ventas`).
 5. Si un script tiene archivo `_SUBIR`, importa **solo ese archivo**. Si no lo tiene, sigue las instrucciones de su cabecera. En phpMyAdmin, importar la 004 completa falló; hubo que importar solo su sección SUBIR (ver BITACORA, P4a).
 6. Los archivos `_VERIFICAR_Y_BAJAR` y las secciones BAJAR **no se importan al instalar**.
 7. `database/demo/demo_p3_catalogo.sql` carga datos ficticios. Es opcional y sirve solo para pruebas (D-18, D-24).
@@ -126,7 +138,9 @@ npx tsc -b
 npm run build
 ```
 
-Último resultado registrado, del **2026-11-12** (P6): backend **1118/1118** y frontend **643/643**; `tsc -b` y `npm run build`, correctos. Las pruebas de la API usan SQLite en memoria y no tocan `camion_ventas`.
+Último resultado registrado, en la rama de **P7** (`feature/p7-ventas-admin`): backend **1240/1240** y frontend **699/699**; `tsc -b`, `tsc -p tsconfig.test.json` y `npm run build`, correctos. En `main` (P6) el último resultado fue 1118/1118 y 643/643. Las pruebas de la API usan SQLite en memoria y no tocan `camion_ventas`.
+
+Hay pruebas intermitentes (INF-3). En el backend apareció un fallo sin identificar dos veces, en muchas corridas. En el frontend fallan algunas pruebas cuando la máquina está muy cargada. Si una corrida falla, repítela y anota el nombre de la prueba.
 
 ## 6. Forma de trabajo
 
@@ -140,14 +154,14 @@ npm run build
 
 | Dónde | Qué contiene |
 |---|---|
-| `docs/coordinacion/ESTADO-REAL.md` | Estado verificado del código, con actualizaciones hasta P6 |
+| `docs/coordinacion/ESTADO-REAL.md` | Estado verificado del código, con actualizaciones hasta P7 |
 | `docs/coordinacion/BACKLOG.md` | Orden de trabajo y estado de cada fase |
 | `docs/coordinacion/DECISIONES.md` | Decisiones D-1 en adelante |
 | `docs/coordinacion/BITACORA.md` | Qué se hizo en cada sesión, con migraciones, respaldos y pruebas |
-| `docs/coordinacion/REVISION-SEGURIDAD-P5*.md`, `-P6.md` | Revisiones de seguridad |
+| `docs/coordinacion/REVISION-SEGURIDAD-P5*.md`, `-P6.md`, `-P7.md` | Revisiones de seguridad |
 | `docs/requisitos/` | Requisitos funcionales v3.0 y minuta de transferencia |
 | `docs/criterios/` | Criterios, contratos de API y evidencia por fase |
-| `docs/manual/` | Guías de uso y de prueba manual: P5 contactos, P5b avisos y P6 créditos |
+| `docs/manual/` | Guías de uso y de prueba manual: P5 contactos, P5b avisos, P6 créditos y P7 administración |
 | `docs/GUIA-ADMINISTRACION.md`, `GUIA-CATALOGO.md`, `GUIA-CATALOGOS.md` | Guías de administración, catálogo público y marcas y modelos |
 | `docs/legal/` | Borradores de la política de datos y de los términos (D-44; falta la revisión legal) |
 | `backend/GUIA-*.md` | Conexión a MariaDB y autenticación |
