@@ -486,3 +486,21 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - INF-2 antes de publicar en internet;
   - la revisión legal (D-44). La política ya no prevé datos financieros: por D-55 B el portal no los recoge.
 - PR: por abrir contra `main`, sin merge. Rama sin publicar.
+- **Migración 015 aplicada (2026-11-12).**
+  - Respaldo previo: `C:\Respaldo_CAMION\camion_ventas_antes_015_p6_20261112_1140.sql` (145 KB, 47 tablas, termina en "Dump completed").
+  - La API estaba detenida. La responsable seleccionó `camion_ventas` en phpMyAdmin e importó `015_p6_creditos_busquedas_SUBIR.sql`.
+  - Verificación de solo lectura:
+    - tablas `leads_busqueda` y `busqueda_vehiculos` creadas y vacías;
+    - `CK_Lead_Origen` con CREDITO y BUSQUEDA;
+    - `CK_Lead_Resultado` con REMITIDO_ENTIDAD, VEHICULO_ENCONTRADO y SIN_VEHICULO;
+    - CHECK de consentimientos y eventos ampliados;
+    - índice `IX_Lead_Usuario`;
+    - datos intactos: 6 leads, 20 eventos, 6 consentimientos y 14 publicaciones.
+  - La API se compiló y se arrancó con la `.dll`; la ruta pública de listas responde.
+- **Cambio pedido en la prueba (2026-11-12, D-56 d pasa a B).** La responsable no encontraba "Busco un vehículo". Se añade un tercer bloque en la portada, junto a los de D-51 (commit c7d7b75). Pruebas: `npx vitest run` 643/643, `tsc -b`, `tsc -p tsconfig.test.json` y `npm run build` OK; revisado en el navegador a 1280 px.
+- **Prueba manual P6: PROBADO EN PARTE por la responsable (2026-11-12), respuesta "Todo bien".**
+  - En la base hay 2 créditos desde la portada: uno sin cuenta (lead 7) y otro con cuenta de comprador (lead 8). Ambos están en Administración y tienen su autorización de datos con formulario CREDITO.
+  - NO EJERCIDO a mano (sin rastro en la base): crédito desde una ficha, búsqueda, coincidencias, relacionar y retirar, notas, cierre y reapertura de créditos y búsquedas. Lo cubren las pruebas automáticas (1118 + 643).
+  - "Mis solicitudes" y la vista del asesor: sin rastro en la base, porque son lecturas. La responsable dijo "Todo bien".
+  - Los leads 7 y 8 quedan como datos de prueba, junto con los 1 a 6. Se limpian antes de producción.
+
