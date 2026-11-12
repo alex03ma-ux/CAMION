@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import type { PerfilUsuario } from '../api/auth'
 import { MINUTOS_INACTIVIDAD } from '../auth/inactivity'
 import { esAdministrador, nombreRol, ROL_ASESOR, tieneRol } from '../auth/roles'
-import { hashSeccionAdmin, HASH_INVENTARIO } from '../rutas'
+import { hashSeccionAdmin, HASH_INVENTARIO, HASH_PUBLICACIONES } from '../rutas'
 import { textoAccesoInventario } from './InventarioPagina'
 import { MiSuscripcion } from './MiSuscripcion'
 
@@ -59,6 +59,11 @@ export function PerfilPanel({
       {accesoInventario && (
         <a className="inv-boton-enlace inv-boton-bloque" href={HASH_INVENTARIO}>
           {accesoInventario}
+        </a>
+      )}
+      {accesoInventario && (
+        <a className="inv-boton-enlace inv-boton-bloque inv-boton-secundario" href={HASH_PUBLICACIONES}>
+          {esAdministrador(perfil.roles) ? 'Publicaciones' : 'Mis publicaciones'}
         </a>
       )}
       {verAdministracion && (

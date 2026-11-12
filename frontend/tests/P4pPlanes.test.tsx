@@ -98,6 +98,7 @@ describe('Crear plan', () => {
       precioCop: 1250000,
       duracionMeses: 1,
       limitePublicaciones: 5,
+      limiteDestacados: 0, // P4b (D-38): valor por defecto del formulario
       esPrueba: true,
     })
     expect(await screen.findByText('Se creó el plan Prueba gratis.')).toBeInTheDocument()
@@ -164,6 +165,7 @@ describe('Editar y activar/inactivar', () => {
       precioCop: 150000,
       duracionMeses: 3,
       limitePublicaciones: 12,
+      limiteDestacados: 0, // P4b (D-38): el plan de prueba no trae el campo
       esPrueba: false,
     })
     expect(await screen.findByText('Se guardaron los cambios del plan Básico.')).toBeInTheDocument()

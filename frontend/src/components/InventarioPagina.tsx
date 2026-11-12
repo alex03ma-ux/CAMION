@@ -1,7 +1,7 @@
 // Pantallas del inventario (P4a): #/inventario, #/inventario/nuevo y #/inventario/<id>.
 // Solo ASESOR y ADMINISTRADOR (política AsesorOAdministrador, RN-SE-006). La interfaz
 // oculta el acceso a los demás, pero quien protege es la API (401/403/404).
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { PerfilUsuario } from '../api/auth'
 import { MENSAJE_SIN_PERMISO } from '../api/http'
 import { obtenerCatalogosInventario, type DetalleInventario } from '../api/inventario'
@@ -16,6 +16,7 @@ import {
 import { Aviso, type DatosAviso } from './Aviso'
 import { InventarioFormulario } from './InventarioFormulario'
 import { InventarioLista } from './InventarioLista'
+import { ReasignarVehiculo } from './ReasignarVehiculo'
 
 export type RutaInventario = Extract<
   Ruta,
@@ -99,6 +100,9 @@ function InventarioConAcceso({
     },
     [],
   )
+
+  // P4b: resultado de "Reasignar a otro asesor" (sobrevive a la recarga del detalle).
+  const [avisoReasignar, setAvisoReasignar] = useState<{ id: number; aviso: DatosAviso } | null>(null)
 
   const tituloLista = esAdmin ? 'Inventario' : 'Mi inventario'
   const sinPermiso = error?.status === 403
@@ -184,6 +188,24 @@ function InventarioConAcceso({
           avisoInicial={leerAvisoPendiente()}
           onSesionTerminada={onSesionTerminada}
           onCreado={alCrear}
+          accionesDetalle={
+            esAdmin
+              ? (detalle, recargar, titulo) => (
+                  <ReasignarVehiculo
+                    token={token}
+                    detalle={detalle}
+                    titulo={titulo}
+                    asesores={catalogos.datos.asesores}
+                    onSesionTerminada={onSesionTerminada}
+                    resultado={avisoReasignar?.id === detalle.id ? avisoReasignar.aviso : null}
+                    onResultado={(aviso, recargarDetalle) => {
+                      setAvisoReasignar(aviso ? { id: detalle.id, aviso } : null)
+                      if (recargarDetalle) recargar()
+                    }}
+                  />
+                )
+              : undefined
+          }
         />
       )}
     </div>

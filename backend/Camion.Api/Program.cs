@@ -179,6 +179,9 @@ app.MapMediaEndpoints();
 app.MapPlanesEndpoints();
 app.MapSuscripcionesEndpoints();
 app.MapAdminCatalogosEndpoints();
+// P4b: publicaciones, destacados, venta y reasignación (D-22, D-34, D-38 a D-41).
+app.MapPublicacionesEndpoints();
+app.MapVentasEndpoints();
 
 app.Run();
 

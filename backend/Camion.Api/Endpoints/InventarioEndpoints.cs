@@ -8,6 +8,7 @@ using Camion.Api.Data;
 using Camion.Api.Inventario;
 using Camion.Api.Media;
 using Camion.Api.Models;
+using Camion.Api.Publicaciones;
 using Microsoft.AspNetCore.Http.Features;
 using JsonOptionsHttp = Microsoft.AspNetCore.Http.Json.JsonOptions;
 using Microsoft.AspNetCore.Mvc;
@@ -62,7 +63,8 @@ public static class InventarioEndpoints
     ];
 
     // Quién hace la petición. El asesor se identifica por su perfiles_asesor.id (= vehiculos.asesor_id).
-    private sealed record Actor(string UsuarioId, bool EsAdmin, long? PerfilAsesorId);
+    // P4b: compartido con PublicacionesEndpoints y VentasEndpoints (mismo alcance del asesor).
+    internal sealed record Actor(string UsuarioId, bool EsAdmin, long? PerfilAsesorId);
 
     public static IEndpointRouteBuilder MapInventarioEndpoints(this IEndpointRouteBuilder app)
     {
@@ -71,10 +73,12 @@ public static class InventarioEndpoints
         // HU-021 (asesor: lo suyo) y HU-022 (administrador: todo).
         inventario.MapGet("/vehiculos", async (
             string? estado, string? tipoId, string? marcaId, string? q, string? asesorId, string? pagina, string? tamano,
-            ClaimsPrincipal principal, CamionDbContext db, CancellationToken ct) =>
+            ClaimsPrincipal principal, CamionDbContext db, TimeProvider reloj, CancellationToken ct) =>
         {
             var actor = await ActorAsync(principal, db, ct);
             if (actor is null) return SinPermiso();
+            var ahora = reloj.GetUtcNow().UtcDateTime;
+            var vigentes = DatosP4b.SuscripcionesVigentes(db, ahora);
 
             var errores = new Dictionary<string, string[]>();
             var estadoFiltro = string.IsNullOrWhiteSpace(estado) ? null : estado.Trim().ToUpperInvariant();
@@ -135,6 +139,16 @@ public static class InventarioEndpoints
                     })
                     .ToListAsync(ct);
 
+            // P4b: la publicación no eliminada de cada vehículo, en una segunda consulta plana (sin APPLY/LATERAL,
+            // que MariaDB 10.4 no admite).
+            var ids = filas.Select(f => f.Id).ToList();
+            var pubs = ids.Count == 0
+                ? new Dictionary<long, FilaPublicacionVehiculo>()
+                : (await ProyectarPublicaciones(db.Publicaciones.AsNoTracking()
+                        .Where(p => ids.Contains(p.VehiculoId) && p.EstadoPublicacion != Publicacion.Eliminada), vigentes, ahora)
+                    .ToListAsync(ct))
+                    .GroupBy(p => p.VehiculoId).ToDictionary(g => g.Key, g => g.OrderByDescending(p => p.Id).First());
+
             var items = filas.Select(f =>
             {
                 var categoria = ReglasInventario.CategoriaDe(f.Tipo);
@@ -144,16 +158,18 @@ public static class InventarioEndpoints
                     categoria is null || ReglasInventario.AdmiteKilometraje(categoria.Value) ? f.Kilometraje : null,
                     f.HorasUso, f.Municipio, ConsultasCatalogo.UrlFoto(f.FotoClave), f.TotalFotos,
                     ConsultasCatalogo.Utc(f.ActualizadoEn), f.NotaReserva,
-                    actor.EsAdmin ? new AsesorInventario(f.AsesorId, f.AsesorNombre ?? "") : null);
+                    actor.EsAdmin ? new AsesorInventario(f.AsesorId, f.AsesorNombre ?? "") : null,
+                    ResumenPublicacion(pubs.GetValueOrDefault(f.Id)));
             }).ToArray();
             return Results.Ok(new InventarioPaginaResponse(items, total, numeroPagina, tamanoPagina));
         });
 
-        inventario.MapGet("/vehiculos/{id}", async (long id, ClaimsPrincipal principal, CamionDbContext db, CancellationToken ct) =>
+        inventario.MapGet("/vehiculos/{id}", async (long id, ClaimsPrincipal principal, CamionDbContext db, TimeProvider reloj,
+            CancellationToken ct) =>
         {
             var actor = await ActorAsync(principal, db, ct);
             if (actor is null) return SinPermiso();
-            var detalle = await DetalleAsync(db, actor, id, ct);
+            var detalle = await DetalleAsync(db, actor, id, reloj.GetUtcNow().UtcDateTime, ct);
             return detalle is null ? NoEncontrado() : Results.Ok(detalle);
         });
 
@@ -299,7 +315,7 @@ public static class InventarioEndpoints
                 vehiculo.Id, actor.UsuarioId, archivos.Count,
                 // Diagnóstico del defecto de placa: solo si llegó o no, nunca el valor.
                 string.IsNullOrWhiteSpace(request.Placa) ? "no" : "si");
-            var detalle = await DetalleAsync(db, actor, vehiculo.Id, ct);
+            var detalle = await DetalleAsync(db, actor, vehiculo.Id, ahora, ct);
             AdvertirPlacaPerdida(auditoria, request, detalle, actor, "crear");
             return Results.Created($"/api/inventario/vehiculos/{vehiculo.Id}", detalle);
         }).WithMetadata(new RequestSizeLimitAttribute(FormatoImagen.CuerpoMaximoCreacion));
@@ -356,7 +372,7 @@ public static class InventarioEndpoints
                     throw;
                 }
             }
-            var detalle = await DetalleAsync(db, actor, id, ct);
+            var detalle = await DetalleAsync(db, actor, id, ahora, ct);
             AdvertirPlacaPerdida(loggerFactory.CreateLogger(AuthEndpoints.CategoriaAuditoria), request, detalle, actor, "editar");
             return Results.Ok(detalle);
         });
@@ -475,7 +491,7 @@ public static class InventarioEndpoints
                 new Dictionary<string, object?> { ["estado"] = actual }, nuevos, ahora);
             await db.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
-            return Results.Ok(await DetalleAsync(db, actor, id, ct));
+            return Results.Ok(await DetalleAsync(db, actor, id, ahora, ct));
         });
     }
 
@@ -633,7 +649,7 @@ public static class InventarioEndpoints
     // Ayudas
     // ---------------------------------------------------------------------------------------------------------------
 
-    private static async Task<Actor?> ActorAsync(ClaimsPrincipal principal, CamionDbContext db, CancellationToken ct)
+    internal static async Task<Actor?> ActorAsync(ClaimsPrincipal principal, CamionDbContext db, CancellationToken ct)
     {
         var usuarioId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
         if (usuarioId is null) return null;
@@ -645,7 +661,7 @@ public static class InventarioEndpoints
     }
 
     // D-7, RN-SE-006: el asesor solo ve lo suyo; lo ajeno queda fuera del alcance y responde 404.
-    private static IQueryable<Vehiculo> Alcance(IQueryable<Vehiculo> consulta, Actor actor) =>
+    internal static IQueryable<Vehiculo> Alcance(IQueryable<Vehiculo> consulta, Actor actor) =>
         actor.EsAdmin ? consulta : consulta.Where(v => v.AsesorId == actor.PerfilAsesorId);
 
     // Asesores con cuenta ACTIVA y rol ASESOR (id = perfiles_asesor.id).
@@ -663,7 +679,7 @@ public static class InventarioEndpoints
         public string Nombre { get; init; } = "";
     }
 
-    private static Task<bool> AsesorActivoAsync(CamionDbContext db, long asesorId, CancellationToken ct) =>
+    internal static Task<bool> AsesorActivoAsync(CamionDbContext db, long asesorId, CancellationToken ct) =>
         AsesoresActivos(db).AnyAsync(a => a.Id == asesorId, ct);
 
     private static Task<bool> PlacaOcupadaAsync(CamionDbContext db, string placa, long? excepto, CancellationToken ct) =>
@@ -752,7 +768,8 @@ public static class InventarioEndpoints
         ["estado"] = v.Estado
     };
 
-    private static async Task<DetalleInventario?> DetalleAsync(CamionDbContext db, Actor actor, long id, CancellationToken ct)
+    internal static async Task<DetalleInventario?> DetalleAsync(CamionDbContext db, Actor actor, long id, DateTime ahora,
+        CancellationToken ct)
     {
         var d = await Alcance(db.Vehiculos.AsNoTracking(), actor).Where(v => v.Id == id).Select(v => new
         {
@@ -802,6 +819,16 @@ public static class InventarioEndpoints
 
         var fotos = await FotosDe(db, id).ToListAsync(ct);
         var categoria = ReglasInventario.CategoriaDe(d.Tipo);
+        // P4b: publicación no eliminada y venta vigente.
+        var vigentes = DatosP4b.SuscripcionesVigentes(db, ahora);
+        var pub = await ProyectarPublicaciones(db.Publicaciones.AsNoTracking()
+                .Where(p => p.VehiculoId == id && p.EstadoPublicacion != Publicacion.Eliminada).OrderByDescending(p => p.Id),
+                vigentes, ahora)
+            .FirstOrDefaultAsync(ct);
+        var venta = d.Estado != Vehiculo.Vendido
+            ? null
+            : await db.VentasVehiculo.AsNoTracking().Where(x => x.VehiculoId == id && x.RevertidaEn == null)
+                .OrderByDescending(x => x.RegistradaEn).ThenByDescending(x => x.Id).FirstOrDefaultAsync(ct);
         return new DetalleInventario(
             d.Id, d.TipoVehiculoId, d.Tipo, d.MarcaId, d.Marca, d.LineaId, d.Linea, d.ModeloAnio,
             categoria is null || ReglasInventario.AdmiteKilometraje(categoria.Value) ? d.Kilometraje : null,
@@ -813,7 +840,45 @@ public static class InventarioEndpoints
             d.DescripcionTecnica, d.Estado, d.MotivoInactivacion, d.NotaReserva,
             ConsultasCatalogo.Utc(d.CreadoEn), ConsultasCatalogo.Utc(d.ActualizadoEn),
             fotos.Select(Foto).ToArray(),
-            actor.EsAdmin ? new AsesorInventario(d.AsesorId, d.AsesorNombre ?? "") : null);
+            actor.EsAdmin ? new AsesorInventario(d.AsesorId, d.AsesorNombre ?? "") : null,
+            ResumenPublicacion(pub),
+            venta is null
+                ? null
+                : new VentaDeVehiculo(venta.Id, venta.FechaVenta, ConsultasCatalogo.Pesos(venta.PrecioFinalCop), venta.Origen,
+                    venta.Observaciones, ConsultasCatalogo.Utc(venta.RegistradaEn)));
+    }
+
+    // P4b: fila de la publicación de un vehículo (proyección SQL plana, con subconsultas EXISTS).
+    private sealed class FilaPublicacionVehiculo
+    {
+        public long Id { get; init; }
+        public long VehiculoId { get; init; }
+        public string EstadoPublicacion { get; init; } = "";
+        public string EstadoComercial { get; init; } = "";
+        public string Slug { get; init; } = "";
+        public bool Vigente { get; init; }
+        public bool Destacada { get; init; }
+    }
+
+    private static IQueryable<FilaPublicacionVehiculo> ProyectarPublicaciones(IQueryable<Publicacion> consulta,
+        IQueryable<Suscripcion> vigentes, DateTime ahora) =>
+        consulta.Select(p => new FilaPublicacionVehiculo
+        {
+            Id = p.Id,
+            VehiculoId = p.VehiculoId,
+            EstadoPublicacion = p.EstadoPublicacion,
+            EstadoComercial = p.EstadoComercial,
+            Slug = p.SlugPublico,
+            Vigente = vigentes.Any(s => s.AsesorId == p.AsesorId) && p.Vigencias.Any(x => x.Inicio <= ahora),
+            Destacada = p.Destacados.Any(d => d.Estado == PublicacionDestacada.Activa && d.Inicio <= ahora && d.Fin > ahora)
+        });
+
+    private static PublicacionDeVehiculo? ResumenPublicacion(FilaPublicacionVehiculo? p)
+    {
+        if (p is null) return null;
+        var estado = ReglasP4b.Estado(p.EstadoPublicacion, p.EstadoComercial);
+        var efectivo = ReglasP4b.EstadoEfectivo(estado, p.Vigente);
+        return new PublicacionDeVehiculo(p.Id, estado, efectivo, p.Slug, p.Destacada && efectivo == Publicacion.Publicada);
     }
 
     // HU-014, D-20: tamaño (1 byte a 5 MB) y formato por la firma de los bytes; el nombre y el Content-Type del cliente

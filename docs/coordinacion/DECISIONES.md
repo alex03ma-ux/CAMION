@@ -445,3 +445,24 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
 - Se dejan fuera, por seguridad, y quedan PROPUESTO para confirmar:
   - Las **4 categorías** (Carro, Camión, Carrocería, Maquinaria). Las reglas del formulario dependen de sus nombres, y cambiarlas rompería las validaciones.
   - Los **departamentos y municipios**. Son la DIVIPOLA oficial del DANE y se actualizan con un script (`docs/GUIA-CATALOGOS.md`).
+
+## D-38 — Destacados según el plan, los gestiona el asesor · TOMADA (2026-10-29)
+- **Decisión de la responsable (en esta sesión), en sus palabras:** "el usuario compra el plan y tiene derecho, por ejemplo, a 1 destacado… quiere bajar ese destacado y poner otro, a criterio del asesor; la regla es que no puede tener más de 1, pero que no limite que cambie el destacado (que dependa del plan)".
+- Cada plan define cuántos destacados incluye (`limite_destacados`).
+- El **asesor dueño**, o el administrador, marca o quita destacados en sus publicaciones vigentes, sin pasar nunca del límite a la vez y sin límite de cambios.
+- **Modifica HU-027 / RN-CO-004**, que decían que destacaba el administrador.
+
+## D-39 — Origen de la venta · TOMADA (2026-10-29)
+- **Decisión de la responsable (en esta sesión): lista fija.** Portal web, Contacto directo del asesor, Referido y Otro (con observaciones obligatorias). Sirve para los reportes de P8.
+
+## D-40 — Qué cuenta para el cupo del plan · TOMADA (2026-10-29)
+- **Decisión de la responsable (en esta sesión), en sus palabras:** "tiene derecho a la cantidad de publicaciones; si son 5, solo 5 en cualquier estado que estén en el sistema; si lo elimina libera cupo, pero si está en plataforma ocupa cupo".
+- Cuentan las publicaciones en cualquier estado salvo ELIMINADA.
+- Se añade la acción **Eliminar publicación**. Es un borrado lógico: la fila no se borra y libera cupo. Solo se puede eliminar una publicación inactiva o vendida.
+
+## D-41 — Vigencia de la publicación = vigencia del plan · TOMADA (2026-10-29)
+- **Decisión de la responsable (en esta sesión), en sus palabras:** "al activar una publicación y si es un plan nuevo contará con los días del plan; si tiene un plan activo y quiere un nuevo plan, le cuenta el final del plan más el plan que está solicitando y que ya esté aprobado por el administrador".
+- Una publicación está vigente mientras lo esté el plan de su asesor.
+- Un plan nuevo aprobado por el administrador mientras otro sigue vigente se suma al final del actual. Esto es la renovación de P4p, con el plan nuevo.
+- El "vencimiento automático" (HU-028) ocurre cuando vence el plan.
+- Cambia la regla de visibilidad del portal: las condiciones 3 y 6 de P3 pasan a ser "el asesor tiene un plan vigente". El detalle está en `docs/criterios/P4b-contrato-api.md`.

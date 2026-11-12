@@ -110,12 +110,12 @@ public static class CatalogoEndpoints
             if (pMin is not null)
             {
                 var minimo = (decimal)pMin.Value;
-                consulta = consulta.Where(x => x.Publicacion.PrecioCop >= minimo);
+                consulta = consulta.Where(x => x.Precio >= minimo);
             }
             if (pMax is not null)
             {
                 var maximo = (decimal)pMax.Value;
-                consulta = consulta.Where(x => x.Publicacion.PrecioCop <= maximo);
+                consulta = consulta.Where(x => x.Precio <= maximo);
             }
             if (aMin is not null)
             {
@@ -165,10 +165,17 @@ public static class CatalogoEndpoints
                     p.Vehiculo.PesoBrutoKg,
                     p.Vehiculo.CilindrajeCc
                 }).FirstAsync(ct);
-            var fotos = await db.FotosPublicacion.AsNoTracking().Where(f => f.PublicacionId == fila.Id)
+            // P4b: las fotos del vehículo; si no tiene (DEMO), las de fotos_publicacion.
+            var vehiculoId = await db.Publicaciones.AsNoTracking().Where(p => p.Id == fila.Id).Select(p => p.VehiculoId).FirstAsync(ct);
+            var fotos = await db.FotosVehiculo.AsNoTracking().Where(f => f.VehiculoId == vehiculoId)
                 .OrderBy(f => f.Orden)
-                .Select(f => new { f.ArchivoClave, f.Orden, f.EsPortada })
+                .Select(f => new { f.ArchivoClave, Orden = (int)f.Orden, f.EsPortada })
                 .ToListAsync(ct);
+            if (fotos.Count == 0)
+                fotos = await db.FotosPublicacion.AsNoTracking().Where(f => f.PublicacionId == fila.Id)
+                    .OrderBy(f => f.Orden)
+                    .Select(f => new { f.ArchivoClave, Orden = (int)f.Orden, f.EsPortada })
+                    .ToListAsync(ct);
 
             var t = ConsultasCatalogo.Tarjeta(fila);
             return Results.Ok(new DetalleVehiculo(
@@ -192,7 +199,7 @@ public static class CatalogoEndpoints
                     v.TipoVehiculoId,
                     v.MarcaId,
                     v.LineaId,
-                    Precio = (decimal)p.PrecioCop!,
+                    Precio = (decimal)(v.PrecioCop ?? p.PrecioCop)!,
                     v.ModeloAnio,
                     v.Kilometraje
                 };
@@ -254,8 +261,8 @@ public static class CatalogoEndpoints
         var grupos = consulta.OrderByDescending(x => x.Destacado);
         var ordenada = orden switch
         {
-            "precio_asc" => grupos.ThenBy(x => x.Publicacion.PrecioCop),
-            "precio_desc" => grupos.ThenByDescending(x => x.Publicacion.PrecioCop),
+            "precio_asc" => grupos.ThenBy(x => x.Precio),
+            "precio_desc" => grupos.ThenByDescending(x => x.Precio),
             "anio_desc" => grupos.ThenByDescending(x => x.Publicacion.Vehiculo!.ModeloAnio),
             "km_asc" => grupos.ThenBy(x => x.Publicacion.Vehiculo!.Kilometraje),
             _ => grupos

@@ -34,6 +34,7 @@ import { Encabezado } from './components/Encabezado'
 import { Inicio } from './components/Inicio'
 import { InventarioPagina } from './components/InventarioPagina'
 import { LoginForm } from './components/LoginForm'
+import { MisPublicaciones } from './components/MisPublicaciones'
 import { NavAdmin } from './components/NavAdmin'
 import { PerfilPanel } from './components/PerfilPanel'
 import { RegistroForm } from './components/RegistroForm'
@@ -90,6 +91,7 @@ function tituloDocumento(ruta: Ruta): string {
   if (ruta.nombre === 'inventario') return `Inventario | ${NOMBRE_PORTAL}`
   if (ruta.nombre === 'inventarioNuevo') return `Registrar vehículo | ${NOMBRE_PORTAL}`
   if (ruta.nombre === 'inventarioVehiculo') return `Editar vehículo | ${NOMBRE_PORTAL}`
+  if (ruta.nombre === 'publicaciones') return `Mis publicaciones | ${NOMBRE_PORTAL}`
   return NOMBRE_PORTAL
 }
 
@@ -266,7 +268,8 @@ export default function App() {
 
   // P4a: el inventario exige sesión; sin ella se va al login de #/cuenta
   // (si la sesión terminó, allí se ve el aviso "Tu sesión terminó...").
-  const enInventario = esRutaInventario(ruta)
+  // P4b: "Mis publicaciones" también exige sesión.
+  const enInventario = esRutaInventario(ruta) || ruta.nombre === 'publicaciones'
   useEffect(() => {
     if (enInventario && !conSesion) navegar(HASH_CUENTA)
   }, [enInventario, conSesion])
@@ -296,6 +299,7 @@ export default function App() {
           ruta.nombre === 'inventarioNuevo' ||
           ruta.nombre === 'inventarioVehiculo') &&
           renderInventario(ruta)}
+        {ruta.nombre === 'publicaciones' && renderPublicaciones()}
       </main>
     </>
   )
@@ -328,6 +332,38 @@ export default function App() {
         )}
         {(vista.tipo === 'login' || vista.tipo === 'registro') && (
           <p role="status">Inicia sesión para ver el inventario.</p>
+        )}
+      </div>
+    )
+  }
+
+  function renderPublicaciones() {
+    if (vista.tipo === 'perfil' || vista.tipo === 'admin') {
+      return (
+        <MisPublicaciones
+          key={vista.perfil.usuarioId}
+          token={vista.sesion.accessToken}
+          perfil={vista.perfil}
+          onSesionTerminada={alTerminarSesionAdmin}
+        />
+      )
+    }
+    return (
+      <div className="cat-pagina inv-pagina">
+        <h1 tabIndex={-1} className="inv-titulo">
+          Mis publicaciones
+        </h1>
+        {vista.tipo === 'verificando' && <p role="status">Verificando tu sesión...</p>}
+        {vista.tipo === 'sinConexion' && (
+          <>
+            <Aviso aviso={{ tipo: 'error', texto: vista.mensaje }} />
+            <p>
+              <a href={HASH_CUENTA}>Ir a mi cuenta</a>
+            </p>
+          </>
+        )}
+        {(vista.tipo === 'login' || vista.tipo === 'registro') && (
+          <p role="status">Inicia sesión para ver tus publicaciones.</p>
         )}
       </div>
     )

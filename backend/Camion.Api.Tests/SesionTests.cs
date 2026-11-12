@@ -241,12 +241,21 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
             "POST /api/admin/catalogos/{catalogo}", "PUT /api/admin/catalogos/{catalogo}/{id}",
             "POST /api/admin/catalogos/{catalogo}/{id}/activar", "POST /api/admin/catalogos/{catalogo}/{id}/desactivar",
             "POST /api/admin/catalogos/marcas/{marcaId}/lineas", "PUT /api/admin/catalogos/lineas/{id}",
-            "POST /api/admin/catalogos/lineas/{id}/activar", "POST /api/admin/catalogos/lineas/{id}/desactivar"
+            "POST /api/admin/catalogos/lineas/{id}/activar", "POST /api/admin/catalogos/lineas/{id}/desactivar",
+            // P4b: publicaciones (crear, editar, inactivar, reactivar, renovar, eliminar, destacar, quitar destacado),
+            // venta y su reversión (D-22) y reasignación del vehículo por el administrador (D-34).
+            "POST /api/publicaciones/", "PUT /api/publicaciones/{id}", "POST /api/publicaciones/{id}/inactivar",
+            "POST /api/publicaciones/{id}/reactivar", "POST /api/publicaciones/{id}/renovar",
+            "POST /api/publicaciones/{id}/eliminar", "POST /api/publicaciones/{id}/destacar",
+            "POST /api/publicaciones/{id}/quitar-destacado",
+            "POST /api/inventario/vehiculos/{id}/vender", "POST /api/inventario/vehiculos/{id}/revertir-venta",
+            "POST /api/admin/vehiculos/{id}/reasignar"
         }.OrderBy(x => x, StringComparer.Ordinal).ToArray(), modifican);
 
-        // CA-SE006-13: toda ruta bajo /api/admin exige SoloAdministrador (P2: 5 acciones + la lista; P4p: 4 GET y 18 acciones).
+        // CA-SE006-13: toda ruta bajo /api/admin exige SoloAdministrador (P2: 5 acciones + la lista; P4p: 4 GET y 18 acciones;
+        // P4b: reasignar un vehículo).
         var admin = todos.Where(e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/admin", StringComparison.Ordinal)).ToList();
-        Assert.Equal(28, admin.Count);
+        Assert.Equal(29, admin.Count);
         foreach (var e in admin)
         {
             var politicas = e.Metadata.GetOrderedMetadata<IAuthorizeData>().Select(a => a.Policy).ToArray();
@@ -255,13 +264,24 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
         }
 
         // P4a (RN-SE-006, D-7): toda ruta bajo /api/inventario exige AsesorOAdministrador y ninguna permite anónimos
-        // (3 GET: lista, detalle y catálogos; 9 que modifican).
+        // (3 GET: lista, detalle y catálogos; 9 que modifican; P4b: vender y revertir la venta).
         var inventario = todos.Where(e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/inventario", StringComparison.Ordinal)).ToList();
-        Assert.Equal(12, inventario.Count);
+        Assert.Equal(14, inventario.Count);
         Assert.Equal(new[] { "/api/inventario/catalogos", "/api/inventario/vehiculos", "/api/inventario/vehiculos/{id}" },
             inventario.Where(e => Metodo(e) == "GET").Select(e => "/" + e.RoutePattern.RawText!.TrimStart('/'))
                 .OrderBy(x => x, StringComparer.Ordinal).ToArray());
         foreach (var e in inventario)
+        {
+            var politicas = e.Metadata.GetOrderedMetadata<IAuthorizeData>().Select(a => a.Policy).ToArray();
+            Assert.True(politicas.Contains("AsesorOAdministrador"),
+                $"{Metodo(e)} {e.RoutePattern.RawText} no exige AsesorOAdministrador (políticas: {string.Join(",", politicas)})");
+            Assert.Null(e.Metadata.GetMetadata<IAllowAnonymous>());
+        }
+
+        // P4b: toda ruta bajo /api/publicaciones exige AsesorOAdministrador (3 GET: lista, cupo y detalle; 8 que modifican).
+        var publicaciones = todos.Where(e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/publicaciones", StringComparison.Ordinal)).ToList();
+        Assert.Equal(11, publicaciones.Count);
+        foreach (var e in publicaciones)
         {
             var politicas = e.Metadata.GetOrderedMetadata<IAuthorizeData>().Select(a => a.Policy).ToArray();
             Assert.True(politicas.Contains("AsesorOAdministrador"),
@@ -277,12 +297,13 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
         // CA-061-15: ninguna ruta permite editar o borrar auditoría ni historial.
         Assert.DoesNotContain(todos, e => e.RoutePattern.RawText!.Contains("auditoria", StringComparison.OrdinalIgnoreCase) ||
                                           e.RoutePattern.RawText!.Contains("historial", StringComparison.OrdinalIgnoreCase));
-        // Ninguna ruta usa PATCH; PUT solo en /api/inventario (P4a) y /api/admin (P4p); DELETE solo en /api/inventario
-        // (P4p: planes y catálogos nunca se borran).
+        // Ninguna ruta usa PATCH; PUT solo en /api/inventario (P4a), /api/admin (P4p) y /api/publicaciones (P4b); DELETE solo
+        // en /api/inventario (P4p: planes y catálogos nunca se borran; P4b: eliminar una publicación es lógico, con POST).
         Assert.DoesNotContain(todos, e => Metodo(e) == "PATCH");
         Assert.DoesNotContain(todos, e => Metodo(e) is "PUT" &&
             !e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/inventario/", StringComparison.Ordinal) &&
-            !e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/admin/", StringComparison.Ordinal));
+            !e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/admin/", StringComparison.Ordinal) &&
+            !e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/publicaciones/", StringComparison.Ordinal));
         Assert.DoesNotContain(todos, e => Metodo(e) is "DELETE" &&
             !e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/inventario/", StringComparison.Ordinal));
 

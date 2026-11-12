@@ -70,6 +70,8 @@ type InventarioFormularioProps = {
    * nuevo y muestra allí `aviso` (éxito, o advertencia si la placa no se guardó).
    */
   onCreado: (detalle: DetalleInventario, aviso: DatosAviso) => void
+  /** P4b: acciones extra sobre el vehículo cargado (p. ej. reasignar, solo el administrador). */
+  accionesDetalle?: (detalle: DetalleInventario, recargar: () => void, titulo: string) => ReactNode
 }
 
 /** Orden de los grupos del formulario; cada campo aparece solo si aplica a la categoría. */
@@ -161,6 +163,7 @@ export function InventarioFormulario({
   avisoInicial,
   onSesionTerminada,
   onCreado,
+  accionesDetalle,
 }: InventarioFormularioProps) {
   const creando = vehiculoId === null
   const [carga, setCarga] = useState<Carga>(creando ? { estado: 'nuevo' } : { estado: 'cargando' })
@@ -687,6 +690,8 @@ export function InventarioFormulario({
               </dl>
             </section>
           )}
+
+          {detalle && accionesDetalle?.(detalle, () => setIntento((i) => i + 1), tituloDetalle(detalle, catalogos))}
 
           {!editable && (
             <Aviso aviso={{ tipo: 'advertencia', texto: 'Este vehículo está vendido y no se puede modificar.' }} />

@@ -9,6 +9,7 @@
 //   #/inventario        P4a: inventario del asesor (propio) o del administrador (general)
 //   #/inventario/nuevo  P4a: registrar un vehículo
 //   #/inventario/<id>   P4a: editar un vehículo y sus fotos
+//   #/publicaciones     P4b: "Mis publicaciones" del asesor (el administrador ve todas)
 // Cualquier otra ruta muestra el inicio. Nunca se pone el token en la URL.
 import { useEffect, useState } from 'react'
 import { CLAVES_FILTROS, FILTROS_VACIOS, type FiltrosCatalogo } from './api/catalogo'
@@ -21,6 +22,7 @@ export type Ruta =
   | { nombre: 'inventario' }
   | { nombre: 'inventarioNuevo' }
   | { nombre: 'inventarioVehiculo'; id: number }
+  | { nombre: 'publicaciones' }
 
 /** P4p: secciones del administrador dentro de "Mi cuenta". */
 export type SeccionAdmin = 'usuarios' | 'planes' | 'suscripciones' | 'catalogos'
@@ -37,6 +39,7 @@ export const HASH_CUENTA = '#/cuenta'
 export const HASH_REGISTRO = '#/cuenta/registro'
 export const HASH_INVENTARIO = '#/inventario'
 export const HASH_INVENTARIO_NUEVO = '#/inventario/nuevo'
+export const HASH_PUBLICACIONES = '#/publicaciones'
 
 /** `#/inventario/<id>` (id entero positivo). */
 export function hashInventarioVehiculo(id: number): string {
@@ -98,6 +101,7 @@ export function leerRuta(hash: string): Ruta {
   if (seccion) return { nombre: 'cuenta', registro: false, seccion }
   if (camino === '/inventario') return { nombre: 'inventario' }
   if (camino === '/inventario/nuevo') return { nombre: 'inventarioNuevo' }
+  if (camino === '/publicaciones') return { nombre: 'publicaciones' }
   const inventario = /^\/inventario\/(\d{1,15})$/.exec(camino)
   if (inventario) {
     const id = Number(inventario[1])

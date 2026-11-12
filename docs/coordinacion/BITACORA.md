@@ -259,3 +259,56 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
     - **renovar**: no hay fila RENOVAR y el fin sigue en 2026-11-26;
     - la tarjeta "Mi suscripción" vista desde una cuenta de asesor.
     Quedan para una próxima prueba.
+
+## 2026-10-29 — P4b Publicaciones
+- Rama `feature/p4b-publicaciones`, creada **encima de `feature/p4p-planes`**, igual que P4p sobre P4a.
+- Decisiones de la responsable en esta sesión:
+  - D-38: destacados según el plan; el asesor los gestiona y puede cambiarlos sin límite de cambios.
+  - D-39: origen de la venta en una lista fija.
+  - D-40: el cupo cuenta todas las publicaciones salvo las eliminadas; eliminar libera cupo.
+  - D-41: la vigencia de la publicación es la del plan; un plan nuevo se suma al final.
+- Contrato y criterios en `docs/criterios/P4b*.md`.
+- Backend:
+  - publicaciones: crear, editar, inactivar, reactivar, renovar y eliminar (lógico);
+  - destacados con `limite_destacados`;
+  - venta y reversión en `ventas_vehiculo`;
+  - reasignación por el administrador (D-34);
+  - cupo.
+  - El portal tiene una nueva regla de visibilidad (plan vigente del asesor) y muestra el precio y las fotos del vehículo.
+  - Las pruebas de P3 afectadas por D-41 se ajustaron con un comentario que lo explica.
+- Migración `012_p4b_publicaciones` (con su archivo SUBIR) **sin aplicar**:
+  - añade `planes.limite_destacados`;
+  - amplía `publicaciones.motivo_ocultamiento` a 500;
+  - crea la tabla `ventas_vehiculo`.
+  - **Hay que aplicarla antes de reiniciar la API con este código.** Sin ella fallan los planes, la venta y el detalle del inventario.
+- Frontend:
+  - "Publicar", "Marcar vendido" y "Revertir venta" en el inventario;
+  - `#/publicaciones` "Mis publicaciones" con el contador de cupo y destacados;
+  - "Reasignar" para el administrador;
+  - "Destacados incluidos" en los planes.
+- Resultados ejecutados por el coordinador: `dotnet test` 866/866; `npm test` 439/439; tipos y `npm run build` correctos.
+- Revisión de seguridad: rutas con `AsesorOAdministrador` (lo ajeno da 404) y la reasignación con `SoloAdministrador`; sin SQL escrito a mano; la 012 no toca datos existentes.
+- PROPUESTOS pendientes de confirmar:
+  - si se pasa a un plan con menos límite, lo que ya excede se mantiene;
+  - "hoy" de la fecha de venta en hora de Colombia;
+  - el inventario consulta las publicaciones aparte (se puede optimizar).
+- Prueba manual de P4b (2026-10-29), con la responsable:
+  - Respaldo `C:\Respaldo_CAMION\camion_ventas_antes_012_p4b_20261029_172556.sql`.
+  - La responsable importó `012_p4b_publicaciones_SUBIR.sql`. Verificado: existen `limite_destacados` y `ventas_vehiculo`, y el motivo admite 500 caracteres. Los conteos no cambiaron.
+  - API arrancada con P4b.
+  - Evidencia en la auditoría:
+    - publicación 13 creada;
+    - quitar destacado y destacar sobre la publicación 2;
+    - venta y reversión del vehículo 20, que no tenía publicación.
+  - "No veo Eliminar": no es un defecto. La publicación 13 seguía PUBLICADA, y Eliminar solo aparece en las inactivas o vendidas.
+  - Mejoras pedidas y hechas:
+    - en "Mis publicaciones", las destacadas van en una sección aparte arriba, con fondo y borde dorados y el sello "★ Destacada", y la API las ordena primero;
+    - todas las fotos de las tarjetas tienen el mismo tamaño (inventario, Mis publicaciones y portal).
+  - Resultados: `npm test` 441/441; `dotnet test` 866/866.
+- Continuación de la prueba de P4b. La responsable encontró "Eliminar" en Mis publicaciones; la confusión venía de que miraba "Inactivar vehículo" en el inventario. Consta INACTIVAR y REACTIVAR de la publicación 13.
+- **Pendiente para la próxima sesión:**
+  - eliminar una publicación y ver que libera cupo;
+  - reasignar un vehículo a otro asesor (hace falta un segundo asesor activo con plan);
+  - renovar una suscripción y ver "Mi suscripción" desde una cuenta de asesor (pendiente de P4p).
+  - Propuesta abierta: mostrar en la tarjeta del inventario las acciones de su publicación, o un enlace a ella.
+- API y web apagadas por petición de la responsable. Las migraciones 011 y 012 quedan aplicadas.

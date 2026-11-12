@@ -57,6 +57,7 @@ public static class PlanesEndpoints
                 PrecioCop = request.PrecioCop!.Value,
                 DuracionMeses = (int)request.DuracionMeses!.Value,
                 LimitePublicaciones = (int)request.LimitePublicaciones!.Value,
+                LimiteDestacados = (int)(request.LimiteDestacados ?? 0),
                 EsPrueba = request.EsPrueba ?? false,
                 Activo = true,
                 CreadoEn = ahora
@@ -88,6 +89,7 @@ public static class PlanesEndpoints
             plan.PrecioCop = request.PrecioCop!.Value;
             plan.DuracionMeses = (int)request.DuracionMeses!.Value;
             plan.LimitePublicaciones = (int)request.LimitePublicaciones!.Value;
+            if (request.LimiteDestacados is { } destacados) plan.LimiteDestacados = (int)destacados;
             plan.EsPrueba = request.EsPrueba ?? false;
             var despues = Datos(plan);
             var cambios = despues.Keys.Where(k => !Equals(antes[k], despues[k])).ToList();
@@ -147,7 +149,7 @@ public static class PlanesEndpoints
 
     public static PlanItem Item(Plan p, int vivas) => new(
         p.Id, p.Nombre, ConsultasCatalogo.Pesos(p.PrecioCop), p.DuracionMeses, ReglasP4p.DiasVigencia(p.DuracionMeses),
-        p.LimitePublicaciones, p.EsPrueba, p.Activo, vivas);
+        p.LimitePublicaciones, p.EsPrueba, p.Activo, vivas, p.LimiteDestacados);
 
     private static Dictionary<string, object?> Datos(Plan p) => new()
     {
@@ -155,6 +157,7 @@ public static class PlanesEndpoints
         ["precioCop"] = ConsultasCatalogo.Pesos(p.PrecioCop),
         ["duracionMeses"] = p.DuracionMeses,
         ["limitePublicaciones"] = p.LimitePublicaciones,
+        ["limiteDestacados"] = p.LimiteDestacados,
         ["esPrueba"] = p.EsPrueba,
         ["activo"] = p.Activo
     };

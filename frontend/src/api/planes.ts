@@ -1,5 +1,6 @@
 // Planes de los asesores (contrato docs/criterios/P4p-contrato-api.md).
 // HU-049 crear, HU-050 modificar (RN-PL-001), HU-051 activar o inactivar (RN-PL-002); D-35.
+// P4b (D-38): cada plan incluye `limiteDestacados` (0 a 20).
 // Todas las rutas exigen el rol ADMINISTRADOR en la API (política SoloAdministrador).
 import { MENSAJE_SESION_TERMINADA } from './auth'
 import { ApiError, esObjetoJson, MENSAJE_INESPERADO, peticion, type ErroresPorCampo } from './http'
@@ -13,6 +14,8 @@ export type Plan = {
   duracionMeses: number
   diasVigencia: number
   limitePublicaciones: number
+  /** P4b (D-38): destacados a la vez que incluye el plan. */
+  limiteDestacados: number
   esPrueba: boolean
   activo: boolean
   suscripcionesVivas: number
@@ -24,6 +27,7 @@ export type DatosPlan = {
   precioCop: number
   duracionMeses: number
   limitePublicaciones: number
+  limiteDestacados: number
   esPrueba: boolean
 }
 
@@ -33,6 +37,7 @@ export type FormularioPlan = {
   precioCop: string
   duracionMeses: string
   limitePublicaciones: string
+  limiteDestacados: string
   esPrueba: boolean
 }
 
@@ -44,6 +49,7 @@ export const CAMPOS_PLAN: readonly CampoPlan[] = [
   'precioCop',
   'duracionMeses',
   'limitePublicaciones',
+  'limiteDestacados',
   'esPrueba',
 ]
 
@@ -57,11 +63,14 @@ export const DURACION_MIN = 1
 export const DURACION_MAX = 36
 export const LIMITE_MIN = 1
 export const LIMITE_MAX = 1000
+export const DESTACADOS_MIN = 0
+export const DESTACADOS_MAX = 20
 
 export const MENSAJE_PLAN_NOMBRE = 'Escribe el nombre del plan (2 a 100 caracteres).'
 export const MENSAJE_PLAN_PRECIO = 'Escribe el precio en pesos (0 o más, sin decimales).'
 export const MENSAJE_PLAN_DURACION = 'Escribe la duración en meses (de 1 a 36).'
 export const MENSAJE_PLAN_LIMITE = 'Escribe el cupo de publicaciones (de 1 a 1.000).'
+export const MENSAJE_PLAN_DESTACADOS = 'Escribe los destacados incluidos (de 0 a 20).'
 export const MENSAJE_PLAN_NO_ENCONTRADO = 'No encontrado.'
 
 export const FORMULARIO_PLAN_VACIO: FormularioPlan = {
@@ -69,6 +78,7 @@ export const FORMULARIO_PLAN_VACIO: FormularioPlan = {
   precioCop: '',
   duracionMeses: '',
   limitePublicaciones: '',
+  limiteDestacados: '0',
   esPrueba: false,
 }
 
@@ -98,6 +108,10 @@ export function validarPlan(f: FormularioPlan): ErroresPlan {
   if (limite === null || limite < LIMITE_MIN || limite > LIMITE_MAX) {
     errores.limitePublicaciones = [MENSAJE_PLAN_LIMITE]
   }
+  const destacados = entero(f.limiteDestacados)
+  if (destacados === null || destacados < DESTACADOS_MIN || destacados > DESTACADOS_MAX) {
+    errores.limiteDestacados = [MENSAJE_PLAN_DESTACADOS]
+  }
   return errores
 }
 
@@ -108,6 +122,7 @@ export function datosDeFormulario(f: FormularioPlan): DatosPlan {
     precioCop: entero(f.precioCop) ?? 0,
     duracionMeses: entero(f.duracionMeses) ?? 0,
     limitePublicaciones: entero(f.limitePublicaciones) ?? 0,
+    limiteDestacados: entero(f.limiteDestacados) ?? 0,
     esPrueba: f.esPrueba,
   }
 }
@@ -118,6 +133,7 @@ export function formularioDePlan(p: Plan): FormularioPlan {
     precioCop: String(p.precioCop),
     duracionMeses: String(p.duracionMeses),
     limitePublicaciones: String(p.limitePublicaciones),
+    limiteDestacados: String(p.limiteDestacados),
     esPrueba: p.esPrueba,
   }
 }
@@ -152,6 +168,7 @@ export function leerPlan(valor: unknown): Plan | null {
     duracionMeses,
     diasVigencia: numero(valor.diasVigencia, diasDeMeses(duracionMeses)),
     limitePublicaciones: numero(valor.limitePublicaciones, 0),
+    limiteDestacados: numero(valor.limiteDestacados, 0),
     esPrueba: valor.esPrueba === true,
     activo: valor.activo === true,
     suscripcionesVivas: numero(valor.suscripcionesVivas, 0),

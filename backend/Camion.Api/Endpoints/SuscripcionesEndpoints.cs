@@ -5,6 +5,7 @@ using Camion.Api.Catalogo;
 using Camion.Api.Contracts;
 using Camion.Api.Data;
 using Camion.Api.Models;
+using Camion.Api.Publicaciones;
 using Camion.Api.Suscripciones;
 using Microsoft.EntityFrameworkCore;
 
@@ -136,6 +137,8 @@ public static class SuscripcionesEndpoints
             s.PlanId = plan.Id;
             s.AprobadoPor = adminId;
             s.AprobadoEn = ahora;
+            // P4b (D-38, D-41): los destacados vigentes del asesor duran hasta el nuevo fin del plan.
+            await DatosP4b.ExtenderDestacadosAsync(db, s.AsesorId, s.FinVigencia!.Value, ahora, ct);
             Auditar(db, adminId, s, Auditoria.Renovar, antes, Datos(s), null, ahora);
             await db.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
@@ -162,6 +165,8 @@ public static class SuscripcionesEndpoints
             var nueva = Nueva(s.AsesorId, plan, adminId, ahora);
             db.Suscripciones.Add(nueva);
             await db.SaveChangesAsync(ct);
+            // P4b (D-38, D-41): los destacados vigentes del asesor siguen hasta el fin del plan nuevo.
+            await DatosP4b.ExtenderDestacadosAsync(db, s.AsesorId, nueva.FinVigencia!.Value, ahora, ct);
             var nuevos = Datos(s);
             nuevos["suscripcionNuevaId"] = nueva.Id;
             Auditar(db, adminId, s, Auditoria.CambiarPlan, antes, nuevos, null, ahora);
@@ -261,7 +266,8 @@ public static class SuscripcionesEndpoints
     private static SuscripcionItem Item(Fila f, DateTime ahora) => new(
         f.S.Id,
         new AsesorSuscripcion(f.S.AsesorId, f.AsesorNombre),
-        new PlanSuscripcion(f.Plan.Id, f.Plan.Nombre, f.Plan.LimitePublicaciones, ReglasP4p.DiasVigencia(f.Plan.DuracionMeses)),
+        new PlanSuscripcion(f.Plan.Id, f.Plan.Nombre, f.Plan.LimitePublicaciones, ReglasP4p.DiasVigencia(f.Plan.DuracionMeses),
+            f.Plan.LimiteDestacados),
         f.S.Estado,
         ReglasP4p.EstadoEfectivo(f.S, ahora),
         Utc(f.S.InicioVigencia),
