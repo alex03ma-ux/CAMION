@@ -24,7 +24,9 @@ import {
   ESTADOS_FILTRO,
   formatearFechaSuscripcion,
   type EstadoSuscripcion,
+  leerVistaSuscripciones,
   listarSuscripciones,
+  NOMBRES_VISTA_SUSCRIPCIONES,
   MENSAJE_ELIGE_ASESOR,
   MENSAJE_ELIGE_PLAN,
   motivoObligatorioSuscripcion,
@@ -44,6 +46,7 @@ import { CamposPago } from './CamposPago'
 import { DialogoConfirmacion } from './DialogoAccion'
 import { NotaObligatorio } from './NotaObligatorio'
 import { PagosSuscripcion } from './PagosSuscripcion'
+import { hashSeccionAdmin, navegar } from '../rutas'
 
 type AdminSuscripcionesProps = {
   token: string
@@ -61,6 +64,8 @@ export function filtrosSuscripcionesDesdeConsulta(consulta: string | undefined):
     ...FILTROS_INICIALES,
     estado: ESTADOS_FILTRO.includes(estado as EstadoSuscripcion) ? estado : '',
     asesorId: /^\d{1,15}$/.test(asesorId) ? asesorId : '',
+    // P7 (O-5): vista=porVencer o vista=vencidasSinRenovar, desde el panel Inicio.
+    vista: leerVistaSuscripciones(p.get('vista')),
   }
 }
 
@@ -334,7 +339,9 @@ export function AdminSuscripciones({ token, onSesionTerminada, consulta }: Admin
         const texto = tratarError(error)
         if (texto) {
           setLista(null)
-          setErrorCarga({ tipo: 'error', texto })
+          // P7 (O-5): un 400 de filtros trae el detalle por campo (p. ej. "Vista no válida.").
+          const detalle = error instanceof ApiError && error.status === 400 ? Object.values(error.errores).flat() : []
+          setErrorCarga({ tipo: 'error', texto: [texto, ...detalle].join(' ') })
         }
       })
     return () => control.abort()
@@ -343,7 +350,16 @@ export function AdminSuscripciones({ token, onSesionTerminada, consulta }: Admin
   function aplicarFiltros(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault()
     setResultado(null)
-    setFiltros({ ...FILTROS_INICIALES, asesorId: borrador.asesorId, estado: borrador.estado })
+    // La vista del panel se conserva y se combina con los filtros elegidos.
+    setFiltros((f) => ({ ...FILTROS_INICIALES, asesorId: borrador.asesorId, estado: borrador.estado, vista: f.vista }))
+  }
+
+  /** Quita la vista del panel: vuelve a la lista con los demás filtros aplicados. */
+  function quitarVista() {
+    setResultado(null)
+    const hash = hashSeccionAdmin('suscripciones', { asesorId: filtros.asesorId, estado: filtros.estado })
+    if (window.location.hash === hash) setFiltros((f) => ({ ...f, vista: '', pagina: 1 }))
+    else navegar(hash)
   }
 
   function irAPagina(pagina: number) {
@@ -690,6 +706,15 @@ export function AdminSuscripciones({ token, onSesionTerminada, consulta }: Admin
           Aplicar filtros
         </button>
       </form>
+
+      {filtros.vista && (
+        <p className="lead-filtro-vehiculo" role="status">
+          Filtro del panel: <strong>{NOMBRES_VISTA_SUSCRIPCIONES[filtros.vista]}</strong>.{' '}
+          <button type="button" className="secondary-button inv-boton-auto" onClick={quitarVista}>
+            Quitar este filtro
+          </button>
+        </p>
+      )}
 
       <h3 ref={tituloLista} tabIndex={-1} className="admin-subtitulo">
         Resultados

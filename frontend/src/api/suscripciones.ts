@@ -51,8 +51,23 @@ export type FiltrosSuscripciones = {
   asesorId: string
   /** Vacío = todos los estados. */
   estado: string
+  /** P7 (O-5, CA-P7-46): vista del panel; vacío = sin vista. Se combina (Y) con los demás filtros. */
+  vista?: VistaSuscripciones | ''
   pagina: number
   tamano: number
+}
+
+export type VistaSuscripciones = 'porVencer' | 'vencidasSinRenovar'
+export const VISTAS_SUSCRIPCIONES: readonly VistaSuscripciones[] = ['porVencer', 'vencidasSinRenovar']
+export const NOMBRES_VISTA_SUSCRIPCIONES: Readonly<Record<VistaSuscripciones, string>> = {
+  porVencer: 'Vencen en los próximos 7 días',
+  vencidasSinRenovar: 'Vencidas sin renovar',
+}
+
+/** Vista válida (sin distinguir mayúsculas) o ''. */
+export function leerVistaSuscripciones(valor: string | null): VistaSuscripciones | '' {
+  const v = (valor ?? '').toLowerCase()
+  return VISTAS_SUSCRIPCIONES.find((x) => x.toLowerCase() === v) ?? ''
 }
 
 /** Respuesta de GET /api/asesor/suscripcion. */
@@ -211,6 +226,7 @@ export async function listarSuscripciones(
   const parametros = new URLSearchParams()
   if (filtros.asesorId) parametros.set('asesorId', filtros.asesorId)
   if (filtros.estado) parametros.set('estado', filtros.estado)
+  if (filtros.vista) parametros.set('vista', filtros.vista)
   parametros.set('pagina', String(filtros.pagina))
   parametros.set('tamano', String(filtros.tamano))
   const respuesta = await peticion(`/api/admin/suscripciones?${parametros.toString()}`, {

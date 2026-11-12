@@ -76,15 +76,15 @@ function contadores(d: PanelAdmin): { titulo: string; items: Contador[] }[] {
           titulo: 'Suscripciones que vencen en los próximos 7 días',
           valor: d.suscripcionesPorVencer,
           textoCero: 'Ninguna vence esta semana',
-          href: hashSeccionAdmin('suscripciones'),
+          // P7 (O-5): misma consulta que el contador.
+          href: hashSeccionAdmin('suscripciones', { vista: 'porVencer' }),
         },
         {
           clave: 'vencidas',
           titulo: 'Suscripciones vencidas sin renovar',
           valor: d.suscripcionesVencidas,
           textoCero: 'Sin suscripciones vencidas',
-          detalle: 'La lista puede incluir vencidas ya reemplazadas',
-          href: hashSeccionAdmin('suscripciones', { estado: 'VENCIDA' }),
+          href: hashSeccionAdmin('suscripciones', { vista: 'vencidasSinRenovar' }),
         },
       ],
     },
