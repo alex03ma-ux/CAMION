@@ -68,7 +68,10 @@ describe('Encabezado', () => {
     expect(within(nav).getByRole('link', { name: 'Carrocerías' })).toHaveAttribute('href', '#/buscar?tipoId=3')
     expect(within(nav).getByRole('link', { name: 'Maquinaria' })).toHaveAttribute('href', '#/buscar?tipoId=4')
     expect(within(encabezado()).getByRole('link', { name: /Financiamos Tu Camión/ })).toHaveAttribute('href', '#/')
-    expect(within(encabezado()).getByRole('searchbox', { name: 'Buscar vehículos' })).toBeInTheDocument()
+    // Rediseño: en el inicio la búsqueda está en la portada; en las demás pantallas, en el encabezado.
+    expect(within(encabezado()).queryByRole('searchbox')).not.toBeInTheDocument()
+    expect(screen.getByRole('searchbox', { name: 'Buscar vehículos' })).toBeInTheDocument()
+    expect(within(navPrincipal()).getByRole('link', { name: 'Inicio' })).toHaveAttribute('aria-current', 'page')
   })
 
   it('CA-D17-05 sin Maquinaria en tipos su enlace no se muestra y los otros sí', async () => {
@@ -88,11 +91,11 @@ describe('Encabezado', () => {
     expect(within(accesos).getByRole('link', { name: 'Carros' })).toBeInTheDocument()
   })
 
-  it('CA-D03-03 sin sesión: "Iniciar sesión" y "Registrarme" (a la cuenta), sin "Mi cuenta"', async () => {
+  it('CA-D03-03 sin sesión: "Ingresar" y "Registrarme" (a la cuenta), sin "Mi cuenta"', async () => {
     simularFetch({ [RUTA_FILTROS]: respuestaFiltros(), [RUTA_INICIO]: INICIO_VACIO })
     abrirApp('#/')
     const nav = navPrincipal()
-    expect(within(nav).getByRole('link', { name: 'Iniciar sesión' })).toHaveAttribute('href', '#/cuenta')
+    expect(within(nav).getByRole('link', { name: 'Ingresar' })).toHaveAttribute('href', '#/cuenta')
     expect(within(nav).getByRole('link', { name: 'Registrarme' })).toHaveAttribute('href', '#/cuenta/registro')
     expect(within(nav).queryByRole('link', { name: 'Mi cuenta' })).not.toBeInTheDocument()
     await screen.findByText('Pronto tendremos vehículos publicados.')
@@ -110,7 +113,7 @@ describe('Encabezado', () => {
       abrirApp('#/')
       const nav = navPrincipal()
       expect(within(nav).getByRole('link', { name: 'Mi cuenta' })).toHaveAttribute('href', '#/cuenta')
-      expect(within(nav).queryByRole('link', { name: 'Iniciar sesión' })).not.toBeInTheDocument()
+      expect(within(nav).queryByRole('link', { name: 'Ingresar' })).not.toBeInTheDocument()
       expect(within(nav).queryByRole('link', { name: 'Registrarme' })).not.toBeInTheDocument()
       await screen.findByRole('heading', { name: 'Destacados' })
     },
@@ -140,7 +143,7 @@ describe('Encabezado', () => {
     abrirApp('#/')
     const user = userEvent.setup()
     await user.type(screen.getByRole('searchbox', { name: 'Buscar vehículos' }), '  npr  ')
-    await user.click(within(encabezado()).getByRole('button', { name: 'Buscar' }))
+    await user.click(within(screen.getByRole('search')).getByRole('button', { name: 'Buscar' }))
     await waitFor(() => expect(window.location.hash).toBe('#/buscar?q=npr'))
   })
 
@@ -345,7 +348,7 @@ describe('Navegación por hash', () => {
   it('CA-UI-02 un hash desconocido muestra el inicio, nunca una pantalla en blanco', async () => {
     simularFetch({ [RUTA_FILTROS]: respuestaFiltros(), [RUTA_INICIO]: INICIO_OK })
     abrirApp('#/xyz')
-    expect(screen.getByRole('heading', { level: 1, name: 'Financiamos Tu Camión' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Tu próximo negocio empieza con el vehículo correcto' })).toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'Destacados' })).toBeInTheDocument()
   })
 
@@ -494,7 +497,7 @@ describe('Sesión y catálogo (no regresión P1/P2)', () => {
     expect(within(navPrincipal()).getByRole('link', { name: 'Mi cuenta' })).toHaveAttribute('aria-current', 'page')
   })
 
-  it('CA-REG-07 al cerrar sesión el encabezado vuelve a "Iniciar sesión / Registrarme" y el catálogo sigue igual', async () => {
+  it('CA-REG-07 al cerrar sesión el encabezado vuelve a "Ingresar / Registrarme" y el catálogo sigue igual', async () => {
     guardarSesionFicticia(Date.now() + DOS_HORAS)
     simularFetch({
       [RUTA_FILTROS]: respuestaFiltros(),
@@ -505,7 +508,7 @@ describe('Sesión y catálogo (no regresión P1/P2)', () => {
     abrirApp('#/cuenta')
     const user = userEvent.setup()
     await user.click(await screen.findByRole('button', { name: 'Cerrar sesión' }))
-    expect(await within(navPrincipal()).findByRole('link', { name: 'Iniciar sesión' })).toBeInTheDocument()
+    expect(await within(navPrincipal()).findByRole('link', { name: 'Ingresar' })).toBeInTheDocument()
     expect(within(navPrincipal()).getByRole('link', { name: 'Registrarme' })).toBeInTheDocument()
     expect(window.localStorage.getItem('camion.sesion')).toBeNull()
     act(() => {
@@ -534,10 +537,10 @@ describe('Sesión y catálogo (no regresión P1/P2)', () => {
     })
   }
 
-  it('CA-REG-05 30 min sin actividad en el catálogo: se borra la sesión, vuelve "Iniciar sesión" y el catálogo sigue visible', async () => {
+  it('CA-REG-05 30 min sin actividad en el catálogo: se borra la sesión, vuelve "Ingresar" y el catálogo sigue visible', async () => {
     await sesionInactivaEnElCatalogo()
     expect(window.localStorage.getItem('camion.sesion')).toBeNull()
-    expect(within(navPrincipal()).getByRole('link', { name: 'Iniciar sesión' })).toBeInTheDocument()
+    expect(within(navPrincipal()).getByRole('link', { name: 'Ingresar' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Destacados' })).toBeInTheDocument()
     expect(window.location.hash).toBe('#/')
   })
@@ -545,5 +548,60 @@ describe('Sesión y catálogo (no regresión P1/P2)', () => {
   it('CA-REG-05 30 min sin actividad en el catálogo: se avisa "Tu sesión terminó. Inicia sesión de nuevo."', async () => {
     await sesionInactivaEnElCatalogo()
     expect(screen.getByText('Tu sesión terminó. Inicia sesión de nuevo.')).toBeInTheDocument()
+  })
+})
+
+describe('Rediseño del portal (rojo, negro y blanco)', () => {
+  it('la búsqueda de la portada combina texto y tipo de vehículo', async () => {
+    simularFetch({ [RUTA_FILTROS]: respuestaFiltros(), [RUTA_INICIO]: INICIO_VACIO })
+    abrirApp('#/')
+    const user = userEvent.setup()
+    await user.type(screen.getByRole('searchbox', { name: 'Buscar vehículos' }), '  npr  ')
+    await user.selectOptions(await screen.findByLabelText('Tipo de vehículo'), 'Camiones')
+    await user.click(within(screen.getByRole('search')).getByRole('button', { name: 'Buscar' }))
+    await waitFor(() => expect(window.location.hash).toMatch(/^#\/buscar\?/))
+    const params = new URLSearchParams(window.location.hash.split('?')[1])
+    expect(params.get('q')).toBe('npr')
+    expect(params.get('tipoId')).toBe('2')
+  })
+
+  it('fuera del inicio la búsqueda vuelve al encabezado', async () => {
+    simularFetch({ [RUTA_FILTROS]: respuestaFiltros(), [RUTA_INICIO]: INICIO_VACIO, [rutaPublicaciones('')]: pagina([]) })
+    abrirApp('#/cuenta')
+    expect(within(encabezado()).getByRole('searchbox', { name: 'Buscar vehículos' })).toBeInTheDocument()
+  })
+
+  it('la franja "Nuestros servicios" lista los seis servicios confirmados, sin alquiler (D-43)', async () => {
+    simularFetch({ [RUTA_FILTROS]: respuestaFiltros(), [RUTA_INICIO]: INICIO_VACIO })
+    abrirApp('#/')
+    const seccion = await screen.findByRole('region', { name: 'Nuestros servicios' })
+    expect(within(seccion).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      'Créditos vehiculares',
+      'Venta de camiones nuevos',
+      'Venta de camiones usados peritados',
+      'Venta de carrocerías',
+      'Venta de maquinaria amarilla',
+      'Seguros todo riesgo',
+    ])
+    expect(within(seccion).queryByText(/alquiler/i)).not.toBeInTheDocument()
+  })
+
+  it('el pie de página enlaza pantallas que existen y el contacto confirmado (WhatsApp y correo)', async () => {
+    simularFetch({ [RUTA_FILTROS]: respuestaFiltros(), [RUTA_INICIO]: INICIO_VACIO })
+    abrirApp('#/')
+    const pie = screen.getByRole('contentinfo')
+    expect(await within(pie).findByRole('link', { name: 'Camiones' })).toHaveAttribute('href', '#/buscar?tipoId=2')
+    expect(within(pie).getByRole('link', { name: 'Ingresar' })).toHaveAttribute('href', '#/cuenta')
+    const whatsapp = within(pie).getByRole('link', { name: 'WhatsApp 316 615 2907' })
+    expect(whatsapp).toHaveAttribute('href', 'https://wa.me/573166152907')
+    expect(whatsapp).toHaveAttribute('rel', 'noopener noreferrer')
+    expect(within(pie).getByRole('link', { name: 'vc.automotores@gmail.com' })).toHaveAttribute(
+      'href',
+      'mailto:vc.automotores@gmail.com',
+    )
+    expect(within(pie).getByRole('heading', { level: 3, name: 'Horario de atención' })).toBeInTheDocument()
+    expect(within(pie).getByText('Lunes a viernes: 9:00 a. m. a 5:00 p. m.')).toBeInTheDocument()
+    expect(within(pie).getByText('Sábados: 9:00 a. m. a 3:00 p. m.')).toBeInTheDocument()
+    expect(within(pie).queryByRole('link', { name: /instagram|tiktok/i })).not.toBeInTheDocument()
   })
 })

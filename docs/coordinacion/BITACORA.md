@@ -312,3 +312,33 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - renovar una suscripción y ver "Mi suscripción" desde una cuenta de asesor (pendiente de P4p).
   - Propuesta abierta: mostrar en la tarjeta del inventario las acciones de su publicación, o un enlace a ella.
 - API y web apagadas por petición de la responsable. Las migraciones 011 y 012 quedan aplicadas.
+
+## 2026-11-04 — Rediseño visual del portal (rama `feature/diseno-portal`, apilada sobre P4b)
+- **Pedido de la responsable:** "incluirle diseño desde la entrada", con colores corporativos rojo, negro y blanco; aprobó una referencia clara y sencilla (D-42).
+- **Hecho (IMPLEMENTADO y PROBADO):** encabezado blanco con logo, Inicio y categorías, "Registrarme" y botón "Ingresar"; portada con ilustración de camión, título y buscador grande (texto + tipo de vehículo); tarjetas de categoría con iconos; tarjetas de vehículo con sello rojo "Destacado"/negro "Reservado" sobre la foto y precio en rojo; franja de confianza; banda de crédito; pie oscuro solo con enlaces que existen. Botones de todo el sistema pasan de azul a rojo. Fuera del inicio, la búsqueda vuelve al encabezado.
+- **Pruebas ejecutadas:** `npx vitest run` 444/444 (se actualizaron 6 pruebas del encabezado por el cambio de "Iniciar sesión" a "Ingresar", el nuevo h1 y la búsqueda en la portada; 3 nuevas). `tsc -b` y `npm run build` OK. Revisión en el navegador a 1280 px y 375 px (sin desplazamiento horizontal).
+- **Pendientes:** confirmar textos de la franja, datos de contacto/horario/legales del pie y foto de portada (D-42).
+- **Portada administrable (D-42), misma rama.** La responsable pidió que la foto de fondo la cambie el administrador.
+  - IMPLEMENTADO y PROBADO: API (`PortalEndpoints.cs`, sin migración) y pantalla "Mi cuenta" › Portada con vista previa, subir y quitar (con confirmación). El inicio usa la foto si existe y, si no hay o falla, la ilustración.
+  - Pruebas ejecutadas: `dotnet test` 876/876 (10 nuevas de portada; la prueba de inventario de rutas se actualizó con las 3 rutas nuevas); `npx vitest run` 453/453 (9 nuevas); `tsc -b` y `npm run build` OK. Comprobado con la API real: `GET /api/catalogo/portada` responde `{"url":null}` y quitar sin token responde 401.
+  - Prueba manual: la responsable la hizo con su cuenta de administrador y confirmó en el chat "Ya lo probé" (2026-11-04), sin reportar fallas. Constancia: su confirmación; el agente no vio la sesión.
+- **Contacto en el pie (D-42).** La responsable entregó WhatsApp 3166152907 y correo vc.automotores@gmail.com. El pie tiene ahora la columna "Contacto": el WhatsApp abre wa.me en otra pestaña y el correo abre un mailto. Los datos están en `PiePortal.tsx`.
+  - Pruebas: los archivos afectados (`Catalogo` e `InventarioFormulario`) pasan solos, 80/80; `tsc -b` y `npm run build` OK. La suite completa dio 452/453 y 451/453: en cada corrida falló una prueba distinta de InventarioFormulario por tiempo (5 s), con la API y Vite encendidos. Esa prueba también pasa sola sin estos cambios, así que la falla no viene del pie. Queda abierta como prueba inestable.
+  - Pendientes de D-42: dirección, horario, páginas legales y los textos de la franja de confianza.
+- **Horario en el pie (D-42).** La responsable confirmó el horario: lunes a viernes de 9:00 a. m. a 5:00 p. m., y sábados de 9:00 a. m. a 3:00 p. m. Va en la columna "Contacto", bajo "Horario de atención".
+  - La dirección no se publica por ahora.
+  - Instagram y TikTok quedan pendientes hasta que existan las cuentas.
+  - Pruebas: `Catalogo.test.tsx` 35/35; `tsc -b` y `npm run build` OK.
+- **Franja "Nuestros servicios" (D-42).** Reemplaza la franja de confianza con los seis servicios que confirmó la responsable, en una rejilla de 2, 3 o 6 columnas según el ancho de pantalla, con un ícono nuevo de escudo para seguros. El alquiler queda como propuesta aparte (D-43), con preguntas de negocio y revisión legal pendientes.
+  - "Peritados": confirmado por la responsable.
+  - Pruebas: `Catalogo` y `Portada` 45/45 (1 nueva); `tsc -b` y `npm run build` OK; revisada en el navegador.
+- **Cierre del rediseño en esta sesión.** La responsable pide seguir con el rumbo actual y pausar el alquiler (D-43 EN PAUSA).
+  - Pendientes de D-42 (no bloquean): Instagram y TikTok cuando existan las cuentas, y la decisión sobre las páginas de términos y privacidad.
+  - La rama `feature/diseno-portal` queda lista para PR, apilada sobre P4b.
+- **Borradores legales (D-44).** Hechos a petición de la responsable: política de tratamiento de datos (Ley 1581 de 2012) y términos y condiciones, en `docs/legal/`. Son DOCUMENTADO, no IMPLEMENTADO: falta la revisión de un abogado, los datos del responsable (razón social, NIT y dirección) y la casilla de autorización en los formularios.
+- **Modelo de intermediación (D-45).** La responsable confirmó que el negocio es intermediario: los vehículos son de terceros, en consignación o con autorización del dueño, y los créditos y las pólizas se gestionan como bróker. Se ajustaron los dos borradores legales:
+  - quién vende;
+  - qué es una solicitud de crédito o de seguro;
+  - con quién se comparten los datos.
+- La declaración de consignación al publicar queda PROPUESTA (D-45).
+- **D-45, respuesta de la responsable.** No se pide la declaración de consignación al publicar ni la autorización para bancos y aseguradoras en la plataforma: es manejo interno. La plataforma solo pone en contacto a usuario y asesor. Queda por confirmar el alcance de P6 al planearla.

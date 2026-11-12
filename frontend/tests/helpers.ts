@@ -18,6 +18,8 @@ export function simularFetch(
   // prueba no la define, se responde con un catálogo sin categorías.
   const rutas: Record<string, RespuestaSimulada | RespuestaSimulada[]> = {
     [RUTA_FILTROS]: FILTROS_SIN_DATOS,
+    // D-42: el inicio pregunta por la foto de portada; por defecto no hay (se ve la ilustración).
+    [RUTA_PORTADA]: { status: 200, body: { url: null } },
     ...rutasPropias,
   }
   const llamadas: Llamada[] = []
@@ -47,6 +49,9 @@ export function simularFetch(
     llamadasAuth: () => llamadas.filter((l) => l.url.startsWith('/api/auth/')),
   }
 }
+
+/** D-42: GET anónimo de la foto de portada del inicio. */
+export const RUTA_PORTADA = '/api/catalogo/portada'
 
 /** Ruta del GET anónimo de opciones del catálogo que hace el encabezado (P3). */
 export const RUTA_FILTROS = '/api/catalogo/filtros'

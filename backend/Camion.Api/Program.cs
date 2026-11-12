@@ -175,6 +175,7 @@ app.MapAdminUsuariosEndpoints();
 app.MapCatalogoEndpoints();
 app.MapInventarioEndpoints();
 app.MapMediaEndpoints();
+app.MapPortalEndpoints();
 // P4p: planes, suscripciones y catálogos administrables (D-26, D-37).
 app.MapPlanesEndpoints();
 app.MapSuscripcionesEndpoints();

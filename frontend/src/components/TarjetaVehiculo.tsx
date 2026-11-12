@@ -1,6 +1,7 @@
 import { mostrarKilometraje, type TarjetaVehiculo as DatosTarjeta } from '../api/catalogo'
 import { formatoCop, formatoKm, textoUbicacion } from '../catalogo/formato'
 import { hashVehiculo } from '../rutas'
+import { IconoEstrella } from './IconosPortal'
 import { ImagenVehiculo } from './ImagenVehiculo'
 
 /** Etiquetas "Destacado" y "Reservado": siempre con texto, no solo con color. */
@@ -16,7 +17,12 @@ export function EtiquetasVehiculo({
   if (!destacado && !reservado && !negociable) return null
   return (
     <ul className="cat-etiquetas" aria-label="Etiquetas">
-      {destacado && <li className="cat-etiqueta cat-etiqueta-destacado">Destacado</li>}
+      {destacado && (
+        <li className="cat-etiqueta cat-etiqueta-destacado">
+          <IconoEstrella />
+          Destacado
+        </li>
+      )}
       {reservado && <li className="cat-etiqueta cat-etiqueta-reservado">Reservado</li>}
       {negociable && <li className="cat-etiqueta cat-etiqueta-negociable">Negociable</li>}
     </ul>
@@ -31,7 +37,7 @@ export function EtiquetasVehiculo({
 export function TarjetaVehiculo({ vehiculo }: { vehiculo: DatosTarjeta }) {
   const ubicacion = textoUbicacion(vehiculo.municipio, vehiculo.departamento)
   return (
-    <article className="cat-tarjeta">
+    <article className={vehiculo.destacado ? 'cat-tarjeta cat-tarjeta-destacada' : 'cat-tarjeta'}>
       <h3 className="cat-tarjeta-titulo">
         <a className="cat-tarjeta-enlace" href={hashVehiculo(vehiculo.slug)}>
           {vehiculo.titulo}
@@ -56,7 +62,7 @@ export function TarjetaVehiculo({ vehiculo }: { vehiculo: DatosTarjeta }) {
           </li>
         )}
         {ubicacion !== '' && (
-          <li>
+          <li className="cat-datos-ciudad">
             <span className="sr-only">Ciudad: </span>
             {ubicacion}
           </li>

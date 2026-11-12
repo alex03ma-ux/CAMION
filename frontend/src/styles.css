@@ -1,7 +1,7 @@
 :root {
   font-family: Inter, system-ui, Arial, sans-serif;
-  color: #18263a;
-  background: #f3f5f8;
+  color: #1a1a1a;
+  background: #f6f6f6;
   font-synthesis: none;
 }
 
@@ -36,7 +36,7 @@ body {
 h1 {
   font-size: clamp(32px, 5vw, 52px);
   margin: 12px 0;
-  color: #14263e;
+  color: #111111;
 }
 
 .container > p {
@@ -86,7 +86,7 @@ button {
   width: 100%;
   margin-top: 24px;
   padding: 14px;
-  background: #17365d;
+  background: #d71920;
   color: white;
   border: none;
   border-radius: 9px;
@@ -96,7 +96,7 @@ button {
 }
 
 button:hover {
-  background: #24548c;
+  background: #a8141a;
 }
 
 button:disabled {
@@ -129,12 +129,12 @@ button:disabled {
 
 .secondary-button {
   margin-top: 12px;
-  background: #e8eef6;
-  color: #17365d;
+  background: #f2f2f2;
+  color: #d71920;
 }
 
 .secondary-button:hover {
-  background: #d5e2f1;
+  background: #e4e4e4;
 }
 /* ---- P1 autenticación: campos, errores, avisos y reglas de contraseña ---- */
 
@@ -351,8 +351,8 @@ textarea:disabled {
 }
 
 .opcion-radio:has(input:checked) {
-  border-color: #17365d;
-  background: #e8eef6;
+  border-color: #d71920;
+  background: #f2f2f2;
 }
 
 .opcion-radio input[type="radio"] {
@@ -361,7 +361,7 @@ textarea:disabled {
   height: 18px;
   margin: 0;
   padding: 0;
-  accent-color: #17365d;
+  accent-color: #d71920;
 }
 
 .opcion-radio input[type="radio"]:focus-visible {
@@ -612,7 +612,7 @@ textarea:disabled {
 /* ---- P3: catálogo público (encabezado, inicio, resultados, tarjeta, detalle) ---- */
 
 a {
-  color: #17365d;
+  color: #d71920;
 }
 
 a:focus-visible,
@@ -634,7 +634,7 @@ main:focus:not(:focus-visible) {
   top: -60px;
   z-index: 20;
   padding: 10px 16px;
-  background: #17365d;
+  background: #d71920;
   color: white;
   border-radius: 9px;
   font-weight: 700;
@@ -664,7 +664,7 @@ main:focus:not(:focus-visible) {
   display: flex;
   flex-direction: column;
   text-decoration: none;
-  color: #14263e;
+  color: #111111;
   line-height: 1.2;
 }
 
@@ -765,7 +765,7 @@ form.cat-busqueda {
 .cat-acceso {
   display: inline-block;
   padding: 10px 18px;
-  background: #17365d;
+  background: #d71920;
   color: white;
   border-radius: 9px;
   font-weight: 700;
@@ -773,16 +773,16 @@ form.cat-busqueda {
 }
 
 .cat-acceso:hover {
-  background: #24548c;
+  background: #a8141a;
 }
 
 .cat-acceso-secundario {
-  background: #e8eef6;
-  color: #17365d;
+  background: #f2f2f2;
+  color: #d71920;
 }
 
 .cat-acceso-secundario:hover {
-  background: #d5e2f1;
+  background: #e4e4e4;
 }
 
 .cat-seccion {
@@ -889,7 +889,7 @@ form.cat-busqueda {
 }
 
 .cat-tarjeta-enlace {
-  color: #14263e;
+  color: #111111;
   text-decoration: none;
 }
 
@@ -908,7 +908,7 @@ form.cat-busqueda {
   margin: 4px 16px;
   font-size: 20px;
   font-weight: 800;
-  color: #17365d;
+  color: #d71920;
 }
 
 .cat-datos {
@@ -1071,7 +1071,7 @@ form.cat-filtros {
 }
 
 .cat-paginacion a {
-  background: #e8eef6;
+  background: #f2f2f2;
   text-decoration: none;
 }
 
@@ -1156,7 +1156,7 @@ button.cat-miniatura:hover {
 }
 
 button.cat-miniatura[aria-current="true"] {
-  border-color: #17365d;
+  border-color: #d71920;
 }
 
 .cat-miniatura img,
@@ -1243,7 +1243,7 @@ button.cat-miniatura[aria-current="true"] {
   display: inline-block;
   padding: 12px 18px;
   border-radius: 9px;
-  background: #17365d;
+  background: #d71920;
   color: white;
   font-weight: 700;
   text-align: center;
@@ -1251,7 +1251,7 @@ button.cat-miniatura[aria-current="true"] {
 }
 
 .inv-boton-enlace:hover {
-  background: #24548c;
+  background: #a8141a;
 }
 
 .inv-boton-bloque {
@@ -1268,12 +1268,12 @@ button.cat-miniatura[aria-current="true"] {
 }
 
 .inv-boton-secundario {
-  background: #e8eef6;
-  color: #17365d;
+  background: #f2f2f2;
+  color: #d71920;
 }
 
 .inv-boton-secundario:hover {
-  background: #d5e2f1;
+  background: #e4e4e4;
 }
 
 .inv-boton-auto {
@@ -1394,7 +1394,7 @@ button.cat-miniatura[aria-current="true"] {
 .inv-tarjeta-precio {
   font-size: 20px;
   font-weight: 800;
-  color: #17365d;
+  color: #d71920;
 }
 
 .inv-datos {
@@ -1721,18 +1721,18 @@ label.campo-obligatorio::after,
   border: 1px solid #cbd5e1;
   border-radius: 999px;
   background: white;
-  color: #17365d;
+  color: #d71920;
   font-weight: 600;
   text-decoration: none;
 }
 
 .nav-admin a:hover {
-  background: #e8eef6;
+  background: #f2f2f2;
 }
 
 .nav-admin a[aria-current='page'] {
-  background: #17365d;
-  border-color: #17365d;
+  background: #d71920;
+  border-color: #d71920;
   color: white;
 }
 
@@ -1841,7 +1841,7 @@ label.campo-obligatorio::after,
   height: 18px;
   margin: 0;
   padding: 0;
-  accent-color: #17365d;
+  accent-color: #d71920;
 }
 
 .opcion-casilla input[type='checkbox']:focus-visible {
@@ -1916,7 +1916,7 @@ label.campo-obligatorio::after,
   margin: 0 0 6px;
   font-size: 17px;
   font-weight: 700;
-  color: #17365d;
+  color: #d71920;
 }
 
 .pub-sin-datos {

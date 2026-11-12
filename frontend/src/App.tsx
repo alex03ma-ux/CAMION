@@ -24,12 +24,14 @@ import {
 import { esAdministrador } from './auth/roles'
 import { usePeticion } from './catalogo/usePeticion'
 import { AdminCatalogos } from './components/AdminCatalogos'
+import { AdminPortada } from './components/AdminPortada'
 import { AdminPlanes } from './components/AdminPlanes'
 import { AdminSuscripciones } from './components/AdminSuscripciones'
 import { AdminUsuarios } from './components/AdminUsuarios'
 import type { DatosAviso } from './components/Aviso'
 import { Aviso } from './components/Aviso'
 import { DetalleVehiculo } from './components/DetalleVehiculo'
+import { PiePortal } from './components/PiePortal'
 import { Encabezado } from './components/Encabezado'
 import { Inicio } from './components/Inicio'
 import { InventarioPagina } from './components/InventarioPagina'
@@ -301,6 +303,7 @@ export default function App() {
           renderInventario(ruta)}
         {ruta.nombre === 'publicaciones' && renderPublicaciones()}
       </main>
+      <PiePortal tipos={tipos} conSesion={conSesion} />
     </>
   )
 
@@ -489,6 +492,7 @@ export default function App() {
           <AdminSuscripciones token={token} onSesionTerminada={alTerminarSesionAdmin} />
         )}
         {seccion === 'catalogos' && <AdminCatalogos token={token} onSesionTerminada={alTerminarSesionAdmin} />}
+        {seccion === 'portada' && <AdminPortada token={token} onSesionTerminada={alTerminarSesionAdmin} />}
       </>
     )
   }

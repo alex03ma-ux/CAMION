@@ -466,3 +466,61 @@ Contexto: al escribir los criterios de P4a salieron tres dudas de negocio (C-3, 
 - Un plan nuevo aprobado por el administrador mientras otro sigue vigente se suma al final del actual. Esto es la renovación de P4p, con el plan nuevo.
 - El "vencimiento automático" (HU-028) ocurre cuando vence el plan.
 - Cambia la regla de visibilidad del portal: las condiciones 3 y 6 de P3 pasan a ser "el asesor tiene un plan vigente". El detalle está en `docs/criterios/P4b-contrato-api.md`.
+
+## D-42 — Rediseño del portal (rojo, negro y blanco) · PARCIAL (2026-11-04)
+- **Decisión de la responsable (en esta sesión):** el portal sigue la referencia visual que entregó: encabezado blanco, portada con camión y buscador, cuatro categorías (Camiones resaltada en rojo), destacados con borde y sello rojo, franja de confianza, banda de crédito y pie oscuro. Colores corporativos: rojo, negro y blanco. "No quiero que se vea tan recargado".
+- **Pendiente de confirmar (no se inventa nada):**
+  - Franja de servicios: **CONFIRMADA (2026-11-04)**. La franja de confianza se reemplaza por "Nuestros servicios": créditos vehiculares, venta de camiones nuevos, venta de camiones usados peritados, venta de carrocerías, venta de maquinaria amarilla y seguros todo riesgo. Es informativa (sin enlaces) y vive en `frontend/src/components/Inicio.tsx` (constante `SERVICIOS`). La palabra "peritados" la confirmó la responsable el 2026-11-04. El alquiler no se muestra (ver D-43).
+  - Contacto del pie: **CONFIRMADO (2026-11-04)** por la responsable: WhatsApp 3166152907 (enlace `https://wa.me/573166152907`) y correo vc.automotores@gmail.com. Horario **CONFIRMADO (2026-11-04)**: lunes a viernes de 9:00 a. m. a 5:00 p. m. y sábados de 9:00 a. m. a 3:00 p. m. Dirección: por ahora no se publica (decisión de la responsable). Instagram y TikTok: sí se publicarán, pero las cuentas aún no existen y no se muestran hasta tener los enlaces. Páginas legales: pendientes.
+  - El botón "Quiero un crédito" lleva al registro mientras no exista la solicitud de crédito (llega con P5).
+  - La portada usa una ilustración propia en SVG mientras el administrador no suba una foto.
+- **Decisión de la responsable (2026-11-04): "Que lo cambie el admin".** La foto de fondo de la portada la administra el administrador desde "Mi cuenta" › Portada:
+  - subir una foto JPG, PNG o WebP de hasta 5 MB (validada por su contenido) o quitarla para volver a la ilustración;
+  - sin cambios de esquema: el archivo vive en `Media:Ruta/portal/` con nombre aleatorio; la portada vigente es la más reciente y la anterior se borra al reemplazarla;
+  - se audita en `auditoria_eventos` (entidad `Portal`, acciones `CAMBIAR_PORTADA` y `QUITAR_PORTADA`);
+  - rutas: `GET /api/catalogo/portada` (anónima), `POST /api/admin/portal/portada` y `POST /api/admin/portal/portada/quitar` (SoloAdministrador). Quitar es POST porque el proyecto solo admite DELETE en las fotos del inventario.
+
+## D-43 — Alquiler de vehículos como servicio nuevo · EN PAUSA (2026-11-04)
+- **Pedido de la responsable:** "alquiler (esto me gustaria analizarlo como una nueva propuesta, pero necesito que lo revisemos por temas de contratos y legalidad como seria el proceso)".
+- **Estado:** no se implementa ni se anuncia en el portal hasta que se definan el modelo de negocio y la revisión legal. No está en las HU v3.0.
+- **2026-11-04, la responsable:** "dejemos por el momento el tema del alquiler, toca hacer buenos cuestionamientos sobre este proyecto adicional de cómo se integraría". Se pausa y se sigue con el backlog vigente (P5 y siguientes).
+- **Preguntas de negocio para definir el proceso:**
+  1. ¿De quién son los vehículos que se alquilan: de la empresa, de asesores o de clientes? ¿La plataforma solo intermedia?
+  2. ¿Con conductor o sin conductor? ¿Por días, meses o largo plazo (renting/leasing operativo)?
+  3. ¿Qué tipos: camiones, maquinaria amarilla, carros?
+  4. ¿Quién atiende la solicitud? Por la regla vigente, todo servicio lo atiende el administrador (D-7).
+  5. Requisitos del arrendatario: documentos, licencia, estudio de crédito, depósito o garantía.
+  6. Entrega y devolución: acta de inventario y estado del vehículo con fotos, kilometraje u horómetro, combustible.
+  7. Seguros, mantenimiento, multas y siniestros: ¿quién los asume?
+- **Revisión legal (la hace un abogado; el agente no da concepto jurídico):** tipo de contrato; si el alquiler de vehículos de carga o con conductor exige habilitación ante el Ministerio de Transporte o la Superintendencia de Transporte; pólizas exigibles (SOAT, todo riesgo, responsabilidad civil); tratamiento de datos personales (Ley 1581 de 2012); facturación e impuestos.
+- **Propuesta de alcance mínimo, cuando se apruebe:** un aviso "Alquila un vehículo" igual a los de D-6 (sin cuenta, dirigido al administrador). El contrato y la entrega se manejan fuera del portal hasta tener el modelo legal definido.
+
+## D-44 — Política de datos y términos (Ley 1581 de 2012) · PROPUESTO (2026-11-04)
+- **Pedido de la responsable:** preparar las páginas de términos y de privacidad antes de seguir con P5.
+- **Hecho:** borradores en `docs/legal/POLITICA-TRATAMIENTO-DATOS.md` y `docs/legal/TERMINOS-Y-CONDICIONES.md`, basados en los datos que el portal recoge hoy. Están marcados como BORRADOR, con campos `[POR COMPLETAR]` y notas para el abogado. **No se publican en el portal hasta la revisión legal.**
+- **Datos que debe entregar la responsable:** razón social, NIT, dirección de notificaciones, dominio, proveedor de alojamiento y fecha de vigencia.
+- **Preguntas para el abogado (marcadas en los borradores):**
+  - figura legal para intermediar seguros (agente, agencia, corredor o convenio);
+  - requisitos para ser bróker de crédito y revelar comisiones;
+  - obligaciones del intermediario frente al comprador y modelo de contrato de consignación;
+  - alcance del peritaje;
+  - si las bases de datos deben inscribirse en el RNBD;
+  - transferencia de datos a Gmail y WhatsApp;
+  - compartir los datos de contacto con el asesor.
+- **Pendiente técnico (antes de salir a internet; afecta P5, P5b y el registro):**
+  - una casilla de autorización sin marcar, con enlace a la política, en el registro, la inscripción de asesor y todo formulario de contacto o aviso;
+  - guardar la prueba de la autorización (fecha, versión de la política y formulario), lo que requiere una migración reversible;
+  - publicar `#/privacidad` y `#/terminos` y enlazarlas desde el pie una vez aprobadas.
+
+## D-45 — Modelo de negocio: intermediación · TOMADA (2026-11-04)
+- **La responsable:** "somos intermediarios, básicamente los camiones son de terceros que ya deben estar en consignación cuando estén publicados o tener autorización de dueño, los créditos se gestionan ante bancos y entidades financieras, nosotros somos brókers, igual pasa con las pólizas".
+- **Decisión:**
+  - Financiamos Tu Camión no es dueño de los vehículos, no presta dinero y no expide pólizas.
+  - Todo vehículo publicado debe estar en consignación o tener autorización de su dueño.
+  - Los créditos se gestionan ante bancos y entidades financieras, y los seguros ante aseguradoras, como bróker.
+- **Aplicado en:** los borradores de `docs/legal/` (D-44).
+- **Impacto en el sistema. Decisión de la responsable (2026-11-04): no se implementa nada de esto.**
+  - Al crear o publicar un vehículo **no** se pide declarar la consignación ni la autorización del dueño, ni adjuntar soporte. Ese control es interno del negocio.
+  - La autorización para compartir datos con bancos, entidades financieras y aseguradoras **no** se pide en la plataforma. "Esto se maneja interno cuando se hace el proceso, en esta plataforma solo vamos hacer contacto asesor y usuario, lo otro es interno el manejo".
+  - **Alcance de la plataforma:** poner en contacto al usuario con el asesor o con el administrador. La gestión del crédito, la póliza y la consignación ocurre fuera del portal.
+  - **Por confirmar al planear P6:** si "Créditos y búsquedas" sigue con formularios, estados y seguimiento, o se reduce a una solicitud de contacto dirigida al administrador. P5 y P5b no cambian.
