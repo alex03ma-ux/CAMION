@@ -51,9 +51,35 @@ public static class ParametrosPortal
     {
         var fila = await db.ConfiguracionesSistema.AsNoTracking().FirstOrDefaultAsync(c => c.Clave == ClaveContacto, ct);
         var guardado = fila is null ? null : Deserializar(fila.ValorJson);
-        if (fila is null || guardado is null) return new Leido(PorDefecto(whatsappPortal), false, null, null);
-        return new Leido(guardado, true, DateTime.SpecifyKind(fila.ActualizadoEn, DateTimeKind.Utc), fila.ActualizadoPor);
+        var defecto = PorDefecto(whatsappPortal);
+        if (fila is null || guardado is null) return new Leido(defecto, false, null, null);
+        return new Leido(Revalidar(guardado, defecto), true, DateTime.SpecifyKind(fila.ActualizadoEn, DateTimeKind.Utc),
+            fila.ActualizadoPor);
     }
+
+    /// <summary>
+    /// B-1 (defensa en profundidad): el valor guardado pasa otra vez por las reglas del PUT, campo a campo. Un campo que ya
+    /// no cumple (p. ej. editado a mano en la base) no se devuelve: WhatsApp, correo y horario vuelven al respaldo
+    /// (D-42 / appsettings) e Instagram y TikTok quedan en null.
+    /// </summary>
+    public static Contacto Revalidar(Contacto g, Contacto defecto)
+    {
+        var telefono = g.Whatsapp is { Length: 10 } w && w.All(char.IsAsciiDigit) ? "+57" + w : null;
+        var whatsapp = ValidacionAuth.EsCelularColombia(telefono) ? g.Whatsapp : defecto.Whatsapp;
+        var correo = g.Correo is { } c && c.Length <= MaxCorreo && c == ValidacionAuth.NormalizarEmail(c) &&
+                     ValidacionAuth.EmailEstrictoValido(c)
+            ? c
+            : defecto.Correo;
+        var horario = HorarioValido(g.Horario) ? g.Horario : defecto.Horario;
+        var instagram = Enlace(g.Instagram, HostsInstagram, out var okInstagram) is { } i && okInstagram && i == g.Instagram ? i : null;
+        var tiktok = Enlace(g.Tiktok, HostsTiktok, out var okTiktok) is { } t && okTiktok && t == g.Tiktok ? t : null;
+        return new Contacto(whatsapp, correo, horario, instagram, tiktok);
+    }
+
+    private static bool HorarioValido(string[]? horario) =>
+        horario is { Length: >= 1 and <= MaxLineasHorario } &&
+        horario.All(l => l is not null && l.Trim() == l && l.Length is > 0 and <= MaxLineaHorario &&
+                         l.IndexOfAny(['<', '>']) < 0 && !ValidacionAuth.TieneControl(l));
 
     /// <summary>D-47 (CA-P7-40): WhatsApp del portal con indicativo (57 + 10 dígitos) para el enlace wa.me de la ficha.</summary>
     public static async Task<string> WhatsappConIndicativoAsync(CamionDbContext db, string whatsappPortal, CancellationToken ct) =>
@@ -106,11 +132,12 @@ public static class ParametrosPortal
         if (!ValidacionAuth.EsCelularColombia(telefono)) errores["whatsapp"] = [MensajeWhatsapp];
 
         var correo = ValidacionAuth.NormalizarEmail(r?.Correo);
-        if (correo.Length is 0 or > MaxCorreo || !ValidacionAuth.EmailValido(correo)) errores["correo"] = [MensajeCorreo];
+        // B-2: regla estricta (el correo se publica en un enlace mailto:).
+        if (correo.Length is 0 or > MaxCorreo || !ValidacionAuth.EmailEstrictoValido(correo)) errores["correo"] = [MensajeCorreo];
 
         var horario = (r?.Horario ?? []).Select(l => (l ?? "").Trim()).ToArray();
         if (horario.Length is < 1 or > MaxLineasHorario ||
-            horario.Any(l => l.Length is 0 or > MaxLineaHorario || l.IndexOfAny(['<', '>']) >= 0))
+            horario.Any(l => l.Length is 0 or > MaxLineaHorario || l.IndexOfAny(['<', '>']) >= 0 || ValidacionAuth.TieneControl(l)))
             errores["horario"] = [MensajeHorario];
 
         var instagram = Enlace(r?.Instagram, HostsInstagram, out var instagramValido);
