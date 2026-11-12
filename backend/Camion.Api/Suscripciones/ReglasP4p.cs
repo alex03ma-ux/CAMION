@@ -66,6 +66,15 @@ public static partial class ReglasP4p
         return dias <= 0 ? 0 : (int)Math.Ceiling(dias);
     }
 
+    /// <summary>P7 (D-64 b A): días del aviso de vencimiento dentro del panel.</summary>
+    public const int DiasAvisoVencimiento = 7;
+
+    /// <summary>"Tu plan vence en N días…" si está vigente y faltan 7 días o menos; si no, null.</summary>
+    public static string? MensajeVencimiento(bool vigente, int? diasRestantes) =>
+        vigente && diasRestantes is { } dias && dias <= DiasAvisoVencimiento
+            ? $"Tu plan vence en {dias} {(dias == 1 ? "día" : "días")}. Para renovarlo, comunícate con el administrador."
+            : null;
+
     /// <summary>Texto del estado en el 409: "No se puede renovar una suscripción en estado suspendida."</summary>
     public static string Mostrar(string estado) => estado.ToLowerInvariant();
 

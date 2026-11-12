@@ -57,6 +57,13 @@ public static class Auditoria
     public const string RelacionarVehiculo = "RELACIONAR_VEHICULO";
     public const string RetirarVehiculo = "RETIRAR_VEHICULO";
 
+    // P7 (D-61 B, D-63 A): pagos del plan y parámetros de contacto del portal.
+    public const string EntidadPago = "Pago";
+    public const string Registrar = "REGISTRAR";
+    public const string Anular = "ANULAR";
+    public const string EntidadParametro = "Parametro";
+    public const string Cambiar = "CAMBIAR";
+
     // Solo agrega la fila al contexto; se guarda en la misma transacción que el cambio auditado.
     public static void Agregar(CamionDbContext db, string? actorId, string usuarioAfectadoId, string accion,
         string? estadoAnterior, string estadoNuevo, string? motivo, bool incluirMotivo)

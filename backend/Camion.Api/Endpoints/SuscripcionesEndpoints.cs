@@ -81,12 +81,15 @@ public static class SuscripcionesEndpoints
             if (request?.PlanId is not { } planId) return ErrorPlan(ReglasP4p.MensajePlan);
             var adminId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
             var ahora = reloj.GetUtcNow().UtcDateTime;
+            // P7 (D-61 B, CA-P7-29): el pago se valida antes de escribir nada.
+            if (ValidarPago(request.Pago, ahora, out var pago) is { } errorPago) return errorPago;
 
             await using var tx = await db.Database.BeginTransactionAsync(ct);
             // Bloquea la fila del asesor hasta el COMMIT (MariaDB): dos asignaciones a la vez no crean dos vivas.
             if (await BloquearAsesorAsync(db, asesorId, ct) == 0) return NoEncontrado();
             var plan = await db.Planes.AsNoTracking().SingleOrDefaultAsync(p => p.Id == planId && p.Activo, ct);
             if (plan is null) return ErrorPlan(ReglasP4p.MensajePlanActivo);
+            if (pago is not null && plan.PrecioCop <= 0) return ErrorPagoSinPrecio();
             if (!await AsesorActivoAsync(db, asesorId, ct))
                 return Results.Conflict(new ErrorResponse(ReglasP4p.MensajeAsesorNoActivo));
             if (await db.Suscripciones.AnyAsync(s => s.AsesorId == asesorId && Suscripcion.EstadosVivos.Contains(s.Estado), ct))
@@ -96,6 +99,7 @@ public static class SuscripcionesEndpoints
             db.Suscripciones.Add(nueva);
             await db.SaveChangesAsync(ct);
             Auditar(db, adminId, nueva, Auditoria.Asignar, null, Datos(nueva), null, ahora);
+            await AnotarPagoAsync(db, nueva.Id, pago, plan, Pago.ConceptoAsignacion, adminId, ahora, ct);
             await db.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
             return Results.Created($"/api/admin/asesores/{asesorId}/suscripcion", await ItemAsync(db, nueva.Id, ahora, ct));
@@ -107,6 +111,7 @@ public static class SuscripcionesEndpoints
         {
             var adminId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
             var ahora = reloj.GetUtcNow().UtcDateTime;
+            if (ValidarPago(request?.Pago, ahora, out var pago) is { } errorPago) return errorPago;
             await using var tx = await db.Database.BeginTransactionAsync(ct);
             var s = await CargarBloqueadaAsync(db, id, ct);
             if (s is null) return NoEncontrado();
@@ -116,6 +121,7 @@ public static class SuscripcionesEndpoints
             var planElegido = request?.PlanId ?? s.PlanId;
             var plan = await db.Planes.AsNoTracking().SingleOrDefaultAsync(p => p.Id == planElegido && p.Activo, ct);
             if (plan is null) return ErrorPlan(ReglasP4p.MensajePlanActivo);
+            if (pago is not null && plan.PrecioCop <= 0) return ErrorPagoSinPrecio();
             // Una VENCIDA (columna) no es viva: al renovarla no puede quedar junto a otra viva del mismo asesor.
             if (!ReglasP4p.EsViva(s.Estado) &&
                 await db.Suscripciones.AnyAsync(x => x.AsesorId == s.AsesorId && x.Id != s.Id &&
@@ -140,6 +146,7 @@ public static class SuscripcionesEndpoints
             // P4b (D-38, D-41): los destacados vigentes del asesor duran hasta el nuevo fin del plan.
             await DatosP4b.ExtenderDestacadosAsync(db, s.AsesorId, s.FinVigencia!.Value, ahora, ct);
             Auditar(db, adminId, s, Auditoria.Renovar, antes, Datos(s), null, ahora);
+            await AnotarPagoAsync(db, s.Id, pago, plan, Pago.ConceptoRenovacion, adminId, ahora, ct);
             await db.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
             return Results.Ok(await ItemAsync(db, s.Id, ahora, ct));
@@ -152,12 +159,14 @@ public static class SuscripcionesEndpoints
             if (request?.PlanId is not { } planId) return ErrorPlan(ReglasP4p.MensajePlan);
             var adminId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
             var ahora = reloj.GetUtcNow().UtcDateTime;
+            if (ValidarPago(request.Pago, ahora, out var pago) is { } errorPago) return errorPago;
             await using var tx = await db.Database.BeginTransactionAsync(ct);
             var s = await CargarBloqueadaAsync(db, id, ct);
             if (s is null) return NoEncontrado();
             if (!ReglasP4p.EsViva(s.Estado)) return Conflicto("cambiar el plan de", s, ahora);
             var plan = await db.Planes.AsNoTracking().SingleOrDefaultAsync(p => p.Id == planId && p.Activo, ct);
             if (plan is null) return ErrorPlan(ReglasP4p.MensajePlanActivo);
+            if (pago is not null && plan.PrecioCop <= 0) return ErrorPagoSinPrecio();
 
             var antes = Datos(s);
             s.Estado = Suscripcion.Cancelada;
@@ -173,6 +182,7 @@ public static class SuscripcionesEndpoints
             var datosNueva = Datos(nueva);
             datosNueva["suscripcionAnteriorId"] = s.Id;
             Auditar(db, adminId, nueva, Auditoria.CambiarPlan, null, datosNueva, null, ahora);
+            await AnotarPagoAsync(db, nueva.Id, pago, plan, Pago.ConceptoCambioPlan, adminId, ahora, ct);
             await db.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
             return Results.Ok(await ItemAsync(db, nueva.Id, ahora, ct));
@@ -212,9 +222,12 @@ public static class SuscripcionesEndpoints
                     .FirstOrDefaultAsync(ct);
             if (fila is null) return Results.Ok(new SinSuscripcionResponse(null, ReglasP4p.MensajeSinSuscripcion));
             var i = Item(fila, ahora);
+            // P7 (D-64 b A, CA-P7-50): aviso dentro del panel cuando faltan 7 días o menos.
+            var mensaje = ReglasP4p.MensajeVencimiento(i.Vigente, i.DiasRestantes);
             return Results.Ok(new MiSuscripcionResponse(
                 new MiPlan(i.Plan.Nombre, i.Plan.LimitePublicaciones, i.Plan.DiasVigencia),
-                i.Estado, i.EstadoEfectivo, i.InicioVigencia, i.FinVigencia, i.DiasRestantes, i.Vigente));
+                i.Estado, i.EstadoEfectivo, i.InicioVigencia, i.FinVigencia, i.DiasRestantes, i.Vigente,
+                mensaje is not null, mensaje));
         }).RequireAuthorization(Roles.PoliticaSoloAsesor);
 
         return app;
@@ -337,6 +350,32 @@ public static class SuscripcionesEndpoints
 
     private static IResult Conflicto(string accion, Suscripcion s, DateTime ahora) =>
         Results.Conflict(new ErrorResponse(ReglasP4p.MensajeTransicion(accion, ReglasP4p.EstadoEfectivo(s, ahora))));
+
+    // P7 (D-61 B): null si no hay pago o es válido; si no, el 400 con los campos del pago.
+    private static IResult? ValidarPago(PagoRequest? request, DateTime ahora, out ReglasPagos.DatosPago? datos)
+    {
+        datos = null;
+        if (request is null) return null;
+        var errores = ReglasPagos.Validar(request, ahora, out datos);
+        return errores.Count == 0 ? null : Results.BadRequest(new ErrorResponse(ReglasP4p.MensajeRevisar, errores));
+    }
+
+    private static IResult ErrorPagoSinPrecio() =>
+        Results.BadRequest(new ErrorResponse(ReglasP4p.MensajeRevisar,
+            new Dictionary<string, string[]> { ["pago"] = [ReglasPagos.MensajePlanSinPrecio] }));
+
+    // P7 (D-61 B, CA-P7-27): pago y auditoría en la transacción del llamador.
+    internal static async Task<Pago?> AnotarPagoAsync(CamionDbContext db, long suscripcionId, ReglasPagos.DatosPago? datos, Plan plan,
+        string concepto, string? adminId, DateTime ahora, CancellationToken ct)
+    {
+        if (datos is null) return null;
+        var pago = ReglasPagos.Nuevo(suscripcionId, datos, plan.PrecioCop, concepto, adminId, ahora);
+        db.Pagos.Add(pago);
+        await db.SaveChangesAsync(ct);
+        Auditoria.AgregarEvento(db, adminId, Auditoria.EntidadPago, pago.Id.ToString(CultureInfo.InvariantCulture),
+            Auditoria.Registrar, null, ReglasPagos.Datos(pago), ahora);
+        return pago;
+    }
 
     private static IResult ErrorPlan(string mensaje) =>
         Results.BadRequest(new ErrorResponse(ReglasP4p.MensajeRevisar,
