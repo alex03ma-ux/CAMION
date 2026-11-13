@@ -848,7 +848,7 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
 
 ## Grupo 1 — Reportes e indicadores internos
 
-## D-68 — ¿Qué reportes y con qué filtros? · PENDIENTE
+## D-68 — ¿Qué reportes y con qué filtros? · TOMADA (2026-11-13)
 - Contexto: HU-076 a HU-078 piden reportes de vehículos, leads y créditos, "filtrables" (RN-RE-002 a 004), sin decir cuáles cortes. La minuta M13 añade publicaciones y ventas. Los pagos del plan existen desde P7 (D-61 B).
 - Opciones:
   - A) **Cinco reportes:** (1) vehículos y publicaciones (por estado, categoría, asesor y ciudad; destacadas; los 10 con más contactos); (2) solicitudes (contactos, avisos, créditos y búsquedas por origen, estado, resultado de cierre y responsable; tiempo medio hasta el cierre); (3) créditos (estados mostrados de D-57 y resultados); (4) ventas (por origen D-39, categoría y asesor, con cantidad y valor); (5) suscripciones y pagos registrados (por estado, plan, medio y concepto). Filtros comunes: rango de fechas (por defecto el mes en curso, máximo 366 días), asesor y categoría.
@@ -860,7 +860,7 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
 - Recomendación del analista: **A**. Todos los datos ya existen y D-39 se tomó pensando en estos reportes.
 - Bloquea: CA-P8-01, 03, 12, 15, 20, 30 y 31.
 
-## D-69 — Indicadores comerciales y gráficos · PENDIENTE
+## D-69 — Indicadores comerciales y gráficos · TOMADA (2026-11-13)
 - Contexto: HU-075 y HU-080 piden indicadores consolidados y "métricas comerciales". D-64 a A dejó el panel "Inicio" de P7 sin dinero ni gráficos.
 - (a) **Gráficos:**
   - A) Hasta cuatro gráficos de barras simples (ventas por mes, ventas por origen, solicitudes por origen, contactos por resultado), dibujados sin librería externa y con su tabla equivalente.
@@ -873,7 +873,7 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
   - Recomendación: **A**. El panel "Inicio" de P7 sigue sin dinero; los valores van en la sección aparte "Indicadores".
 - Bloquea: CA-P8-21, 28, 34 a 36.
 
-## D-70 — ¿El asesor ve indicadores de lo suyo? · PENDIENTE
+## D-70 — ¿El asesor ve indicadores de lo suyo? · TOMADA (2026-11-13)
 - **Contradicción:** la v3.0 asigna todo el módulo de Reportes al **Administrador** (§7, HU-075 a HU-080). La minuta (§4) dice que el asesor gestiona sus "operaciones comerciales", y hoy ya tiene listas propias ("Mis publicaciones", "Mis contactos", "Mis ventas", "Mi suscripción").
 - Opciones:
   - A) **Sí, "Mis indicadores" en pantalla y sin exportar:** sus vehículos por estado, publicaciones visibles, contactos recibidos con su resultado y sus ventas con cantidad y valor. Sin avisos, créditos ni búsquedas (D-52, D-58), sin pagos (D-61 B), sin cifras de otros asesores ni comparaciones.
@@ -883,7 +883,7 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
 - Recomendación del analista: **A**. Le da valor al plan que paga sin exponer datos de otros y sin sacar archivos del sistema. Modifica el actor de HU-075 y HU-080 solo para lo propio.
 - Bloquea: CA-P8-49, 51 a 55.
 
-## D-71 — Formato de exportación y datos personales · PENDIENTE
+## D-71 — Formato de exportación y datos personales · TOMADA (2026-11-13)
 - **Contradicción:** RN-RE-005 dice "Excel/PDF". El encargo de P8 dice "CSV o Excel". Además, exportar saca datos del sistema, y RN-SE-004, D-44 y D-45 piden proteger los datos de los clientes.
 - (a) **Formato:**
   - A) **CSV** (UTF-8 con BOM, separador `;`), que abre directamente en Excel en español. Sin dependencias nuevas. Cubre "Excel" en la práctica, no PDF.
@@ -899,7 +899,7 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
   - Recomendación: **A**. Para contactar a un cliente, el administrador usa la bandeja, donde ya están sus datos.
 - Bloquea: CA-P8-07, 42 a 45.
 
-## D-72 — Línea de tiempo de auditoría · PENDIENTE
+## D-72 — Línea de tiempo de auditoría · TOMADA (2026-11-13)
 - Contexto: D-62 d dejó para P8 la consulta de la auditoría. `auditoria_eventos` se llena desde P2, pero ninguna ruta la muestra. La prueba `SesionTests` (CA-061-15) prohíbe rutas que contengan "auditoria" o "historial", para que nadie pueda editar ni borrar eventos.
 - (a) **Alcance:**
   - A) "Actividad" de **un vehículo** (con sus publicaciones y ventas) y de **una suscripción** (con sus pagos y lo que deshizo D-67), solo para el administrador, de solo lectura, con las acciones en palabras.
@@ -916,7 +916,7 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
 
 ## Grupo 2 — Servicios externos y revisión legal
 
-## D-73 — ¿Se contrata un servicio de correo? (recuperar contraseña y avisos) · PENDIENTE
+## D-73 — ¿Se contrata un servicio de correo? (recuperar contraseña y avisos) · TOMADA (2026-11-13)
 - Contexto: D-5 dejó el correo para cuando se apruebe una integración. Sin correo siguen bloqueadas HU-063 "Recuperar contraseña" (RN-US-006 "Enlace temporal"), el aviso de aprobación del asesor (D-5) y los avisos por correo de HU-070 a HU-074 (D-48, D-64 b). Hoy, quien olvida su contraseña no tiene salida dentro del sistema.
 - Opciones:
   - A) **No contratar todavía.** HU-063 sigue BLOQUEADO; la pantalla de inicio de sesión remite al WhatsApp del portal.
@@ -930,7 +930,7 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
 - Recomendación del analista: **D ahora y C cuando exista el dominio propio**. D cumple RN-US-006 ("enlace temporal") sin contrato; C se activa después sin rehacer el enlace.
 - Bloquea: HU-063, CA-P8-66 a 68.
 
-## D-74 — ¿Avisos automáticos por WhatsApp (WhatsApp Business API)? · PENDIENTE
+## D-74 — ¿Avisos automáticos por WhatsApp (WhatsApp Business API)? · TOMADA (2026-11-13)
 - Contexto: v3.0 §5.3 y §14 mencionan WhatsApp Business como posibilidad. Hoy WhatsApp se usa solo con enlaces `wa.me` que abre la persona (D-47), sin registro en el portal.
 - Opciones:
   - A) **No.** Se siguen usando los enlaces `wa.me` y los avisos dentro del panel.
@@ -939,7 +939,7 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
 - Recomendación del analista: **A**. El volumen actual no lo justifica y requiere revisión legal; se puede reconsiderar con el portal en producción.
 - Bloquea: el canal WhatsApp de HU-071 a HU-074.
 
-## D-75 — ¿Entran las promociones (HU-087) y el contenido de marketing (HU-052 a HU-055)? · PENDIENTE
+## D-75 — ¿Entran las promociones (HU-087) y el contenido de marketing (HU-052 a HU-055)? · TOMADA (2026-11-13)
 - Contexto: RN-PA-007 "Administrar promociones" y la minuta M08 "Banners, contenidos y promociones comerciales". D-63 pasó HU-087 a P8. D-42 pide un portal "no tan recargado". Una promoción con precios o descuentos es publicidad y debe informar sus condiciones (protección al consumidor); el abogado debería revisarlo (D-44).
 - Opciones:
   - A) **No en P8.** Se mantiene solo la foto de portada administrable (D-42).
@@ -950,7 +950,7 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
 - Recomendación del analista: **A** para el mínimo de P8. Si la responsable quiere promociones, **B en una entrega P8b** después de los reportes.
 - Bloquea: nada del alcance mínimo.
 
-## D-76 — Analítica web y cookies · PENDIENTE
+## D-76 — Analítica web y cookies · TOMADA (2026-11-13)
 - Contexto: v3.0 §14 nombra Google Analytics como posibilidad. No existe ningún dato de visitas. La política de datos (D-44) no menciona cookies, y el portal hoy no usa cookies de terceros.
 - Opciones:
   - A) **Nada por ahora.** Sin analítica ni aviso de cookies.
@@ -961,7 +961,7 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
 - Recomendación del analista: **A** mientras el portal no esté publicado (en local no hay visitas reales). Al publicarlo, **B** antes que C.
 - Bloquea: CA-P8-41 y CA-P8-64.
 
-## D-77 — Publicidad y redes sociales · PENDIENTE
+## D-77 — Publicidad y redes sociales · TOMADA (2026-11-13)
 - Contexto: v3.0 §14 nombra redes sociales y YouTube/TikTok. Instagram y TikTok ya son parámetros del portal y se muestran cuando tienen enlace (D-63 A). Las cuentas aún no existen (D-42).
 - Opciones:
   - A) **Sin integración.** Solo los enlaces a las cuentas. Opcionalmente, un botón "Compartir" en la ficha que abre WhatsApp o la red con el enlace de la publicación, sin scripts de terceros.
@@ -971,3 +971,11 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
     - Impacto: cuentas de empresa, aplicaciones revisadas por cada plataforma, credenciales y mantenimiento.
 - Recomendación del analista: **A**, con el botón "Compartir" solo si la responsable lo quiere.
 - Bloquea: CA-P8-64.
+
+### Decisión sobre D-68 a D-77 (responsable, 2026-11-13): "Apruebo todas"
+- D-68 A (cinco reportes); D-69 A y A (hasta 4 gráficos sin librería; indicadores con valores en pesos en una sección aparte, el panel Inicio sigue sin dinero); D-70 A ("Mis indicadores" del asesor, en pantalla y sin exportar).
+- D-71: CSV ahora (UTF-8 con BOM, `;`), sin datos personales de clientes y con toda exportación auditada; .xlsx o PDF solo si se piden después.
+- D-72 A y A (actividad de vehículo y de suscripción, solo administrador).
+- D-73: D ahora (recuperación asistida: enlace de un solo uso, 60 minutos, enviado por WhatsApp por el administrador, cierra todas las sesiones, auditado) y C cuando exista dominio propio.
+- D-74 A (sin WhatsApp automático); D-75 A (sin promociones en P8; P8b si se piden); D-76 A ahora y B al publicar; D-77 A (solo enlaces). El botón "Compartir" queda fuera hasta que la responsable lo pida expresamente.
+
