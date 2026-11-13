@@ -71,6 +71,36 @@ Si MariaDB está apagado, el comando termina con un error técnico en inglés. E
 
 ---
 
+### Si un administrador olvida su contraseña (D-79)
+
+El panel no puede generar enlaces para cuentas de administrador. En su lugar, en el **equipo del servidor**:
+
+1. Comprueba que XAMPP tiene MariaDB encendido. No hace falta apagar el backend si usas la segunda forma del paso 3.
+2. Abre PowerShell en la carpeta raíz del proyecto (la misma del paso 2 de arriba).
+3. Ejecuta, cambiando `<CORREO_DEL_ADMINISTRADOR>`:
+
+```powershell
+dotnet run --project backend/Camion.Api -- recuperar-admin <CORREO_DEL_ADMINISTRADOR>
+```
+
+   Si el backend está encendido y no quieres detenerlo, usa la versión ya compilada:
+
+```powershell
+$env:ASPNETCORE_ENVIRONMENT = "Development"
+dotnet backend\Camion.Api\bin\Debug\net8.0\Camion.Api.dll recuperar-admin <CORREO_DEL_ADMINISTRADOR>
+```
+
+4. El comando muestra un aviso y, debajo, un enlace. **El enlace vence en 60 minutos y sirve una sola vez.** Ábrelo en el navegador y escribe la contraseña nueva (mínimo 8 caracteres, con mayúscula, minúscula y número). Al guardarla se cierran todas las sesiones de esa cuenta.
+5. No copies el enlace en documentos, chats ni correos. Si se pierde o vence, vuelve a ejecutar el comando: el enlace anterior deja de valer.
+
+| Mensaje | Qué significa | Qué hacer |
+|---|---|---|
+| `Enlace de un solo uso para <correo>. Vence en 60 minutos (...)` | Listo; el enlace está en la línea siguiente. | Ábrelo antes de que venza. |
+| `No se generó ningún enlace: el correo no corresponde a una cuenta de administrador activa.` | El correo no existe, no es de un administrador o la cuenta no está activa. Por seguridad no se dice cuál. | Revisa el correo. Para compradores y asesores, usa el panel. |
+| `Uso: recuperar-admin <correo>` | Falta el correo. | Repite el comando con el correo. |
+
+El comando no enciende el servidor web y queda anotado en la auditoría (sin el enlace).
+
 ## 2. Usar el panel "Administrar usuarios"
 
 ### Cómo entrar

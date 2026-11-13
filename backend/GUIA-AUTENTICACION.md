@@ -301,7 +301,20 @@ Hay dos lugares:
 
 El administrador genera desde el panel un enlace de un solo uso que vence en 60 minutos (`POST /api/admin/usuarios/{id}/enlace-recuperacion`) y lo envía por WhatsApp después de confirmar la identidad de la persona. Ella define la contraseña nueva en `POST /api/auth/restablecer-contrasena`, que no requiere sesión, tiene un límite de peticiones por IP y cierra todas sus sesiones. El código no se guarda en la base de datos ni aparece en los registros. Contrato: `docs/criterios/P8-contrato-api.md` §11.
 
-El enlace deja de valer cuando se usa, cuando el administrador genera otro, cuando cambia el estado de la cuenta (aprobar, rechazar, bloquear, desbloquear o reconsiderar) y cuando cambian sus roles (`promover-admin`). Una cuenta que no está ACTIVA o que es de administrador no puede usarlo.
+El enlace deja de valer cuando se usa, cuando el administrador genera otro, cuando cambia el estado de la cuenta (aprobar, rechazar, bloquear, desbloquear o reconsiderar) y cuando cambian sus roles (`promover-admin`). Una cuenta que no está ACTIVA no puede usarlo, y un enlace generado desde el panel nunca sirve para una cuenta de administrador.
+
+**Administradores (D-79):** su enlace solo se genera en el equipo del servidor con el comando local `recuperar-admin`, igual que `promover-admin` (D-13):
+
+```powershell
+dotnet run --project backend/Camion.Api -- recuperar-admin <correo>
+# o, con la API ya compilada:
+dotnet backend\Camion.Api\bin\Debug\net8.0\Camion.Api.dll recuperar-admin <correo>
+```
+
+- Solo actúa sobre una cuenta **activa con rol ADMINISTRADOR**. Para cualquier otro correo responde "No se generó ningún enlace: el correo no corresponde a una cuenta de administrador activa." y sale con código 1 (código 2 si falta el correo).
+- Usa el mismo token, la misma carpeta de claves y la misma `Recuperacion:UrlPortal`, pero con otro propósito: el enlace del comando no sirve para otras cuentas y el del panel no sirve para administradores. Vence en 60 minutos, sirve una vez y generar otro anula el anterior.
+- El enlace se imprime **solo en la consola**; no va a ningún registro ni a la auditoría. La auditoría anota `GENERAR_ENLACE_RECUPERACION_ADMIN` con actor SISTEMA y `origen: COMANDO_LOCAL`.
+- No enciende el servidor web: termina al acabar. Con `dotnet Camion.Api.dll` el entorno es Production salvo que se fije `ASPNETCORE_ENVIRONMENT`; en ese caso `Recuperacion:UrlPortal` debe ser `https://` (D-78).
 
 Claves de configuración (ninguna es secreta; se ponen en `appsettings`, `dotnet user-secrets` o variables de entorno, por ejemplo `Recuperacion__UrlPortal`):
 
