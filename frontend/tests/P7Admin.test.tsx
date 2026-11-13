@@ -730,6 +730,9 @@ describe('Panel Inicio del administrador (CA-P7-45 a 49, 51)', () => {
       'Planes',
       'Suscripciones',
       'Ventas',
+      // P8 (CA-P8-73): Reportes e Indicadores.
+      'Reportes',
+      'Indicadores',
       'Inventario',
       'Publicaciones',
       'Contactos',
