@@ -634,4 +634,5 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - INF-2: claves en el servidor de producción, `UrlPortal` con https, B-2 y B-3;
   - la revisión legal (D-44).
 - PR: por abrir contra `main`, sin merge. Según el registro local, la rama remota está en `14cc073`; faltan por subir los 6 commits posteriores.
+- **D-79 A (2026-11-13).** Comando local `recuperar-admin <correo>` (commits 01a9486, 789d9a5 y 554a691): genera el enlace de un solo uso para un administrador activo y solo lo imprime en consola, con otro propósito de token distinto al del panel. Se audita como SISTEMA, origen COMANDO_LOCAL. `dotnet test` 1332/1332. Documentado en `backend/GUIA-AUTENTICACION.md` §12 y `docs/GUIA-ADMINISTRACION.md`.
 
