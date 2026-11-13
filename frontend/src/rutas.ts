@@ -25,6 +25,11 @@
 //   #/ventas            P7 (D-62 c A): "Mis ventas" del asesor (la API la protege con AsesorOAdministrador)
 //   P7 (CA-P7-46): las listas a las que enlaza el panel aceptan filtros en la consulta del hash, p. ej.
 //   #/cuenta/usuarios?rol=ASESOR&estado=PENDIENTE, #/contactos?origen=CREDITO, #/inventario?estado=ACTIVO.
+//   #/cuenta/reportes?tipo=…, #/cuenta/indicadores
+//                       P8 (D-68 A, D-69 A): reportes e indicadores del administrador (la API los protege con SoloAdministrador)
+//   #/mis-indicadores   P8 (D-70 A): "Mis indicadores" del asesor (la API la protege con SoloAsesor)
+//   #/restablecer-contrasena?codigo=…
+//                       P8 (D-73 D): pantalla pública del enlace de recuperación; el código se quita de la URL al leerlo
 // Cualquier otra ruta muestra el inicio. Nunca se pone el token en la URL.
 import { useEffect, useState } from 'react'
 import { CLAVES_FILTROS, FILTROS_VACIOS, type FiltrosCatalogo } from './api/catalogo'
@@ -50,6 +55,10 @@ export type Ruta =
   | { nombre: 'misSolicitudes' }
   /** P7: "Mis ventas" del asesor (el administrador ve todas). */
   | { nombre: 'ventas'; consulta?: string }
+  /** P8 (D-70 A): "Mis indicadores" del asesor. */
+  | { nombre: 'misIndicadores' }
+  /** P8 (D-73 D): el código no viaja en la ruta; la pantalla lo lee una vez del hash y lo quita de la URL. */
+  | { nombre: 'restablecerContrasena' }
 
 /** P4p: secciones del administrador dentro de "Mi cuenta". P7: inicio, ventas y parámetros. */
 export type SeccionAdmin =
@@ -61,6 +70,8 @@ export type SeccionAdmin =
   | 'catalogos'
   | 'portada'
   | 'parametros'
+  | 'reportes'
+  | 'indicadores'
 export const SECCIONES_ADMIN: readonly SeccionAdmin[] = [
   'inicio',
   'usuarios',
@@ -70,6 +81,8 @@ export const SECCIONES_ADMIN: readonly SeccionAdmin[] = [
   'catalogos',
   'portada',
   'parametros',
+  'reportes',
+  'indicadores',
 ]
 
 /** `#/cuenta/<seccion>`; P7: con filtros iniciales opcionales (`?clave=valor`). */
@@ -100,6 +113,7 @@ export const HASH_CREDITO = '#/credito'
 export const HASH_BUSCO_VEHICULO = '#/busco-un-vehiculo'
 export const HASH_MIS_SOLICITUDES = '#/mis-solicitudes'
 export const HASH_VENTAS = '#/ventas'
+export const HASH_MIS_INDICADORES = '#/mis-indicadores'
 
 /** `#/credito/<slug>`: crédito para un vehículo, desde su ficha (CA-P6-03). */
 export function hashCreditoVehiculo(slug: string): string {
@@ -185,6 +199,8 @@ export function leerRuta(hash: string): Ruta {
   if (camino === '/credito') return { nombre: 'credito', slug: null }
   if (camino === '/busco-un-vehiculo') return { nombre: 'buscoVehiculo' }
   if (camino === '/mis-solicitudes') return { nombre: 'misSolicitudes' }
+  if (camino === '/mis-indicadores') return { nombre: 'misIndicadores' }
+  if (camino === '/restablecer-contrasena') return { nombre: 'restablecerContrasena' }
   const contacto = /^\/contactos\/(\d{1,15})$/.exec(camino)
   if (contacto) {
     const id = Number(contacto[1])
