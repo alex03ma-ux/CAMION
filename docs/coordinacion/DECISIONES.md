@@ -979,3 +979,13 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
 - D-73: D ahora (recuperación asistida: enlace de un solo uso, 60 minutos, enviado por WhatsApp por el administrador, cierra todas las sesiones, auditado) y C cuando exista dominio propio.
 - D-74 A (sin WhatsApp automático); D-75 A (sin promociones en P8; P8b si se piden); D-76 A ahora y B al publicar; D-77 A (solo enlaces). El botón "Compartir" queda fuera hasta que la responsable lo pida expresamente.
 
+## D-78 — Correcciones de seguridad de la recuperación asistida · TOMADA (2026-11-13, técnica, coordinador)
+- Contexto: QA de P8 (`docs/criterios/P8-evidencia.md`, QA-P8-1 y QA-P8-2) y la revisión de seguridad (`docs/coordinacion/REVISION-SEGURIDAD-P8.md`, B-1, M-1, M-2 y B-4) sobre D-73 D. No cambia ninguna regla de negocio.
+- **Decisión:**
+  1. **QA-P8-1:** todo cambio de `EstadoCuenta` (aprobar, rechazar, bloquear, desbloquear, reconsiderar) cambia el `SecurityStamp` en la misma transacción. Un enlace emitido antes ya no sirve. Las sesiones JWT no usan el `SecurityStamp`: siguen igual que con D-12.
+  2. **QA-P8-2 y B-1:** al usar el enlace se vuelve a comprobar que la cuenta esté ACTIVA y no sea de administrador; si no, el mismo 400 genérico, sin enumeración. `promover-admin` también cambia el `SecurityStamp` (la aprobación del asesor ya lo hace por el punto 1).
+  3. **M-1:** DataProtection con `SetApplicationName("Camion.Api")`, claves en `DataProtection:RutaClaves` (por defecto `C:\CAMION_claves`, nunca dentro del repositorio: la API no arranca) y, en Windows, `ProtectKeysWithDpapi()`.
+  4. **M-2:** fuera de Development, `Recuperacion:UrlPortal` debe empezar por `https://`; si no, la API no arranca, igual que con `Jwt:Key`.
+  5. **B-4:** todas las respuestas de la API llevan `Referrer-Policy: no-referrer`.
+- Documentado en `backend/GUIA-AUTENTICACION.md` §12. Pruebas: `P8QaTests` (QA-P8-1, QA-P8-2) y `P8D78Tests`.
+

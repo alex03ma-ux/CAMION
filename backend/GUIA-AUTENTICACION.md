@@ -295,4 +295,23 @@ Hay dos lugares:
 
 - El script SQL ya creó las tablas de Identity. **No** ejecutes `dotnet ef database update` ni crees una migración inicial que las vuelva a crear. Los cambios de esquema van en `database/migraciones/`, con respaldo previo y sección para revertir.
 - **Pendiente** (no existe todavía): confirmación de correo, cambio de contraseña, limitación de peticiones por IP, "Solicitar ser asesor" desde una cuenta de comprador, crear administradores desde la web y guardar el login y el logout en la base de datos.
-- **BLOQUEADO**: recuperar contraseña (HU-063) y avisar por correo al asesor aprobado, porque necesitan enviar correos y no hay servicio de correo aprobado (D-5).
+- Recuperar contraseña (HU-063) se resuelve sin correo con la recuperación asistida de P8 (D-73 D, sección 12). Avisar por correo al asesor aprobado sigue **BLOQUEADO** (D-5): no hay servicio de correo aprobado.
+
+## 12. Recuperación asistida de contraseña (P8, D-73 D, D-78)
+
+El administrador genera desde el panel un enlace de un solo uso que vence en 60 minutos (`POST /api/admin/usuarios/{id}/enlace-recuperacion`) y lo envía por WhatsApp después de confirmar la identidad de la persona. Ella define la contraseña nueva en `POST /api/auth/restablecer-contrasena`, que no requiere sesión, tiene un límite de peticiones por IP y cierra todas sus sesiones. El código no se guarda en la base de datos ni aparece en los registros. Contrato: `docs/criterios/P8-contrato-api.md` §11.
+
+El enlace deja de valer cuando se usa, cuando el administrador genera otro, cuando cambia el estado de la cuenta (aprobar, rechazar, bloquear, desbloquear o reconsiderar) y cuando cambian sus roles (`promover-admin`). Una cuenta que no está ACTIVA o que es de administrador no puede usarlo.
+
+Claves de configuración (ninguna es secreta; se ponen en `appsettings`, `dotnet user-secrets` o variables de entorno, por ejemplo `Recuperacion__UrlPortal`):
+
+| Clave | Para qué sirve | Valor por defecto | Regla |
+|---|---|---|---|
+| `Recuperacion:UrlPortal` | Inicio del enlace que se copia (la dirección del frontend) | `http://localhost:5173` | Fuera de `Development` debe empezar por `https://`; si no, la API **no arranca** y el mensaje dice qué clave revisar. |
+| `Recuperacion:LimiteVentana` / `Recuperacion:VentanaMinutos` | Intentos por IP en la ruta pública | 5 cada 15 minutos | Al superarlo, 429. |
+| `DataProtection:RutaClaves` | Carpeta donde ASP.NET Core guarda las claves que firman y cifran el código | `C:\CAMION_claves` | Debe estar **fuera del repositorio**; si apunta dentro, la API no arranca. En Windows las claves se cifran con DPAPI para la cuenta que ejecuta la API. El nombre de aplicación es fijo: `Camion.Api`. |
+
+Avisos:
+- **La carpeta de claves no se borra ni se copia al repositorio.** Si se borra o cambia, los enlaces pendientes dejan de valer (basta con generar uno nuevo). Las sesiones JWT no dependen de estas claves.
+- Con DPAPI, las claves solo las lee el mismo usuario de Windows en el mismo equipo. Si la API pasa a otro equipo o a otro usuario, se generan claves nuevas.
+- Todas las respuestas llevan `Referrer-Policy: no-referrer`.
