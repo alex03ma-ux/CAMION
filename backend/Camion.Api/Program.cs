@@ -38,11 +38,18 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
     options.Lockout.MaxFailedAccessAttempts = 5;
     options.Lockout.AllowedForNewUsers = true;
+    // P8 (D-73 D): el restablecimiento de contraseña usa el token propio de 60 minutos y un solo uso.
+    options.Tokens.PasswordResetTokenProvider = ProveedorTokenRecuperacion.Nombre;
 })
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<CamionDbContext>()
 .AddSignInManager()
-.AddDefaultTokenProviders();
+.AddDefaultTokenProviders()
+.AddTokenProvider<ProveedorTokenRecuperacion>(ProveedorTokenRecuperacion.Nombre);
+// P8 (D-73 D): DataProtection (incluido en ASP.NET Core) protege el token de recuperación; no se guarda en ninguna tabla.
+builder.Services.AddDataProtection();
+builder.Services.AddTransient<ProveedorTokenRecuperacion>();
+builder.Services.Configure<OpcionesRecuperacion>(builder.Configuration.GetSection("Recuperacion"));
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -110,16 +117,35 @@ builder.Services.AddRateLimiter(options =>
             AutoReplenishment = true
         });
     }
+    // P8 (D-73 D): cupo propio por IP para POST /api/auth/restablecer-contrasena (marca LimitePeticionesRecuperacion).
+    static RateLimitPartition<string> Recuperacion(HttpContext http)
+    {
+        if (http.GetEndpoint()?.Metadata.GetMetadata<LimitePeticionesRecuperacion>() is null)
+            return RateLimitPartition.GetNoLimiter("libre");
+        var o = http.RequestServices.GetRequiredService<IOptions<OpcionesRecuperacion>>().Value;
+        var ip = http.Connection.RemoteIpAddress?.ToString() ?? "sin-ip";
+        return RateLimitPartition.GetFixedWindowLimiter("recuperacion:" + ip, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = Math.Max(1, o.LimiteVentana),
+            Window = TimeSpan.FromMinutes(Math.Max(1, o.VentanaMinutos)),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        });
+    }
     options.GlobalLimiter = PartitionedRateLimiter.CreateChained(
         PartitionedRateLimiter.Create<HttpContext, string>(http => Ventana(http, "corta:",
             o => (o.LimiteVentanaCorta, TimeSpan.FromMinutes(Math.Max(1, o.VentanaCortaMinutos))))),
         PartitionedRateLimiter.Create<HttpContext, string>(http => Ventana(http, "dia:",
-            o => (o.LimiteDiario, TimeSpan.FromDays(1)))));
+            o => (o.LimiteDiario, TimeSpan.FromDays(1)))),
+        PartitionedRateLimiter.Create<HttpContext, string>(Recuperacion));
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.OnRejected = async (contexto, ct) =>
     {
         contexto.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-        await contexto.HttpContext.Response.WriteAsJsonAsync(new ErrorResponse(ReglasLeads.MensajeMuchas), ct);
+        var mensaje = contexto.HttpContext.GetEndpoint()?.Metadata.GetMetadata<LimitePeticionesRecuperacion>() is null
+            ? ReglasLeads.MensajeMuchas
+            : RecuperacionEndpoints.MensajeMuchos;
+        await contexto.HttpContext.Response.WriteAsJsonAsync(new ErrorResponse(mensaje), ct);
     };
 });
 // JSON malformado o con tipos incorrectos: el framework lanza BadHttpRequestException y se responde con el formato común.
@@ -234,9 +260,10 @@ app.MapVentasListaEndpoints();
 app.MapPagosEndpoints();
 app.MapParametrosEndpoints();
 app.MapPanelEndpoints();
-// P8: reportes, indicadores y actividad (HU-061, HU-075 a HU-080; D-68 a D-72).
+// P8: reportes, indicadores, actividad y recuperación asistida (HU-061, HU-063, HU-075 a HU-080; D-68 a D-73).
 app.MapReportesEndpoints();
 app.MapActividadEndpoints();
+app.MapRecuperacionEndpoints();
 
 app.Run();
 
