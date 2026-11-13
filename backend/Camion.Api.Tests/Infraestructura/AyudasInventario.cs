@@ -58,6 +58,8 @@ public sealed class InventarioApi : IDisposable
     // P4p: con un reloj, las peticiones pasan por una fábrica derivada que sustituye TimeProvider (la base es la misma).
     public RelojFijo? Reloj { get; }
     private readonly Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<Program>? _conReloj;
+    /// <summary>D-79: servicios del mismo host que atiende las peticiones (reloj y claves de DataProtection incluidos).</summary>
+    public IServiceProvider Servicios => (_conReloj ?? (Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<Program>)F).Services;
 
     private InventarioApi(RelojFijo? reloj = null, Action<Microsoft.AspNetCore.Hosting.IWebHostBuilder>? configurar = null)
     {
