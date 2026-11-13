@@ -55,9 +55,16 @@ public sealed class CamionApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("Contactos:LimiteVentanaCorta", "100000");
         builder.UseSetting("Contactos:LimiteDiario", "100000");
         builder.UseSetting("Contactos:LimiteTelefonoDia", "100000");
+        // P8 (D-73 D): mismo criterio para el cupo de restablecer la contraseña; P8RecuperacionTests lo baja.
+        builder.UseSetting("Recuperacion:LimiteVentana", "100000");
         // Además de la configuración, se sustituye el almacén por uno con la carpeta temporal (después de Program).
+        // P8: claves de DataProtection solo en memoria (no se escriben en el perfil del usuario).
         builder.ConfigureTestServices(services =>
-            services.AddSingleton<IAlmacenFotos>(new AlmacenFotosLocal(CarpetaMedia)));
+        {
+            services.AddSingleton<IAlmacenFotos>(new AlmacenFotosLocal(CarpetaMedia));
+            services.AddSingleton<Microsoft.AspNetCore.DataProtection.IDataProtectionProvider>(
+                new Microsoft.AspNetCore.DataProtection.EphemeralDataProtectionProvider());
+        });
 
         builder.ConfigureServices(services =>
         {
