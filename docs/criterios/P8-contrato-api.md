@@ -199,7 +199,7 @@ Filtros: `desde`, `hasta`, `asesorId`, `planId`, `medio` (`TRANSFERENCIA`, `CONS
 
 - `porEstado`: estado efectivo de hoy (VENCIDA incluye las ACTIVA/REACTIVADA ya vencidas, igual que `GET /api/admin/suscripciones`).
 - `asignadasEnPeriodo`, `renovadasEnPeriodo`, `cambiosDePlanEnPeriodo`: eventos ASIGNAR, RENOVAR y CAMBIAR_PLAN de `auditoria_eventos` en el período (el cambio de plan cuenta una vez). `vencidasEnPeriodo`: suscripciones cuyo fin de vigencia cae en el período, ya pasó y no fueron canceladas.
-- Pagos: fecha de referencia = fecha del pago; si no tiene (filas anteriores a P7), la fecha de registro, y se cuentan en `sinFechaPago` (CA-P8-32). Los anulados no suman (CA-P8-31). Los 4 medios y los 4 conceptos aparecen siempre; un pago antiguo sin medio o concepto suma en `SIN_DATO`.
+- Pagos: fecha de referencia = fecha del pago; si no tiene (filas anteriores a P7), la fecha de registro (o de creación), y se cuentan en `sinFechaPago` (CA-P8-32). **Solo suman los pagos `REGISTRADO`**, igual que el total de "Pagos" de P7 (CA-P8-09); los anulados se cuentan aparte (CA-P8-31) y las filas anteriores a P7 (`PENDIENTE`, `APROBADO`, `RECHAZADO` del script 002) solo aparecen en `filas` y en `sinFechaPago`. Los 4 medios y los 4 conceptos aparecen siempre; en las filas, un pago sin medio o concepto muestra `SIN_DATO`.
 - `FilaPago`: `{ id, fecha, sinFechaPago, suscripcionId, asesor: { id, nombre }, plan: { id, nombre }, medio, concepto, valorCop, estado }`. Sin referencia ni motivo de anulación.
 
 ## 7. Exportación CSV: `GET /api/admin/reportes/{tipo}/csv` (HU-079, D-71)
@@ -350,4 +350,4 @@ Anónima. Cuerpo `{ "codigo": "...", "password": "..." }`.
 
 ## Cambios al contrato
 
-(ninguno todavía)
+- 2026-11-13 (backend, al programar): §6, solo suman los pagos `REGISTRADO` (antes decía "no anulados"), para que el total coincida con `GET /api/admin/suscripciones/{id}/pagos` de P7; los pagos del script 002 no suman. §10, en el evento RESERVAR del vehículo `motivo` va siempre `null`: ese motivo es la nota de reserva de D-28, que puede nombrar al comprador.
