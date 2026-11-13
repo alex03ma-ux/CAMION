@@ -192,6 +192,11 @@ public static class AdminUsuariosEndpoints
                     // 1. Estado de la cuenta y, si es asesor, del perfil (nombres de D-10).
                     user.EstadoCuenta = accion.Hacia;
                     user.ConcurrencyStamp = Guid.NewGuid().ToString();
+                    // D-78 (QA-P8-1): todo cambio de estado (aprobar, rechazar, bloquear, desbloquear, reconsiderar) cambia el
+                    // SecurityStamp en la misma transacción, así un enlace de recuperación anterior deja de valer. Equivale a
+                    // UserManager.UpdateSecurityStampAsync; el JWT no usa el SecurityStamp, así que las sesiones siguen
+                    // igual que con D-12 (solo rechazar y bloquear las cierran, con SessionVersion).
+                    user.SecurityStamp = Guid.NewGuid().ToString("N").ToUpperInvariant();
                     // 2. Rechazar y bloquear cierran la sesión en todos los equipos (D-12).
                     if (accion.CierraSesion) user.SessionVersion++;
                     if (perfil is not null)

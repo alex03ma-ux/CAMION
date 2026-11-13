@@ -71,7 +71,9 @@ public static class RecuperacionEndpoints
             if (errores.Count > 0) return Validacion(errores);
 
             var user = await users.FindByIdAsync(usuarioId!);
-            if (user is null || user.EstadoCuenta != EstadosCuenta.Activa) return CodigoNoValido();
+            // D-78 (QA-P8-2, B-1): al usarlo se vuelve a exigir cuenta ACTIVA y que no sea administrador; mismo 400 genérico.
+            if (user is null || user.EstadoCuenta != EstadosCuenta.Activa || await users.IsInRoleAsync(user, Roles.Administrador))
+                return CodigoNoValido();
 
             await using var tx = await db.Database.BeginTransactionAsync();
             var reset = await users.ResetPasswordAsync(user, codigo, password);
