@@ -498,6 +498,8 @@ La API de esta rama **no debe arrancar contra `camion_ventas` sin la migración 
 
 ## Actualización P7 — 2026-11-13 — commit 8704e52 (rama feature/p7-ventas-admin)
 
+> **Corrección (documentador, 2026-11-13).** Esta sección se escribió antes de aplicar la migración y de unir la rama. Estado vigente: la migración `016_p7_pagos` **está APLICADA** en `camion_ventas` (2026-11-12, con respaldo previo `C:\Respaldo_CAMION\camion_ventas_antes_016_p7_20261112_1749.sql`; ver BITACORA, P7), D-67 se añadió después (sin migración) y **P7 está unido a `main` con la [PR #14](https://github.com/alex03ma-ux/CAMION/pull/14)** (`ab71aa4`). La prueba manual de la responsable fue PROBADO EN PARTE (2026-11-13). Las menciones de "NO APLICADA", "Sin publicar" y "prueba manual PENDIENTE" de abajo quedan como registro histórico.
+
 Redactado por el documentador con lo que verificaron los demás agentes. Fuentes: `docs/criterios/criterios-P7-ventas-admin.md`, `P7-contrato-api.md` (con "Cambios al contrato"), `P7-evidencia.md`, `docs/coordinacion/REVISION-SEGURIDAD-P7.md`, D-61 a D-66 y el historial de la rama. **No es una auditoría nueva del `auditor-codigo`.** El documentador no tuvo terminal: la lista de commits sale del registro local de Git (`.git/logs/HEAD`), no de `git log origin/main..HEAD`.
 
 - **Rama:** `feature/p7-ventas-admin`, creada desde `main` (`35ad702`, con P0 a P6). 24 commits hasta `8704e52`. Sin publicar.
@@ -551,4 +553,50 @@ Cobertura (QA, antes de las correcciones): 53 de 59 criterios con prueba automá
 
 ### P7.4 Riesgo de despliegue
 
-La API de esta rama **no debe arrancar contra `camion_ventas` sin la migración 016**: mapea las columnas nuevas de `pagos` y fallaría al leer o escribir pagos.
+La API de esta rama **no debe arrancar contra `camion_ventas` sin la migración 016**: mapea las columnas nuevas de `pagos` y fallaría al leer o escribir pagos. (Riesgo cerrado: la 016 está aplicada desde el 2026-11-12.)
+
+## Actualización P8 — 2026-11-13 — commit 4211b41 (rama feature/p8-reportes)
+
+Redactado por el documentador con lo que verificaron los demás agentes. Fuentes: `docs/criterios/criterios-P8-reportes.md`, `P8-contrato-api.md`, `P8-evidencia.md`, `docs/coordinacion/REVISION-SEGURIDAD-P8.md`, D-68 a D-78 y `backend/GUIA-AUTENTICACION.md` §12. **No es una auditoría nueva del `auditor-codigo`.** El documentador no tuvo terminal: la lista de commits sale del registro local de Git (`.git/logs/refs/heads/feature/p8-reportes`), no de `git log origin/main..HEAD`.
+
+- **Rama:** `feature/p8-reportes`, creada desde `origin/main` (`ab71aa4`, con P0 a P7). 19 commits hasta `4211b41`. Publicada; según el registro local, `origin/feature/p8-reportes` está en `14cc073` y los 6 commits siguientes (evidencia de QA, D-78 y sus pruebas y documentación) no constan como subidos. PR por abrir.
+- **HU:** HU-061 (consulta de la auditoría), HU-063 (recuperar contraseña, asistida), HU-075 a HU-080 (reportes, exportación e indicadores).
+- **Decisiones:** D-68 A, D-69 A/A, D-70 A, D-71 (CSV; b A), D-72 A/A, D-73 D, D-74 A, D-75 A, D-76 A y D-77 A (responsable, "Apruebo todas"); D-78 (coordinador, técnica). **D-79 PENDIENTE** (recuperación de un administrador).
+- **Sin migración.** No hay tablas nuevas; el token de recuperación no se guarda en la base.
+
+### P8.1 Qué está IMPLEMENTADO y PROBADO (pruebas automáticas)
+
+- **Reportes del administrador (D-68 A)** en "Reportes" (`#/cuenta/reportes`): Vehículos y publicaciones, Solicitudes, Créditos, Ventas, y Suscripciones y pagos. Filtros de período (por defecto el mes en curso, máximo 366 días) y los propios de cada reporte. Sin datos personales de clientes (D-71 b A).
+- **Exportación CSV (D-71):** "Descargar CSV" con los mismos filtros; UTF-8 con BOM, separador `;`, celdas peligrosas con apóstrofo, máximo 10.000 filas, `Cache-Control: no-store`; cada exportación se audita (`Reporte/EXPORTAR`). Solo el administrador.
+- **Indicadores del administrador (D-69 A/A)** en "Indicadores" (`#/cuenta/indicadores`): cifras del período con comparación con el período anterior, valores en pesos y hasta 4 gráficos de barras sin librería, cada uno con su tabla. El panel "Inicio" sigue sin dinero y enlaza "Ver indicadores".
+- **"Mis indicadores" del asesor (D-70 A)** en `#/mis-indicadores`: solo lo suyo, en pantalla y sin exportar; ignora `asesorId`.
+- **Actividad (D-72 A/A):** "Ver actividad" en el detalle de un vehículo y "Actividad" en cada suscripción; solo el administrador, solo lectura, paginada. Rutas `/actividad`, sin "auditoria" ni "historial".
+- **Recuperación asistida (D-73 D, D-78):** en "Usuarios", "Generar enlace de recuperación" para cuentas ACTIVAS que no son de administrador; el enlace vence en 60 minutos, sirve una vez, se copia o se envía por WhatsApp; la pantalla pública `#/restablecer-contrasena` pide la contraseña nueva y cierra todas las sesiones (D-12). Auditado sin el enlace ni el código. El inicio de sesión mantiene "¿Olvidaste tu contraseña? Escríbenos por WhatsApp".
+- **D-78:** el enlace deja de valer al cambiar el estado de la cuenta o sus roles; al usarlo se rechazan cuentas no activas y de administrador; claves de DataProtection en `DataProtection:RutaClaves` (por defecto `C:\CAMION_claves`, fuera del repositorio, DPAPI en Windows); `Recuperacion:UrlPortal` con `https://` obligatorio fuera de Development; `Referrer-Policy: no-referrer` en todas las respuestas.
+
+### P8.2 Pruebas ejecutadas
+
+| Comando | Resultado |
+|---|---|
+| `dotnet test` (`backend/Camion.Api.Tests`), tras D-78 | 1328/1328 |
+| `dotnet test`, corridas de QA antes de D-78 | 1314 pasan y 2 fallan (QA-P8-1 y QA-P8-2), ya corregidos por D-78 |
+| `npx vitest run` | 750/750 |
+| `npx tsc -b` | Correcto |
+| `npx tsc -p tsconfig.test.json --noEmit` | Correcto |
+| `npm run build` | Correcto (aviso de Vite por un paquete de más de 500 kB, O-4, no bloqueante) |
+
+Cobertura (QA, antes de D-78): 64 de 75 criterios con prueba automática que pasa; 63, 64, 70, 71 y 74 son manuales o de revisión; 66 no aplica; 75 era la guía, ahora DOCUMENTADO en `docs/manual/P8-reportes.md`. Las pruebas de API usan SQLite en memoria y no tocan `camion_ventas`. Detalle en `P8-evidencia.md`.
+
+### P8.3 Qué NO está probado
+
+- **E2E:** NO EJECUTADO (Playwright no está instalado).
+- **Prueba manual de la responsable (CA-P8-74):** NO EJECUTADA. Pasos en `docs/manual/P8-reportes.md`.
+- **Revisión a 375 px (móvil):** NO EJECUTADA.
+- **Rendimiento con 5.000 solicitudes y 1.000 vehículos en MariaDB (CA-P8-70):** sin medición.
+- **Abrir el CSV en Excel en español (CA-P8-43, parte manual):** NO EJECUTADO.
+
+### P8.4 Riesgos y pendientes
+
+- Revisión de seguridad: **CON OBSERVACIONES**. M-1, M-2, B-1 y B-4 corregidos por D-78. **B-2** (límite de 10.000 filas comprobado después de cargar todo; paginación en memoria) y **B-3** (detalles del escape de fórmulas del CSV) siguen abiertos.
+- Al arrancar por primera vez la API con D-78 se crea la carpeta de claves (`C:\CAMION_claves` por defecto). No debe borrarse ni subirse a Git. Para producción hay que llevarla al servidor (INF-2).
+- Un administrador que olvida su contraseña sigue sin salida dentro del sistema: D-79 PENDIENTE.

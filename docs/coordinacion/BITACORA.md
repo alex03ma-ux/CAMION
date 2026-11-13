@@ -594,3 +594,44 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
 - La responsable creó la [PR #14](https://github.com/alex03ma-ux/CAMION/pull/14) y la unió a `main` (merge 2026-11-12 23:52 UTC, `ab71aa4`). `main` contiene P0 a P7.
 - P8 (reportes, marketing e integraciones) arranca en `feature/p8-reportes`, desde `main` actualizado.
 
+## 2026-11-13 — P8 Reportes, indicadores, actividad y recuperación asistida (rama `feature/p8-reportes`, creada desde `origin/main` en `ab71aa4`)
+- HU-061 (consulta de la auditoría), HU-063 (recuperar contraseña), HU-075 a HU-080 (reportes, exportación e indicadores); RN-RE-001 a 006, RN-SE-003/004/006, RN-US-006; D-12, D-39, D-46, D-57, D-58, D-61 B, D-62 d, D-64 a, D-68 a D-78.
+- Criterios en `docs/criterios/criterios-P8-reportes.md` (CA-P8-01 a 75), contrato en `P8-contrato-api.md`, evidencia en `P8-evidencia.md`.
+- **Decisiones TOMADAS (2026-11-13):**
+  - D-68 a D-77 (responsable, "Apruebo todas"): cinco reportes (D-68 A); hasta 4 gráficos sin librería e indicadores con pesos en una sección aparte (D-69 A/A); "Mis indicadores" del asesor sin exportar (D-70 A); CSV sin datos personales y auditado (D-71); actividad de vehículo y suscripción solo para el administrador (D-72 A/A); recuperación asistida ahora y correo cuando haya dominio propio (D-73 D, luego C); sin WhatsApp automático, promociones, analítica ni integraciones de redes (D-74 A, D-75 A, D-76 A, D-77 A).
+  - D-78 (coordinador, técnica): correcciones de seguridad de la recuperación asistida (QA-P8-1, QA-P8-2, M-1, M-2, B-1, B-4).
+- **Decisión nueva PENDIENTE:** D-79, ¿cómo recupera su contraseña un administrador? Recomendación del coordinador: A (comando local en el equipo del servidor, como `promover-admin`) ahora, con un segundo administrador de respaldo cuando lo haya.
+- **IMPLEMENTADO y PROBADO (pruebas automáticas; sin prueba con la API real):**
+  - "Reportes" del administrador: Vehículos y publicaciones, Solicitudes, Créditos, Ventas, y Suscripciones y pagos, con filtros y "Descargar CSV";
+  - "Indicadores" del administrador con comparación con el período anterior, pesos y 4 gráficos con su tabla; "Ver indicadores" desde Inicio;
+  - "Mis indicadores" del asesor, solo lo suyo y sin exportar;
+  - "Actividad" de un vehículo y de una suscripción, de solo lectura;
+  - recuperación asistida: "Generar enlace de recuperación" en Usuarios, envío por WhatsApp, pantalla `#/restablecer-contrasena`; vence en 60 minutos, sirve una vez y cierra las sesiones.
+- **Sin migración.** No se tocó `camion_ventas`.
+- **Commits** (19, de `ab71aa4` a `4211b41`; tomados del registro local de Git porque el documentador no tuvo terminal):
+  - `62000dd` P7 aprobado y P8 en curso; `d45ca1b` criterios y D-68 a D-77 pendientes; `89676f7` D-68 a D-77 tomadas; `a6cb6b7` contrato de la API;
+  - `9b29667` reportes, indicadores, Mis indicadores y CSV; `4c7f79d` actividad; `cc186ae` recuperación asistida; `1262f4c` pruebas de la API; `585b340` cambios al contrato;
+  - `ebc5040` reportes, CSV e indicadores en el frontend; `38fcbf1` actividad en el frontend; `dfd0917` enlace y pantalla de restablecer; `14cc073` pruebas de pantallas;
+  - `45c36ac` revisión de seguridad; `26f01bb` y `09f3f77` pruebas de QA; `fd4ee5c` evidencia;
+  - `55c3acb` el enlace deja de valer al cambiar estado o roles y no sirve a administradores (QA-P8-1, QA-P8-2, B-1); `1157b49` DataProtection fuera del repositorio con DPAPI, `UrlPortal` https y `Referrer-Policy` (M-1, M-2, B-4); `d0a962b` pruebas de D-78; `4211b41` D-78 y guía.
+- **Pausa del frontend.** El agente de frontend se detuvo a petición de la responsable el 2026-11-12. Hoy se retomó desde lo que había en el disco y completó las pantallas y sus pruebas.
+- **Pruebas ejecutadas:**
+  - `dotnet test`: 1328/1328, tras D-78. Antes, QA vio 2 fallos (QA-P8-1 y QA-P8-2: 1314 de 1316 en varias corridas), corregidos por D-78.
+  - `npx vitest run`: 750/750.
+  - `npx tsc -b`, `npx tsc -p tsconfig.test.json --noEmit` y `npm run build`: correctos.
+  - Las pruebas de API usan SQLite en memoria y no tocan `camion_ventas`.
+  - QA anotó que Smart App Control a veces bloquea la DLL de pruebas y `dotnet test` termina con 0 pruebas y código 0 (O-3): revisar siempre el recuento.
+- **NO EJECUTADO:** E2E (Playwright no instalado), la prueba manual de la responsable (CA-P8-74) y la revisión a 375 px (móvil).
+- **Revisión de seguridad** (`REVISION-SEGURIDAD-P8.md`): CON OBSERVACIONES, sin hallazgos críticos ni altos.
+  - M-1 (claves de DataProtection), M-2 (`UrlPortal` con https), B-1 (cuenta de administrador al usar el enlace) y B-4 (`Referrer-Policy`): **corregidos** por D-78.
+  - B-2 (límite de filas del CSV y paginación en memoria) y B-3 (escape de fórmulas): **abiertos**, pasan a INF-2.
+  - Sin secretos ni dependencias nuevas; 0 vulnerabilidades en npm; MySqlConnector 2.3.7 sigue en INF-2.
+- **DOCUMENTADO:** criterios con D-68 a D-77 confirmadas y D-78; D-79 en `DECISIONES.md`; corrección de "Actualización P7" y "Actualización P8" en `ESTADO-REAL.md`; backlog (P8, P8b, INF-2); README; guía `docs/manual/P8-reportes.md` (CA-P8-75).
+- **Aviso de operación.** Al arrancar la API por primera vez con D-78 se crean las claves en `C:\CAMION_claves`. Esa carpeta no se borra ni se sube a Git.
+- **Pendientes:**
+  - la prueba manual de la responsable (pasos en `docs/manual/P8-reportes.md`) y la revisión a 375 px;
+  - D-79;
+  - INF-2: claves en el servidor de producción, `UrlPortal` con https, B-2 y B-3;
+  - la revisión legal (D-44).
+- PR: por abrir contra `main`, sin merge. Según el registro local, la rama remota está en `14cc073`; faltan por subir los 6 commits posteriores.
+

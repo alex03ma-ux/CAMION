@@ -989,3 +989,15 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
   5. **B-4:** todas las respuestas de la API llevan `Referrer-Policy: no-referrer`.
 - Documentado en `backend/GUIA-AUTENTICACION.md` §12. Pruebas: `P8QaTests` (QA-P8-1, QA-P8-2) y `P8D78Tests`.
 
+## D-79 — ¿Cómo recupera su contraseña un administrador? · PENDIENTE (2026-11-13)
+- Contexto: con D-73 D y D-78, la recuperación asistida no sirve para cuentas de administrador: ningún administrador puede generarle el enlace a otro (mismo criterio que P2, "No se puede modificar una cuenta de administrador"), y al usar el enlace se rechaza la cuenta de administrador. No hay servicio de correo (D-73). Hoy un administrador que olvida su contraseña no tiene salida dentro del sistema y necesita apoyo técnico (`P8-contrato-api.md`, "Pendiente" 2).
+- Opciones:
+  - A) **Un comando local en el equipo del servidor**, como `promover-admin` (D-13), que genere el enlace de un solo uso para un administrador.
+    - Impacto: requiere acceso al equipo donde corre la API; no abre ninguna ruta nueva en la API; entrega pequeña.
+  - B) **Permitir que otro administrador genere el enlace**, con un segundo administrador de respaldo.
+    - Impacto: cambia el criterio de P2 para este caso; exige que exista un segundo administrador; un administrador podría tomar la cuenta de otro (queda auditado).
+  - C) **Esperar al correo transaccional** (D-73 C).
+    - Impacto: sin trabajo ahora; mientras tanto, solo con apoyo técnico.
+- Recomendación del coordinador: **A ahora**, y un segundo administrador de respaldo cuando lo haya.
+- Bloquea: la recuperación de contraseña de las cuentas de administrador. No bloquea el resto de P8.
+

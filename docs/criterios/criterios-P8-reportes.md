@@ -2,7 +2,8 @@
 
 Ítem del backlog: **P8 "Reportes, marketing e integraciones"**. Criterio de salida (BACKLOG.md y minuta §11): "Indicadores e integraciones aprobadas; pruebas y operación".
 Rama: `feature/p8-reportes`, creada desde `main` (con P0 a P7, PR #14).
-Autor: analista funcional. Fecha: 2026-11-13. Estado del documento: **borrador con decisiones abiertas D-68 a D-77** (PENDIENTE). Cada criterio que depende de una de ellas está escrito con la opción recomendada y marcado **PENDIENTE D-n**.
+Autor: analista funcional. Fecha: 2026-11-13. Estado del documento: **decisiones D-68 a D-77 TOMADAS** por la responsable el 2026-11-13 ("Apruebo todas", con la opción recomendada) y **D-78** tomada por el coordinador (técnica). Los criterios que estaban marcados PENDIENTE D-n pasan a **CONFIRMADO (D-n opción)**; el texto de cada criterio no cambia porque ya estaba escrito con la opción recomendada. Sigue abierta **D-79** (recuperación de un administrador), que no cambia ningún criterio de esta lista.
+Actualizado por el documentador el 2026-11-13.
 
 Fuentes leídas:
 - `docs/requisitos/requisitos-funcionales-v3.0.md`: §1.5, §4.1 ("Consultar reportes"), §5.3 (Notificaciones: correo, WhatsApp), matriz §7 (HU-052 a HU-055, HU-061 a HU-063, HU-070 a HU-080, HU-085 a HU-087), §9.8 (RN-NO-001 a 005), §9.9 (RN-RE-001 a 006), §9.10 (RN-PA-005 a 007), §14 (integraciones), §15 y §16.
@@ -12,14 +13,14 @@ Fuentes leídas:
 - `docs/criterios/criterios-P7-ventas-admin.md`.
 - Código en `main` (lectura directa del analista, **no** es una auditoría del `auditor-codigo`): `Endpoints/PanelEndpoints.cs`, `Endpoints/VentasListaEndpoints.cs`, `Auth/Auditoria.cs`, `Models/AuditoriaEvento.cs`, `Models/Lead.cs`, `Models/Publicacion.cs`, `Models/Pago.cs`, `Models/Suscripcion.cs`, `Models/VentaVehiculo.cs`, `Models/Vehiculo.cs`, `Camion.Api.csproj`, `Camion.Api.Tests/SesionTests.cs` (inventario de rutas), `frontend/src/components/AdminInicio.tsx` y `frontend/package.json`.
 
-Aviso sobre `ESTADO-REAL.md`: la sección P7.1 dice que la migración 016 está "NO APLICADA", pero el commit `f35b0bd` y D-67 dicen que se aplicó con respaldo. Se toma como vigente lo segundo; conviene que el documentador corrija la sección.
+Aviso sobre `ESTADO-REAL.md`: la sección P7.1 decía que la migración 016 estaba "NO APLICADA", pero el commit `f35b0bd` y D-67 dicen que se aplicó con respaldo. Se toma como vigente lo segundo. **Corregido** por el documentador el 2026-11-13 ("Actualización P7" de `ESTADO-REAL.md`).
 
 Numeración: matriz de 87 HU (D-1). En ella HU-063 = Recuperar contraseña, HU-070 = Configurar notificaciones, HU-071 = Notificación nuevo lead, HU-072 = Notificación solicitud de crédito, HU-073 = Notificación vencimiento publicación, HU-074 = Notificación vencimiento suscripción, HU-075 a HU-080 = Reportes, HU-087 = Configuración comercial (promociones).
 
 Marcas:
 - **CONFIRMADO**: sale literalmente de una HU, RN, de la minuta o de una decisión TOMADA.
 - **PROPUESTO**: lo infiere el analista; necesita visto bueno del coordinador o de la responsable.
-- **PENDIENTE D-n**: depende de una decisión abierta; escrito con la opción recomendada.
+- **PENDIENTE D-n**: dependía de una decisión abierta. Ya no queda ninguno: D-68 a D-77 están TOMADAS y sus criterios figuran como CONFIRMADO (D-n opción).
 - **EXISTE**: ya está en `main`; en P8 queda como regresión.
 
 Cómo se prueba: API = prueba de integración; COMP = prueba de componente del frontend; MAN = prueba manual de la responsable.
@@ -65,7 +66,7 @@ Rutas, nombres de campos y textos son orientativos; el contrato lo fija el arqui
 | HU-061 | Registrar auditoría (consulta) | Registro EXISTE; consulta NO INICIADA | P8 mínimo (D-72) |
 | HU-087 | Configuración comercial (promociones) | NO INICIADO | Fuera del mínimo (D-75) |
 | HU-052 a HU-055 | Contenido y marketing | NO INICIADO (salvo portada) | Fuera del mínimo (D-75) |
-| HU-063 | Recuperar contraseña | BLOQUEADO (D-5) | Según D-73 |
+| HU-063 | Recuperar contraseña | BLOQUEADO (D-5) al escribir estos criterios; con D-73 D pasa a recuperación asistida por el administrador (IMPLEMENTADO y PROBADO en la rama, ver `P8-evidencia.md`) | P8 (D-73 D, D-78); administradores: D-79 PENDIENTE |
 | HU-070 | Configurar notificaciones | NO INICIADO | Según D-73/D-74 |
 | HU-071 a HU-074 | Notificaciones | PARCIAL (solo dentro del panel: D-48, P6, D-64 b) | Externas según D-73/D-74 |
 | HU-085, HU-086 | Información corporativa, textos legales | BLOQUEADO (D-44) | Cuando se libere D-44 |
@@ -130,13 +131,13 @@ Convenciones PROPUESTAS para todo P8:
 
 | ID | Criterio (Dado / Cuando / Entonces) | Marca | Prueba |
 |---|---|---|---|
-| CA-P8-01 | **Dado** un administrador con sesión, **cuando** abre "Reportes" (`#/cuenta/reportes`), **entonces** ve la lista de reportes de D-68 (Vehículos y publicaciones, Solicitudes, Créditos, Ventas, Suscripciones y pagos) y puede elegir uno, fijar filtros y ver el resultado en pantalla. | CONFIRMADO (v3.0 §4.1 "Consultar reportes") + PENDIENTE D-68 (lista) | COMP |
+| CA-P8-01 | **Dado** un administrador con sesión, **cuando** abre "Reportes" (`#/cuenta/reportes`), **entonces** ve la lista de reportes de D-68 (Vehículos y publicaciones, Solicitudes, Créditos, Ventas, Suscripciones y pagos) y puede elegir uno, fijar filtros y ver el resultado en pantalla. | CONFIRMADO (v3.0 §4.1 "Consultar reportes") + CONFIRMADO (D-68 A, lista) | COMP |
 | CA-P8-02 | **Dado** un reporte sin filtros, **cuando** se consulta, **entonces** usa el mes en curso y la pantalla dice el período aplicado ("Del 2026-11-01 al 2026-11-30"). | PROPUESTO | API, COMP |
 | CA-P8-03 | **Dado** filtros válidos (`desde`, `hasta`, `asesorId`, `categoria` y los propios del reporte), **cuando** se consulta, **entonces** 200 y solo cuenta lo que cumple todos los filtros a la vez. | CONFIRMADO (RN-RE-002 a 004 "Filtrable") + PROPUESTO (filtros concretos, D-68) | API |
 | CA-P8-04 | **Dado** un filtro inválido (fecha mal escrita, `desde` posterior a `hasta`, rango de más de 366 días, asesor, categoría, origen, estado o resultado que no existen), **cuando** se consulta, **entonces** 400 `{ error, errores }` con el campo y un mensaje en español, p. ej. "La fecha inicial no puede ser posterior a la final." o "El período no puede superar 366 días.", y la pantalla lo muestra junto al campo. | PROPUESTO (mismo patrón que CA-P7-04) | API, COMP |
 | CA-P8-05 | **Dado** un período sin datos, **cuando** se consulta, **entonces** 200 con ceros (no 404) y la pantalla dice "No hay datos para estos filtros." con el botón "Limpiar filtros". | PROPUESTO | API, COMP |
 | CA-P8-06 | **Dado** un asesor o comprador con sesión, **cuando** llama a cualquier ruta de reportes del administrador, **entonces** 403 "No tienes permiso para realizar esta acción."; **sin sesión**, 401; la opción "Reportes" no aparece en su navegación. | CONFIRMADO (v3.0 §7 actor Administrador; RN-SE-006; D-3) | API, COMP |
-| CA-P8-07 | **Dado** cualquier reporte del administrador, **entonces** no incluye nombre, teléfono, correo ni mensaje de ningún cliente o visitante; solo agregados y, en las filas, identificadores, fechas, estados, origen, resultado, vehículo y asesor responsable. | CONFIRMADO (RN-SE-004) + PENDIENTE D-71 (b) A | API |
+| CA-P8-07 | **Dado** cualquier reporte del administrador, **entonces** no incluye nombre, teléfono, correo ni mensaje de ningún cliente o visitante; solo agregados y, en las filas, identificadores, fechas, estados, origen, resultado, vehículo y asesor responsable. | CONFIRMADO (RN-SE-004) + CONFIRMADO (D-71 b A) | API |
 | CA-P8-08 | **Dado** cualquier reporte, **entonces** es de solo lectura: no hay rutas de escritura y consultarlo no cambia ningún dato. Excepción: consultar contactos ejecuta antes el barrido de D-46, igual que `GET /api/admin/panel`, para que las cifras coincidan. | PROPUESTO | API |
 | CA-P8-09 | **Dado** el mismo filtro, **cuando** se compara una cifra del reporte con la lista operativa correspondiente (inventario, bandeja de contactos, `GET /api/ventas`, suscripciones), **entonces** coinciden. | PROPUESTO (coherencia, como CA-P7-46) | API |
 | CA-P8-10 | **Dado** un token de sesión cerrada o expirada, **cuando** se consulta un reporte, **entonces** 401 y el frontend vuelve al inicio de sesión. | CONFIRMADO (D-12) | API, COMP |
@@ -146,10 +147,10 @@ Convenciones PROPUESTAS para todo P8:
 | ID | Criterio | Marca | Prueba |
 |---|---|---|---|
 | CA-P8-11 | **Dado** el reporte de vehículos, **cuando** se consulta, **entonces** muestra el inventario actual por estado (Activo, Reservado, Inactivo, Vendido; D-11, D-4) y por categoría (Carro, Camión, Carrocería, Maquinaria; D-17), y los vehículos registrados en el período. | CONFIRMADO (HU-076 "Estadísticas de vehículos") + PROPUESTO (cortes) | API |
-| CA-P8-12 | **Dado** el filtro `asesorId`, `categoria` o `departamentoId`/`municipioId` (DIVIPOLA, D-29), **cuando** se consulta, **entonces** las cifras se limitan a ese corte. | PENDIENTE D-68 | API |
+| CA-P8-12 | **Dado** el filtro `asesorId`, `categoria` o `departamentoId`/`municipioId` (DIVIPOLA, D-29), **cuando** se consulta, **entonces** las cifras se limitan a ese corte. | CONFIRMADO (D-68 A) | API |
 | CA-P8-13 | **Dado** el reporte, **entonces** muestra las publicaciones por estado de publicación, cuántas están visibles en el portal hoy (misma regla que `ConsultasCatalogo.Visibles`, D-41) y cuántas están destacadas. | PROPUESTO (M13 "publicaciones") | API |
 | CA-P8-14 | **Dado** publicaciones ELIMINADAS (borrado lógico, D-40), **entonces** se cuentan aparte y no suman en "visibles". | PROPUESTO | API |
-| CA-P8-15 | **Dado** el reporte, **entonces** muestra los 10 vehículos con más contactos en el período (título del vehículo y número de contactos), sin datos de quienes contactaron. | PENDIENTE D-68 | API |
+| CA-P8-15 | **Dado** el reporte, **entonces** muestra los 10 vehículos con más contactos en el período (título del vehículo y número de contactos), sin datos de quienes contactaron. | CONFIRMADO (D-68 A) | API |
 | CA-P8-16 | **Dado** un vehículo DEMO o anterior a P4b sin fecha de publicación, **entonces** se cuenta en el inventario por estado y no rompe el reporte (sin 500). | PROPUESTO | API |
 
 ### 5.3 Solicitudes: contactos, avisos, créditos y búsquedas (HU-077, RN-RE-003; D-39, D-57)
@@ -159,8 +160,8 @@ Convenciones PROPUESTAS para todo P8:
 | CA-P8-17 | **Dado** el reporte de solicitudes, **cuando** se consulta, **entonces** muestra, para el período (fecha de creación), cuántas se recibieron por **origen** (Contacto de vehículo, "Vende tu camión", Seguro todo riesgo, Crédito, Búsqueda), cuántas siguen abiertas y cuántas se cerraron. | CONFIRMADO (HU-077 "Estadísticas de leads") + PROPUESTO (cortes) | API |
 | CA-P8-18 | **Dado** las solicitudes cerradas en el período (fecha de cierre), **entonces** se muestran por **resultado de cierre**, con los nombres que ve el administrador ("Venta concretada", "Solicitud atendida", "Remitido a entidad financiera", "Encontró vehículo"…), cada resultado solo en los orígenes donde es válido (`Lead.ResultadosDe`). | CONFIRMADO (CA-P5-39 "sirven al reporte HU-077"; D-57 b) | API |
 | CA-P8-19 | **Dado** los contactos de vehículo, **entonces** el reporte separa los atendidos por Administración y por cada asesor (responsable actual) y cuántos fueron reasignados a mano o pasaron solos a Administración por el barrido de D-46. | PROPUESTO (D-7, D-46) | API |
-| CA-P8-20 | **Dado** los filtros `origen`, `estado` (ABIERTO/CERRADO), `resultado` y `responsable` (ADMINISTRACION o un asesor), **cuando** se combinan, **entonces** las cifras se limitan a todos a la vez; un resultado que no corresponde al origen elegido da 400. | PENDIENTE D-68 | API |
-| CA-P8-21 | **Dado** el reporte, **entonces** muestra el tiempo medio, en días, entre la creación y el primer cierre de las solicitudes cerradas en el período, por origen. | PENDIENTE D-69 (b) | API |
+| CA-P8-20 | **Dado** los filtros `origen`, `estado` (ABIERTO/CERRADO), `resultado` y `responsable` (ADMINISTRACION o un asesor), **cuando** se combinan, **entonces** las cifras se limitan a todos a la vez; un resultado que no corresponde al origen elegido da 400. | CONFIRMADO (D-68 A) | API |
+| CA-P8-21 | **Dado** el reporte, **entonces** muestra el tiempo medio, en días, entre la creación y el primer cierre de las solicitudes cerradas en el período, por origen. | CONFIRMADO (D-69 b A) | API |
 | CA-P8-22 | **Dado** una solicitud reabierta y cerrada de nuevo, **entonces** cuenta una sola vez, con su último resultado. | PROPUESTO | API |
 | CA-P8-23 | **Dado** el reporte, **entonces** nunca muestra nombre, teléfono, correo, mensaje, notas ni observación de cierre (texto libre que puede tener datos personales). | CONFIRMADO (RN-SE-004; CA-P5-59) + PROPUESTO (observación) | API |
 
@@ -177,10 +178,10 @@ Convenciones PROPUESTAS para todo P8:
 
 | ID | Criterio | Marca | Prueba |
 |---|---|---|---|
-| CA-P8-28 | **Dado** el reporte de ventas, **cuando** se consulta, **entonces** muestra las ventas **vigentes** del período (fecha de venta) por origen (Portal web, Contacto directo del asesor, Referido, Otro; D-39), por categoría y por asesor, con cantidad y valor vendido (suma del precio final). | CONFIRMADO (D-39 "sirve para los reportes de P8") + PENDIENTE D-69 (b) (valor) | API |
+| CA-P8-28 | **Dado** el reporte de ventas, **cuando** se consulta, **entonces** muestra las ventas **vigentes** del período (fecha de venta) por origen (Portal web, Contacto directo del asesor, Referido, Otro; D-39), por categoría y por asesor, con cantidad y valor vendido (suma del precio final). | CONFIRMADO (D-39 "sirve para los reportes de P8") + CONFIRMADO (D-69 b A, valor) | API |
 | CA-P8-29 | **Dado** ventas revertidas en el período, **entonces** se cuentan aparte ("Revertidas: N") y no suman en cantidad ni valor. | PROPUESTO (D-62) | API |
-| CA-P8-30 | **Dado** el reporte de suscripciones, **entonces** muestra las suscripciones por estado (Activa, Suspendida, Vencida, Cancelada…), las asignadas, renovadas y vencidas en el período, y por plan. | PENDIENTE D-68 | API |
-| CA-P8-31 | **Dado** los pagos registrados en el período (fecha de pago), **entonces** se muestra el total recibido por medio (Transferencia, Consignación, Efectivo, Otro), por plan y por concepto, sin contar los anulados; los anulados se cuentan aparte. | CONFIRMADO (D-61 B: "no cuenta los anulados") + PENDIENTE D-68 | API |
+| CA-P8-30 | **Dado** el reporte de suscripciones, **entonces** muestra las suscripciones por estado (Activa, Suspendida, Vencida, Cancelada…), las asignadas, renovadas y vencidas en el período, y por plan. | CONFIRMADO (D-68 A) | API |
+| CA-P8-31 | **Dado** los pagos registrados en el período (fecha de pago), **entonces** se muestra el total recibido por medio (Transferencia, Consignación, Efectivo, Otro), por plan y por concepto, sin contar los anulados; los anulados se cuentan aparte. | CONFIRMADO (D-61 B: "no cuenta los anulados") + CONFIRMADO (D-68 A) | API |
 | CA-P8-32 | **Dado** un pago antiguo sin fecha de pago, **entonces** se agrupa por su fecha de registro y se marca "sin fecha de pago"; no rompe el reporte. | PROPUESTO (D-66) | API |
 | CA-P8-33 | **Dado** el reporte de pagos, **entonces** dice de forma visible "Pagos registrados a mano por la administración. No es contabilidad ni facturación." | CONFIRMADO (D-61 B: "sin factura ni contabilidad") + PROPUESTO (texto) | COMP |
 
@@ -188,48 +189,48 @@ Convenciones PROPUESTAS para todo P8:
 
 | ID | Criterio | Marca | Prueba |
 |---|---|---|---|
-| CA-P8-34 | **Dado** el administrador, **cuando** abre "Indicadores" (`#/cuenta/indicadores`), **entonces** ve para el período elegido: contactos recibidos, porcentaje de contactos cerrados con "Venta concretada", ventas vigentes y valor vendido, solicitudes de Administración recibidas por origen, créditos remitidos, publicaciones visibles hoy e ingresos registrados por planes. | CONFIRMADO (RN-RE-006 "Métricas comerciales") + PENDIENTE D-69 (b) | API, COMP |
-| CA-P8-35 | **Dado** el período elegido, **entonces** cada indicador muestra también el valor del período anterior de igual duración y la diferencia ("+3 frente al período anterior"). | PENDIENTE D-69 (b) | API, COMP |
-| CA-P8-36 | **Dado** los indicadores, **entonces** hay como máximo cuatro gráficos simples: ventas por mes (últimos 12 meses), ventas por origen, solicitudes por origen y contactos por resultado. Son barras dibujadas sin librería externa. | PENDIENTE D-69 (a) | COMP |
+| CA-P8-34 | **Dado** el administrador, **cuando** abre "Indicadores" (`#/cuenta/indicadores`), **entonces** ve para el período elegido: contactos recibidos, porcentaje de contactos cerrados con "Venta concretada", ventas vigentes y valor vendido, solicitudes de Administración recibidas por origen, créditos remitidos, publicaciones visibles hoy e ingresos registrados por planes. | CONFIRMADO (RN-RE-006 "Métricas comerciales") + CONFIRMADO (D-69 b A) | API, COMP |
+| CA-P8-35 | **Dado** el período elegido, **entonces** cada indicador muestra también el valor del período anterior de igual duración y la diferencia ("+3 frente al período anterior"). | CONFIRMADO (D-69 b A) | API, COMP |
+| CA-P8-36 | **Dado** los indicadores, **entonces** hay como máximo cuatro gráficos simples: ventas por mes (últimos 12 meses), ventas por origen, solicitudes por origen y contactos por resultado. Son barras dibujadas sin librería externa. | CONFIRMADO (D-69 a A) | COMP |
 | CA-P8-37 | **Dado** cada gráfico, **entonces** tiene título, valores escritos sobre cada barra y una tabla equivalente accesible para lector de pantalla; no depende solo del color. | PROPUESTO (minuta §12 "accesibilidad básica") | COMP |
 | CA-P8-38 | **Dado** un denominador 0 (por ejemplo ningún contacto cerrado), **entonces** el porcentaje se muestra como "Sin datos", no como 0 % ni como error. | PROPUESTO | API, COMP |
 | CA-P8-39 | **Dado** el panel "Inicio" de P7, **entonces** sigue igual (contadores operativos sin dinero, CA-P7-45 a 51) y ofrece un enlace "Ver indicadores". | CONFIRMADO (D-64 a A) · EXISTE (regresión) | COMP |
 | CA-P8-40 | **Dado** un asesor o comprador, **cuando** pide los indicadores del administrador, **entonces** 403; sin sesión, 401. | CONFIRMADO (RN-SE-006) | API |
-| CA-P8-41 | **Dado** el panel de indicadores, **entonces** no hay visitas a publicaciones, tasas de rebote ni datos de navegación (no existen; D-76). | PENDIENTE D-76 A | COMP |
+| CA-P8-41 | **Dado** el panel de indicadores, **entonces** no hay visitas a publicaciones, tasas de rebote ni datos de navegación (no existen; D-76). | CONFIRMADO (D-76 A) | COMP |
 
 ### 5.7 Exportación (HU-079, RN-RE-005; D-44, D-71)
 
 | ID | Criterio | Marca | Prueba |
 |---|---|---|---|
-| CA-P8-42 | **Dado** un reporte en pantalla, **cuando** el administrador pulsa "Descargar CSV", **entonces** recibe un archivo con los mismos filtros y las mismas cifras que ve, con `Content-Disposition: attachment` y nombre `reporte-<tipo>-<desde>_<hasta>.csv`. | CONFIRMADO (HU-079) + PENDIENTE D-71 (a) A (formato) | API, COMP |
-| CA-P8-43 | **Dado** el CSV, **entonces** está en UTF-8 con BOM, usa `;` como separador, fechas `aaaa-mm-dd`, valores enteros sin separador de miles, y abre en Excel en español con tildes y eñes correctas. | PENDIENTE D-71 (a) A | API, MAN |
+| CA-P8-42 | **Dado** un reporte en pantalla, **cuando** el administrador pulsa "Descargar CSV", **entonces** recibe un archivo con los mismos filtros y las mismas cifras que ve, con `Content-Disposition: attachment` y nombre `reporte-<tipo>-<desde>_<hasta>.csv`. | CONFIRMADO (HU-079) + CONFIRMADO (D-71 a A, formato) | API, COMP |
+| CA-P8-43 | **Dado** el CSV, **entonces** está en UTF-8 con BOM, usa `;` como separador, fechas `aaaa-mm-dd`, valores enteros sin separador de miles, y abre en Excel en español con tildes y eñes correctas. | CONFIRMADO (D-71 a A) | API, MAN |
 | CA-P8-44 | **Dado** una celda que empieza por `=`, `+`, `-`, `@`, tabulador o retorno, **entonces** se exporta precedida de un apóstrofo para que Excel no la ejecute como fórmula. | PROPUESTO (seguridad: inyección de fórmulas) | API |
-| CA-P8-45 | **Dado** cualquier exportación, **entonces** no contiene nombre, teléfono, correo, mensaje, notas ni observaciones de clientes o visitantes. | CONFIRMADO (RN-SE-004) + PENDIENTE D-71 (b) A | API |
+| CA-P8-45 | **Dado** cualquier exportación, **entonces** no contiene nombre, teléfono, correo, mensaje, notas ni observaciones de clientes o visitantes. | CONFIRMADO (RN-SE-004) + CONFIRMADO (D-71 b A) | API |
 | CA-P8-46 | **Dado** una exportación, **entonces** se audita en `auditoria_eventos` (entidad `Reporte`, acción `EXPORTAR`) con quién, cuándo, tipo de reporte, filtros y número de filas, sin el contenido. | CONFIRMADO (RN-SE-003) + PROPUESTO (entidad y acción) | API |
 | CA-P8-47 | **Dado** una exportación de más de 10.000 filas, **entonces** 400 "El reporte tiene demasiadas filas. Acorta el período o añade filtros."; nunca se genera un archivo parcial. | PROPUESTO | API |
 | CA-P8-48 | **Dado** filtros inválidos en la exportación, **entonces** 400 con el mismo mensaje que la consulta en pantalla (CA-P8-04). | PROPUESTO | API |
-| CA-P8-49 | **Dado** un asesor, comprador o visitante, **cuando** pide una exportación, **entonces** 403 o 401. | CONFIRMADO (v3.0 §7 actor Administrador) + PENDIENTE D-70 A (el asesor no exporta) | API |
+| CA-P8-49 | **Dado** un asesor, comprador o visitante, **cuando** pide una exportación, **entonces** 403 o 401. | CONFIRMADO (v3.0 §7 actor Administrador) + CONFIRMADO (D-70 A, el asesor no exporta) | API |
 | CA-P8-50 | **Dado** la respuesta de una exportación, **entonces** lleva `Cache-Control: no-store` y no queda guardada en el servidor ni en `C:\CAMION_media`. | PROPUESTO | API |
 
 ### 5.8 Indicadores del asesor sobre lo suyo (D-70)
 
 | ID | Criterio | Marca | Prueba |
 |---|---|---|---|
-| CA-P8-51 | **Dado** un asesor aprobado, **cuando** abre "Mis indicadores" (`#/mis-indicadores`), **entonces** ve, para el período elegido: sus vehículos por estado, sus publicaciones visibles hoy, los contactos recibidos y su resultado de cierre, y sus ventas vigentes con cantidad y valor. | PENDIENTE D-70 A | API, COMP |
-| CA-P8-52 | **Dado** un asesor, **entonces** las cifras incluyen solo los vehículos que hoy son suyos y los contactos de los que es responsable (mismo alcance que su inventario, "Mis contactos" y "Mis ventas"); el filtro `asesorId` se ignora. | CONFIRMADO (D-62 c A, §15 "solo sus propios vehículos") + PENDIENTE D-70 A | API |
+| CA-P8-51 | **Dado** un asesor aprobado, **cuando** abre "Mis indicadores" (`#/mis-indicadores`), **entonces** ve, para el período elegido: sus vehículos por estado, sus publicaciones visibles hoy, los contactos recibidos y su resultado de cierre, y sus ventas vigentes con cantidad y valor. | CONFIRMADO (D-70 A) | API, COMP |
+| CA-P8-52 | **Dado** un asesor, **entonces** las cifras incluyen solo los vehículos que hoy son suyos y los contactos de los que es responsable (mismo alcance que su inventario, "Mis contactos" y "Mis ventas"); el filtro `asesorId` se ignora. | CONFIRMADO (D-62 c A, §15 "solo sus propios vehículos") + CONFIRMADO (D-70 A) | API |
 | CA-P8-53 | **Dado** un asesor, **entonces** no ve avisos, créditos, búsquedas (D-52, D-58), pagos (D-61 B), cifras de otros asesores, totales del portal ni comparaciones o posiciones frente a otros. | CONFIRMADO (D-52 A, D-58 A, D-61 B) + PROPUESTO (sin comparaciones) | API |
-| CA-P8-54 | **Dado** un asesor, **entonces** "Mis indicadores" no ofrece exportar. | PENDIENTE D-70 A | COMP, API |
+| CA-P8-54 | **Dado** un asesor, **entonces** "Mis indicadores" no ofrece exportar. | CONFIRMADO (D-70 A) | COMP, API |
 | CA-P8-55 | **Dado** un asesor pendiente, rechazado o bloqueado, o un comprador, **cuando** pide "Mis indicadores", **entonces** 403 (o 401 si no puede iniciar sesión). | CONFIRMADO (D-3, D-10) | API |
 
 ### 5.9 Línea de tiempo de auditoría (HU-061, RN-SE-003, D-62 d; D-72)
 
 | ID | Criterio | Marca | Prueba |
 |---|---|---|---|
-| CA-P8-56 | **Dado** el administrador en el detalle de un vehículo, **cuando** abre "Actividad", **entonces** ve, de la más reciente a la más antigua, los eventos del vehículo, de sus publicaciones y de sus ventas: fecha y hora de Colombia, quién (nombre, o "Sistema"), acción en palabras ("Marcó vendido", "Reservó", "Reasignó de Ana a Luis") y el motivo cuando existe. | CONFIRMADO (D-62 d: "se consulta en P8") + PENDIENTE D-72 A | API, COMP |
-| CA-P8-57 | **Dado** el administrador en una suscripción, **cuando** abre "Actividad", **entonces** ve la asignación, renovaciones, cambios de plan, suspensiones, reactivaciones, cancelación, pagos registrados y anulados, y los deshechos por D-67, con quién y cuándo. | PENDIENTE D-72 A | API, COMP |
+| CA-P8-56 | **Dado** el administrador en el detalle de un vehículo, **cuando** abre "Actividad", **entonces** ve, de la más reciente a la más antigua, los eventos del vehículo, de sus publicaciones y de sus ventas: fecha y hora de Colombia, quién (nombre, o "Sistema"), acción en palabras ("Marcó vendido", "Reservó", "Reasignó de Ana a Luis") y el motivo cuando existe. | CONFIRMADO (D-62 d: "se consulta en P8") + CONFIRMADO (D-72 a A) | API, COMP |
+| CA-P8-57 | **Dado** el administrador en una suscripción, **cuando** abre "Actividad", **entonces** ve la asignación, renovaciones, cambios de plan, suspensiones, reactivaciones, cancelación, pagos registrados y anulados, y los deshechos por D-67, con quién y cuándo. | CONFIRMADO (D-72 a A) | API, COMP |
 | CA-P8-58 | **Dado** un evento EDITAR, **entonces** se muestran solo los campos que cambiaron, con su valor anterior y nuevo en palabras; nunca contraseñas, tokens, documentos completos ni datos de clientes. | CONFIRMADO (`Auditoria.cs`: "nunca contraseñas, tokens ni el documento completo") + PROPUESTO (presentación) | API |
 | CA-P8-59 | **Dado** la línea de tiempo, **entonces** es de solo lectura: no hay ninguna ruta para editar o borrar eventos, y la ruta de lectura es GET, bajo `/api/admin` con `SoloAdministrador`, y su nombre no contiene "auditoria" ni "historial", para que la prueba CA-061-15 de `SesionTests` siga vigente sin excepciones. | CONFIRMADO (CA-061-15) + PROPUESTO (nombre `/eventos`) | API |
-| CA-P8-60 | **Dado** un asesor o comprador, **cuando** pide la línea de tiempo, **entonces** 403; sin sesión, 401; el asesor no ve la sección "Actividad" en sus vehículos. | PENDIENTE D-72 (b) A | API, COMP |
+| CA-P8-60 | **Dado** un asesor o comprador, **cuando** pide la línea de tiempo, **entonces** 403; sin sesión, 401; el asesor no ve la sección "Actividad" en sus vehículos. | CONFIRMADO (D-72 b A) | API, COMP |
 | CA-P8-61 | **Dado** un vehículo inexistente o una suscripción inexistente, **entonces** 404 "Vehículo no encontrado." / "Suscripción no encontrada.". | PROPUESTO | API |
 | CA-P8-62 | **Dado** más de 50 eventos, **entonces** la lista se pagina (20 por página por defecto, máximo 100). | PROPUESTO | API |
 
@@ -237,12 +238,12 @@ Convenciones PROPUESTAS para todo P8:
 
 | ID | Criterio | Marca | Prueba |
 |---|---|---|---|
-| CA-P8-63 | **Dado** el estado actual de las decisiones, **entonces** el sistema no envía correos ni mensajes de WhatsApp automáticos; los avisos siguen solo dentro del panel (D-48, D-64 b). | CONFIRMADO (D-5, D-48; minuta §8 "NO contratadas") + PENDIENTE D-73, D-74 | API (sin dependencias de envío), MAN |
-| CA-P8-64 | **Dado** el portal público, **entonces** no carga scripts, píxeles ni cookies de terceros (analítica, publicidad o redes sociales) y no muestra aviso de cookies. | CONFIRMADO (minuta §8) + PENDIENTE D-76 A, D-77 A | COMP (inventario de `index.html` y dependencias), MAN |
+| CA-P8-63 | **Dado** el estado actual de las decisiones, **entonces** el sistema no envía correos ni mensajes de WhatsApp automáticos; los avisos siguen solo dentro del panel (D-48, D-64 b). | CONFIRMADO (D-5, D-48; minuta §8 "NO contratadas") + CONFIRMADO (D-73 D, D-74 A) | API (sin dependencias de envío), MAN |
+| CA-P8-64 | **Dado** el portal público, **entonces** no carga scripts, píxeles ni cookies de terceros (analítica, publicidad o redes sociales) y no muestra aviso de cookies. | CONFIRMADO (minuta §8) + CONFIRMADO (D-76 A, D-77 A) | COMP (inventario de `index.html` y dependencias), MAN |
 | CA-P8-65 | **Dado** el portal, **entonces** no hay pasarela ni ruta que reciba datos de tarjeta o cuentas (regresión de CA-P7-33). | CONFIRMADO (D-61 B) · EXISTE | API |
 | CA-P8-66 | **Dado** que la responsable aprueba un servicio de correo (D-73 B o C), **entonces** sus credenciales se leen de `dotnet user-secrets` o variables de entorno, nunca del repositorio, y la política de datos nombra al proveedor como encargado antes de activarlo. | CONFIRMADO (CLAUDE.md; D-44) | MAN, revisión de seguridad |
-| CA-P8-67 | **Dado** que la responsable elige D-73 D (recuperación asistida), **cuando** el administrador genera un enlace de restablecimiento para un usuario, **entonces** el enlace es de un solo uso, vence en 60 minutos, se audita (quién, para quién, cuándo; nunca el enlace), invalida las sesiones del usuario al usarse (D-12) y la contraseña nueva cumple las reglas de P1. | PENDIENTE D-73 (solo si se elige D) | API, COMP |
-| CA-P8-68 | **Dado** HU-063, **mientras** D-73 sea A, **entonces** sigue BLOQUEADO y la pantalla de inicio de sesión dice "¿Olvidaste tu contraseña? Escríbenos por WhatsApp" con el WhatsApp del portal (D-63 A). | PENDIENTE D-73 + PROPUESTO (texto) | COMP |
+| CA-P8-67 | **Dado** que la responsable elige D-73 D (recuperación asistida), **cuando** el administrador genera un enlace de restablecimiento para un usuario, **entonces** el enlace es de un solo uso, vence en 60 minutos, se audita (quién, para quién, cuándo; nunca el enlace), invalida las sesiones del usuario al usarse (D-12) y la contraseña nueva cumple las reglas de P1. Con D-78: el enlace también deja de valer si cambia el estado de la cuenta o sus roles, y al usarlo se comprueba de nuevo que la cuenta esté ACTIVA y no sea de administrador. | CONFIRMADO (D-73 D) + CONFIRMADO (D-78, técnica) | API, COMP |
+| CA-P8-68 | **Dado** HU-063, **mientras** D-73 sea A, **entonces** sigue BLOQUEADO y la pantalla de inicio de sesión dice "¿Olvidaste tu contraseña? Escríbenos por WhatsApp" con el WhatsApp del portal (D-63 A). Con D-73 D elegida, HU-063 deja de estar BLOQUEADO (CA-P8-67) y el texto se mantiene para pedir el enlace al administrador. | CONFIRMADO (D-73 D) + PROPUESTO (texto) | COMP |
 
 ### 5.11 Transversales: rutas, rendimiento, regresión y operación
 
@@ -294,3 +295,22 @@ Convenciones PROPUESTAS para todo P8:
   - D-75 B (promociones o contenido): tabla nueva, migración 017.
   - D-76 B (conteo propio de visitas): tabla nueva de conteos diarios, migración 017.
 - Siguiente número libre: **017** (la última es `016_p7_pagos`, aplicada). Siempre con respaldo previo, conteos, sección BAJAR y aplicada por la responsable (D-16).
+- Resultado: P8 se programó **sin migración** (`REVISION-SEGURIDAD-P8.md`, "Migración").
+
+---
+
+## 8. D-78: correcciones de seguridad de la recuperación asistida (CONFIRMADO, técnica, coordinador)
+
+D-78 no cambia ninguna regla de negocio; precisa CA-P8-67 tras QA (`P8-evidencia.md`, QA-P8-1 y QA-P8-2) y la revisión de seguridad (`REVISION-SEGURIDAD-P8.md`, M-1, M-2, B-1 y B-4). Detalle en `DECISIONES.md` D-78 y `backend/GUIA-AUTENTICACION.md` §12.
+
+| Punto de D-78 | Qué se exige | Origen | Marca |
+|---|---|---|---|
+| 1 | Todo cambio de estado de la cuenta (aprobar, rechazar, bloquear, desbloquear, reconsiderar) invalida un enlace emitido antes | QA-P8-1 | CONFIRMADO (D-78) |
+| 2 | Al usar el enlace se vuelve a comprobar que la cuenta esté ACTIVA y no sea de administrador (mismo 400 genérico); `promover-admin` también invalida el enlace | QA-P8-2, B-1 | CONFIRMADO (D-78) |
+| 3 | Claves de DataProtection en `DataProtection:RutaClaves` (por defecto `C:\CAMION_claves`, nunca dentro del repositorio), nombre de aplicación `Camion.Api` y DPAPI en Windows | M-1 | CONFIRMADO (D-78) |
+| 4 | Fuera de Development, `Recuperacion:UrlPortal` debe empezar por `https://`; si no, la API no arranca | M-2 | CONFIRMADO (D-78) |
+| 5 | Todas las respuestas llevan `Referrer-Policy: no-referrer` | B-4 | CONFIRMADO (D-78) |
+
+Pruebas: `P8QaTests` (QA-P8-1, QA-P8-2, que fallaban antes de D-78) y `P8D78Tests`. Siguen abiertos B-2 y B-3 de la revisión de seguridad (backlog, INF-2).
+
+**Abierto:** D-79 (¿cómo recupera su contraseña un administrador?) está PENDIENTE de la responsable. No cambia ningún criterio de esta lista: hoy la recuperación asistida excluye a los administradores.
