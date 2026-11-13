@@ -234,8 +234,9 @@ app.MapVentasListaEndpoints();
 app.MapPagosEndpoints();
 app.MapParametrosEndpoints();
 app.MapPanelEndpoints();
-// P8: reportes, indicadores y exportación CSV (HU-075 a HU-080; D-68 a D-71).
+// P8: reportes, indicadores y actividad (HU-061, HU-075 a HU-080; D-68 a D-72).
 app.MapReportesEndpoints();
+app.MapActividadEndpoints();
 
 app.Run();
 
