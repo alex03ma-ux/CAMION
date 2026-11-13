@@ -16,6 +16,7 @@ using Microsoft.IdentityModel.Tokens;
 using MySqlConnector;
 using System.Threading.RateLimiting;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("CamionDatabase")
@@ -47,7 +48,17 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
 .AddDefaultTokenProviders()
 .AddTokenProvider<ProveedorTokenRecuperacion>(ProveedorTokenRecuperacion.Nombre);
 // P8 (D-73 D): DataProtection (incluido en ASP.NET Core) protege el token de recuperación; no se guarda en ninguna tabla.
-builder.Services.AddDataProtection();
+// D-78 (M-1): nombre de aplicación fijo, claves en una carpeta fuera del repositorio y, en Windows, cifradas con DPAPI.
+var rutaClaves = ConfiguracionRecuperacion.RutaClaves(builder.Configuration[ConfiguracionRecuperacion.ClaveRutaClaves],
+    builder.Environment.ContentRootPath);
+var proteccion = builder.Services.AddDataProtection()
+    .SetApplicationName(ConfiguracionRecuperacion.NombreAplicacion)
+    .PersistKeysToFileSystem(new DirectoryInfo(rutaClaves));
+if (OperatingSystem.IsWindows()) proteccion.ProtectKeysWithDpapi();
+// D-78 (M-2): fuera de Development el enlace debe ser https://; si no, la API no arranca (igual que Jwt:Key).
+ConfiguracionRecuperacion.ValidarUrlPortal(
+    builder.Configuration[ConfiguracionRecuperacion.ClaveUrlPortal] ?? new OpcionesRecuperacion().UrlPortal,
+    builder.Environment.IsDevelopment());
 builder.Services.AddTransient<ProveedorTokenRecuperacion>();
 builder.Services.Configure<OpcionesRecuperacion>(builder.Configuration.GetSection("Recuperacion"));
 
@@ -183,6 +194,18 @@ using (var scope = app.Services.CreateScope())
         app.Logger.LogWarning("No se pudieron asegurar los roles al iniciar: {Tipo}", ex.GetType().FullName);
     }
 }
+
+// D-78 (B-4): ninguna respuesta de la API envía el Referer (el enlace de recuperación nunca sale en un encabezado).
+// Con OnStarting el encabezado sobrevive al Response.Clear() del manejador de errores.
+app.Use(async (context, next) =>
+{
+    context.Response.OnStarting(() =>
+    {
+        context.Response.Headers["Referrer-Policy"] = "no-referrer";
+        return Task.CompletedTask;
+    });
+    await next(context);
+});
 
 app.Use(async (context, next) =>
 {

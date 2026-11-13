@@ -92,3 +92,44 @@ public sealed class ProveedorTokenRecuperacion : IUserTwoFactorTokenProvider<App
         }
     }
 }
+
+/// <summary>
+/// D-78 (M-1, M-2): configuración segura de DataProtection y del enlace, validada al arrancar (como Jwt:Key). Si algo no
+/// es válido, la API no arranca y el mensaje dice qué clave revisar (nunca su valor secreto).
+/// </summary>
+public static class ConfiguracionRecuperacion
+{
+    public const string ClaveRutaClaves = "DataProtection:RutaClaves";
+    public const string ClaveUrlPortal = "Recuperacion:UrlPortal";
+    public const string NombreAplicacion = "Camion.Api";
+    public const string RutaClavesPorDefecto = @"C:\CAMION_claves";
+
+    /// <summary>Carpeta de las claves: configurable, por defecto C:\CAMION_claves, nunca dentro del repositorio.</summary>
+    public static string RutaClaves(string? configurada, string contentRoot)
+    {
+        var ruta = Path.GetFullPath(string.IsNullOrWhiteSpace(configurada) ? RutaClavesPorDefecto : configurada.Trim());
+        // contentRoot = backend/Camion.Api; la raíz del repositorio está dos niveles arriba.
+        var repositorio = Path.GetFullPath(Path.Combine(contentRoot, "..", ".."));
+        if (EstaDentro(ruta, repositorio) || EstaDentro(ruta, Path.GetFullPath(contentRoot)))
+            throw new InvalidOperationException(
+                $"{ClaveRutaClaves} no puede estar dentro de la carpeta del proyecto; usa una carpeta fuera del repositorio.");
+        return ruta;
+    }
+
+    /// <summary>Fuera de Development, Recuperacion:UrlPortal debe ser una URL absoluta https://.</summary>
+    public static void ValidarUrlPortal(string? url, bool esDesarrollo)
+    {
+        var valor = (url ?? "").Trim();
+        if (!Uri.TryCreate(valor, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
+            throw new InvalidOperationException($"{ClaveUrlPortal} debe ser una URL absoluta (https://...).");
+        if (!esDesarrollo && uri.Scheme != Uri.UriSchemeHttps)
+            throw new InvalidOperationException($"{ClaveUrlPortal} debe empezar por https:// fuera de Development.");
+    }
+
+    private static bool EstaDentro(string ruta, string carpeta)
+    {
+        var baseConSeparador = carpeta.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        return ruta.Equals(carpeta.TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase) ||
+               ruta.StartsWith(baseConSeparador, StringComparison.OrdinalIgnoreCase);
+    }
+}
