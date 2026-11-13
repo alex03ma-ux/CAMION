@@ -24,10 +24,12 @@ import {
 import { esAdministrador } from './auth/roles'
 import { usePeticion } from './catalogo/usePeticion'
 import { AdminCatalogos } from './components/AdminCatalogos'
+import { AdminIndicadores } from './components/AdminIndicadores'
 import { AdminInicio } from './components/AdminInicio'
 import { AdminParametros } from './components/AdminParametros'
 import { AdminPortada } from './components/AdminPortada'
 import { AdminPlanes } from './components/AdminPlanes'
+import { AdminReportes } from './components/AdminReportes'
 import { AdminSuscripciones } from './components/AdminSuscripciones'
 import { AdminUsuarios } from './components/AdminUsuarios'
 import { Contactos } from './components/Contactos'
@@ -41,12 +43,14 @@ import { Encabezado } from './components/Encabezado'
 import { Inicio } from './components/Inicio'
 import { InventarioPagina } from './components/InventarioPagina'
 import { LoginForm } from './components/LoginForm'
+import { MisIndicadores, TITULO_MIS_INDICADORES } from './components/MisIndicadores'
 import { MisPublicaciones } from './components/MisPublicaciones'
 import { MisSolicitudes, TITULO_MIS_SOLICITUDES } from './components/MisSolicitudes'
 import { NavAdmin } from './components/NavAdmin'
 import { PerfilPanel } from './components/PerfilPanel'
 import { Privacidad } from './components/Privacidad'
 import { RegistroForm } from './components/RegistroForm'
+import { RestablecerContrasena, TITULO_RESTABLECER } from './components/RestablecerContrasena'
 import { Resultados } from './components/Resultados'
 import { SolicitudCredito, TITULO_CREDITO, TITULO_CREDITO_VEHICULO } from './components/SolicitudCredito'
 import { Ventas } from './components/Ventas'
@@ -113,6 +117,8 @@ function tituloDocumento(ruta: Ruta): string {
   if (ruta.nombre === 'buscoVehiculo') return `${TITULO_BUSQUEDA} | ${NOMBRE_PORTAL}`
   if (ruta.nombre === 'misSolicitudes') return `${TITULO_MIS_SOLICITUDES} | ${NOMBRE_PORTAL}`
   if (ruta.nombre === 'ventas') return `Mis ventas | ${NOMBRE_PORTAL}`
+  if (ruta.nombre === 'misIndicadores') return `${TITULO_MIS_INDICADORES} | ${NOMBRE_PORTAL}`
+  if (ruta.nombre === 'restablecerContrasena') return `${TITULO_RESTABLECER} | ${NOMBRE_PORTAL}`
   return NOMBRE_PORTAL
 }
 
@@ -301,7 +307,8 @@ export default function App() {
     ruta.nombre === 'publicaciones' ||
     esRutaContactos(ruta) ||
     ruta.nombre === 'misSolicitudes' ||
-    ruta.nombre === 'ventas'
+    ruta.nombre === 'ventas' ||
+    ruta.nombre === 'misIndicadores'
   useEffect(() => {
     if (enInventario && !conSesion) navegar(HASH_CUENTA)
   }, [enInventario, conSesion])
@@ -365,6 +372,9 @@ export default function App() {
             ruta.nombre === 'contactos' ? ruta.consulta : undefined,
           )}
         {ruta.nombre === 'ventas' && renderVentas(ruta.consulta)}
+        {ruta.nombre === 'misIndicadores' && renderMisIndicadores()}
+        {/* P8 (D-73 D): pública; sin cuenta o con cualquier sesión. */}
+        {ruta.nombre === 'restablecerContrasena' && <RestablecerContrasena />}
       </main>
       <PiePortal tipos={tipos} conSesion={conSesion} />
     </>
@@ -497,6 +507,39 @@ export default function App() {
         )}
         {(vista.tipo === 'login' || vista.tipo === 'registro') && (
           <p role="status">Inicia sesión para ver tus ventas.</p>
+        )}
+      </div>
+    )
+  }
+
+  /** P8 (D-70 A): "Mis indicadores" del asesor en #/mis-indicadores. */
+  function renderMisIndicadores() {
+    if (vista.tipo === 'perfil' || vista.tipo === 'admin') {
+      return (
+        <MisIndicadores
+          key={vista.perfil.usuarioId}
+          token={vista.sesion.accessToken}
+          perfil={vista.perfil}
+          onSesionTerminada={alTerminarSesionAdmin}
+        />
+      )
+    }
+    return (
+      <div className="cat-pagina inv-pagina">
+        <h1 tabIndex={-1} className="inv-titulo">
+          {TITULO_MIS_INDICADORES}
+        </h1>
+        {vista.tipo === 'verificando' && <p role="status">Verificando tu sesión...</p>}
+        {vista.tipo === 'sinConexion' && (
+          <>
+            <Aviso aviso={{ tipo: 'error', texto: vista.mensaje }} />
+            <p>
+              <a href={HASH_CUENTA}>Ir a mi cuenta</a>
+            </p>
+          </>
+        )}
+        {(vista.tipo === 'login' || vista.tipo === 'registro') && (
+          <p role="status">Inicia sesión para ver tus indicadores.</p>
         )}
       </div>
     )
@@ -679,6 +722,12 @@ export default function App() {
         {seccion === 'portada' && <AdminPortada token={token} onSesionTerminada={alTerminarSesionAdmin} />}
         {/* P7 (D-63 A): datos de contacto del portal. */}
         {seccion === 'parametros' && <AdminParametros token={token} onSesionTerminada={alTerminarSesionAdmin} />}
+        {/* P8 (D-68 A, D-71): reportes con exportación CSV. */}
+        {seccion === 'reportes' && (
+          <AdminReportes key={consulta ?? ''} consulta={consulta} token={token} onSesionTerminada={alTerminarSesionAdmin} />
+        )}
+        {/* P8 (D-69 A/A): indicadores con valores en pesos y gráficos sin librería. */}
+        {seccion === 'indicadores' && <AdminIndicadores token={token} onSesionTerminada={alTerminarSesionAdmin} />}
       </>
     )
   }

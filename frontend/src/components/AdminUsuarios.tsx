@@ -1,5 +1,6 @@
 // Panel de administración de usuarios (HU-043, HU-044, HU-047, HU-048, RN-SE-006, D-3).
 // Solo se muestra a quien tiene el rol ADMINISTRADOR; la API lo protege igualmente.
+// P8 (HU-063, D-73 D; CA-P8-67): "Generar enlace de recuperación" para cuentas activas que no son de administrador.
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import {
   BUSCAR_MAX,
@@ -18,10 +19,12 @@ import {
   MENSAJE_SIN_PERMISO,
   type ErroresPorCampo,
 } from '../api/http'
+import { generarEnlaceRecuperacion, type EnlaceRecuperacion } from '../api/recuperacion'
 import { esAdministrador, nombreRol, ROL_ASESOR, tieneRol } from '../auth/roles'
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo, CampoSelect } from './Campo'
-import { DialogoAccion, TEXTOS_ACCION } from './DialogoAccion'
+import { DialogoAccion, DialogoConfirmacion, TEXTOS_ACCION } from './DialogoAccion'
+import { PanelEnlaceRecuperacion } from './EnlaceRecuperacion'
 
 type AdminUsuariosProps = {
   token: string
@@ -117,6 +120,13 @@ export function accionesValidas(u: UsuarioAdmin, usuarioIdPropio: string): Accio
   }
 }
 
+/** P8 (D-73 D): solo cuentas ACTIVA que no son de administrador ni la propia (la API responde 403 / 409 si no). */
+export function puedeGenerarEnlace(u: UsuarioAdmin, usuarioIdPropio: string): boolean {
+  return u.usuarioId !== usuarioIdPropio && !esAdministrador(u.roles) && u.estado === 'ACTIVA'
+}
+
+type DialogoEnlace = { usuario: UsuarioAdmin; enviando: boolean; error: DatosAviso | null }
+
 function nombreTipoDocumento(tipo: string): string {
   return TIPOS_DOCUMENTO.find((t) => t.valor === tipo)?.nombre ?? tipo
 }
@@ -174,6 +184,9 @@ export function AdminUsuarios({
   const [erroresFiltros, setErroresFiltros] = useState<ErroresFiltros>({})
   const [resultado, setResultado] = useState<DatosAviso | null>(null)
   const [dialogo, setDialogo] = useState<Dialogo | null>(null)
+  // P8: confirmación y resultado del enlace de recuperación (el enlace solo vive en memoria mientras se muestra).
+  const [dialogoEnlace, setDialogoEnlace] = useState<DialogoEnlace | null>(null)
+  const [enlace, setEnlace] = useState<{ usuario: UsuarioAdmin; datos: EnlaceRecuperacion } | null>(null)
 
   const titulo = useRef<HTMLHeadingElement>(null)
   const tituloResultados = useRef<HTMLHeadingElement>(null)
@@ -274,6 +287,51 @@ export function AdminUsuarios({
     window.setTimeout(() => tituloResultados.current?.focus(), 0)
   }
 
+  function abrirDialogoEnlace(usuario: UsuarioAdmin, boton: HTMLButtonElement) {
+    origenDialogo.current = boton
+    setResultado(null)
+    setEnlace(null)
+    setDialogoEnlace({ usuario, enviando: false, error: null })
+  }
+
+  function cancelarDialogoEnlace() {
+    setDialogoEnlace(null)
+    const boton = origenDialogo.current
+    origenDialogo.current = null
+    window.setTimeout(() => boton?.focus(), 0)
+  }
+
+  function cerrarEnlace() {
+    setEnlace(null)
+    const boton = origenDialogo.current
+    origenDialogo.current = null
+    window.setTimeout(() => (boton?.isConnected ? boton.focus() : tituloResultados.current?.focus()), 0)
+  }
+
+  async function confirmarEnlace() {
+    if (!dialogoEnlace || dialogoEnlace.enviando) return
+    const { usuario } = dialogoEnlace
+    setDialogoEnlace({ ...dialogoEnlace, enviando: true, error: null })
+    try {
+      const datos = await generarEnlaceRecuperacion(token, usuario.usuarioId)
+      setDialogoEnlace(null)
+      setEnlace({ usuario, datos })
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        setDialogoEnlace(null)
+        onSesionTerminada()
+        return
+      }
+      if (error instanceof ApiError && [403, 404, 409].includes(error.status)) {
+        // La cuenta cambió (bloqueada, eliminada...): se informa y se recarga la lista.
+        setDialogoEnlace(null)
+        terminarAccion({ tipo: 'error', texto: mensajeDe(error) })
+        return
+      }
+      setDialogoEnlace((d) => d && { ...d, enviando: false, error: { tipo: 'error', texto: mensajeDe(error) } })
+    }
+  }
+
   async function confirmar(motivo: string) {
     if (!dialogo || dialogo.enviando) return
     const { usuario, accion } = dialogo
@@ -371,6 +429,14 @@ export function AdminUsuarios({
         )}
       </h3>
 
+      {enlace && (
+        <PanelEnlaceRecuperacion
+          nombre={enlace.usuario.nombreCompleto || enlace.usuario.email}
+          telefono={enlace.usuario.telefono}
+          datos={enlace.datos}
+          onCerrar={cerrarEnlace}
+        />
+      )}
       <Aviso aviso={resultado} />
       <Aviso aviso={errorCarga} />
       {cargando && <p role="status">Cargando usuarios...</p>}
@@ -406,6 +472,7 @@ export function AdminUsuarios({
             <tbody>
               {lista.items.map((u) => {
                 const acciones = accionesValidas(u, usuarioIdPropio)
+                const conEnlace = puedeGenerarEnlace(u, usuarioIdPropio)
                 const nombre = u.nombreCompleto || u.email
                 return (
                   <tr key={u.usuarioId}>
@@ -440,7 +507,7 @@ export function AdminUsuarios({
                     </td>
                     <td>{formatearFecha(u.creadoEn)}</td>
                     <td>
-                      {acciones.length === 0 ? (
+                      {acciones.length === 0 && !conEnlace ? (
                         <span className="dato-secundario">Sin acciones</span>
                       ) : (
                         <div className="acciones-fila">
@@ -460,6 +527,16 @@ export function AdminUsuarios({
                               <span className="sr-only">a {nombre}</span>
                             </button>
                           ))}
+                          {conEnlace && (
+                            <button
+                              type="button"
+                              className="secondary-button"
+                              disabled={dialogo !== null || dialogoEnlace !== null}
+                              onClick={(e) => abrirDialogoEnlace(u, e.currentTarget)}
+                            >
+                              Generar enlace de recuperación <span className="sr-only">para {nombre}</span>
+                            </button>
+                          )}
                         </div>
                       )}
                     </td>
@@ -508,6 +585,20 @@ export function AdminUsuarios({
           error={dialogo.error}
           onConfirmar={(motivo) => void confirmar(motivo)}
           onCancelar={cancelarDialogo}
+        />
+      )}
+
+      {dialogoEnlace && (
+        <DialogoConfirmacion
+          titulo="Generar enlace de recuperación"
+          descripcion={`¿Generar un enlace para que ${dialogoEnlace.usuario.nombreCompleto || dialogoEnlace.usuario.email} cree una contraseña nueva? Hazlo solo después de confirmar su identidad. El enlace vence en 60 minutos, sirve una sola vez y deja sin valor cualquier enlace anterior.`}
+          textoBoton="Generar enlace"
+          textoEnviando="Generando..."
+          motivo="no"
+          enviando={dialogoEnlace.enviando}
+          error={dialogoEnlace.error}
+          onConfirmar={() => void confirmarEnlace()}
+          onCancelar={cancelarDialogoEnlace}
         />
       )}
     </section>
