@@ -590,3 +590,7 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
     Lo cubren las pruebas automáticas.
   - Pendientes: revisión a 375 px, INF-2, INF-3 y D-44.
 
+## 2026-11-13 — P7 unido a `main` e inicio de P8
+- La responsable creó la [PR #14](https://github.com/alex03ma-ux/CAMION/pull/14) y la unió a `main` (merge 2026-11-12 23:52 UTC, `ab71aa4`). `main` contiene P0 a P7.
+- P8 (reportes, marketing e integraciones) arranca en `feature/p8-reportes`, desde `main` actualizado.
+
