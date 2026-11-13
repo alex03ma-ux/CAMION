@@ -33,6 +33,9 @@ public sealed class ProveedorTokenRecuperacion : IUserTwoFactorTokenProvider<App
 {
     public const string Nombre = "RecuperacionAsistida";
     public static readonly TimeSpan Vigencia = TimeSpan.FromMinutes(60);
+    // D-79: propósito propio del enlace que genera el comando local recuperar-admin. El del panel es el de Identity
+    // ("ResetPassword"); como el propósito va dentro del token protegido, uno no sirve en lugar del otro.
+    public const string PropositoAdministrador = "RecuperarAdministrador";
     private const string Proposito = "Camion.Api.RecuperacionAsistida.v1";
 
     private readonly IDataProtector _protector;

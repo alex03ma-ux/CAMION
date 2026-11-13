@@ -177,6 +177,24 @@ if (args.Length > 0 && args[0] == PromoverAdmin.NombreComando)
     return;
 }
 
+// D-79 (opción A): `dotnet run --project backend/Camion.Api -- recuperar-admin <correo>` (o `dotnet Camion.Api.dll
+// recuperar-admin <correo>`) genera el enlace de recuperación de un administrador y termina, sin arrancar el servidor web.
+// El enlace se escribe solo en la consola (Console.Out), nunca en un ILogger.
+if (args.Length > 0 && args[0] == RecuperarAdmin.NombreComando)
+{
+    using var scope = app.Services.CreateScope();
+    var resultado = await RecuperarAdmin.EjecutarAsync(
+        args.Length > 1 ? args[1] : null,
+        scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>(),
+        scope.ServiceProvider.GetRequiredService<CamionDbContext>(),
+        scope.ServiceProvider.GetRequiredService<TimeProvider>(),
+        scope.ServiceProvider.GetRequiredService<IOptions<OpcionesRecuperacion>>().Value.UrlPortal);
+    (resultado.CodigoSalida == 0 ? Console.Out : Console.Error).WriteLine(resultado.Mensaje);
+    if (resultado.Enlace is not null) Console.Out.WriteLine(resultado.Enlace);
+    Environment.ExitCode = resultado.CodigoSalida;
+    return;
+}
+
 // RN-SE-006: los tres roles existen desde el arranque. Si la base no responde, la API arranca igual
 // (los registros vuelven a asegurar su rol) y /health/database informa del problema.
 using (var scope = app.Services.CreateScope())

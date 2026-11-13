@@ -71,12 +71,24 @@ public static class RecuperacionEndpoints
             if (errores.Count > 0) return Validacion(errores);
 
             var user = await users.FindByIdAsync(usuarioId!);
-            // D-78 (QA-P8-2, B-1): al usarlo se vuelve a exigir cuenta ACTIVA y que no sea administrador; mismo 400 genérico.
-            if (user is null || user.EstadoCuenta != EstadosCuenta.Activa || await users.IsInRoleAsync(user, Roles.Administrador))
-                return CodigoNoValido();
+            // D-78 (QA-P8-2, B-1): al usarlo se vuelve a exigir cuenta ACTIVA; mismo 400 genérico.
+            if (user is null || user.EstadoCuenta != EstadosCuenta.Activa) return CodigoNoValido();
+            // D-78: un enlace del panel nunca sirve para un administrador. D-79: el de un administrador solo puede ser el del
+            // comando local recuperar-admin (propósito propio), que tampoco sirve para una cuenta que no sea administrador.
+            var esAdministrador = await users.IsInRoleAsync(user, Roles.Administrador);
+            var tokenReset = codigo;
+            if (esAdministrador)
+            {
+                if (!await users.VerifyUserTokenAsync(user, ProveedorTokenRecuperacion.Nombre,
+                        ProveedorTokenRecuperacion.PropositoAdministrador, codigo))
+                    return CodigoNoValido();
+                // Verificado el enlace del comando, se emite el token de restablecimiento de Identity en la misma petición:
+                // ResetPasswordAsync aplica las reglas de contraseña y cambia el SecurityStamp (un solo uso).
+                tokenReset = await users.GeneratePasswordResetTokenAsync(user);
+            }
 
             await using var tx = await db.Database.BeginTransactionAsync();
-            var reset = await users.ResetPasswordAsync(user, codigo, password);
+            var reset = await users.ResetPasswordAsync(user, tokenReset, password);
             if (!reset.Succeeded)
             {
                 await tx.RollbackAsync();
