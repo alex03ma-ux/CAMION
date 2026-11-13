@@ -66,6 +66,13 @@ public static class Auditoria
     // D-67: anular el pago de un movimiento deshace lo que ese pago dio (evento sobre la suscripción).
     public const string DeshacerPago = "DESHACER_PAGO";
 
+    // P8 (HU-079, CA-P8-46, D-71): exportación CSV de un reporte (entidad_id = tipo de reporte; sin el contenido).
+    public const string EntidadReporte = "Reporte";
+    public const string Exportar = "EXPORTAR";
+    // P8 (HU-063, D-73 D): recuperación asistida (sobre el usuario; nunca el enlace, el código ni la contraseña).
+    public const string GenerarEnlaceRecuperacion = "GENERAR_ENLACE_RECUPERACION";
+    public const string RestablecerContrasena = "RESTABLECER_CONTRASENA";
+
     // Solo agrega la fila al contexto; se guarda en la misma transacción que el cambio auditado.
     public static void Agregar(CamionDbContext db, string? actorId, string usuarioAfectadoId, string accion,
         string? estadoAnterior, string estadoNuevo, string? motivo, bool incluirMotivo)
