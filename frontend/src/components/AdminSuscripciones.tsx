@@ -46,6 +46,7 @@ import { CamposPago } from './CamposPago'
 import { DialogoConfirmacion } from './DialogoAccion'
 import { NotaObligatorio } from './NotaObligatorio'
 import { PagosSuscripcion } from './PagosSuscripcion'
+import { SeccionActividad } from './Actividad'
 import { hashSeccionAdmin, navegar } from '../rutas'
 
 type AdminSuscripcionesProps = {
@@ -275,6 +276,9 @@ export function AdminSuscripciones({ token, onSesionTerminada, consulta }: Admin
   // P7: suscripción con la sección "Pagos" abierta.
   const [pagosDe, setPagosDe] = useState<Suscripcion | null>(null)
   const origenPagos = useRef<HTMLButtonElement | null>(null)
+  // P8 (D-72 A/A): suscripción con la sección "Actividad" abierta.
+  const [actividadDe, setActividadDe] = useState<Suscripcion | null>(null)
+  const origenActividad = useRef<HTMLButtonElement | null>(null)
 
   const titulo = useRef<HTMLHeadingElement>(null)
   const tituloLista = useRef<HTMLHeadingElement>(null)
@@ -472,6 +476,18 @@ export function AdminSuscripciones({ token, onSesionTerminada, consulta }: Admin
     setPagosDe(null)
     const boton = origenPagos.current
     origenPagos.current = null
+    window.setTimeout(() => boton?.focus(), 0)
+  }
+
+  function abrirActividad(suscripcion: Suscripcion, boton: HTMLButtonElement) {
+    origenActividad.current = boton
+    setActividadDe(suscripcion)
+  }
+
+  function cerrarActividad() {
+    setActividadDe(null)
+    const boton = origenActividad.current
+    origenActividad.current = null
     window.setTimeout(() => boton?.focus(), 0)
   }
 
@@ -784,6 +800,17 @@ export function AdminSuscripciones({ token, onSesionTerminada, consulta }: Admin
                         >
                           Pagos <span className="sr-only">de {nombre}</span>
                         </button>
+                        <button
+                          type="button"
+                          className="secondary-button"
+                          aria-expanded={actividadDe?.id === s.id}
+                          disabled={dialogo !== null}
+                          onClick={(e) =>
+                            actividadDe?.id === s.id ? cerrarActividad() : abrirActividad(s, e.currentTarget)
+                          }
+                        >
+                          Actividad <span className="sr-only">de la suscripción de {nombre}</span>
+                        </button>
                         {acciones.map((accion) => (
                             <button
                               key={accion}
@@ -839,6 +866,21 @@ export function AdminSuscripciones({ token, onSesionTerminada, consulta }: Admin
           onSesionTerminada={onSesionTerminada}
           onCerrar={cerrarPagos}
           onSuscripcionCambiada={() => setRecarga((r) => r + 1)}
+        />
+      )}
+
+      {actividadDe && (
+        <SeccionActividad
+          key={actividadDe.id}
+          token={token}
+          recurso="suscripcion"
+          id={actividadDe.id}
+          nivelTitulo={3}
+          abiertaAlInicio
+          enfocarAlMontar
+          descripcion={`de la suscripción de ${actividadDe.asesor.nombre || 'el asesor'} (${actividadDe.plan.nombre || 'sin plan'})`}
+          onCerrar={cerrarActividad}
+          onSesionTerminada={onSesionTerminada}
         />
       )}
 
