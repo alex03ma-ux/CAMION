@@ -37,6 +37,9 @@ public sealed class CamionApiFactory : WebApplicationFactory<Program>
     public string CarpetaMedia { get; } = Path.Combine(Path.GetTempPath(), $"camion_media_pruebas_{Guid.NewGuid():N}");
     public string CarpetaFueraDeMedia => CarpetaMedia + "_fuera";
 
+    /// <summary>D-78 (M-2): base ficticia del enlace de recuperación en las pruebas.</summary>
+    public const string UrlPortalPruebas = "https://portal.prueba.test";
+
     public CamionApiFactory()
     {
         _conexionViva = new SqliteConnection(_cadenaSqlite);
@@ -57,6 +60,10 @@ public sealed class CamionApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("Contactos:LimiteTelefonoDia", "100000");
         // P8 (D-73 D): mismo criterio para el cupo de restablecer la contraseña; P8RecuperacionTests lo baja.
         builder.UseSetting("Recuperacion:LimiteVentana", "100000");
+        // D-78: el entorno Testing no es Development, así que el enlace debe ser https://; las claves de DataProtection
+        // irían a una carpeta temporal (además se sustituye el proveedor por uno efímero, abajo).
+        builder.UseSetting("Recuperacion:UrlPortal", UrlPortalPruebas);
+        builder.UseSetting("DataProtection:RutaClaves", CarpetaMedia + "_claves");
         // Además de la configuración, se sustituye el almacén por uno con la carpeta temporal (después de Program).
         // P8: claves de DataProtection solo en memoria (no se escriben en el perfil del usuario).
         builder.ConfigureTestServices(services =>
@@ -85,7 +92,7 @@ public sealed class CamionApiFactory : WebApplicationFactory<Program>
         base.Dispose(disposing);
         if (!disposing) return;
         _conexionViva.Dispose();
-        foreach (var carpeta in new[] { CarpetaMedia, CarpetaFueraDeMedia })
+        foreach (var carpeta in new[] { CarpetaMedia, CarpetaFueraDeMedia, CarpetaMedia + "_claves" })
         {
             try
             {

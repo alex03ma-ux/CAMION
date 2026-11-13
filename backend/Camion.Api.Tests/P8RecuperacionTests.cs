@@ -30,7 +30,7 @@ public sealed class P8RecuperacionTests(P7Fixture fixture) : IClassFixture<P7Fix
     {
         var json = await Esperar(await Generar(api, usuarioId, api.Admin.Token), HttpStatusCode.OK);
         var enlace = json.GetProperty("enlace").GetString()!;
-        Assert.StartsWith("http://localhost:5173" + RecuperacionEndpoints.RutaFrontend, enlace);
+        Assert.StartsWith(CamionApiFactory.UrlPortalPruebas + RecuperacionEndpoints.RutaFrontend, enlace);
         return enlace[(enlace.IndexOf("codigo=", StringComparison.Ordinal) + "codigo=".Length)..];
     }
 
