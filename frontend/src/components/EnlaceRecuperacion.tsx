@@ -4,7 +4,7 @@
 // guarda en el navegador ni se registra en consola. Al cerrar el panel se descarta.
 import { useEffect, useRef, useState } from 'react'
 import { formatearFechaHora } from '../api/leads'
-import { enlaceCorreoUsuario, enlaceWhatsappUsuario, type EnlaceRecuperacion } from '../api/recuperacion'
+import { enlaceCorreoUsuario, enlaceWhatsappUsuario, MENSAJE_ENLACE, type EnlaceRecuperacion } from '../api/recuperacion'
 import { Aviso, type DatosAviso } from './Aviso'
 
 type Props = {
@@ -44,7 +44,8 @@ export function PanelEnlaceRecuperacion({ nombre, telefono, correo, datos, onCer
       <h3 id="enlace-recuperacion-titulo" ref={titulo} tabIndex={-1} className="admin-subtitulo">
         Enlace de recuperación para {nombre}
       </h3>
-      <Aviso aviso={{ tipo: 'info', texto: datos.mensaje }} />
+      {/* El texto del servidor solo menciona WhatsApp; desde que existe "Enviar por correo" se usa el propio. */}
+      <Aviso aviso={{ tipo: 'info', texto: MENSAJE_ENLACE }} />
       <p className="form-ayuda">
         Vence en 60 minutos{datos.venceEn ? ` (${formatearFechaHora(datos.venceEn)}, hora de Colombia)` : ''} y sirve una
         sola vez. Si generas otro, este deja de valer.
@@ -80,16 +81,18 @@ export function PanelEnlaceRecuperacion({ nombre, telefono, correo, datos, onCer
           Cerrar
         </button>
       </div>
-      {mailto && (
-        <p className="form-ayuda">
-          "Enviar por correo" abre tu programa de correo con el mensaje listo para {correo.trim()}: revísalo y envíalo
-          desde tu cuenta.
-        </p>
-      )}
-      {!whatsapp && (
-        <p className="form-ayuda">
-          El teléfono registrado no es un celular colombiano válido: copia el enlace y envíalo tú por WhatsApp.
-        </p>
+      {(mailto || !whatsapp) && (
+        <ul className="enlace-recuperacion-notas">
+          {mailto && (
+            <li>
+              "Enviar por correo" abre tu programa de correo con el mensaje listo para {correo.trim()}: revísalo y
+              envíalo desde tu cuenta.
+            </li>
+          )}
+          {!whatsapp && (
+            <li>El teléfono registrado no es un celular colombiano válido: copia el enlace y envíalo tú por WhatsApp.</li>
+          )}
+        </ul>
       )}
       <Aviso aviso={copia} />
     </section>

@@ -8,7 +8,7 @@ import { correoPortalValido, normalizarCelular } from './parametros'
 export type EnlaceRecuperacion = { enlace: string; venceEn: string | null; mensaje: string }
 
 export const MENSAJE_ENLACE =
-  'Envía este enlace por WhatsApp a la persona después de confirmar su identidad. Sirve una sola vez y vence en 60 minutos.'
+  'Envía este enlace a la persona por WhatsApp o por correo, después de confirmar su identidad.'
 export const MENSAJE_CODIGO_NO_VALIDO = 'El enlace no es válido o ya venció. Pide uno nuevo al administrador.'
 export const MENSAJE_RESTABLECIDA = 'Listo. Tu contraseña cambió; inicia sesión con la nueva.'
 export const MENSAJE_DEMASIADOS_INTENTOS = 'Demasiados intentos. Espera unos minutos e intenta de nuevo.'
