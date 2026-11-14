@@ -578,5 +578,9 @@ describe('Pantalla pública #/restablecer-contrasena', () => {
     const enlace = await screen.findByRole('link', { name: /Escríbenos por WhatsApp/ })
     expect(enlace.getAttribute('href')).toMatch(/^https:\/\/wa\.me\/573166152907\?text=/)
     expect(screen.getByText(/¿Olvidaste tu contraseña\?/)).toBeInTheDocument()
+    const correo = screen.getByRole('link', { name: /por correo/ })
+    const href = correo.getAttribute('href') ?? ''
+    expect(href).toMatch(/^mailto:vc\.automotores@gmail\.com\?subject=/)
+    expect(decodeURIComponent(href)).toContain('Olvidé mi contraseña')
   })
 })

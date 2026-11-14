@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { iniciarSesion, MENSAJE_LOGIN_FALTAN_DATOS, type LoginResponse } from '../api/auth'
 import { ApiError, MENSAJE_INESPERADO } from '../api/http'
-import { TEXTO_WHATSAPP_OLVIDO } from '../api/recuperacion'
+import { enlaceCorreoOlvido, TEXTO_WHATSAPP_OLVIDO } from '../api/recuperacion'
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo } from './Campo'
 import { NotaObligatorio } from './NotaObligatorio'
@@ -45,6 +45,7 @@ export function LoginForm({
   const [enviando, setEnviando] = useState(false)
   // P8 (D-73 D, CA-P8-68): el WhatsApp vigente del portal para pedir un enlace de recuperación.
   const contacto = useContactoPortal()
+  const correoOlvido = enlaceCorreoOlvido(contacto.correo)
 
   const titulo = useRef<HTMLHeadingElement>(null)
   const refEmail = useRef<HTMLInputElement>(null)
@@ -135,6 +136,15 @@ export function LoginForm({
           Escríbenos por WhatsApp
           <span className="sr-only"> (se abre en una ventana nueva)</span>
         </a>
+        {correoOlvido && (
+          <>
+            {' o '}
+            <a href={correoOlvido}>
+              por correo
+              <span className="sr-only"> (abre tu programa de correo)</span>
+            </a>
+          </>
+        )}
       </p>
 
       <p className="auth-switch">¿Todavía no tienes cuenta?</p>

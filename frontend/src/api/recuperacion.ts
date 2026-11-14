@@ -14,6 +14,17 @@ export const MENSAJE_RESTABLECIDA = 'Listo. Tu contraseña cambió; inicia sesi�
 export const MENSAJE_DEMASIADOS_INTENTOS = 'Demasiados intentos. Espera unos minutos e intenta de nuevo.'
 export const MENSAJE_PASSWORD_NO_COINCIDE = 'Las contraseñas no coinciden.'
 export const MENSAJE_CONFIRMAR_PASSWORD = 'Escribe de nuevo la contraseña.'
+/** Asunto del correo del inicio de sesión para pedir ayuda con la contraseña (pedido de la responsable, 2026-11-13). */
+export const ASUNTO_CORREO_OLVIDO = 'Olvidé mi contraseña – Financiamos Tu Camión'
+
+/** `mailto:` al correo del portal para pedir ayuda; null si el correo configurado no cumple la regla estricta (B-2). */
+export function enlaceCorreoOlvido(correoPortal: string): string | null {
+  const limpio = correoPortal.trim()
+  if (!correoPortalValido(limpio)) return null
+  const cuerpo = 'Hola, olvidé mi contraseña de Financiamos Tu Camión. Mi correo registrado es: '
+  return `mailto:${limpio}?subject=${encodeURIComponent(ASUNTO_CORREO_OLVIDO)}&body=${encodeURIComponent(cuerpo)}`
+}
+
 /** Texto prellenado del WhatsApp del inicio de sesión (CA-P8-68). */
 export const TEXTO_WHATSAPP_OLVIDO = 'Hola, olvidé mi contraseña de Financiamos Tu Camión.'
 
