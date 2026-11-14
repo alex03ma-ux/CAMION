@@ -648,3 +648,7 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
 - La API y el sitio se cayeron una vez durante la prueba (se cerraron las pestañas de la terminal). Se arrancaron de nuevo y la API se recompiló con D-79.
 - **Recuperación asistida completada a mano (2026-11-13, hora de Colombia).** La responsable copió el último enlace de Xavi Quintero, lo abrió en incógnito y cambió la contraseña; dice que funciona. Auditoría (solo lectura): `GENERAR_ENLACE_RECUPERACION` 02:13:05 UTC y `RESTABLECER_CONTRASENA` 02:14:12 UTC (2026-11-14). Con esto la prueba manual de la recuperación queda PROBADA.
 
+## 2026-11-13 — P8 unido a `main` e inicio de la preparación para publicar
+- La responsable creó la [PR #15](https://github.com/alex03ma-ux/CAMION/pull/15) y la unió a `main` (`a3d03d4`). `main` contiene P0 a P8: el plan original está completo.
+- Pidió preparar la publicación. Rama `feature/inf-publicacion`, desde `main`, con INF-1 (CI), INF-2 (seguridad del servidor), INF-3 (pruebas intermitentes) y el script de limpieza de datos de prueba, que no se ejecuta sin su aprobación y un respaldo.
+
