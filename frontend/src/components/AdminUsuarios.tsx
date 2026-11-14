@@ -433,6 +433,7 @@ export function AdminUsuarios({
         <PanelEnlaceRecuperacion
           nombre={enlace.usuario.nombreCompleto || enlace.usuario.email}
           telefono={enlace.usuario.telefono}
+          correo={enlace.usuario.email}
           datos={enlace.datos}
           onCerrar={cerrarEnlace}
         />

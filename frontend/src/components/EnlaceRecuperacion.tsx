@@ -1,24 +1,26 @@
 // P8 (HU-063, D-73 D; CA-P8-67) — Enlace de recuperación recién generado por el administrador: se muestra con
-// "Copiar" y "Enviar por WhatsApp" (wa.me al celular del usuario, si es válido, con un texto breve) y el aviso de que
+// "Copiar", "Enviar por WhatsApp" y "Enviar por correo" (mailto al correo registrado; pedido de la responsable) (wa.me al celular del usuario, si es válido, con un texto breve) y el aviso de que
 // vence en 60 minutos y sirve una sola vez. El enlace solo vive en memoria mientras el panel está abierto: no se
 // guarda en el navegador ni se registra en consola. Al cerrar el panel se descarta.
 import { useEffect, useRef, useState } from 'react'
 import { formatearFechaHora } from '../api/leads'
-import { enlaceWhatsappUsuario, type EnlaceRecuperacion } from '../api/recuperacion'
+import { enlaceCorreoUsuario, enlaceWhatsappUsuario, type EnlaceRecuperacion } from '../api/recuperacion'
 import { Aviso, type DatosAviso } from './Aviso'
 
 type Props = {
   nombre: string
   telefono: string
+  correo: string
   datos: EnlaceRecuperacion
   onCerrar: () => void
 }
 
-export function PanelEnlaceRecuperacion({ nombre, telefono, datos, onCerrar }: Props) {
+export function PanelEnlaceRecuperacion({ nombre, telefono, correo, datos, onCerrar }: Props) {
   const [copia, setCopia] = useState<DatosAviso | null>(null)
   const titulo = useRef<HTMLHeadingElement>(null)
   const campo = useRef<HTMLInputElement>(null)
   const whatsapp = enlaceWhatsappUsuario(telefono, datos.enlace)
+  const mailto = enlaceCorreoUsuario(correo, datos.enlace)
 
   useEffect(() => {
     titulo.current?.focus()
@@ -69,10 +71,21 @@ export function PanelEnlaceRecuperacion({ nombre, telefono, datos, onCerrar }: P
             Enviar por WhatsApp<span className="sr-only"> (se abre en una ventana nueva)</span>
           </a>
         ) : null}
+        {mailto ? (
+          <a className="inv-boton-enlace inv-boton-pequeno inv-boton-secundario" href={mailto}>
+            Enviar por correo<span className="sr-only"> a {correo.trim()} (abre tu programa de correo)</span>
+          </a>
+        ) : null}
         <button type="button" className="secondary-button" onClick={onCerrar}>
           Cerrar
         </button>
       </div>
+      {mailto && (
+        <p className="form-ayuda">
+          "Enviar por correo" abre tu programa de correo con el mensaje listo para {correo.trim()}: revísalo y envíalo
+          desde tu cuenta.
+        </p>
+      )}
       {!whatsapp && (
         <p className="form-ayuda">
           El teléfono registrado no es un celular colombiano válido: copia el enlace y envíalo tú por WhatsApp.

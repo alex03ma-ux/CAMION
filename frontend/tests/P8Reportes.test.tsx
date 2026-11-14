@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import App from '../src/App'
 import { nombreDeDisposicion } from '../src/api/http'
-import { codigoDelHash, enlaceWhatsappUsuario } from '../src/api/recuperacion'
+import { codigoDelHash, enlaceCorreoUsuario, enlaceWhatsappUsuario } from '../src/api/recuperacion'
 import {
   consultaReporte,
   mesEnCurso,
@@ -465,6 +465,11 @@ describe('Enlace de recuperación en la administración de usuarios', () => {
     const wa = screen.getByRole('link', { name: /Enviar por WhatsApp/ })
     expect(wa.getAttribute('href')).toMatch(/^https:\/\/wa\.me\/573001234567\?text=/)
     expect(decodeURIComponent(wa.getAttribute('href') ?? '')).toContain(ENLACE)
+    const correo = screen.getByRole('link', { name: /Enviar por correo/ })
+    const href = correo.getAttribute('href') ?? ''
+    expect(href).toMatch(/^mailto:u-1@ejemplo\.test\?subject=/)
+    expect(decodeURIComponent(href)).toContain(ENLACE)
+    expect(decodeURIComponent(href)).toContain('Recupera tu contraseña')
     const escribir = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', { value: { writeText: escribir }, configurable: true })
     await user.click(screen.getByRole('button', { name: 'Copiar' }))
@@ -472,6 +477,14 @@ describe('Enlace de recuperación en la administración de usuarios', () => {
     expect(await screen.findByText('Enlace copiado.')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Cerrar' }))
     expect(screen.queryByLabelText('Enlace')).not.toBeInTheDocument()
+  })
+
+  it('el correo con caracteres peligrosos no genera mailto (no se inyectan destinatarios)', () => {
+    expect(enlaceCorreoUsuario('ana@ejemplo.test?cc=otro@x.test', ENLACE)).toBeNull()
+    expect(enlaceCorreoUsuario('ana@ejemplo.test&bcc=x@y.co', ENLACE)).toBeNull()
+    expect(enlaceCorreoUsuario('', ENLACE)).toBeNull()
+    expect(enlaceCorreoUsuario('ana@ejemplo.test', 'javascript:alert(1)')).toBeNull()
+    expect(enlaceCorreoUsuario(' ana@ejemplo.test ', ENLACE)).toMatch(/^mailto:ana@ejemplo\.test\?/)
   })
 
   it('sin celular válido no ofrece WhatsApp; 409 muestra el error', async () => {

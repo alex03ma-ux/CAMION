@@ -3,7 +3,7 @@
 // El enlace y el código nunca se registran en consola ni se guardan en el navegador.
 import { MENSAJE_REVISA_DATOS, MENSAJE_SESION_TERMINADA } from './auth'
 import { ApiError, esObjetoJson, MENSAJE_INESPERADO, peticion } from './http'
-import { normalizarCelular } from './parametros'
+import { correoPortalValido, normalizarCelular } from './parametros'
 
 export type EnlaceRecuperacion = { enlace: string; venceEn: string | null; mensaje: string }
 
@@ -25,6 +25,26 @@ export function enlaceValido(enlace: string): boolean {
 /** Texto breve del WhatsApp que envía el administrador, con el enlace. */
 export function textoWhatsappEnlace(enlace: string): string {
   return `Hola. Este es tu enlace para crear una contraseña nueva en Financiamos Tu Camión. Vence en 60 minutos y sirve una sola vez: ${enlace}`
+}
+
+/** Asunto del correo que envía el administrador desde su propio programa de correo. */
+export const ASUNTO_CORREO_ENLACE = 'Recupera tu contraseña – Financiamos Tu Camión'
+
+/**
+ * Pedido de la responsable (2026-11-13): enviar el enlace también por correo sin servicio externo (D-73 D).
+ * `mailto:` al correo registrado del usuario, con asunto y texto; el administrador lo envía desde su correo.
+ * Solo si el correo cumple la regla estricta (B-2 de P7): así no se pueden inyectar `?`, `&` ni destinatarios.
+ */
+export function enlaceCorreoUsuario(correo: string, enlace: string): string | null {
+  const limpio = correo.trim()
+  if (!correoPortalValido(limpio) || !enlaceValido(enlace)) return null
+  const asunto = encodeURIComponent(ASUNTO_CORREO_ENLACE)
+  const cuerpo = encodeURIComponent(
+    'Hola.\n\nEste es tu enlace para crear una contraseña nueva en Financiamos Tu Camión:\n\n' +
+      `${enlace}\n\n` +
+      'Vence en 60 minutos y sirve una sola vez. Si no pediste este cambio, ignora este mensaje.',
+  )
+  return `mailto:${limpio}?subject=${asunto}&body=${cuerpo}`
 }
 
 /** wa.me al celular del usuario si es un celular colombiano válido; null si no. */
