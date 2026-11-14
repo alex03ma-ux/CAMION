@@ -635,4 +635,15 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - la revisión legal (D-44).
 - PR: por abrir contra `main`, sin merge. Según el registro local, la rama remota está en `14cc073`; faltan por subir los 6 commits posteriores.
 - **D-79 A (2026-11-13).** Comando local `recuperar-admin <correo>` (commits 01a9486, 789d9a5 y 554a691): genera el enlace de un solo uso para un administrador activo y solo lo imprime en consola, con otro propósito de token distinto al del panel. Se audita como SISTEMA, origen COMANDO_LOCAL. `dotnet test` 1332/1332. Documentado en `backend/GUIA-AUTENTICACION.md` §12 y `docs/GUIA-ADMINISTRACION.md`.
+- **Ajustes pedidos en la prueba (2026-11-13), recuperación asistida:**
+  - botón para enviar el enlace por correo, sin servicio externo (885db5a);
+  - panel del enlace con botones separados y texto "WhatsApp o correo" (125f29e);
+  - inicio de sesión con "¿Olvidaste tu contraseña? Escríbenos por WhatsApp o al correo …", con el correo de Parámetros (88cedf4 y 5b890d6);
+  - el `mailto:` abría Outlook de escritorio, el programa predeterminado de Windows, y reemplazaba la pestaña. En el panel se cambió por **"Enviar por Gmail"**, un enlace https de redacción de Gmail en una pestaña nueva, con el `mailto:` como alternativa (63cf0b5 y 5b890d6).
+  - Pruebas: `npx vitest run` 751/751, `tsc -b`, `tsc -p tsconfig.test.json` y `npm run build` OK.
+- **Prueba manual P8: PROBADO EN PARTE por la responsable (2026-11-13), respuesta "Todo bien".**
+  - Revisado con capturas: CSV de ventas abierto en Excel, sin datos de clientes y con la venta revertida que no suma; indicadores coherentes con la base; actividad del vehículo 21 completa (registro, publicación, reasignación, venta y reversión); actividad de suscripciones; panel del enlace; correo de olvido en el inicio de sesión.
+  - Auditoría del 2026-11-13 (solo lectura): `Reporte EXPORTAR` 1 y `Usuario GENERAR_ENLACE_RECUPERACION` 5.
+  - **No hay evento `RESTABLECER_CONTRASENA`:** el cambio de contraseña con el enlace y "Mis indicadores" del asesor no quedaron comprobados en la base. Los cubren las pruebas automáticas.
+- La API y el sitio se cayeron una vez durante la prueba (se cerraron las pestañas de la terminal). Se arrancaron de nuevo y la API se recompiló con D-79.
 
