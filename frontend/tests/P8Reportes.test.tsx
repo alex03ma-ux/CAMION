@@ -470,6 +470,7 @@ describe('Enlace de recuperación en la administración de usuarios', () => {
     expect(href).toMatch(/^mailto:u-1@ejemplo\.test\?subject=/)
     expect(decodeURIComponent(href)).toContain(ENLACE)
     expect(decodeURIComponent(href)).toContain('Recupera tu contraseña')
+    expect(correo).toHaveAttribute('target', '_blank')
     const escribir = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', { value: { writeText: escribir }, configurable: true })
     await user.click(screen.getByRole('button', { name: 'Copiar' }))
@@ -582,5 +583,6 @@ describe('Pantalla pública #/restablecer-contrasena', () => {
     const href = correo.getAttribute('href') ?? ''
     expect(href).toMatch(/^mailto:vc\.automotores@gmail\.com\?subject=/)
     expect(decodeURIComponent(href)).toContain('Olvidé mi contraseña')
+    expect(correo).toHaveAttribute('target', '_blank')
   })
 })

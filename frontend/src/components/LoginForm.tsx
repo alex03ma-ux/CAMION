@@ -139,9 +139,10 @@ export function LoginForm({
         {correoOlvido && (
           <>
             {' o '}
-            <a href={correoOlvido}>
+            {/* En una pestaña nueva: si el correo es Gmail en el navegador, el portal no se reemplaza. */}
+            <a href={correoOlvido} target="_blank" rel="noopener noreferrer">
               por correo
-              <span className="sr-only"> (abre tu programa de correo)</span>
+              <span className="sr-only"> (se abre en una ventana nueva)</span>
             </a>
           </>
         )}

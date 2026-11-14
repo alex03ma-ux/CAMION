@@ -73,8 +73,13 @@ export function PanelEnlaceRecuperacion({ nombre, telefono, correo, datos, onCer
           </a>
         ) : null}
         {mailto ? (
-          <a className="inv-boton-enlace inv-boton-pequeno inv-boton-secundario" href={mailto}>
-            Enviar por correo<span className="sr-only"> a {correo.trim()} (abre tu programa de correo)</span>
+          <a
+            className="inv-boton-enlace inv-boton-pequeno inv-boton-secundario"
+            href={mailto}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Enviar por correo<span className="sr-only"> a {correo.trim()} (se abre en una ventana nueva)</span>
           </a>
         ) : null}
         <button type="button" className="secondary-button" onClick={onCerrar}>
