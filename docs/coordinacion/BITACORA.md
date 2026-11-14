@@ -646,4 +646,5 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
   - Auditoría del 2026-11-13 (solo lectura): `Reporte EXPORTAR` 1 y `Usuario GENERAR_ENLACE_RECUPERACION` 5.
   - **No hay evento `RESTABLECER_CONTRASENA`:** el cambio de contraseña con el enlace y "Mis indicadores" del asesor no quedaron comprobados en la base. Los cubren las pruebas automáticas.
 - La API y el sitio se cayeron una vez durante la prueba (se cerraron las pestañas de la terminal). Se arrancaron de nuevo y la API se recompiló con D-79.
+- **Recuperación asistida completada a mano (2026-11-13, hora de Colombia).** La responsable copió el último enlace de Xavi Quintero, lo abrió en incógnito y cambió la contraseña; dice que funciona. Auditoría (solo lectura): `GENERAR_ENLACE_RECUPERACION` 02:13:05 UTC y `RESTABLECER_CONTRASENA` 02:14:12 UTC (2026-11-14). Con esto la prueba manual de la recuperación queda PROBADA.
 
