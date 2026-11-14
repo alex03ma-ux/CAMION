@@ -58,6 +58,26 @@ export function enlaceCorreoUsuario(correo: string, enlace: string): string | nu
   return `mailto:${limpio}?subject=${asunto}&body=${cuerpo}`
 }
 
+/**
+ * Redacción de Gmail en el navegador (pedido de la responsable, 2026-11-13): el `mailto:` abre el programa de correo
+ * predeterminado de Windows (Outlook de escritorio), no el Gmail que ella usa en Chrome. Este enlace https abre Gmail
+ * en una pestaña nueva con el mismo destinatario, asunto y texto, sin depender de esa configuración.
+ */
+export function enlaceGmailUsuario(correo: string, enlace: string): string | null {
+  const mailto = enlaceCorreoUsuario(correo, enlace)
+  if (mailto === null) return null
+  const [destino, consulta] = mailto.slice('mailto:'.length).split('?')
+  const datos = new URLSearchParams(consulta)
+  const parametros = new URLSearchParams({
+    view: 'cm',
+    fs: '1',
+    to: destino,
+    su: datos.get('subject') ?? '',
+    body: datos.get('body') ?? '',
+  })
+  return `https://mail.google.com/mail/?${parametros.toString()}`
+}
+
 /** wa.me al celular del usuario si es un celular colombiano válido; null si no. */
 export function enlaceWhatsappUsuario(telefono: string, enlace: string): string | null {
   const celular = normalizarCelular(telefono)

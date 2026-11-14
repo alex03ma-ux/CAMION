@@ -4,7 +4,13 @@
 // guarda en el navegador ni se registra en consola. Al cerrar el panel se descarta.
 import { useEffect, useRef, useState } from 'react'
 import { formatearFechaHora } from '../api/leads'
-import { enlaceCorreoUsuario, enlaceWhatsappUsuario, MENSAJE_ENLACE, type EnlaceRecuperacion } from '../api/recuperacion'
+import {
+  enlaceCorreoUsuario,
+  enlaceGmailUsuario,
+  enlaceWhatsappUsuario,
+  MENSAJE_ENLACE,
+  type EnlaceRecuperacion,
+} from '../api/recuperacion'
 import { Aviso, type DatosAviso } from './Aviso'
 
 type Props = {
@@ -21,6 +27,7 @@ export function PanelEnlaceRecuperacion({ nombre, telefono, correo, datos, onCer
   const campo = useRef<HTMLInputElement>(null)
   const whatsapp = enlaceWhatsappUsuario(telefono, datos.enlace)
   const mailto = enlaceCorreoUsuario(correo, datos.enlace)
+  const gmail = enlaceGmailUsuario(correo, datos.enlace)
 
   useEffect(() => {
     titulo.current?.focus()
@@ -72,14 +79,14 @@ export function PanelEnlaceRecuperacion({ nombre, telefono, correo, datos, onCer
             Enviar por WhatsApp<span className="sr-only"> (se abre en una ventana nueva)</span>
           </a>
         ) : null}
-        {mailto ? (
+        {gmail ? (
           <a
             className="inv-boton-enlace inv-boton-pequeno inv-boton-secundario"
-            href={mailto}
+            href={gmail}
             target="_blank"
             rel="noopener noreferrer"
           >
-            Enviar por correo<span className="sr-only"> a {correo.trim()} (se abre en una ventana nueva)</span>
+            Enviar por Gmail<span className="sr-only"> a {correo.trim()} (se abre en una ventana nueva)</span>
           </a>
         ) : null}
         <button type="button" className="secondary-button" onClick={onCerrar}>
@@ -90,8 +97,8 @@ export function PanelEnlaceRecuperacion({ nombre, telefono, correo, datos, onCer
         <ul className="enlace-recuperacion-notas">
           {mailto && (
             <li>
-              "Enviar por correo" abre tu programa de correo con el mensaje listo para {correo.trim()}: revísalo y
-              envíalo desde tu cuenta.
+              "Enviar por Gmail" abre Gmail en otra pestaña con el mensaje listo para {correo.trim()}: revísalo, pulsa
+              Enviar y cierra esa pestaña. Si usas otro correo, <a href={mailto}>ábrelo con tu programa de correo</a>.
             </li>
           )}
           {!whatsapp && (

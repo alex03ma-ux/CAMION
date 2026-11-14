@@ -138,12 +138,9 @@ export function LoginForm({
         </a>
         {correoOlvido && (
           <>
-            {' o '}
-            {/* En una pestaña nueva: si el correo es Gmail en el navegador, el portal no se reemplaza. */}
-            <a href={correoOlvido} target="_blank" rel="noopener noreferrer">
-              por correo
-              <span className="sr-only"> (se abre en una ventana nueva)</span>
-            </a>
+            {' o al correo '}
+            {/* Se muestra la dirección: cada visitante usa su propio correo (Gmail, Outlook...) y puede copiarla. */}
+            <a href={correoOlvido}>{contacto.correo.trim()}</a>
           </>
         )}
       </p>
