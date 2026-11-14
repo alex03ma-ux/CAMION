@@ -160,6 +160,10 @@ export function AdminInicio({ token, onSesionTerminada }: Props) {
         Inicio
       </h2>
       <p className="form-ayuda">Resumen de lo que requiere atención. Abre cada contador para ver la lista.</p>
+      {/* P8 (CA-P8-39): las cifras comerciales y en pesos están aparte, en Indicadores. */}
+      <p>
+        <a href={hashSeccionAdmin('indicadores')}>Ver indicadores</a>
+      </p>
       {carga.estado === 'cargando' && <p role="status">Cargando el resumen...</p>}
       {carga.estado === 'error' && (
         <>

@@ -2,6 +2,7 @@
 // Solo se muestra a quien tiene el rol ADMINISTRADOR según /api/auth/me; la API protege cada ruta.
 // P7 (CA-P7-52): Inicio, Usuarios, Planes, Suscripciones, Ventas, Inventario, Publicaciones, Contactos,
 // Catálogos, Portada y Parámetros (los pagos viven dentro de Suscripciones), con aria-current en la actual.
+// P8: Reportes e Indicadores, después de Ventas.
 import {
   hashSeccionAdmin,
   HASH_CONTACTOS,
@@ -20,6 +21,8 @@ export const NOMBRES_SECCION_ADMIN: Record<SeccionAdmin, string> = {
   catalogos: 'Catálogos',
   portada: 'Portada',
   parametros: 'Parámetros',
+  reportes: 'Reportes',
+  indicadores: 'Indicadores',
 }
 
 type Enlace = { clave: string; nombre: string; href: string; seccion?: SeccionAdmin }
@@ -34,6 +37,9 @@ const ENLACES: readonly Enlace[] = [
   seccion('planes'),
   seccion('suscripciones'),
   seccion('ventas'),
+  // P8 (D-68 A, D-69 A; CA-P8-73): reportes e indicadores.
+  seccion('reportes'),
+  seccion('indicadores'),
   // Inventario, Publicaciones y Contactos viven fuera de #/cuenta (también los usa el asesor).
   { clave: 'inventario', nombre: 'Inventario', href: HASH_INVENTARIO },
   { clave: 'publicaciones', nombre: 'Publicaciones', href: HASH_PUBLICACIONES },

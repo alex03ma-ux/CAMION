@@ -13,6 +13,7 @@ import {
   leerAvisoPendiente,
   marcarVehiculoReciente,
 } from '../inventario/avisoPendiente'
+import { SeccionActividad } from './Actividad'
 import { Aviso, type DatosAviso } from './Aviso'
 import { HistorialVentasVehiculo } from './HistorialVentasVehiculo'
 import { InventarioFormulario } from './InventarioFormulario'
@@ -215,6 +216,17 @@ function InventarioConAcceso({
                 esAdmin={esAdmin}
                 onSesionTerminada={onSesionTerminada}
               />
+              {/* P8 (D-72 A/A; CA-P8-56, 60): actividad del vehículo, sus publicaciones y sus ventas; solo administrador. */}
+              {esAdmin && (
+                <SeccionActividad
+                  key={detalle.id}
+                  token={token}
+                  recurso="vehiculo"
+                  id={detalle.id}
+                  descripcion={`del vehículo ${titulo}`}
+                  onSesionTerminada={onSesionTerminada}
+                />
+              )}
             </>
           )}
         />

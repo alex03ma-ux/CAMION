@@ -837,3 +837,167 @@ Detectadas al escribir `docs/criterios/criterios-P7-ventas-admin.md` (2026-11-12
   - el aviso de confirmación dice exactamente qué pasará; el motivo es obligatorio y todo se audita.
 - Para corregir un pago mal escrito: se anula, lo que deshace la renovación, y se renueva de nuevo con los datos correctos.
 - Nota: el pago 1 (renovación de Xavi Quintero) se anuló antes de esta regla y su renovación se conserva. Es un dato de prueba; se limpia antes de producción.
+
+---
+
+# Decisiones de P8 "Reportes, marketing e integraciones" (D-68 a D-77)
+
+Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, analista funcional). Los criterios están escritos con la opción recomendada y marcados PENDIENTE D-n. Hay dos grupos:
+- **Grupo 1 (D-68 a D-72): se construyen sin servicios externos.** Forman el alcance mínimo propuesto de P8 y no necesitan migración con la opción recomendada.
+- **Grupo 2 (D-73 a D-77): requieren un servicio externo con costo, contrato o datos personales**, o una revisión legal. La recomendación general es no contratar nada hasta que el portal se publique en internet (INF-2) y se cierre la revisión legal (D-44). La pasarela de pagos no se vuelve a preguntar: D-61 D sigue descartada por ahora.
+
+## Grupo 1 — Reportes e indicadores internos
+
+## D-68 — ¿Qué reportes y con qué filtros? · TOMADA (2026-11-13)
+- Contexto: HU-076 a HU-078 piden reportes de vehículos, leads y créditos, "filtrables" (RN-RE-002 a 004), sin decir cuáles cortes. La minuta M13 añade publicaciones y ventas. Los pagos del plan existen desde P7 (D-61 B).
+- Opciones:
+  - A) **Cinco reportes:** (1) vehículos y publicaciones (por estado, categoría, asesor y ciudad; destacadas; los 10 con más contactos); (2) solicitudes (contactos, avisos, créditos y búsquedas por origen, estado, resultado de cierre y responsable; tiempo medio hasta el cierre); (3) créditos (estados mostrados de D-57 y resultados); (4) ventas (por origen D-39, categoría y asesor, con cantidad y valor); (5) suscripciones y pagos registrados (por estado, plan, medio y concepto). Filtros comunes: rango de fechas (por defecto el mes en curso, máximo 366 días), asesor y categoría.
+    - Impacto: entrega mediana; sin migración.
+  - B) Como A, pero sin el reporte de suscripciones y pagos.
+    - Impacto: más pequeño; la información de pagos sigue solo en cada suscripción.
+  - C) Solo lo literal de la v3.0: vehículos, leads y créditos.
+    - Impacto: el más pequeño; ventas y pagos (M13, D-39) quedan sin reporte.
+- Recomendación del analista: **A**. Todos los datos ya existen y D-39 se tomó pensando en estos reportes.
+- Bloquea: CA-P8-01, 03, 12, 15, 20, 30 y 31.
+
+## D-69 — Indicadores comerciales y gráficos · TOMADA (2026-11-13)
+- Contexto: HU-075 y HU-080 piden indicadores consolidados y "métricas comerciales". D-64 a A dejó el panel "Inicio" de P7 sin dinero ni gráficos.
+- (a) **Gráficos:**
+  - A) Hasta cuatro gráficos de barras simples (ventas por mes, ventas por origen, solicitudes por origen, contactos por resultado), dibujados sin librería externa y con su tabla equivalente.
+  - B) Una librería de gráficos (más tipos de gráfico; añade una dependencia que hay que mantener y revisar).
+  - C) Sin gráficos, solo tablas.
+  - Recomendación: **A**.
+- (b) **Indicadores y dinero:**
+  - A) Contactos recibidos, porcentaje de contactos cerrados con "Venta concretada", ventas vigentes y **valor vendido**, solicitudes de Administración por origen, créditos remitidos, publicaciones visibles, **ingresos registrados por planes**, tiempo medio hasta el cierre, y comparación con el período anterior. Las sumas de dinero solo las ve el administrador.
+  - B) Como A, sin valores en pesos (solo cantidades).
+  - Recomendación: **A**. El panel "Inicio" de P7 sigue sin dinero; los valores van en la sección aparte "Indicadores".
+- Bloquea: CA-P8-21, 28, 34 a 36.
+
+## D-70 — ¿El asesor ve indicadores de lo suyo? · TOMADA (2026-11-13)
+- **Contradicción:** la v3.0 asigna todo el módulo de Reportes al **Administrador** (§7, HU-075 a HU-080). La minuta (§4) dice que el asesor gestiona sus "operaciones comerciales", y hoy ya tiene listas propias ("Mis publicaciones", "Mis contactos", "Mis ventas", "Mi suscripción").
+- Opciones:
+  - A) **Sí, "Mis indicadores" en pantalla y sin exportar:** sus vehículos por estado, publicaciones visibles, contactos recibidos con su resultado y sus ventas con cantidad y valor. Sin avisos, créditos ni búsquedas (D-52, D-58), sin pagos (D-61 B), sin cifras de otros asesores ni comparaciones.
+  - B) No; los reportes son solo del administrador (lectura literal de la v3.0).
+  - C) Como A, con exportación CSV de sus propios datos.
+    - Impacto: el asesor podría sacar del sistema datos de sus contactos; habría que aplicar D-71 b igual que al administrador.
+- Recomendación del analista: **A**. Le da valor al plan que paga sin exponer datos de otros y sin sacar archivos del sistema. Modifica el actor de HU-075 y HU-080 solo para lo propio.
+- Bloquea: CA-P8-49, 51 a 55.
+
+## D-71 — Formato de exportación y datos personales · TOMADA (2026-11-13)
+- **Contradicción:** RN-RE-005 dice "Excel/PDF". El encargo de P8 dice "CSV o Excel". Además, exportar saca datos del sistema, y RN-SE-004, D-44 y D-45 piden proteger los datos de los clientes.
+- (a) **Formato:**
+  - A) **CSV** (UTF-8 con BOM, separador `;`), que abre directamente en Excel en español. Sin dependencias nuevas. Cubre "Excel" en la práctica, no PDF.
+  - B) **Excel `.xlsx`** real, con una librería nueva en el backend (hay que revisar su licencia y sus vulnerabilidades).
+  - C) **PDF**, con una librería nueva; útil para imprimir, no para analizar.
+  - D) CSV ahora y `.xlsx` o PDF más adelante, si se piden.
+  - Recomendación: **A**, entendida como D: CSV en P8 y los otros formatos solo si la responsable los necesita después. Es una desviación parcial de RN-RE-005 (sin PDF) que debe quedar aceptada.
+- (b) **¿La exportación incluye datos personales de clientes (nombre, teléfono, correo, mensaje)?**
+  - A) **No.** Solo agregados y filas con identificadores, fechas, estados, origen, resultado, vehículo y asesor responsable. Toda exportación se audita (quién, cuándo, qué reporte, qué filtros, cuántas filas).
+  - B) Sí, para el administrador, con la exportación auditada.
+    - Impacto: un archivo con datos personales fuera del sistema; la política de datos (D-44) debe decirlo y el abogado revisarlo.
+  - C) Como B, pero pidiendo un motivo antes de cada descarga.
+  - Recomendación: **A**. Para contactar a un cliente, el administrador usa la bandeja, donde ya están sus datos.
+- Bloquea: CA-P8-07, 42 a 45.
+
+## D-72 — Línea de tiempo de auditoría · TOMADA (2026-11-13)
+- Contexto: D-62 d dejó para P8 la consulta de la auditoría. `auditoria_eventos` se llena desde P2, pero ninguna ruta la muestra. La prueba `SesionTests` (CA-061-15) prohíbe rutas que contengan "auditoria" o "historial", para que nadie pueda editar ni borrar eventos.
+- (a) **Alcance:**
+  - A) "Actividad" de **un vehículo** (con sus publicaciones y ventas) y de **una suscripción** (con sus pagos y lo que deshizo D-67), solo para el administrador, de solo lectura, con las acciones en palabras.
+  - B) Como A, más la actividad de un usuario (aprobaciones, bloqueos, reasignaciones).
+  - C) Una consulta general de la auditoría con filtros por fecha, entidad y persona.
+    - Impacto: es la más potente, pero la más difícil de leer, y expone más datos de una vez.
+  - Recomendación: **A**. Cubre lo que pidió D-62 d y la duda de D-67 sobre los pagos anulados.
+- (b) **¿El asesor ve la actividad de sus vehículos?**
+  - A) No; solo el administrador.
+  - B) Sí, la de sus vehículos, sin los eventos de reasignación hacia otros asesores.
+  - Recomendación: **A**, coherente con D-62 d ("solo para el administrador").
+- Nota técnica (sin decisión de negocio): la ruta de lectura se nombra sin "auditoria" ni "historial" (p. ej. `/api/admin/vehiculos/{id}/eventos`), para que la prueba CA-061-15 siga vigente sin excepciones.
+- Bloquea: CA-P8-56 a 62.
+
+## Grupo 2 — Servicios externos y revisión legal
+
+## D-73 — ¿Se contrata un servicio de correo? (recuperar contraseña y avisos) · TOMADA (2026-11-13)
+- Contexto: D-5 dejó el correo para cuando se apruebe una integración. Sin correo siguen bloqueadas HU-063 "Recuperar contraseña" (RN-US-006 "Enlace temporal"), el aviso de aprobación del asesor (D-5) y los avisos por correo de HU-070 a HU-074 (D-48, D-64 b). Hoy, quien olvida su contraseña no tiene salida dentro del sistema.
+- Opciones:
+  - A) **No contratar todavía.** HU-063 sigue BLOQUEADO; la pantalla de inicio de sesión remite al WhatsApp del portal.
+    - Impacto: sin costo ni trabajo.
+  - B) **Contratar un proveedor de correo transaccional** para todo: recuperar contraseña, aprobación del asesor y avisos de lead nuevo, crédito y vencimientos, con preferencias por usuario (HU-070).
+    - Impacto: cuenta con el proveedor y costo por volumen; dominio propio con SPF y DKIM (el correo actual es Gmail, D-42); el proveedor debe figurar como encargado en la política de datos (D-44); secretos en `user-secrets`; migración para las preferencias. Entrega grande.
+  - C) **Como B, pero solo** recuperar contraseña y el aviso de aprobación del asesor.
+    - Impacto: mismos requisitos de proveedor y dominio, con menos trabajo y menos correos.
+  - D) **Recuperación asistida, sin servicio externo.** El administrador genera desde el panel un enlace de un solo uso (vence en 60 minutos) y se lo envía al usuario por WhatsApp; al usarlo se cierran todas sus sesiones (D-12). Auditado.
+    - Impacto: resuelve HU-063 sin costo. Depende de que el administrador confirme la identidad de quien lo pide.
+- Recomendación del analista: **D ahora y C cuando exista el dominio propio**. D cumple RN-US-006 ("enlace temporal") sin contrato; C se activa después sin rehacer el enlace.
+- Bloquea: HU-063, CA-P8-66 a 68.
+
+## D-74 — ¿Avisos automáticos por WhatsApp (WhatsApp Business API)? · TOMADA (2026-11-13)
+- Contexto: v3.0 §5.3 y §14 mencionan WhatsApp Business como posibilidad. Hoy WhatsApp se usa solo con enlaces `wa.me` que abre la persona (D-47), sin registro en el portal.
+- Opciones:
+  - A) **No.** Se siguen usando los enlaces `wa.me` y los avisos dentro del panel.
+  - B) **Sí, con un proveedor** (la API de Meta directamente o un intermediario autorizado) para avisar al asesor de un lead nuevo y al asesor y al administrador de los vencimientos.
+    - Impacto: número dedicado y verificado, plantillas aprobadas por Meta, costo por conversación, autorización previa de cada destinatario, ampliar la política de datos (D-44, que ya pregunta al abogado por la transferencia a WhatsApp) y secretos fuera del repositorio.
+- Recomendación del analista: **A**. El volumen actual no lo justifica y requiere revisión legal; se puede reconsiderar con el portal en producción.
+- Bloquea: el canal WhatsApp de HU-071 a HU-074.
+
+## D-75 — ¿Entran las promociones (HU-087) y el contenido de marketing (HU-052 a HU-055)? · TOMADA (2026-11-13)
+- Contexto: RN-PA-007 "Administrar promociones" y la minuta M08 "Banners, contenidos y promociones comerciales". D-63 pasó HU-087 a P8. D-42 pide un portal "no tan recargado". Una promoción con precios o descuentos es publicidad y debe informar sus condiciones (protección al consumidor); el abogado debería revisarlo (D-44).
+- Opciones:
+  - A) **No en P8.** Se mantiene solo la foto de portada administrable (D-42).
+  - B) **Banners o promociones administrables** en una entrega aparte (P8b): título, texto corto, imagen, enlace interno, fechas de inicio y fin, activo o inactivo; como máximo uno visible en la portada; sin precios ni descuentos hasta la revisión legal.
+    - Impacto: migración 017 (tabla de contenidos); entrega mediana.
+  - C) Como B, más páginas de contenido o noticias (HU-052 a HU-055 completas).
+    - Impacto: entrega grande; más contenido que mantener.
+- Recomendación del analista: **A** para el mínimo de P8. Si la responsable quiere promociones, **B en una entrega P8b** después de los reportes.
+- Bloquea: nada del alcance mínimo.
+
+## D-76 — Analítica web y cookies · TOMADA (2026-11-13)
+- Contexto: v3.0 §14 nombra Google Analytics como posibilidad. No existe ningún dato de visitas. La política de datos (D-44) no menciona cookies, y el portal hoy no usa cookies de terceros.
+- Opciones:
+  - A) **Nada por ahora.** Sin analítica ni aviso de cookies.
+  - B) **Conteo propio sin cookies:** el servidor suma las vistas de cada ficha por día, sin guardar IP ni identificar a la persona. Permitiría "vistas por publicación" en los indicadores del administrador y del asesor.
+    - Impacto: migración 017 (tabla de conteos), pequeña; sin terceros.
+  - C) **Google Analytics u otra herramienta externa.**
+    - Impacto: cookies de terceros, aviso y consentimiento de cookies, transferencia internacional de datos, cambio de la política (D-44) y revisión del abogado.
+- Recomendación del analista: **A** mientras el portal no esté publicado (en local no hay visitas reales). Al publicarlo, **B** antes que C.
+- Bloquea: CA-P8-41 y CA-P8-64.
+
+## D-77 — Publicidad y redes sociales · TOMADA (2026-11-13)
+- Contexto: v3.0 §14 nombra redes sociales y YouTube/TikTok. Instagram y TikTok ya son parámetros del portal y se muestran cuando tienen enlace (D-63 A). Las cuentas aún no existen (D-42).
+- Opciones:
+  - A) **Sin integración.** Solo los enlaces a las cuentas. Opcionalmente, un botón "Compartir" en la ficha que abre WhatsApp o la red con el enlace de la publicación, sin scripts de terceros.
+  - B) **Píxeles de publicidad** (Meta o Google) para medir campañas.
+    - Impacto: cookies de terceros, consentimiento, cambio de la política (D-44).
+  - C) **Publicación automática** de vehículos en redes desde el portal.
+    - Impacto: cuentas de empresa, aplicaciones revisadas por cada plataforma, credenciales y mantenimiento.
+- Recomendación del analista: **A**, con el botón "Compartir" solo si la responsable lo quiere.
+- Bloquea: CA-P8-64.
+
+### Decisión sobre D-68 a D-77 (responsable, 2026-11-13): "Apruebo todas"
+- D-68 A (cinco reportes); D-69 A y A (hasta 4 gráficos sin librería; indicadores con valores en pesos en una sección aparte, el panel Inicio sigue sin dinero); D-70 A ("Mis indicadores" del asesor, en pantalla y sin exportar).
+- D-71: CSV ahora (UTF-8 con BOM, `;`), sin datos personales de clientes y con toda exportación auditada; .xlsx o PDF solo si se piden después.
+- D-72 A y A (actividad de vehículo y de suscripción, solo administrador).
+- D-73: D ahora (recuperación asistida: enlace de un solo uso, 60 minutos, enviado por WhatsApp por el administrador, cierra todas las sesiones, auditado) y C cuando exista dominio propio.
+- D-74 A (sin WhatsApp automático); D-75 A (sin promociones en P8; P8b si se piden); D-76 A ahora y B al publicar; D-77 A (solo enlaces). El botón "Compartir" queda fuera hasta que la responsable lo pida expresamente.
+
+## D-78 — Correcciones de seguridad de la recuperación asistida · TOMADA (2026-11-13, técnica, coordinador)
+- Contexto: QA de P8 (`docs/criterios/P8-evidencia.md`, QA-P8-1 y QA-P8-2) y la revisión de seguridad (`docs/coordinacion/REVISION-SEGURIDAD-P8.md`, B-1, M-1, M-2 y B-4) sobre D-73 D. No cambia ninguna regla de negocio.
+- **Decisión:**
+  1. **QA-P8-1:** todo cambio de `EstadoCuenta` (aprobar, rechazar, bloquear, desbloquear, reconsiderar) cambia el `SecurityStamp` en la misma transacción. Un enlace emitido antes ya no sirve. Las sesiones JWT no usan el `SecurityStamp`: siguen igual que con D-12.
+  2. **QA-P8-2 y B-1:** al usar el enlace se vuelve a comprobar que la cuenta esté ACTIVA y no sea de administrador; si no, el mismo 400 genérico, sin enumeración. `promover-admin` también cambia el `SecurityStamp` (la aprobación del asesor ya lo hace por el punto 1).
+  3. **M-1:** DataProtection con `SetApplicationName("Camion.Api")`, claves en `DataProtection:RutaClaves` (por defecto `C:\CAMION_claves`, nunca dentro del repositorio: la API no arranca) y, en Windows, `ProtectKeysWithDpapi()`.
+  4. **M-2:** fuera de Development, `Recuperacion:UrlPortal` debe empezar por `https://`; si no, la API no arranca, igual que con `Jwt:Key`.
+  5. **B-4:** todas las respuestas de la API llevan `Referrer-Policy: no-referrer`.
+- Documentado en `backend/GUIA-AUTENTICACION.md` §12. Pruebas: `P8QaTests` (QA-P8-1, QA-P8-2) y `P8D78Tests`.
+
+## D-79 — ¿Cómo recupera su contraseña un administrador? · TOMADA (2026-11-13)
+- Contexto: con D-73 D y D-78, la recuperación asistida no sirve para cuentas de administrador: ningún administrador puede generarle el enlace a otro (mismo criterio que P2, "No se puede modificar una cuenta de administrador"), y al usar el enlace se rechaza la cuenta de administrador. No hay servicio de correo (D-73). Hoy un administrador que olvida su contraseña no tiene salida dentro del sistema y necesita apoyo técnico (`P8-contrato-api.md`, "Pendiente" 2).
+- Opciones:
+  - A) **Un comando local en el equipo del servidor**, como `promover-admin` (D-13), que genere el enlace de un solo uso para un administrador.
+    - Impacto: requiere acceso al equipo donde corre la API; no abre ninguna ruta nueva en la API; entrega pequeña.
+  - B) **Permitir que otro administrador genere el enlace**, con un segundo administrador de respaldo.
+    - Impacto: cambia el criterio de P2 para este caso; exige que exista un segundo administrador; un administrador podría tomar la cuenta de otro (queda auditado).
+  - C) **Esperar al correo transaccional** (D-73 C).
+    - Impacto: sin trabajo ahora; mientras tanto, solo con apoyo técnico.
+- Recomendación del coordinador: **A ahora**, y un segundo administrador de respaldo cuando lo haya.
+- Bloquea: la recuperación de contraseña de las cuentas de administrador. No bloquea el resto de P8.
+- **Decisión (responsable, 2026-11-13): A.** Comando local en el equipo del servidor, como `promover-admin` (D-13), que genera el enlace de un solo uso para un administrador. Más adelante, un segundo administrador de respaldo.

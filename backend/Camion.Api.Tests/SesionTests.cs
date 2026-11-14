@@ -204,7 +204,9 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
             // P6 (HU-034, HU-039, D-3, D-9): crédito y búsqueda públicos.
             "POST /api/busquedas", "POST /api/creditos",
             // P7 (D-63 A, CA-P7-42): lectura pública de los datos de contacto del portal, fuera de /api/catalogo.
-            "GET /api/portal/contacto"
+            "GET /api/portal/contacto",
+            // P8 (HU-063, D-73 D): restablecer la contraseña con el enlace del administrador (limitado por IP).
+            "POST /api/auth/restablecer-contrasena"
         }.OrderBy(x => x, StringComparer.Ordinal).ToArray(), anonimos);
 
         // P3: todo /api/catalogo es GET, permite anónimos de forma explícita y no exige ninguna política.
@@ -270,14 +272,18 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
             "POST /api/busquedas", "POST /api/creditos", "POST /api/leads/{id}/vehiculos",
             "POST /api/leads/{id}/vehiculos/{publicacionId}/retirar",
             // P7: pago posterior y anulación (D-61 B) y parámetros de contacto (D-63 A); solo el administrador.
-            "POST /api/admin/suscripciones/{id}/pagos", "POST /api/admin/pagos/{id}/anular", "PUT /api/admin/parametros/contacto"
+            "POST /api/admin/suscripciones/{id}/pagos", "POST /api/admin/pagos/{id}/anular", "PUT /api/admin/parametros/contacto",
+            // P8 (D-73 D): generar el enlace de recuperación (administrador) y usarlo (anónimo). Reportes, indicadores y
+            // actividad son solo GET (CA-P8-69).
+            "POST /api/admin/usuarios/{id}/enlace-recuperacion", "POST /api/auth/restablecer-contrasena"
         }.OrderBy(x => x, StringComparer.Ordinal).ToArray(), modifican);
 
         // CA-SE006-13: toda ruta bajo /api/admin exige SoloAdministrador (P2: 5 acciones + la lista; P4p: 4 GET y 18 acciones;
         // P4b: reasignar un vehículo; D-42: subir y quitar la portada).
         var admin = todos.Where(e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/admin", StringComparison.Ordinal)).ToList();
         // P7: pagos (lista, registrar, anular), parámetros (leer, guardar) y panel. D-67: efecto de la anulación (GET).
-        Assert.Equal(38, admin.Count);
+        // P8: 5 reportes, 5 CSV, indicadores, 2 actividades (GET) y el enlace de recuperación (POST).
+        Assert.Equal(52, admin.Count);
         foreach (var e in admin)
         {
             var politicas = e.Metadata.GetOrderedMetadata<IAuthorizeData>().Select(a => a.Policy).ToArray();
@@ -388,10 +394,27 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
         Assert.DoesNotContain(todos, e => Metodo(e) is "DELETE" &&
             !e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/inventario/", StringComparison.Ordinal));
 
-        // P4p (HU-066): /api/asesor/suscripcion es la única ruta /api/asesor y exige SoloAsesor.
-        var asesor = Assert.Single(todos, e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/asesor", StringComparison.Ordinal));
-        Assert.Equal("GET", Metodo(asesor));
-        Assert.Contains("SoloAsesor", asesor.Metadata.GetOrderedMetadata<IAuthorizeData>().Select(a => a.Policy));
+        // P4p (HU-066): /api/asesor/suscripcion exige SoloAsesor. P8 (D-70 A): /api/asesor/indicadores, igual y sin CSV.
+        var rutasAsesor = todos.Where(e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/asesor/", StringComparison.Ordinal)).ToList();
+        Assert.Equal(new[] { "/api/asesor/indicadores", "/api/asesor/suscripcion" },
+            rutasAsesor.Select(e => "/" + e.RoutePattern.RawText!.TrimStart('/')).OrderBy(x => x, StringComparer.Ordinal).ToArray());
+        foreach (var asesor in rutasAsesor)
+        {
+            Assert.Equal("GET", Metodo(asesor));
+            Assert.Contains("SoloAsesor", asesor.Metadata.GetOrderedMetadata<IAuthorizeData>().Select(a => a.Policy));
+            Assert.Null(asesor.Metadata.GetMetadata<IAllowAnonymous>());
+        }
+
+        // P8 (CA-P8-59, CA-P8-69): reportes, indicadores y actividad son GET bajo /api/admin; la única ruta con la marca de
+        // límite de la recuperación es POST /api/auth/restablecer-contrasena, anónima y sin política.
+        Assert.All(todos.Where(e => e.RoutePattern.RawText!.Contains("/reportes", StringComparison.Ordinal) ||
+                                    e.RoutePattern.RawText!.Contains("/indicadores", StringComparison.Ordinal) ||
+                                    e.RoutePattern.RawText!.EndsWith("/actividad", StringComparison.Ordinal)),
+            e => Assert.Equal("GET", Metodo(e)));
+        var recuperacion = Assert.Single(todos, e => e.Metadata.GetMetadata<Camion.Api.Auth.LimitePeticionesRecuperacion>() is not null);
+        Assert.Equal("POST /api/auth/restablecer-contrasena", $"{Metodo(recuperacion)} /{recuperacion.RoutePattern.RawText!.TrimStart('/')}");
+        Assert.NotNull(recuperacion.Metadata.GetMetadata<IAllowAnonymous>());
+        Assert.Empty(recuperacion.Metadata.GetOrderedMetadata<IAuthorizeData>());
 
         // /health es anónimo (no se prueba /health/database: intentaría conectar con MariaDB).
         Assert.Equal(HttpStatusCode.OK, (await _c.GetAsync("/health")).StatusCode);

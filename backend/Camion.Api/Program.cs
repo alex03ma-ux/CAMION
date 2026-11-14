@@ -16,6 +16,7 @@ using Microsoft.IdentityModel.Tokens;
 using MySqlConnector;
 using System.Threading.RateLimiting;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("CamionDatabase")
@@ -38,11 +39,28 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
     options.Lockout.MaxFailedAccessAttempts = 5;
     options.Lockout.AllowedForNewUsers = true;
+    // P8 (D-73 D): el restablecimiento de contraseña usa el token propio de 60 minutos y un solo uso.
+    options.Tokens.PasswordResetTokenProvider = ProveedorTokenRecuperacion.Nombre;
 })
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<CamionDbContext>()
 .AddSignInManager()
-.AddDefaultTokenProviders();
+.AddDefaultTokenProviders()
+.AddTokenProvider<ProveedorTokenRecuperacion>(ProveedorTokenRecuperacion.Nombre);
+// P8 (D-73 D): DataProtection (incluido en ASP.NET Core) protege el token de recuperación; no se guarda en ninguna tabla.
+// D-78 (M-1): nombre de aplicación fijo, claves en una carpeta fuera del repositorio y, en Windows, cifradas con DPAPI.
+var rutaClaves = ConfiguracionRecuperacion.RutaClaves(builder.Configuration[ConfiguracionRecuperacion.ClaveRutaClaves],
+    builder.Environment.ContentRootPath);
+var proteccion = builder.Services.AddDataProtection()
+    .SetApplicationName(ConfiguracionRecuperacion.NombreAplicacion)
+    .PersistKeysToFileSystem(new DirectoryInfo(rutaClaves));
+if (OperatingSystem.IsWindows()) proteccion.ProtectKeysWithDpapi();
+// D-78 (M-2): fuera de Development el enlace debe ser https://; si no, la API no arranca (igual que Jwt:Key).
+ConfiguracionRecuperacion.ValidarUrlPortal(
+    builder.Configuration[ConfiguracionRecuperacion.ClaveUrlPortal] ?? new OpcionesRecuperacion().UrlPortal,
+    builder.Environment.IsDevelopment());
+builder.Services.AddTransient<ProveedorTokenRecuperacion>();
+builder.Services.Configure<OpcionesRecuperacion>(builder.Configuration.GetSection("Recuperacion"));
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -110,16 +128,35 @@ builder.Services.AddRateLimiter(options =>
             AutoReplenishment = true
         });
     }
+    // P8 (D-73 D): cupo propio por IP para POST /api/auth/restablecer-contrasena (marca LimitePeticionesRecuperacion).
+    static RateLimitPartition<string> Recuperacion(HttpContext http)
+    {
+        if (http.GetEndpoint()?.Metadata.GetMetadata<LimitePeticionesRecuperacion>() is null)
+            return RateLimitPartition.GetNoLimiter("libre");
+        var o = http.RequestServices.GetRequiredService<IOptions<OpcionesRecuperacion>>().Value;
+        var ip = http.Connection.RemoteIpAddress?.ToString() ?? "sin-ip";
+        return RateLimitPartition.GetFixedWindowLimiter("recuperacion:" + ip, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = Math.Max(1, o.LimiteVentana),
+            Window = TimeSpan.FromMinutes(Math.Max(1, o.VentanaMinutos)),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        });
+    }
     options.GlobalLimiter = PartitionedRateLimiter.CreateChained(
         PartitionedRateLimiter.Create<HttpContext, string>(http => Ventana(http, "corta:",
             o => (o.LimiteVentanaCorta, TimeSpan.FromMinutes(Math.Max(1, o.VentanaCortaMinutos))))),
         PartitionedRateLimiter.Create<HttpContext, string>(http => Ventana(http, "dia:",
-            o => (o.LimiteDiario, TimeSpan.FromDays(1)))));
+            o => (o.LimiteDiario, TimeSpan.FromDays(1)))),
+        PartitionedRateLimiter.Create<HttpContext, string>(Recuperacion));
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.OnRejected = async (contexto, ct) =>
     {
         contexto.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-        await contexto.HttpContext.Response.WriteAsJsonAsync(new ErrorResponse(ReglasLeads.MensajeMuchas), ct);
+        var mensaje = contexto.HttpContext.GetEndpoint()?.Metadata.GetMetadata<LimitePeticionesRecuperacion>() is null
+            ? ReglasLeads.MensajeMuchas
+            : RecuperacionEndpoints.MensajeMuchos;
+        await contexto.HttpContext.Response.WriteAsJsonAsync(new ErrorResponse(mensaje), ct);
     };
 });
 // JSON malformado o con tipos incorrectos: el framework lanza BadHttpRequestException y se responde con el formato común.
@@ -136,6 +173,24 @@ if (args.Length > 0 && args[0] == PromoverAdmin.NombreComando)
         scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>(),
         scope.ServiceProvider.GetRequiredService<CamionDbContext>());
     (resultado.CodigoSalida == 0 ? Console.Out : Console.Error).WriteLine(resultado.Mensaje);
+    Environment.ExitCode = resultado.CodigoSalida;
+    return;
+}
+
+// D-79 (opción A): `dotnet run --project backend/Camion.Api -- recuperar-admin <correo>` (o `dotnet Camion.Api.dll
+// recuperar-admin <correo>`) genera el enlace de recuperación de un administrador y termina, sin arrancar el servidor web.
+// El enlace se escribe solo en la consola (Console.Out), nunca en un ILogger.
+if (args.Length > 0 && args[0] == RecuperarAdmin.NombreComando)
+{
+    using var scope = app.Services.CreateScope();
+    var resultado = await RecuperarAdmin.EjecutarAsync(
+        args.Length > 1 ? args[1] : null,
+        scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>(),
+        scope.ServiceProvider.GetRequiredService<CamionDbContext>(),
+        scope.ServiceProvider.GetRequiredService<TimeProvider>(),
+        scope.ServiceProvider.GetRequiredService<IOptions<OpcionesRecuperacion>>().Value.UrlPortal);
+    (resultado.CodigoSalida == 0 ? Console.Out : Console.Error).WriteLine(resultado.Mensaje);
+    if (resultado.Enlace is not null) Console.Out.WriteLine(resultado.Enlace);
     Environment.ExitCode = resultado.CodigoSalida;
     return;
 }
@@ -157,6 +212,18 @@ using (var scope = app.Services.CreateScope())
         app.Logger.LogWarning("No se pudieron asegurar los roles al iniciar: {Tipo}", ex.GetType().FullName);
     }
 }
+
+// D-78 (B-4): ninguna respuesta de la API envía el Referer (el enlace de recuperación nunca sale en un encabezado).
+// Con OnStarting el encabezado sobrevive al Response.Clear() del manejador de errores.
+app.Use(async (context, next) =>
+{
+    context.Response.OnStarting(() =>
+    {
+        context.Response.Headers["Referrer-Policy"] = "no-referrer";
+        return Task.CompletedTask;
+    });
+    await next(context);
+});
 
 app.Use(async (context, next) =>
 {
@@ -234,6 +301,10 @@ app.MapVentasListaEndpoints();
 app.MapPagosEndpoints();
 app.MapParametrosEndpoints();
 app.MapPanelEndpoints();
+// P8: reportes, indicadores, actividad y recuperación asistida (HU-061, HU-063, HU-075 a HU-080; D-68 a D-73).
+app.MapReportesEndpoints();
+app.MapActividadEndpoints();
+app.MapRecuperacionEndpoints();
 
 app.Run();
 

@@ -76,7 +76,8 @@ public static class PromoverAdmin
             }
             // Las sesiones abiertas se cierran: el próximo token ya lleva el rol nuevo.
             user.SessionVersion++;
-            var actualizado = await users.UpdateAsync(user);
+            // D-78 (QA-P8-2): el cambio de rol cambia también el SecurityStamp (invalida enlaces de recuperación anteriores).
+            var actualizado = await users.UpdateSecurityStampAsync(user);
             if (!actualizado.Succeeded)
             {
                 await tx.RollbackAsync(cancellationToken);

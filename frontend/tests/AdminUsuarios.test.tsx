@@ -287,13 +287,14 @@ describe('Panel de administración: botones por estado', () => {
     const botones = async (nombre: string) =>
       within(await fila(nombre))
         .queryAllByRole('button')
-        .map((b) => b.textContent?.replace(/\s+a .*$/, '').trim())
+        .map((b) => b.textContent?.replace(/\s+(a|para) .*$/, '').trim())
 
     expect(await botones('Asesor Pendiente')).toEqual(['Aprobar', 'Rechazar'])
-    expect(await botones('Asesor Aprobado')).toEqual(['Bloquear'])
+    // P8 (D-73 D): las cuentas ACTIVA que no son de administrador ofrecen además el enlace de recuperación.
+    expect(await botones('Asesor Aprobado')).toEqual(['Bloquear', 'Generar enlace de recuperación'])
     expect(await botones('Asesor Rechazado')).toEqual(['Reconsiderar'])
     expect(await botones('Asesor Bloqueado')).toEqual(['Desbloquear'])
-    expect(await botones('Comprador Activo')).toEqual(['Bloquear'])
+    expect(await botones('Comprador Activo')).toEqual(['Bloquear', 'Generar enlace de recuperación'])
     expect(await botones('Comprador Bloqueado')).toEqual(['Desbloquear'])
     expect(await botones('Comprador Rechazado')).toEqual([])
     expect(await botones('Otro Administrador')).toEqual([])

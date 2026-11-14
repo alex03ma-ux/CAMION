@@ -2,7 +2,14 @@ import { useEffect, useRef } from 'react'
 import type { PerfilUsuario } from '../api/auth'
 import { MINUTOS_INACTIVIDAD } from '../auth/inactivity'
 import { esAdministrador, nombreRol, ROL_ASESOR, tieneRol } from '../auth/roles'
-import { hashSeccionAdmin, HASH_INVENTARIO, HASH_MIS_SOLICITUDES, HASH_PUBLICACIONES, HASH_VENTAS } from '../rutas'
+import {
+  hashSeccionAdmin,
+  HASH_INVENTARIO,
+  HASH_MIS_INDICADORES,
+  HASH_MIS_SOLICITUDES,
+  HASH_PUBLICACIONES,
+  HASH_VENTAS,
+} from '../rutas'
 import { EnlaceContactos } from './EnlaceContactos'
 import { textoAccesoInventario } from './InventarioPagina'
 import { MiSuscripcion } from './MiSuscripcion'
@@ -80,6 +87,12 @@ export function PerfilPanel({
           Mis ventas
         </a>
       )}
+      {/* P8 (D-70 A): "Mis indicadores" del asesor, sin exportar; la API (SoloAsesor) lo vuelve a comprobar. */}
+      {tieneRol(perfil.roles, ROL_ASESOR) && !esAdministrador(perfil.roles) && (
+        <a className="inv-boton-enlace inv-boton-bloque inv-boton-secundario" href={HASH_MIS_INDICADORES}>
+          Mis indicadores
+        </a>
+      )}
       {/* P5 (D-48): asesor y administrador; un comprador no lo ve (la API responde 403). */}
       {accesoInventario && token !== undefined && (
         <EnlaceContactos
@@ -110,6 +123,13 @@ export function PerfilPanel({
           </a>
           <a className="inv-boton-enlace inv-boton-secundario" href={hashSeccionAdmin('ventas')}>
             Ventas
+          </a>
+          {/* P8 (D-68 A, D-69 A). */}
+          <a className="inv-boton-enlace inv-boton-secundario" href={hashSeccionAdmin('reportes')}>
+            Reportes
+          </a>
+          <a className="inv-boton-enlace inv-boton-secundario" href={hashSeccionAdmin('indicadores')}>
+            Indicadores
           </a>
           <a className="inv-boton-enlace inv-boton-secundario" href={hashSeccionAdmin('portada')}>
             Portada

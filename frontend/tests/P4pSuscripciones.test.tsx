@@ -72,20 +72,20 @@ describe('Lista de suscripciones', () => {
     expect(within(activa).getByText('Básico')).toBeInTheDocument()
     expect(within(activa).getByText('62 días')).toBeInTheDocument()
     expect(within(activa).getByText(new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium' }).format(Date.parse('2026-12-30T12:00:00Z')))).toBeInTheDocument()
-    // P7 (D-61 B): cada fila ofrece además "Pagos".
-    expect(botonesDe(activa)).toEqual(['Pagos', 'Renovar', 'Cambiar plan', 'Suspender', 'Cancelar suscripción'])
+    // P7 (D-61 B): cada fila ofrece además "Pagos". P8 (D-72 A): y "Actividad".
+    expect(botonesDe(activa)).toEqual(['Pagos', 'Actividad', 'Renovar', 'Cambiar plan', 'Suspender', 'Cancelar suscripción'])
 
     const suspendida = await filaDe('Asesor Dos')
     expect(within(suspendida).getByText('Suspendida')).toBeInTheDocument()
-    expect(botonesDe(suspendida)).toEqual(['Pagos', 'Reactivar', 'Cambiar plan', 'Cancelar suscripción'])
+    expect(botonesDe(suspendida)).toEqual(['Pagos', 'Actividad', 'Reactivar', 'Cambiar plan', 'Cancelar suscripción'])
 
     const vencida = await filaDe('Asesor Tres')
     expect(within(vencida).getByText('Vencida')).toBeInTheDocument()
-    expect(botonesDe(vencida)).toEqual(['Pagos', 'Renovar', 'Cambiar plan', 'Cancelar suscripción'])
+    expect(botonesDe(vencida)).toEqual(['Pagos', 'Actividad', 'Renovar', 'Cambiar plan', 'Cancelar suscripción'])
 
     const cancelada = await filaDe('Asesor Cuatro')
     expect(within(cancelada).getByText('Cancelada')).toBeInTheDocument()
-    expect(botonesDe(cancelada)).toEqual(['Pagos'])
+    expect(botonesDe(cancelada)).toEqual(['Pagos', 'Actividad'])
 
     const reactivada = await filaDe('Asesor Cinco')
     expect(within(reactivada).getByText('Reactivada')).toBeInTheDocument()

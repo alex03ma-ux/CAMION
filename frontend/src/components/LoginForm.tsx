@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { iniciarSesion, MENSAJE_LOGIN_FALTAN_DATOS, type LoginResponse } from '../api/auth'
 import { ApiError, MENSAJE_INESPERADO } from '../api/http'
+import { enlaceCorreoOlvido, TEXTO_WHATSAPP_OLVIDO } from '../api/recuperacion'
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo } from './Campo'
 import { NotaObligatorio } from './NotaObligatorio'
+import { enlaceWhatsappConTexto, useContactoPortal } from './useContactoPortal'
 
 /**
  * P2: un 403 con `estado` (contraseña correcta, cuenta no activa) se muestra con
@@ -41,6 +43,9 @@ export function LoginForm({
   const [aviso, setAviso] = useState<DatosAviso | null>(avisoInicial)
   const [erroresCampo, setErroresCampo] = useState<{ email?: string[]; password?: string[] }>({})
   const [enviando, setEnviando] = useState(false)
+  // P8 (D-73 D, CA-P8-68): el WhatsApp vigente del portal para pedir un enlace de recuperación.
+  const contacto = useContactoPortal()
+  const correoOlvido = enlaceCorreoOlvido(contacto.correo)
 
   const titulo = useRef<HTMLHeadingElement>(null)
   const refEmail = useRef<HTMLInputElement>(null)
@@ -120,6 +125,25 @@ export function LoginForm({
       <button type="submit" disabled={enviando}>
         {enviando ? 'Iniciando sesión...' : 'Iniciar sesión'}
       </button>
+
+      <p className="login-olvido">
+        ¿Olvidaste tu contraseña?{' '}
+        <a
+          href={enlaceWhatsappConTexto(contacto.whatsappEnlace, TEXTO_WHATSAPP_OLVIDO)}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Escríbenos por WhatsApp
+          <span className="sr-only"> (se abre en una ventana nueva)</span>
+        </a>
+        {correoOlvido && (
+          <>
+            {' o al correo '}
+            {/* Se muestra la dirección: cada visitante usa su propio correo (Gmail, Outlook...) y puede copiarla. */}
+            <a href={correoOlvido}>{contacto.correo.trim()}</a>
+          </>
+        )}
+      </p>
 
       <p className="auth-switch">¿Todavía no tienes cuenta?</p>
       <button className="secondary-button" type="button" onClick={onIrARegistro} disabled={enviando}>
