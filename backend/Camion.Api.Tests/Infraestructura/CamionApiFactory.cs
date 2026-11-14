@@ -24,8 +24,16 @@ public sealed class CamionApiFactory : WebApplicationFactory<Program>
 
     // Base SQLite en memoria con caché compartida: la conexión que se mantiene abierta conserva la base
     // viva; cada DbContext abre la suya contra el mismo nombre, lo que permite peticiones en paralelo.
+    // INF-3: Pooling=False. El pool de Microsoft.Data.Sqlite 8.0.x tiene una carrera: SqliteConnectionInternal.Activate
+    // marca la conexión activa antes de enlazarla a su SqliteConnection, y Deactivate la desenlaza antes de marcarla
+    // inactiva. Si en ese instante otra apertura encuentra el pool vacío, ReclaimLeakedConnections la toma por "perdida"
+    // y la devuelve al pool, y la misma conexión nativa acaba en dos peticiones a la vez. Con peticiones simultáneas
+    // (Task.WhenAll) daba un 500 de vez en cuando: BEGIN dentro de la transacción de la otra petición o
+    // sqlite3_create_function con sentencias activas en Open() (PagosTests.Anular_concurrente y
+    // RegistroAsesorTests.Simultaneos_*). Sin pool cada apertura crea su propia conexión nativa contra la misma base en
+    // memoria (la mantiene viva _conexionViva). Producción usa MySqlConnector, no este pool.
     private readonly string _cadenaSqlite =
-        $"Data Source=file:camion_pruebas_{Guid.NewGuid():N}?mode=memory&cache=shared;Default Timeout=30";
+        $"Data Source=file:camion_pruebas_{Guid.NewGuid():N}?mode=memory&cache=shared;Default Timeout=30;Pooling=False";
     private readonly SqliteConnection _conexionViva;
 
     public ConcurrentQueue<string> Logs { get; } = new();
@@ -77,7 +85,10 @@ public sealed class CamionApiFactory : WebApplicationFactory<Program>
         {
             var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<CamionDbContext>));
             if (descriptor is not null) services.Remove(descriptor);
-            services.AddDbContext<CamionDbContext>(options => options.UseSqlite(_cadenaSqlite));
+            // INF-3: el interceptor solo añade diagnóstico si BEGIN falla (código SQLite, mensaje y estado de la conexión).
+            services.AddDbContext<CamionDbContext>((sp, options) => options.UseSqlite(_cadenaSqlite)
+                .AddInterceptors(new DiagnosticoTransaccionesSqlite(
+                    sp.GetRequiredService<ILoggerFactory>().CreateLogger(DiagnosticoTransaccionesSqlite.Categoria))));
 
             services.AddLogging(logging => logging.AddProvider(new ProveedorLogPrueba(Logs)));
 

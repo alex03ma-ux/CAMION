@@ -17,6 +17,7 @@ using MySqlConnector;
 using System.Threading.RateLimiting;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.DataProtection;
+using Camion.Api.Seguridad;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("CamionDatabase")
@@ -25,6 +26,20 @@ var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException("Falta Jwt:Key en secretos locales.");
 if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
     throw new InvalidOperationException("Jwt:Key debe tener por lo menos 32 bytes.");
+// INF-2: fuera de Development la API no arranca sin Media:Ruta, DataProtection:RutaClaves ni Recuperacion:UrlPortal.
+ConfiguracionServidor.ValidarObligatorias(builder.Configuration, builder.Environment.IsDevelopment());
+// INF-2 (M-1 de P5): proxies de confianza; null si no hay ninguno configurado (en local, sin cambios).
+var opcionesProxy = ConfiguracionServidor.OpcionesProxy(builder.Configuration);
+// INF-2: CORS solo si el frontend está en otro origen (Portal:Origen); si no, ninguna respuesta lleva CORS.
+var origenPortal = ConfiguracionServidor.OrigenPortal(builder.Configuration, builder.Environment.IsDevelopment());
+if (origenPortal is not null)
+    builder.Services.AddCors(o => o.AddPolicy(ConfiguracionServidor.PoliticaCors, p => p.WithOrigins(origenPortal)
+        .WithHeaders("Authorization", "Content-Type").WithMethods("GET", "POST", "PUT", "PATCH", "DELETE")
+        .WithExposedHeaders("Content-Disposition")));
+// INF-2: HSTS fuera de Development (solo en respuestas https; 30 días al principio, se puede ampliar al estabilizar).
+builder.Services.AddHsts(o => o.MaxAge = TimeSpan.FromDays(30));
+// Sin el encabezado "Server: Kestrel".
+builder.WebHost.ConfigureKestrel(o => o.AddServerHeader = false);
 
 builder.Services.AddDbContext<CamionDbContext>(options =>
     options.UseMySql(connectionString, new MariaDbServerVersion(new Version(10, 4, 32))));
@@ -54,7 +69,8 @@ var rutaClaves = ConfiguracionRecuperacion.RutaClaves(builder.Configuration[Conf
 var proteccion = builder.Services.AddDataProtection()
     .SetApplicationName(ConfiguracionRecuperacion.NombreAplicacion)
     .PersistKeysToFileSystem(new DirectoryInfo(rutaClaves));
-if (OperatingSystem.IsWindows()) proteccion.ProtectKeysWithDpapi();
+// INF-2 (M-1 de P8): certificado (DataProtection:Certificado:Ruta) en Linux o contenedor; DPAPI en Windows.
+var avisoClaves = ConfiguracionServidor.ProtegerClaves(proteccion, builder.Configuration);
 // D-78 (M-2): fuera de Development el enlace debe ser https://; si no, la API no arranca (igual que Jwt:Key).
 ConfiguracionRecuperacion.ValidarUrlPortal(
     builder.Configuration[ConfiguracionRecuperacion.ClaveUrlPortal] ?? new OpcionesRecuperacion().UrlPortal,
@@ -119,7 +135,8 @@ builder.Services.AddRateLimiter(options =>
         if (http.GetEndpoint()?.Metadata.GetMetadata<LimitePeticionesContacto>() is null)
             return RateLimitPartition.GetNoLimiter("libre");
         var (limite, ventana) = valores(http.RequestServices.GetRequiredService<IOptions<OpcionesContacto>>().Value);
-        var ip = http.Connection.RemoteIpAddress?.ToString() ?? "sin-ip";
+        // INF-2 (M-1 de P5): IP real detrás del proxy (UseForwardedHeaders va antes) e IPv6 agrupada por /64.
+        var ip = ConfiguracionServidor.ClaveIp(http.Connection.RemoteIpAddress);
         return RateLimitPartition.GetFixedWindowLimiter(prefijo + ip, _ => new FixedWindowRateLimiterOptions
         {
             PermitLimit = Math.Max(1, limite),
@@ -134,7 +151,7 @@ builder.Services.AddRateLimiter(options =>
         if (http.GetEndpoint()?.Metadata.GetMetadata<LimitePeticionesRecuperacion>() is null)
             return RateLimitPartition.GetNoLimiter("libre");
         var o = http.RequestServices.GetRequiredService<IOptions<OpcionesRecuperacion>>().Value;
-        var ip = http.Connection.RemoteIpAddress?.ToString() ?? "sin-ip";
+        var ip = ConfiguracionServidor.ClaveIp(http.Connection.RemoteIpAddress);
         return RateLimitPartition.GetFixedWindowLimiter("recuperacion:" + ip, _ => new FixedWindowRateLimiterOptions
         {
             PermitLimit = Math.Max(1, o.LimiteVentana),
@@ -162,6 +179,7 @@ builder.Services.AddRateLimiter(options =>
 // JSON malformado o con tipos incorrectos: el framework lanza BadHttpRequestException y se responde con el formato común.
 builder.Services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = true);
 var app = builder.Build();
+if (avisoClaves is not null && !app.Environment.IsDevelopment()) app.Logger.LogWarning("{Aviso}", avisoClaves);
 
 // D-13 (opción A): `dotnet run --project backend/Camion.Api -- promover-admin <correo>` no arranca el servidor web.
 if (args.Length > 0 && args[0] == PromoverAdmin.NombreComando)
@@ -213,13 +231,22 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// D-78 (B-4): ninguna respuesta de la API envía el Referer (el enlace de recuperación nunca sale en un encabezado).
-// Con OnStarting el encabezado sobrevive al Response.Clear() del manejador de errores.
+// INF-2 (M-1 de P5): lo primero, para que el límite por IP, HTTPS y HSTS vean la IP y el esquema reales del cliente.
+if (opcionesProxy is not null) app.UseForwardedHeaders(opcionesProxy);
+// INF-2: fuera de Development, HSTS y redirección a https (Https:RedirigirHttp=false si el proxy ya redirige).
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+    if (app.Configuration.GetValue(ConfiguracionServidor.ClaveRedirigirHttps, true)) app.UseHttpsRedirection();
+}
+
+// D-78 (B-4) e INF-2: encabezados de seguridad (Referrer-Policy, nosniff, sin marcos) en todas las respuestas.
+// Con OnStarting los encabezados sobreviven al Response.Clear() del manejador de errores.
 app.Use(async (context, next) =>
 {
     context.Response.OnStarting(() =>
     {
-        context.Response.Headers["Referrer-Policy"] = "no-referrer";
+        foreach (var (nombre, valor) in ConfiguracionServidor.Encabezados) context.Response.Headers[nombre] = valor;
         return Task.CompletedTask;
     });
     await next(context);
@@ -251,6 +278,7 @@ app.Use(async (context, next) =>
     }
 });
 
+if (origenPortal is not null) app.UseCors(ConfiguracionServidor.PoliticaCors);
 app.UseAuthentication();
 app.UseAuthorization();
 // P5: después del enrutado (implícito) para leer la marca LimitePeticionesContacto de la ruta.

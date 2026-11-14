@@ -294,7 +294,7 @@ Hay dos lugares:
 ## 11. Avisos importantes
 
 - El script SQL ya creó las tablas de Identity. **No** ejecutes `dotnet ef database update` ni crees una migración inicial que las vuelva a crear. Los cambios de esquema van en `database/migraciones/`, con respaldo previo y sección para revertir.
-- **Pendiente** (no existe todavía): confirmación de correo, cambio de contraseña, limitación de peticiones por IP, "Solicitar ser asesor" desde una cuenta de comprador, crear administradores desde la web y guardar el login y el logout en la base de datos.
+- **Pendiente** (no existe todavía): confirmación de correo, cambio de contraseña, "Solicitar ser asesor" desde una cuenta de comprador, crear administradores desde la web y guardar el login y el logout en la base de datos.
 - Recuperar contraseña (HU-063) se resuelve sin correo con la recuperación asistida de P8 (D-73 D, sección 12). Avisar por correo al asesor aprobado sigue **BLOQUEADO** (D-5): no hay servicio de correo aprobado.
 
 ## 12. Recuperación asistida de contraseña (P8, D-73 D, D-78)
@@ -314,7 +314,7 @@ dotnet backend\Camion.Api\bin\Debug\net8.0\Camion.Api.dll recuperar-admin <corre
 - Solo actúa sobre una cuenta **activa con rol ADMINISTRADOR**. Para cualquier otro correo responde "No se generó ningún enlace: el correo no corresponde a una cuenta de administrador activa." y sale con código 1 (código 2 si falta el correo).
 - Usa el mismo token, la misma carpeta de claves y la misma `Recuperacion:UrlPortal`, pero con otro propósito: el enlace del comando no sirve para otras cuentas y el del panel no sirve para administradores. Vence en 60 minutos, sirve una vez y generar otro anula el anterior.
 - El enlace se imprime **solo en la consola**; no va a ningún registro ni a la auditoría. La auditoría anota `GENERAR_ENLACE_RECUPERACION_ADMIN` con actor SISTEMA y `origen: COMANDO_LOCAL`.
-- No enciende el servidor web: termina al acabar. Con `dotnet Camion.Api.dll` el entorno es Production salvo que se fije `ASPNETCORE_ENVIRONMENT`; en ese caso `Recuperacion:UrlPortal` debe ser `https://` (D-78).
+- No enciende el servidor web: termina al acabar. Con `dotnet Camion.Api.dll` el entorno es Production salvo que se fije `ASPNETCORE_ENVIRONMENT`; en ese caso `Recuperacion:UrlPortal` debe ser `https://` (D-78), y también deben estar `Media:Ruta` y `DataProtection:RutaClaves` (INF-2). Se ejecuta con las mismas variables de entorno y la misma cuenta que el servicio de la API.
 
 Claves de configuración (ninguna es secreta; se ponen en `appsettings`, `dotnet user-secrets` o variables de entorno, por ejemplo `Recuperacion__UrlPortal`):
 
@@ -322,9 +322,11 @@ Claves de configuración (ninguna es secreta; se ponen en `appsettings`, `dotnet
 |---|---|---|---|
 | `Recuperacion:UrlPortal` | Inicio del enlace que se copia (la dirección del frontend) | `http://localhost:5173` | Fuera de `Development` debe empezar por `https://`; si no, la API **no arranca** y el mensaje dice qué clave revisar. |
 | `Recuperacion:LimiteVentana` / `Recuperacion:VentanaMinutos` | Intentos por IP en la ruta pública | 5 cada 15 minutos | Al superarlo, 429. |
-| `DataProtection:RutaClaves` | Carpeta donde ASP.NET Core guarda las claves que firman y cifran el código | `C:\CAMION_claves` | Debe estar **fuera del repositorio**; si apunta dentro, la API no arranca. En Windows las claves se cifran con DPAPI para la cuenta que ejecuta la API. El nombre de aplicación es fijo: `Camion.Api`. |
+| `DataProtection:RutaClaves` | Carpeta donde ASP.NET Core guarda las claves que firman y cifran el código | `C:\CAMION_claves` | Debe estar **fuera del repositorio**; si apunta dentro, la API no arranca. Fuera de `Development` es obligatoria (INF-2). En Windows las claves se cifran con DPAPI para la cuenta que ejecuta la API. El nombre de aplicación es fijo: `Camion.Api`. |
+| `DataProtection:Certificado:Ruta` / `DataProtection:Certificado:Clave` | Certificado `.pfx` que cifra las claves en Linux o en un contenedor (INF-2, M-1 de P8). La clave del `.pfx` **es secreta** | Sin certificado | Si se configura, se usa en lugar de DPAPI. En Linux sin certificado la API arranca, pero avisa en el log de que las claves quedan sin cifrar. Ver `docs/GUIA-PUBLICACION.md` §5. |
 
 Avisos:
 - **La carpeta de claves no se borra ni se copia al repositorio.** Si se borra o cambia, los enlaces pendientes dejan de valer (basta con generar uno nuevo). Las sesiones JWT no dependen de estas claves.
 - Con DPAPI, las claves solo las lee el mismo usuario de Windows en el mismo equipo. Si la API pasa a otro equipo o a otro usuario, se generan claves nuevas.
-- Todas las respuestas llevan `Referrer-Policy: no-referrer`.
+- Todas las respuestas llevan `Referrer-Policy: no-referrer` y, desde INF-2, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY` y `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'`.
+- El límite por IP usa la IP real del visitante solo si el proxy está configurado en `Proxy:KnownProxies` o `Proxy:KnownNetworks` (INF-2). Ver `docs/GUIA-PUBLICACION.md` §6.

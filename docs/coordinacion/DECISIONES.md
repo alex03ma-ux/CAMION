@@ -1001,3 +1001,13 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
 - Recomendación del coordinador: **A ahora**, y un segundo administrador de respaldo cuando lo haya.
 - Bloquea: la recuperación de contraseña de las cuentas de administrador. No bloquea el resto de P8.
 - **Decisión (responsable, 2026-11-13): A.** Comando local en el equipo del servidor, como `promover-admin` (D-13), que genera el enlace de un solo uso para un administrador. Más adelante, un segundo administrador de respaldo.
+
+## D-80 — Datos de prueba al publicar · TOMADA (2026-11-13)
+- Contexto: `camion_ventas` local tiene 9 usuarios (1 administradora y 8 de prueba), 21 vehículos (12 DEMO), 9 leads, 2 pagos anulados, 2 ventas revertidas y 82 eventos de auditoría de pruebas.
+- Opciones: A) base nueva y limpia para producción (estructura, catálogos, planes y la cuenta de administradora), y la base local se conserva para pruebas; B) limpiar la base local y publicarla.
+- **Decisión (responsable, 2026-11-13): A.** No se borra nada de la base local. Producción se crea vacía con los scripts del repositorio. Los vehículos reales, si los hay, se crean de nuevo en producción o se migran con un script aparte que se revisará antes.
+
+## D-81 — Dónde se publica el portal (hosting y dominio) · PENDIENTE (2026-11-13)
+- Opciones presentadas: A) servidor propio (VPS Windows o Linux); B) servicio administrado (Azure, Railway u otro); C) un tercero de confianza siguiendo `docs/GUIA-PUBLICACION.md`. En todos los casos hace falta un dominio propio.
+- Recomendación del coordinador: comparar precios del dominio y de una o dos opciones antes de decidir; la guía de publicación es válida para cualquiera.
+- Bloquea: la publicación (y con ella el correo transaccional de D-73 C). No bloquea INF-1, INF-2 ni INF-3.

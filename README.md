@@ -98,6 +98,8 @@ Tienen un valor por defecto que sirve en el equipo local. Se cambian en `appsett
 | `DataProtection:RutaClaves` | Carpeta de las claves que firman y cifran los enlaces de recuperación (P8, D-78) | `C:\CAMION_claves` | Debe estar **fuera del repositorio**; si no, la API no arranca. En Windows las claves se cifran con DPAPI. |
 | `Recuperacion:UrlPortal` | Dirección del frontend con la que empieza el enlace de recuperación (P8) | `http://localhost:5173` | Fuera de `Development` debe empezar por `https://`; si no, la API no arranca. |
 
+Para publicar en un servidor hay más claves (proxy, https, CORS y certificado de las claves). Fuera de `Development` las tres de esta tabla son **obligatorias**: sin ellas la API no arranca. La lista completa, solo con nombres, está en [`.env.example`](.env.example), y el procedimiento en [`docs/GUIA-PUBLICACION.md`](docs/GUIA-PUBLICACION.md).
+
 La carpeta de claves se crea sola la primera vez que arranca la API con P8. **No la borres ni la subas a Git**: si se pierde, los enlaces de recuperación pendientes dejan de valer (las sesiones no se ven afectadas). Detalle en [`backend/GUIA-AUTENTICACION.md`](backend/GUIA-AUTENTICACION.md) §12.
 
 ### Base de datos
@@ -109,7 +111,8 @@ La carpeta de claves se crea sola la primera vez que arranca la API con P8. **No
    - por número, `database/migraciones/` y `database/catalogos/`: 003, 004, 005, 006, 007, 008, 009, 010, 011, 012, 013, 014, 015 y 016 (todas aplicadas en `camion_ventas`; P8 no añade migración).
 5. Si un script tiene archivo `_SUBIR`, importa **solo ese archivo**. Si no lo tiene, sigue las instrucciones de su cabecera. En phpMyAdmin, importar la 004 completa falló; hubo que importar solo su sección SUBIR (ver BITACORA, P4a).
 6. Los archivos `_VERIFICAR_Y_BAJAR` y las secciones BAJAR **no se importan al instalar**.
-7. `database/demo/demo_p3_catalogo.sql` carga datos ficticios. Es opcional y sirve solo para pruebas (D-18, D-24).
+7. `database/demo/demo_p3_catalogo.sql` carga datos ficticios. Es opcional y sirve solo para pruebas (D-18, D-24). **Nunca** se importa en producción.
+8. Para una base **nueva** (producción, D-80 A), el orden exacto, con el script `database/catalogos/017_categorias_base_SUBIR.sql` (categorías base; PROPUESTO), está en [`docs/GUIA-PUBLICACION.md`](docs/GUIA-PUBLICACION.md) §4.
 
 ### Arrancar la API
 Desde `backend/Camion.Api`:
@@ -150,7 +153,9 @@ npx tsc -b
 npm run build
 ```
 
-Último resultado registrado, en la rama de **P8** (`feature/p8-reportes`, tras D-78): backend **1328/1328** y frontend **750/750**; `tsc -b`, `tsc -p tsconfig.test.json` y `npm run build`, correctos. En P7, ya en `main`, el último resultado fue 1248/1248 y 711/711 (con D-67). Las pruebas de la API usan SQLite en memoria y no tocan `camion_ventas`.
+Último resultado registrado, en la rama **`feature/inf-publicacion`** (INF-1 e INF-2): backend **1368/1368** (Debug y Release) y frontend **751/751**; `tsc -b`, `tsc -p tsconfig.test.json` y `npm run build`, correctos; `npm audit` y `dotnet list package --vulnerable`, sin avisos. En P8, ya en `main`, el último resultado fue 1328/1328 y 750/750.
+
+**CI (INF-1):** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) ejecuta todo lo anterior en cada push y PR, más `dotnet list package --vulnerable` y `npm audit`, sin secretos. El backend se prueba en Windows (obligatorio) y en Linux (informativo hasta decidir el hosting, D-81). Las pruebas de la API usan SQLite en memoria y no tocan `camion_ventas`.
 
 Si Windows (Smart App Control) bloquea la DLL de pruebas, `dotnet test` termina sin error pero con **0 pruebas**. Revisa siempre el recuento "Total" y, si sale 0, vuelve a compilar.
 
@@ -162,7 +167,7 @@ Hay pruebas intermitentes (INF-3). En el backend apareció un fallo sin identifi
 - Respaldo antes de cada migración. Los cambios de esquema se hacen solo con migraciones reversibles.
 - El trabajo se coordina con el comando `/coordinar`. El estado, el backlog, las decisiones y la bitácora están en `docs/coordinacion/`.
 - Las reglas completas de negocio, de seguridad y de Git están en [`CLAUDE.md`](CLAUDE.md).
-- Nunca guardes contraseñas, tokens ni cadenas de conexión en Git. La configuración actual (HTTP, usuario local de XAMPP) sirve solo para trabajar en tu equipo.
+- Nunca guardes contraseñas, tokens ni cadenas de conexión en Git. La configuración actual (HTTP, usuario local de XAMPP) sirve solo para trabajar en tu equipo. Para publicar, sigue [`docs/GUIA-PUBLICACION.md`](docs/GUIA-PUBLICACION.md).
 
 ## 7. Mapa de la documentación
 
@@ -176,6 +181,8 @@ Hay pruebas intermitentes (INF-3). En el backend apareció un fallo sin identifi
 | `docs/requisitos/` | Requisitos funcionales v3.0 y minuta de transferencia |
 | `docs/criterios/` | Criterios, contratos de API y evidencia por fase |
 | `docs/manual/` | Guías de uso y de prueba manual: P5 contactos, P5b avisos, P6 créditos, P7 administración y P8 reportes |
+| `docs/GUIA-PUBLICACION.md` | Lista de verificación para publicar: variables, base nueva, https, proxy, claves y respaldos |
+| `.env.example` | Nombres de las variables de entorno del servidor (sin valores) |
 | `docs/GUIA-ADMINISTRACION.md`, `GUIA-CATALOGO.md`, `GUIA-CATALOGOS.md` | Guías de administración, catálogo público y marcas y modelos |
 | `docs/legal/` | Borradores de la política de datos y de los términos (D-44; falta la revisión legal) |
 | `backend/GUIA-*.md` | Conexión a MariaDB y autenticación |

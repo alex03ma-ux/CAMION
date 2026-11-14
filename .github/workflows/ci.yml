@@ -1,0 +1,115 @@
+# INF-1: integración continua del portal CAMION.
+# En cada push y en cada pull request: compila y prueba el backend (.NET, SDK de global.json) y el frontend
+# (React + Vite). Las pruebas del backend usan SQLite en memoria (CamionApiFactory): no hace falta MariaDB.
+# Sin secretos: la clave JWT y la cadena de conexión de las pruebas son ficticias y se generan en las propias pruebas.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+# Solo lectura del repositorio; el flujo no publica nada ni escribe en GitHub.
+permissions:
+  contents: read
+
+# Un push nuevo a la misma rama cancela la ejecución anterior que siga en curso.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
+jobs:
+  backend:
+    name: Backend (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Windows es la plataforma donde se valida hoy la batería completa: es la puerta obligatoria.
+          - os: windows-latest
+            obligatorio: true
+          # Linux es informativo hasta que se decida el hosting (D-81): un fallo aquí no bloquea el PR.
+          - os: ubuntu-latest
+            obligatorio: false
+    continue-on-error: ${{ !matrix.obligatorio }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Caché de NuGet
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('backend/**/*.csproj', 'global.json') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Restaurar
+        run: dotnet restore backend/Camion.Api.Tests/Camion.Api.Tests.csproj
+
+      - name: Compilar
+        run: dotnet build backend/Camion.Api.Tests/Camion.Api.Tests.csproj --no-restore --configuration Release
+
+      - name: Pruebas (SQLite en memoria)
+        run: dotnet test backend/Camion.Api.Tests/Camion.Api.Tests.csproj --no-build --configuration Release --logger "trx;LogFileName=pruebas.trx" --results-directory pruebas-backend
+
+      - name: Paquetes con vulnerabilidades conocidas
+        shell: bash
+        run: |
+          dotnet list backend/Camion.Api.Tests/Camion.Api.Tests.csproj package --vulnerable --include-transitive --format json > vulnerables.json
+          cat vulnerables.json
+          if grep -q '"vulnerabilities"' vulnerables.json; then
+            echo "::error::Hay paquetes NuGet con vulnerabilidades conocidas."
+            exit 1
+          fi
+
+      - name: Guardar resultados de las pruebas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pruebas-backend-${{ matrix.os }}
+          path: pruebas-backend
+          retention-days: 7
+          if-no-files-found: ignore
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Tipos de la aplicación
+        run: npx tsc -b
+
+      - name: Tipos de las pruebas
+        run: npx tsc -p tsconfig.test.json --noEmit
+
+      - name: Pruebas (Vitest)
+        run: npx vitest run
+
+      - name: Compilar
+        run: npm run build
+
+      - name: Auditoría de dependencias
+        run: npm audit --audit-level=high

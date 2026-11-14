@@ -102,3 +102,7 @@ Revisión:
 - Si la importación falla a mitad, o hay que revertir y **las tres tablas están vacías**: con la API detenida, ejecutar los conteos y después los `DROP TABLE` del bloque comentado `013_p5_leads.sql:131-144`, en el orden indicado (consentimientos_datos, eventos_lead, leads). Esos DROP solo afectan a las tablas de esta migración. Si una tabla no llegó a crearse, se omite su línea.
 - Si **hay filas** (leads reales o consentimientos D-44): no se baja sin decisión de la responsable. Primero se exportan las tres tablas (`mysqldump ... camion_ventas leads eventos_lead consentimientos_datos > C:\Respaldo_CAMION\p5_leads_export_AAAAMMDD_HHMM.sql`, con un nombre nuevo) o se restaura el respaldo del paso 1. La restauración la decide la responsable, porque se perdería todo lo escrito después del respaldo.
 - Después: volver a desplegar la API anterior a P5, porque la API P5 necesita las tres tablas.
+
+## Cierre INF-2
+
+M-1 y B-4 quedaron corregidos en `feature/inf-publicacion`. El detalle está en `REVISION-SEGURIDAD-P8.md`, sección "Cierre INF-2".
