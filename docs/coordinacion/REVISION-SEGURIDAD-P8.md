@@ -112,3 +112,39 @@ Ninguno.
 
 - Sumar M-1 y M-2 a INF-2: claves de DataProtection persistentes y protegidas, `UrlPortal` con https, `.env.example`.
 - Abrir P8-B con B-1 a B-4.
+
+## Cierre INF-2 (2026-11-13, rama `feature/inf-publicacion`)
+
+Seguridad del servidor para publicar, sin atarse a un proveedor (D-81 pendiente). Procedimiento completo en `docs/GUIA-PUBLICACION.md`; nombres de las variables, sin valores, en `.env.example`.
+
+| Hallazgo | Estado | Evidencia |
+|---|---|---|
+| M-1 de P5: límite por IP sin cabeceras reenviadas | CORREGIDO y PROBADO | `ForwardedHeaders` solo con `Proxy:KnownProxies` / `Proxy:KnownNetworks` (`Seguridad/ConfiguracionServidor.cs:57`), antes de todo el pipeline (`Program.cs:235`). Si no hay ninguno, no se lee `X-Forwarded-For` (en local, sin cambios). Clave de partición con IPv6 agrupada por /64 (`ConfiguracionServidor.cs:101`, `Program.cs:139` y `:154`). Pruebas: `InfPublicacionTests` (proxy de confianza, proxy no confiable, sin proxy, IPv6 /64) |
+| B-4 de P5: MySqlConnector 2.3.7 (GHSA-473q-m89c-ghf8) | CORREGIDO | `Camion.Api.csproj`: 2.6.2 (corregido desde 2.6.1, misma versión mayor; Pomelo 8.0.3 pide >= 2.3.5). `dotnet list package --vulnerable --include-transitive`: sin avisos en los dos proyectos. Prueba `Pomelo_con_mysqlconnector_actual`. Mitigación adicional documentada: TLS verificado si MariaDB está en otro equipo |
+| M-1 de P8: claves de DataProtection en Linux o contenedor | CORREGIDO y PROBADO | `DataProtection:Certificado:Ruta` / `:Clave` cifra las claves con un `.pfx` (`ConfiguracionServidor.cs:136`); en Windows sigue DPAPI (D-78); en Linux sin certificado arranca con un aviso en el log. Prueba: cifrado en disco y lectura en un segundo arranque. Guía §5 (permisos 700, volumen persistente, varias instancias). `C:\CAMION_claves` no se copia: la base de producción es nueva (D-80 A) |
+| M-2 de P8 (`UrlPortal`) | Ya cerrado en D-78 | Además, fuera de Development `Recuperacion:UrlPortal`, `Media:Ruta` y `DataProtection:RutaClaves` son obligatorias (`Program.cs:30`, `ConfiguracionServidor.cs:40`) |
+| B-1 y B-4 de P8 | Ya cerrados en D-78 | — |
+| B-3 de P8: escape de fórmulas del CSV | CORREGIDO y PROBADO | `Reportes/Csv.cs:34`: se evalúa también `TrimStart()` y no se escapan los negativos puros (`:44`). El caso `"-3"` de CA-P8-44 pasa a `-3`; 9 casos nuevos en `P8ReportesTests.Celda_csv` |
+| B-2 de P8: CSV y reportes paginados en memoria | PENDIENTE (aceptable con el volumen actual) | Requiere reescribir las consultas de cinco reportes con `CountAsync` y `Skip`/`Take` en SQL, sin perder las cifras agregadas. No es barato: queda en P8-B |
+| Producción: https y HSTS | CORREGIDO y PROBADO | Fuera de Development: `UseHsts` (30 días) y `UseHttpsRedirection`, desactivable con `Https:RedirigirHttp=false` (`Program.cs:239-240`). Detrás del proxy, `X-Forwarded-Proto` de un proxy de confianza evita la redirección y activa HSTS |
+| Producción: CORS | CORREGIDO y PROBADO | Sin `Portal:Origen` no hay CORS (mismo origen, recomendado). Con él, solo ese origen https (`Program.cs:34` y `:281`) |
+| Producción: encabezados | CORREGIDO y PROBADO | `nosniff`, `X-Frame-Options: DENY` y `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'`, además de `Referrer-Policy` (`ConfiguracionServidor.cs:179`, `Program.cs:249`); sin el encabezado `Server` (`Program.cs:42`). Los encabezados del frontend estático los pone el proxy (guía §6, CSP PROPUESTA) |
+| Producción: errores sin detalles | Ya existía; PROBADO | El manejador de `Program.cs` responde `{ error }` genérico sin mensaje ni pila; prueba en Production |
+
+**Bajos que siguen pendientes (no se tocaron porque no son baratos o porque cambian un criterio aceptado):**
+- **P6 B-4** (política de administrador en coincidencias, relacionar y retirar): cambiaría el 404 del asesor que fija CA-P6-61 por un 403. Necesita decidir si se acepta el cambio de criterio.
+- **P6:** B-1 (repetido "sin verificar" en el panel, frontend), B-2 (bloqueo dirigido por teléfono), B-3 (carreras al relacionar: capturar `DbUpdateException` y responder 409), B-6 (caché o límite por IP en `listas-busqueda`) y B-7 a B-9 (scripts; ya documentados).
+- **P7:** B-1 (validar `portal.contacto` al leerlo) y B-4 (anular un pago de estado antiguo). B-2 y B-3 ya están corregidos en el código (`ValidacionAuth.EmailEstrictoValido` y `TieneControl` en la referencia). B-5 y B-6 son de scripts.
+- **P8:** B-2 (arriba).
+
+**Observaciones nuevas:**
+- `/health/database` es anónimo y devuelve el nombre de la base y el número de tablas. Se recomienda limitarlo en el proxy (guía §6).
+- La base de producción necesita `database/catalogos/017_categorias_base_SUBIR.sql` (PROPUESTO): las 4 categorías de D-17 solo estaban en `database/demo/`.
+
+**Verificación (ejecutada en esta rama):**
+- `dotnet build`: 0 errores.
+- `dotnet test`: 1368/1368 en Debug y en Release. Se usó `--artifacts-path` dentro de `backend/bin/` porque la API en ejecución bloquea `bin/Debug`.
+- Frontend: `npx tsc -b`, `npx tsc -p tsconfig.test.json --noEmit` y `npm run build`, correctos; `npx vitest run`, 751/751.
+- `npm audit`: 0 vulnerabilidades.
+- `dotnet list package --vulnerable --include-transitive`: sin avisos.
+- El flujo de CI no se ha ejecutado todavía en GitHub.
