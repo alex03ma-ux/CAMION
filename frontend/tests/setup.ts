@@ -1,7 +1,12 @@
 // Setup común de las pruebas: matchers de jest-dom, localStorage simulado y limpieza.
 import '@testing-library/jest-dom/vitest'
-import { cleanup } from '@testing-library/react'
+import { cleanup, configure } from '@testing-library/react'
 import { afterEach, beforeEach, vi } from 'vitest'
+
+// INF-3 (O-8): con carga (CI en máquinas lentas, varias suites a la vez) la espera por defecto de 1 s de
+// findBy*/waitFor no basta y fallaban de 1 a 4 pruebas distintas. 5 s solo da margen: una prueba que deba
+// encontrar el elemento lo encuentra igual; una que no lo encuentre falla (más tarde). No cambia aserciones.
+configure({ asyncUtilTimeout: 5000 })
 
 /**
  * localStorage simulado en memoria. Node 25 trae su propio `localStorage`
