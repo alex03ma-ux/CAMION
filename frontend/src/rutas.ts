@@ -31,7 +31,10 @@
 //   #/mis-indicadores   P8 (D-70 A): "Mis indicadores" del asesor (la API la protege con SoloAsesor)
 //   #/restablecer-contrasena?codigo=…
 //                       P8 (D-73 D): pantalla pública del enlace de recuperación; el código se quita de la URL al leerlo
-// Cualquier otra ruta muestra el inicio. Nunca se pone el token en la URL.
+// P9 (CA-P9-48, 49): cualquier otra ruta que empiece por `#/` muestra "Página no encontrada"; un hash que no empieza
+// por `/` (p. ej. el ancla `#contenido` de "Saltar al contenido") sigue mostrando el inicio. Por ser un enrutado con
+// `#`, el servidor responde 200 en todos los casos (no hay 404 HTTP para estas rutas, CA-P9-50).
+// Nunca se pone el token en la URL.
 import { useEffect, useState } from 'react'
 import { CLAVES_FILTROS, FILTROS_VACIOS, type FiltrosCatalogo } from './api/catalogo'
 
@@ -62,6 +65,8 @@ export type Ruta =
   | { nombre: 'misIndicadores' }
   /** P8 (D-73 D): el código no viaja en la ruta; la pantalla lo lee una vez del hash y lo quita de la URL. */
   | { nombre: 'restablecerContrasena' }
+  /** P9 (CA-P9-48): ruta desconocida que empieza por `#/`. */
+  | { nombre: 'noEncontrada' }
 
 /** P4p: secciones del administrador dentro de "Mi cuenta". P7: inicio, ventas y parámetros. */
 export type SeccionAdmin =
@@ -149,6 +154,31 @@ export function esRutaInventario(ruta: Ruta): boolean {
 }
 
 const INICIO: Ruta = { nombre: 'inicio' }
+const NO_ENCONTRADA: Ruta = { nombre: 'noEncontrada' }
+
+/**
+ * P9 (CA-P9-50, 55): pantallas que piden `<meta name="robots" content="noindex">`: las privadas (cuenta, inventario,
+ * publicaciones, contactos, ventas, mis solicitudes, mis indicadores), restablecer contraseña y la página no encontrada.
+ */
+export function rutaSinIndexar(ruta: Ruta): boolean {
+  switch (ruta.nombre) {
+    case 'cuenta':
+    case 'inventario':
+    case 'inventarioNuevo':
+    case 'inventarioVehiculo':
+    case 'publicaciones':
+    case 'contactos':
+    case 'contacto':
+    case 'ventas':
+    case 'misSolicitudes':
+    case 'misIndicadores':
+    case 'restablecerContrasena':
+    case 'noEncontrada':
+      return true
+    default:
+      return false
+  }
+}
 
 /** Lee los filtros conocidos de la cadena de consulta; ignora los demás. */
 export function leerFiltros(consulta: string): FiltrosCatalogo {
@@ -226,7 +256,7 @@ export function leerRuta(hash: string): Ruta {
     const slug = decodificar(credito[1])
     if (slug !== null) return { nombre: 'credito', slug }
   }
-  return INICIO
+  return camino.startsWith('/') ? NO_ENCONTRADA : INICIO
 }
 
 /** P7: `{ consulta }` solo si hay filtros (las rutas sin consulta no cambian). */

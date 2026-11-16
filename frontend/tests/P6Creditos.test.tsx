@@ -75,10 +75,10 @@ const formBusqueda = () => screen.findByRole('form', { name: 'Formulario Busco u
 // ---- Rutas y accesos ----
 
 describe('Rutas y accesos del portal (CA-P6-02, 03, 26)', () => {
-  it('lee las rutas nuevas; un slug mal codificado abre el inicio', () => {
+  it('lee las rutas nuevas; un slug mal codificado abre "no encontrada" (P9)', () => {
     expect(leerRuta('#/credito')).toEqual({ nombre: 'credito', slug: null })
     expect(leerRuta('#/credito/chevrolet-npr-2020')).toEqual({ nombre: 'credito', slug: 'chevrolet-npr-2020' })
-    expect(leerRuta('#/credito/%E0%A4%A')).toEqual({ nombre: 'inicio' })
+    expect(leerRuta('#/credito/%E0%A4%A')).toEqual({ nombre: 'noEncontrada' })
     expect(leerRuta('#/busco-un-vehiculo/')).toEqual({ nombre: 'buscoVehiculo' })
     expect(leerRuta('#/mis-solicitudes')).toEqual({ nombre: 'misSolicitudes' })
   })

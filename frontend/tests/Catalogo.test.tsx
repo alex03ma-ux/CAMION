@@ -345,9 +345,16 @@ describe('Navegación por hash', () => {
     expect(document.body.firstChild).toBe(contenedor)
   })
 
-  it('CA-UI-02 un hash desconocido muestra el inicio, nunca una pantalla en blanco', async () => {
+  it('CA-UI-02 / P9 (CA-P9-48, 49): un hash `#/` desconocido muestra "Página no encontrada", nunca una pantalla en blanco; un ancla, el inicio', async () => {
     simularFetch({ [RUTA_FILTROS]: respuestaFiltros(), [RUTA_INICIO]: INICIO_OK })
     abrirApp('#/xyz')
+    expect(screen.getByRole('heading', { level: 1, name: 'Página no encontrada' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Ver todos los vehículos' })).toHaveAttribute('href', '#/buscar')
+  })
+
+  it('CA-UI-02 un hash que no empieza por / (ancla) muestra el inicio', async () => {
+    simularFetch({ [RUTA_FILTROS]: respuestaFiltros(), [RUTA_INICIO]: INICIO_OK })
+    abrirApp('#contenido')
     expect(screen.getByRole('heading', { level: 1, name: 'Tu próximo negocio empieza con el vehículo correcto' })).toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'Destacados' })).toBeInTheDocument()
   })

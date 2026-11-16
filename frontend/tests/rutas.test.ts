@@ -21,11 +21,11 @@ describe('leerRuta', () => {
     expect(leerRuta('#/cuenta/registro')).toEqual({ nombre: 'cuenta', registro: true })
   })
 
-  it('CA-UI-02 rutas desconocidas o mal codificadas abren el inicio', () => {
-    expect(leerRuta('#/xyz')).toEqual({ nombre: 'inicio' })
-    expect(leerRuta('#/vehiculo/')).toEqual({ nombre: 'inicio' })
-    expect(leerRuta('#/vehiculo/a/b')).toEqual({ nombre: 'inicio' })
-    expect(leerRuta('#/vehiculo/%E0%A4%A')).toEqual({ nombre: 'inicio' })
+  it('CA-UI-02 / P9 (CA-P9-48, 49): rutas `#/` desconocidas o mal codificadas abren "no encontrada"; las anclas, el inicio', () => {
+    expect(leerRuta('#/xyz')).toEqual({ nombre: 'noEncontrada' })
+    expect(leerRuta('#/vehiculo/')).toEqual({ nombre: 'noEncontrada' })
+    expect(leerRuta('#/vehiculo/a/b')).toEqual({ nombre: 'noEncontrada' })
+    expect(leerRuta('#/vehiculo/%E0%A4%A')).toEqual({ nombre: 'noEncontrada' })
     expect(leerRuta('#contenido')).toEqual({ nombre: 'inicio' })
   })
 
@@ -87,12 +87,12 @@ describe('hashBuscar / hashVehiculo', () => {
 })
 
 describe('P5: rutas de contactos y privacidad', () => {
-  it('#/contactos, #/contactos/<id> y #/privacidad; ids no válidos van al inicio', () => {
+  it('#/contactos, #/contactos/<id> y #/privacidad; ids no válidos van a "no encontrada" (P9)', () => {
     expect(leerRuta('#/contactos')).toEqual({ nombre: 'contactos' })
     expect(leerRuta('#/contactos/')).toEqual({ nombre: 'contactos' })
     expect(leerRuta(hashContacto(12))).toEqual({ nombre: 'contacto', id: 12 })
     expect(leerRuta('#/privacidad')).toEqual({ nombre: 'privacidad' })
-    expect(leerRuta('#/contactos/0')).toEqual({ nombre: 'inicio' })
-    expect(leerRuta('#/contactos/abc')).toEqual({ nombre: 'inicio' })
+    expect(leerRuta('#/contactos/0')).toEqual({ nombre: 'noEncontrada' })
+    expect(leerRuta('#/contactos/abc')).toEqual({ nombre: 'noEncontrada' })
   })
 })

@@ -848,6 +848,21 @@ form.cat-busqueda-portada {
   border-top: 1px solid #e3e3e3;
 }
 
+/* P9 (CA-P9-48): enlaces de la página no encontrada. */
+.no-encontrada-enlaces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.no-encontrada-enlaces a {
+  display: inline-block;
+  padding: 6px 0;
+}
+
 /* P9 (CA-P9-35): datos del responsable en las páginas legales. */
 .pagina-legal-responsable h2 {
   margin: 18px 0 8px;

@@ -46,6 +46,7 @@ import { LoginForm } from './components/LoginForm'
 import { MisIndicadores, TITULO_MIS_INDICADORES } from './components/MisIndicadores'
 import { MisPublicaciones } from './components/MisPublicaciones'
 import { MisSolicitudes, TITULO_MIS_SOLICITUDES } from './components/MisSolicitudes'
+import { NoEncontrada, TITULO_NO_ENCONTRADA } from './components/NoEncontrada'
 import { NavAdmin } from './components/NavAdmin'
 import { PerfilPanel } from './components/PerfilPanel'
 import { Privacidad } from './components/Privacidad'
@@ -55,6 +56,7 @@ import { RestablecerContrasena, TITULO_RESTABLECER } from './components/Restable
 import { Resultados } from './components/Resultados'
 import { SolicitudCredito, TITULO_CREDITO, TITULO_CREDITO_VEHICULO } from './components/SolicitudCredito'
 import { Ventas } from './components/Ventas'
+import { fijarNoIndex } from './seo'
 import {
   esRutaContactos,
   esRutaInventario,
@@ -62,6 +64,7 @@ import {
   HASH_REGISTRO,
   leerRuta,
   navegar,
+  rutaSinIndexar,
   useHash,
   type Ruta,
   type SeccionAdmin,
@@ -121,6 +124,7 @@ function tituloDocumento(ruta: Ruta): string {
   if (ruta.nombre === 'ventas') return `Mis ventas | ${NOMBRE_PORTAL}`
   if (ruta.nombre === 'misIndicadores') return `${TITULO_MIS_INDICADORES} | ${NOMBRE_PORTAL}`
   if (ruta.nombre === 'restablecerContrasena') return `${TITULO_RESTABLECER} | ${NOMBRE_PORTAL}`
+  if (ruta.nombre === 'noEncontrada') return `${TITULO_NO_ENCONTRADA} | ${NOMBRE_PORTAL}`
   return NOMBRE_PORTAL
 }
 
@@ -273,6 +277,8 @@ export default function App() {
   // En la cuenta, los formularios ya mueven el foco a su propio título.
   useEffect(() => {
     document.title = tituloDocumento(leerRuta(hash))
+    // P9 (CA-P9-50, 55): noindex solo en pantallas privadas y en la página no encontrada.
+    fijarNoIndex(rutaSinIndexar(leerRuta(hash)))
     if (primeraRuta.current) {
       primeraRuta.current = false
       return
@@ -379,6 +385,8 @@ export default function App() {
         {ruta.nombre === 'misIndicadores' && renderMisIndicadores()}
         {/* P8 (D-73 D): pública; sin cuenta o con cualquier sesión. */}
         {ruta.nombre === 'restablecerContrasena' && <RestablecerContrasena />}
+        {/* P9 (CA-P9-48): rutas `#/...` desconocidas. */}
+        {ruta.nombre === 'noEncontrada' && <NoEncontrada />}
       </main>
       <PiePortal tipos={tipos} conSesion={conSesion} />
     </>
