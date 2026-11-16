@@ -13,7 +13,8 @@
 //   #/publicaciones     P4b: "Mis publicaciones" del asesor (el administrador ve todas)
 //   #/contactos         P5: contactos (leads) del asesor; el administrador ve todos
 //   #/contactos/<id>    P5: detalle de un contacto con su historial
-//   #/privacidad        P5 (D-44): política de tratamiento de datos (borrador en revisión legal)
+//   #/privacidad        P5 (D-44): política de tratamiento de datos (en revisión legal)
+//   #/terminos          P9 (D-44, HU-086): términos y condiciones de uso (en revisión legal)
 //   #/vende-tu-camion   P5b (HU-N01, D-51): aviso "Vende tu camión", sin cuenta
 //   #/seguro-todo-riesgo P5b (HU-N02, D-51): aviso "Compra tu seguro todo riesgo", sin cuenta
 //   #/credito           P6 (HU-039, D-42, D-54): solicitud de crédito desde la portada, sin cuenta
@@ -47,6 +48,8 @@ export type Ruta =
   | { nombre: 'contactos'; consulta?: string }
   | { nombre: 'contacto'; id: number }
   | { nombre: 'privacidad' }
+  /** P9 (CA-P9-17, 23). */
+  | { nombre: 'terminos' }
   | { nombre: 'vendeTuCamion' }
   | { nombre: 'seguroTodoRiesgo' }
   /** P6: `slug` null = crédito desde la portada. */
@@ -107,6 +110,7 @@ export const HASH_INVENTARIO_NUEVO = '#/inventario/nuevo'
 export const HASH_PUBLICACIONES = '#/publicaciones'
 export const HASH_CONTACTOS = '#/contactos'
 export const HASH_PRIVACIDAD = '#/privacidad'
+export const HASH_TERMINOS = '#/terminos'
 export const HASH_VENDE_TU_CAMION = '#/vende-tu-camion'
 export const HASH_SEGURO_TODO_RIESGO = '#/seguro-todo-riesgo'
 export const HASH_CREDITO = '#/credito'
@@ -194,6 +198,7 @@ export function leerRuta(hash: string): Ruta {
   if (camino === '/contactos') return { nombre: 'contactos', ...conFiltros(consulta) }
   if (camino === '/ventas') return { nombre: 'ventas', ...conFiltros(consulta) }
   if (camino === '/privacidad') return { nombre: 'privacidad' }
+  if (camino === '/terminos') return { nombre: 'terminos' }
   if (camino === '/vende-tu-camion') return { nombre: 'vendeTuCamion' }
   if (camino === '/seguro-todo-riesgo') return { nombre: 'seguroTodoRiesgo' }
   if (camino === '/credito') return { nombre: 'credito', slug: null }

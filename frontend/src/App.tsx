@@ -49,6 +49,7 @@ import { MisSolicitudes, TITULO_MIS_SOLICITUDES } from './components/MisSolicitu
 import { NavAdmin } from './components/NavAdmin'
 import { PerfilPanel } from './components/PerfilPanel'
 import { Privacidad } from './components/Privacidad'
+import { Terminos } from './components/Terminos'
 import { RegistroForm } from './components/RegistroForm'
 import { RestablecerContrasena, TITULO_RESTABLECER } from './components/RestablecerContrasena'
 import { Resultados } from './components/Resultados'
@@ -110,6 +111,7 @@ function tituloDocumento(ruta: Ruta): string {
   if (ruta.nombre === 'publicaciones') return `Mis publicaciones | ${NOMBRE_PORTAL}`
   if (ruta.nombre === 'contactos' || ruta.nombre === 'contacto') return `Contactos | ${NOMBRE_PORTAL}`
   if (ruta.nombre === 'privacidad') return `Política de tratamiento de datos | ${NOMBRE_PORTAL}`
+  if (ruta.nombre === 'terminos') return `Términos y condiciones | ${NOMBRE_PORTAL}`
   if (ruta.nombre === 'vendeTuCamion') return `Vende tu camión | ${NOMBRE_PORTAL}`
   if (ruta.nombre === 'seguroTodoRiesgo') return `Compra tu seguro todo riesgo | ${NOMBRE_PORTAL}`
   if (ruta.nombre === 'credito')
@@ -340,6 +342,8 @@ export default function App() {
           />
         )}
         {ruta.nombre === 'privacidad' && <Privacidad />}
+        {/* P9 (CA-P9-17): términos en revisión legal; sin cuenta o con cualquier sesión. */}
+        {ruta.nombre === 'terminos' && <Terminos />}
         {/* P5b (D-6, D-51 A): avisos públicos; sin cuenta o con cualquier sesión. */}
         {ruta.nombre === 'vendeTuCamion' && (
           <AvisoPublico key="VENDE_TU_CAMION" variante="VENDE_TU_CAMION" sesion={sesionFormulario} />

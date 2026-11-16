@@ -814,6 +814,55 @@ form.cat-busqueda-portada {
   color: #9a9a9a;
 }
 
+/* P9 (CA-P9-22, 34): enlaces legales y datos de la empresa en la franja inferior. */
+.cat-pie-legal p {
+  margin: 0 0 8px;
+}
+
+.cat-pie .cat-pie-legal-enlaces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  margin: 0 0 8px;
+}
+
+.cat-pie .cat-pie-legal-enlaces li {
+  margin: 0;
+}
+
+.cat-pie .cat-pie-legal-enlaces a {
+  display: inline-block;
+  padding: 4px 0;
+  color: #d6d6d6;
+  text-decoration: underline;
+}
+
+.cat-pie-empresa {
+  overflow-wrap: anywhere;
+}
+
+/* P9 (CA-P9-35): datos del responsable en las páginas legales. */
+.pagina-legal-responsable h2 {
+  margin: 18px 0 8px;
+  font-size: 18px;
+}
+
+.pagina-legal-responsable dl {
+  margin: 0 0 12px;
+}
+
+.pagina-legal-responsable dl div {
+  margin: 0 0 6px;
+}
+
+.pagina-legal-responsable dt {
+  font-weight: 700;
+}
+
+.pagina-legal-responsable dd {
+  margin: 0;
+}
+
 /* D-42: foto de portada subida por el administrador (cubre el lado derecho, igual que la ilustración). */
 .cat-portada-foto {
   object-fit: cover;
