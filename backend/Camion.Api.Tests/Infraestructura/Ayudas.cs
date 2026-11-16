@@ -16,7 +16,8 @@ public static class Ayudas
 
     public static object Registro(string? email = null, string? nombre = "Ana Prueba",
         string? telefono = TelefonoValido, string? password = PasswordValida) =>
-        new { nombreCompleto = nombre, email = email ?? CorreoUnico(), telefono, password };
+        // P9 (CA-P9-08): el registro exige autorizacionDatos = true.
+        new { nombreCompleto = nombre, email = email ?? CorreoUnico(), telefono, password, autorizacionDatos = true };
 
     public static Task<HttpResponseMessage> Registrar(HttpClient c, object cuerpo) =>
         c.PostAsJsonAsync("/api/auth/registro/comprador", cuerpo);

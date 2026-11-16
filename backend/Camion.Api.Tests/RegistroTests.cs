@@ -66,7 +66,7 @@ public sealed class RegistroTests(CamionApiFactory factory) : IClassFixture<Cami
         var r = await Registrar(_c, new
         {
             nombreCompleto = "Intruso Prueba", email, telefono = TelefonoValido, password = PasswordValida,
-            rol = "ADMIN", roles = new[] { "ASESOR", "ADMINISTRADOR" }
+            autorizacionDatos = true, rol = "ADMIN", roles = new[] { "ASESOR", "ADMINISTRADOR" }
         });
         Assert.Equal(HttpStatusCode.Created, r.StatusCode);
 
@@ -203,17 +203,18 @@ public sealed class RegistroTests(CamionApiFactory factory) : IClassFixture<Cami
         var r = await Registrar(_c, new { nombreCompleto = "", email = "x", telefono = "abc", password = "abc" });
         Assert.Equal(HttpStatusCode.BadRequest, r.StatusCode);
         var errores = (await Json(r)).GetProperty("errores");
-        Assert.Equal(new[] { "email", "nombreCompleto", "password", "telefono" },
+        // P9 (CA-P9-08): sin autorizacionDatos también llega su error, junto con los demás.
+        Assert.Equal(new[] { "autorizacionDatos", "email", "nombreCompleto", "password", "telefono" },
             errores.EnumerateObject().Select(p => p.Name).OrderBy(x => x, StringComparer.Ordinal));
     }
 
-    [Fact(DisplayName = "CA-N03-14: cuerpo JSON vacío ({}) -> 400 con errores de los 4 campos")]
+    [Fact(DisplayName = "CA-N03-14, CA-P9-08: cuerpo JSON vacío ({}) -> 400 con errores de los 4 campos y de autorizacionDatos")]
     public async Task Cuerpo_objeto_vacio_da_400()
     {
         var r = await _c.PostAsync("/api/auth/registro/comprador", new StringContent("{}", Encoding.UTF8, "application/json"));
         Assert.Equal(HttpStatusCode.BadRequest, r.StatusCode);
         var errores = (await Json(r)).GetProperty("errores");
-        Assert.Equal(4, errores.EnumerateObject().Count());
+        Assert.Equal(5, errores.EnumerateObject().Count());
     }
 
     [Fact(DisplayName = "CA-N03-14: petición sin cuerpo -> 400 con { error }, nunca 500")]

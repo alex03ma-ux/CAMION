@@ -7,7 +7,9 @@ public sealed record RegistroCompradorRequest(
     string? NombreCompleto,
     string? Email,
     string? Telefono,
-    string? Password);
+    string? Password,
+    // P9 (CA-P9-06, CA-P9-08, D-44): debe ser true; se guarda la prueba en consentimientos_datos.
+    bool? AutorizacionDatos = null);
 
 // P2 (HU-043, D-3, D-5): registro público de asesor; queda PENDIENTE hasta que el administrador lo apruebe.
 public sealed record RegistroAsesorRequest(
@@ -17,7 +19,9 @@ public sealed record RegistroAsesorRequest(
     string? Password,
     string? TipoDocumento,
     string? NumeroDocumento,
-    string? NombreComercial);
+    string? NombreComercial,
+    // P9 (CA-P9-07, CA-P9-08, D-44): debe ser true; se guarda la prueba en consentimientos_datos.
+    bool? AutorizacionDatos = null);
 
 public sealed record LoginRequest(
     string? Email,
