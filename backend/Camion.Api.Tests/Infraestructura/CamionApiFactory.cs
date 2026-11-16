@@ -68,6 +68,11 @@ public sealed class CamionApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("Contactos:LimiteTelefonoDia", "100000");
         // P8 (D-73 D): mismo criterio para el cupo de restablecer la contraseña; P8RecuperacionTests lo baja.
         builder.UseSetting("Recuperacion:LimiteVentana", "100000");
+        // P9 (CA-P9-38 a CA-P9-40): mismo criterio para los cupos por IP del registro y del inicio de sesión; LimitesAuthTests
+        // los baja.
+        builder.UseSetting("LimitesAuth:RegistroLimiteVentana", "100000");
+        builder.UseSetting("LimitesAuth:RegistroLimiteDiario", "100000");
+        builder.UseSetting("LimitesAuth:LoginLimiteVentana", "100000");
         // D-78: el entorno Testing no es Development, así que el enlace debe ser https://; las claves de DataProtection
         // irían a una carpeta temporal (además se sustituye el proveedor por uno efímero, abajo).
         builder.UseSetting("Recuperacion:UrlPortal", UrlPortalPruebas);

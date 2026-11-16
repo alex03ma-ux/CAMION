@@ -128,6 +128,8 @@ builder.Services.AddSingleton<IAlmacenFotos>(sp =>
     new AlmacenFotosLocal(sp.GetRequiredService<IConfiguration>()["Media:Ruta"]));
 // P5 (CA-P5-20 a CA-P5-22): límites del contacto público, configurables (sección "Contactos"; las pruebas los suben).
 builder.Services.Configure<OpcionesContacto>(builder.Configuration.GetSection("Contactos"));
+// P9 (CA-P9-38 a CA-P9-44): cupos por IP del registro y del inicio de sesión (sección "LimitesAuth").
+builder.Services.Configure<OpcionesLimitesAuth>(builder.Configuration.GetSection("LimitesAuth"));
 // Limitador global encadenado (Microsoft.AspNetCore.RateLimiting, incluido en .NET 8): solo actúa sobre las rutas marcadas
 // con LimitePeticionesContacto; por IP, una ventana corta (5 cada 10 min) y una diaria (20). El resto pasa sin límite.
 builder.Services.AddRateLimiter(options =>
@@ -162,20 +164,60 @@ builder.Services.AddRateLimiter(options =>
             AutoReplenishment = true
         });
     }
+    // P9 (CA-P9-38 a CA-P9-44): cupos por IP de autenticación (marca LimitePeticionesAuth). El registro de comprador y el
+    // de asesor comparten partición ("registro"); el inicio de sesión tiene la suya. null en ventana = el cupo no aplica.
+    static RateLimitPartition<string> Autenticacion(HttpContext http, string prefijo,
+        Func<LimitePeticionesAuth, OpcionesLimitesAuth, (int Limite, TimeSpan Ventana)?> valores)
+    {
+        var marca = http.GetEndpoint()?.Metadata.GetMetadata<LimitePeticionesAuth>();
+        if (marca is null) return RateLimitPartition.GetNoLimiter("libre");
+        var cupo = valores(marca, http.RequestServices.GetRequiredService<IOptions<OpcionesLimitesAuth>>().Value);
+        if (cupo is not { } c) return RateLimitPartition.GetNoLimiter("libre");
+        var ip = ConfiguracionServidor.ClaveIp(http.Connection.RemoteIpAddress);
+        return RateLimitPartition.GetFixedWindowLimiter(prefijo + marca.Cupo + ":" + ip, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = Math.Max(1, c.Limite),
+            Window = c.Ventana,
+            QueueLimit = 0,
+            AutoReplenishment = true
+        });
+    }
     options.GlobalLimiter = PartitionedRateLimiter.CreateChained(
         PartitionedRateLimiter.Create<HttpContext, string>(http => Ventana(http, "corta:",
             o => (o.LimiteVentanaCorta, TimeSpan.FromMinutes(Math.Max(1, o.VentanaCortaMinutos))))),
         PartitionedRateLimiter.Create<HttpContext, string>(http => Ventana(http, "dia:",
             o => (o.LimiteDiario, TimeSpan.FromDays(1)))),
-        PartitionedRateLimiter.Create<HttpContext, string>(Recuperacion));
+        PartitionedRateLimiter.Create<HttpContext, string>(Recuperacion),
+        PartitionedRateLimiter.Create<HttpContext, string>(http => Autenticacion(http, "auth-corta:", (m, o) =>
+            m.Cupo == LimitePeticionesAuth.Registro
+                ? (o.RegistroLimiteVentana, TimeSpan.FromMinutes(Math.Max(1, o.RegistroVentanaMinutos)))
+                : (o.LoginLimiteVentana, TimeSpan.FromMinutes(Math.Max(1, o.LoginVentanaMinutos))))),
+        PartitionedRateLimiter.Create<HttpContext, string>(http => Autenticacion(http, "auth-dia:", (m, o) =>
+            m.Cupo == LimitePeticionesAuth.Registro ? (o.RegistroLimiteDiario, TimeSpan.FromDays(1)) : null)));
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.OnRejected = async (contexto, ct) =>
     {
-        contexto.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-        var mensaje = contexto.HttpContext.GetEndpoint()?.Metadata.GetMetadata<LimitePeticionesRecuperacion>() is null
-            ? ReglasLeads.MensajeMuchas
-            : RecuperacionEndpoints.MensajeMuchos;
-        await contexto.HttpContext.Response.WriteAsJsonAsync(new ErrorResponse(mensaje), ct);
+        var http = contexto.HttpContext;
+        http.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        // CA-P9-42: Retry-After en segundos cuando el limitador lo conoce.
+        if (contexto.Lease.TryGetMetadata(MetadataName.RetryAfter, out var espera))
+            http.Response.Headers.RetryAfter = ((int)Math.Ceiling(Math.Max(1, espera.TotalSeconds))).ToString(
+                System.Globalization.CultureInfo.InvariantCulture);
+        var metadatos = http.GetEndpoint()?.Metadata;
+        var auth = metadatos?.GetMetadata<LimitePeticionesAuth>();
+        string mensaje;
+        if (auth is not null)
+        {
+            mensaje = auth.Mensaje;
+            // CA-P9-47: sin correo ni IP (el cuerpo no se ha leído).
+            http.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger(AuthEndpoints.CategoriaAuditoria)
+                .LogWarning("Auditoria limite_auth rechazado cupo={Cupo}", auth.Cupo);
+        }
+        else
+            mensaje = metadatos?.GetMetadata<LimitePeticionesRecuperacion>() is null
+                ? ReglasLeads.MensajeMuchas
+                : RecuperacionEndpoints.MensajeMuchos;
+        await http.Response.WriteAsJsonAsync(new ErrorResponse(mensaje), ct);
     };
 });
 // JSON malformado o con tipos incorrectos: el framework lanza BadHttpRequestException y se responde con el formato común.

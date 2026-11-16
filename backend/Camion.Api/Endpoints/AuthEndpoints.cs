@@ -101,7 +101,9 @@ public static class AuthEndpoints
             log.LogInformation("Auditoria registro_comprador exitoso usuarioId={UsuarioId}", user.Id);
             return Results.Created("/api/auth/me",
                 new RegistroCompradorResponse(user.Id, "Cuenta creada. Ya puedes iniciar sesión."));
-        });
+        })
+        // CA-P9-38, CA-P9-39: cupo por IP compartido con el registro de asesor.
+        .WithMetadata(new LimitePeticionesAuth(LimitePeticionesAuth.Registro));
 
         // P2 (HU-043, D-3, D-5): registro público de asesor; rol fijo ASESOR y cuenta PENDIENTE hasta su aprobación.
         auth.MapPost("/registro/asesor", async (
@@ -186,7 +188,9 @@ public static class AuthEndpoints
 
             log.LogInformation("Auditoria registro_asesor exitoso usuarioId={UsuarioId}", user.Id);
             return Results.Created("/api/auth/me", new RegistroCompradorResponse(user.Id, MensajeSolicitudAsesor));
-        });
+        })
+        // CA-P9-38, CA-P9-39: cupo por IP compartido con el registro de comprador.
+        .WithMetadata(new LimitePeticionesAuth(LimitePeticionesAuth.Registro));
 
         // HU-059, RN-SE-001, HU-062: mismo mensaje para cualquier fallo de credenciales.
         auth.MapPost("/login", async (
@@ -263,7 +267,9 @@ public static class AuthEndpoints
             return Results.Ok(new AuthResponse(
                 new JwtSecurityTokenHandler().WriteToken(token), "Bearer", expiry,
                 user.Id, user.NombreCompleto, user.Email ?? "", userRoles.ToArray()));
-        });
+        })
+        // CA-P9-40, CA-P9-41: cupo por IP; el 429 ocurre antes de leer el cuerpo (no cuenta como fallo de la cuenta).
+        .WithMetadata(new LimitePeticionesAuth(LimitePeticionesAuth.Login));
 
         // La sesión (session_version y EstadoCuenta) ya se validó en OnTokenValidated.
         auth.MapGet("/me", async (ClaimsPrincipal principal, UserManager<ApplicationUser> users) =>
