@@ -1023,7 +1023,7 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
 - Recomendación del coordinador: B. No bloquea la publicación y conviene medir primero si los compradores se registran.
 - No bloquea P9.
 
-## D-83 — ¿Se muestra la dirección de notificaciones en el pie del portal? · PENDIENTE (2026-11-16)
+## D-83 — ¿Se muestra la dirección de notificaciones en el pie del portal? · TOMADA (2026-11-16)
 - Contexto (analista, criterios de P9, `docs/criterios/P9-criterios.md`, CA-P9-34 y 35): el encargo de P9 pide que razón social, NIT y dirección de notificaciones sean editables por el administrador y se vean en el pie cuando estén completos. D-42 (2026-11-04) dice: "Dirección: por ahora no se publica (decisión de la responsable)". La política en borrador recuerda que la norma pide identificar al responsable con su domicilio y dirección, y pregunta al abogado si basta una dirección de notificaciones (`docs/legal/POLITICA-TRATAMIENTO-DATOS.md:16`).
 - Opciones:
   - A) **Los tres datos en el pie cuando el administrador los complete.** Mientras falte alguno, no se muestra nada. Publicar la dirección pasa a ser un acto consciente del administrador al llenarla.
@@ -1035,7 +1035,9 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
 - Recomendación del analista: **A**, con la confirmación del abogado dentro de D-44 sobre qué dirección usar. El administrador decide cuándo aparece al llenarla, y D-42 se respeta mientras esté vacía.
 - Bloquea: CA-P9-34 y CA-P9-35 (el resto de P9 sigue).
 
-## D-84 — ¿El registro pide aceptar los términos con una casilla propia? · PENDIENTE (2026-11-16)
+- **Decisión de la responsable (2026-11-16): A.** El pie muestra razón social, NIT y dirección de notificaciones cuando el administrador complete los tres datos. Reemplaza, para la dirección de notificaciones, lo dicho en D-42 ("Dirección: por ahora no se publica").
+
+## D-84 — ¿El registro pide aceptar los términos con una casilla propia? · TOMADA (2026-11-16)
 - Contexto: P9 añade la casilla de autorización de datos al registro (D-44) y un enlace a `#/terminos` junto a cada casilla. Los términos están en borrador y no se publican hasta la revisión legal; aceptar un texto que el usuario no puede leer no sirve como aceptación.
 - Opciones:
   - A) **Ahora solo la autorización de datos, más el enlace a los términos.** La casilla "Acepto los términos y condiciones" se añade, con su prueba guardada, en la entrega que publique los textos aprobados.
@@ -1045,7 +1047,9 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
 - Recomendación del analista: **A**.
 - Bloquea: CA-P9-16 (solo como confirmación; P9 sigue con A si no hay respuesta).
 
-## D-85 — ¿Qué pasa con las autorizaciones dadas con la versión borrador cuando se apruebe la política? · PENDIENTE (2026-11-16)
+- **Decisión de la responsable (2026-11-16): A.** Por ahora solo el enlace a los términos; la casilla "Acepto los términos" se agrega cuando el abogado apruebe el texto.
+
+## D-85 — ¿Qué pasa con las autorizaciones dadas con la versión borrador cuando se apruebe la política? · TOMADA (2026-11-16)
 - Contexto: cada autorización guarda la versión de la política (`PoliticaDatos:Version`, hoy `BORRADOR-2026-11-04`). Cuando el abogado apruebe la política, la versión cambiará (CA-P9-66). Las cuentas y solicitudes creadas antes conservarán la versión borrador.
 - Opciones:
   - A) **No hacer nada.** Cada autorización queda ligada a la versión que la persona vio; solo las nuevas llevan la versión aprobada.
@@ -1055,6 +1059,8 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
   - C) **Lo que indique el abogado** dentro de D-44.
 - Recomendación del analista: **A**, preguntando al abogado (C) si hace falta algo más; y no abrir el portal al público con una versión `BORRADOR` (CA-P9-64 deja una advertencia en el log).
 - Bloquea: nada de P9.
+
+- **Decisión de la responsable (2026-11-16): A.** Las autorizaciones dadas con la versión borrador se conservan con su versión; se le pregunta al abogado si hace falta pedir una nueva.
 
 ## D-86 — Número de migración citado en D-75 B y D-76 B · TOMADA (2026-11-16, documental, coordinador)
 - Contradicción documental: D-75 B (promociones, P8b) y D-76 B (conteo propio de visitas) dicen "migración 017", pero el 017 ya lo usa `database/catalogos/017_categorias_base_SUBIR.sql` (PROPUESTO). P9 no necesita migración; la siguiente libre es la **018**.
