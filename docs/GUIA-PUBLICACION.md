@@ -29,7 +29,8 @@ Marca cada punto antes de abrir el portal al público.
 
 **Decisiones previas**
 - [ ] Hosting elegido (D-81) y dominio propio comprado.
-- [ ] Revisión legal de la política de datos y de los términos (`docs/legal/`, D-44). Cuando estén aprobados, se actualiza `PoliticaDatos:Version` (hoy `BORRADOR-2026-11-04`).
+- [ ] Revisión legal de la política de datos y de los términos (`docs/legal/`, D-44). Cuando estén aprobados, se actualiza `PoliticaDatos:Version` (hoy `BORRADOR-2026-11-04`) siguiendo la sección 3.1.
+- [ ] Datos de la empresa (razón social, NIT y dirección de notificaciones) guardados en Administración → Parámetros (sección 4.6).
 
 **Servidor**
 - [ ] SDK o runtime de ASP.NET Core 8 instalado (la API se publica con `dotnet publish`, sección 9).
@@ -85,12 +86,16 @@ En ASP.NET Core, cada clave con `:` se escribe como variable de entorno con `__`
 | `AllowedHosts` | No | Recomendada | Dominio(s) del portal, separados por `;`. Hoy es `*`. |
 | `Recuperacion__LimiteVentana`, `Recuperacion__VentanaMinutos` | No | No | Límite por IP para restablecer la contraseña (5 cada 15 min). |
 | `Contactos__LimiteVentanaCorta`, `Contactos__VentanaCortaMinutos`, `Contactos__LimiteDiario`, `Contactos__LimiteTelefonoDia` | No | No | Límites de los formularios públicos. |
-| `PoliticaDatos__Version` | No | No | Versión vigente de la política de datos (tras la revisión legal). |
+| `LimitesAuth__RegistroLimiteVentana`, `LimitesAuth__RegistroVentanaMinutos`, `LimitesAuth__RegistroLimiteDiario` | No | No | Límite por IP del registro de comprador e inscripción de asesor, con cupo compartido (5 cada 60 min y 20 por día). |
+| `LimitesAuth__LoginLimiteVentana`, `LimitesAuth__LoginVentanaMinutos` | No | No | Límite por IP del inicio de sesión (20 cada 15 min). Aparte sigue el bloqueo de la cuenta tras 5 contraseñas incorrectas. |
+| `PoliticaDatos__Version` | No | Sí, al aprobarse la política | Versión de la política de datos que se guarda en cada autorización. Ver la sección 3.1. |
 
 Comportamiento al arrancar:
 - **Sin** `ConnectionStrings:CamionDatabase` o `Jwt:Key`, la API no arranca en ningún entorno.
 - Fuera de Development, **sin** `Media:Ruta`, `DataProtection:RutaClaves` o `Recuperacion:UrlPortal`, la API no arranca. El mensaje dice qué clave falta, nunca su valor.
 - Si `Recuperacion:UrlPortal` o `Portal:Origen` no empiezan por `https://`, o si una IP del proxy está mal escrita, la API tampoco arranca.
+- Si `PoliticaDatos:Version` tiene más de 40 caracteres o algo distinto de mayúsculas, dígitos, `.` y `-`, la API no arranca.
+- Fuera de Development, si `PoliticaDatos:Version` empieza por `BORRADOR`, la API arranca pero escribe en el log: "La política de datos configurada es un borrador: no abrir el portal al público". Sirve para montar el servidor en privado. No se abre al público mientras salga ese aviso.
 
 Dónde se guardan:
 - **En el equipo local:** con `dotnet user-secrets` (README §4).
@@ -100,6 +105,18 @@ Dónde se guardan:
 Cadena de conexión (aviso de MySqlConnector, B-4):
 - Si MariaDB está **en el mismo servidor**, conecta por `127.0.0.1`.
 - Si está **en otro equipo**, exige TLS verificado (`SslMode=VerifyFull` con el certificado de la autoridad del servidor). Así la contraseña nunca viaja sin cifrar.
+
+### 3.1 Versión de la política de datos (`PoliticaDatos:Version`, D-44)
+
+Cada autorización de datos (contacto, avisos, crédito, búsqueda, registro de comprador e inscripción de asesor) guarda en `consentimientos_datos` la versión de la política que aceptó la persona. Las seis rutas la leen del mismo sitio (`Auth/PoliticaDatos.cs`).
+
+- **Mientras el abogado no apruebe la política**, la versión es `BORRADOR-2026-11-04` (`appsettings.json`). Así queda claro que la autorización se dio frente al borrador del 2026-11-04. No se inventa una versión final.
+- **Cuando se apruebe**, el cambio se hace en este orden:
+  1. El abogado entrega el texto final, y la responsable la fecha de vigencia.
+  2. En una entrega aparte, con su propia PR, se publica el texto en `#/privacidad` y `#/terminos`, y la constante del aviso de revisión del frontend pasa a `false`.
+  3. En el servidor se fija la variable de entorno `PoliticaDatos__Version` con el formato `V<n>-<AAAA-MM-DD>`. Para la primera versión es `V1-` más la fecha de vigencia que se entregue. Nunca se reutiliza un valor anterior: cada cambio del texto lleva un número nuevo.
+  4. Se reinicia la API y se comprueba que el log de arranque ya no muestra el aviso de borrador. Luego se envía una solicitud de prueba y se revisa que la fila nueva de `consentimientos_datos` tenga la versión nueva. Por ejemplo, solo lectura: `SELECT formulario, version_politica, aceptado_en FROM consentimientos_datos ORDER BY id DESC LIMIT 1;`.
+- **Qué hacer con las autorizaciones ya guardadas con el borrador** (pedirlas otra vez o no): PENDIENTE de D-85. Ese paso no se hace sin la decisión.
 
 ---
 
@@ -187,6 +204,7 @@ P8 no tiene migración.
 ### 4.6 Lo que se configura desde el panel, después
 - **Planes** (nombre, precio, vigencia, cupos y destacados): Administración → Planes. La base nueva no trae ninguno.
 - **Datos de contacto del portal** (WhatsApp, correo, horario y redes): Administración → Parámetros. Mientras no se guarden, se muestran los valores por defecto del código.
+- **Datos de la empresa** (razón social, NIT con dígito de verificación y dirección de notificaciones): Administración → Parámetros (`PUT /api/admin/parametros/empresa`). No tienen valores por defecto. `GET /api/portal/contacto` los publica solo cuando están los tres. Cómo se muestra la dirección en el pie depende de D-83.
 - Imagen de portada, marcas y modelos adicionales: desde sus pantallas del panel.
 
 ### 4.7 Script que faltaba: `017_categorias_base_SUBIR.sql` (PROPUESTO)
