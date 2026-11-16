@@ -841,6 +841,13 @@ form.cat-busqueda-portada {
   overflow-wrap: anywhere;
 }
 
+/* P9 (CA-P9-24): sección "Datos de la empresa" bajo el contacto del portal. */
+.admin-empresa {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid #e3e3e3;
+}
+
 /* P9 (CA-P9-35): datos del responsable en las páginas legales. */
 .pagina-legal-responsable h2 {
   margin: 18px 0 8px;

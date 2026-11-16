@@ -1,6 +1,7 @@
 // P7 — Parámetros: datos de contacto del portal (HU-081, RN-PA-001; D-42, D-47, D-63 A; CA-P7-35 a 44).
 // Solo WhatsApp, correo, horario (1 a 4 líneas), Instagram y TikTok. No ofrece días del plan, fotos, límites
 // anti-abuso, categorías ni DIVIPOLA (CA-P7-44). La API (SoloAdministrador) valida y audita cada cambio.
+// P9 (CA-P9-24): debajo, la sección "Datos de la empresa" (AdminEmpresa), con su propio formulario.
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { ApiError, MENSAJE_INESPERADO } from '../api/http'
 import { formatearFechaHora } from '../api/leads'
@@ -19,6 +20,7 @@ import {
   type ErroresContactoPortal,
   type FormularioContactoPortal,
 } from '../api/parametros'
+import { AdminEmpresa } from './AdminEmpresa'
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo } from './Campo'
 import { NotaObligatorio } from './NotaObligatorio'
@@ -280,6 +282,7 @@ export function AdminParametros({ token, onSesionTerminada }: Props) {
           </div>
         </form>
       )}
+      <AdminEmpresa token={token} onSesionTerminada={onSesionTerminada} />
     </section>
   )
 }

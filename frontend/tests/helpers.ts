@@ -22,6 +22,8 @@ export function simularFetch(
     [RUTA_PORTADA]: { status: 200, body: { url: null } },
     // P7 (D-63 A): el pie lee los datos de contacto; por defecto, los valores confirmados de D-42.
     [RUTA_CONTACTO_PORTAL]: CONTACTO_PORTAL_POR_DEFECTO,
+    // P9: la sección "Parámetros" del administrador lee también los datos de la empresa; por defecto, sin guardar.
+    [RUTA_EMPRESA_ADMIN]: EMPRESA_ADMIN_VACIA,
     ...rutasPropias,
   }
   const llamadas: Llamada[] = []
@@ -65,6 +67,23 @@ export const CONTACTO_PORTAL_POR_DEFECTO: RespuestaSimulada = {
     horario: ['Lunes a viernes: 9:00 a. m. a 5:00 p. m.', 'Sábados: 9:00 a. m. a 3:00 p. m.'],
     instagram: null,
     tiktok: null,
+  },
+}
+
+/** P9 (contrato §3.5 y §3.6): datos de la empresa del administrador. */
+export const RUTA_EMPRESA_ADMIN = '/api/admin/parametros/empresa'
+
+/** Respuesta de GET /api/admin/parametros/empresa sin datos guardados (CA-P9-25). */
+export const EMPRESA_ADMIN_VACIA: RespuestaSimulada = {
+  status: 200,
+  body: {
+    razonSocial: null,
+    nit: null,
+    direccion: null,
+    completo: false,
+    configurado: false,
+    actualizadoEn: null,
+    actualizadoPor: null,
   },
 }
 
