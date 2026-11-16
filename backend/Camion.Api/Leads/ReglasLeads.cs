@@ -28,7 +28,6 @@ public sealed class LimitePeticionesContacto;
 // P5: mensajes y validaciones de contactos y leads (docs/criterios/P5-contrato-api.md).
 public static class ReglasLeads
 {
-    public const string VersionPoliticaPorDefecto = "BORRADOR-2026-11-04";
     public const string MensajePorDefecto = "Me interesa este vehículo";
 
     public const string MensajeExito = "¡Listo! Recibimos tus datos. Te contactaremos pronto por teléfono o WhatsApp.";

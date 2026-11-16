@@ -73,8 +73,8 @@ public static class AvisosEndpoints
         var ahora = reloj.GetUtcNow().UtcDateTime;
         // CA-P5b-02, 12, 35: con un token válido (cualquier rol) el aviso queda ligado a la cuenta; nunca cambia el responsable.
         var usuarioId = principal.Identity?.IsAuthenticated == true ? principal.FindFirstValue(ClaimTypes.NameIdentifier) : null;
-        var version = configuracion["PoliticaDatos:Version"];
-        if (string.IsNullOrWhiteSpace(version)) version = ReglasLeads.VersionPoliticaPorDefecto;
+        // CA-P9-63: un único ayudante para la versión de la política.
+        var version = PoliticaDatos.Version(configuracion);
 
         // CA-P5b-25: límite por teléfono compartido con el contacto de P5, antes de la rama de repetidos.
         if (await ContactosEndpoints.EnviosTelefonoAsync(db, datos.Telefono, ahora, ct) >= limites.LimiteTelefonoDia)

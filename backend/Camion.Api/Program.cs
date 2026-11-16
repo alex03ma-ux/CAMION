@@ -28,6 +28,8 @@ if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
     throw new InvalidOperationException("Jwt:Key debe tener por lo menos 32 bytes.");
 // INF-2: fuera de Development la API no arranca sin Media:Ruta, DataProtection:RutaClaves ni Recuperacion:UrlPortal.
 ConfiguracionServidor.ValidarObligatorias(builder.Configuration, builder.Environment.IsDevelopment());
+// P9 (CA-P9-65): una versión de la política mal formada impide arrancar (como Jwt:Key).
+var versionPolitica = PoliticaDatos.ValidarAlIniciar(builder.Configuration);
 // INF-2 (M-1 de P5): proxies de confianza; null si no hay ninguno configurado (en local, sin cambios).
 var opcionesProxy = ConfiguracionServidor.OpcionesProxy(builder.Configuration);
 // INF-2: CORS solo si el frontend está en otro origen (Portal:Origen); si no, ninguna respuesta lleva CORS.
@@ -212,6 +214,10 @@ if (args.Length > 0 && args[0] == RecuperarAdmin.NombreComando)
     Environment.ExitCode = resultado.CodigoSalida;
     return;
 }
+
+// P9 (CA-P9-64): fuera de Development, una versión de borrador no impide arrancar (montaje en privado, PP.6) pero se avisa.
+if (!app.Environment.IsDevelopment() && PoliticaDatos.EsBorrador(versionPolitica))
+    app.Logger.LogWarning("{Aviso}", PoliticaDatos.AvisoBorrador);
 
 // RN-SE-006: los tres roles existen desde el arranque. Si la base no responde, la API arranca igual
 // (los registros vuelven a asegurar su rol) y /health/database informa del problema.
