@@ -146,12 +146,12 @@ export function RegistroForm({ onRegistrado, onIrALogin }: RegistroFormProps) {
         tipoDocumento: n.tipoDocumento as TipoDocumento,
         numeroDocumento: n.numeroDocumento,
         nombreComercial: n.nombreComercial === '' ? null : n.nombreComercial,
-        autorizacionDatos: true,
+        autorizacionDatos: autorizacion,
       })
       return { mensaje: respuesta.mensaje, email: n.email }
     }
     const n = normalizarRegistro(datos)
-    const respuesta = await registrarComprador({ ...n, autorizacionDatos: true })
+    const respuesta = await registrarComprador({ ...n, autorizacionDatos: autorizacion })
     return { mensaje: respuesta.mensaje, email: n.email }
   }
 
