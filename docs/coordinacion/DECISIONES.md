@@ -1011,3 +1011,14 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
 - Opciones presentadas: A) servidor propio (VPS Windows o Linux); B) servicio administrado (Azure, Railway u otro); C) un tercero de confianza siguiendo `docs/GUIA-PUBLICACION.md`. En todos los casos hace falta un dominio propio.
 - Recomendación del coordinador: comparar precios del dominio y de una o dos opciones antes de decidir; la guía de publicación es válida para cualquiera.
 - Bloquea: la publicación (y con ella el correo transaccional de D-73 C). No bloquea INF-1, INF-2 ni INF-3.
+- Comparación presentada (2026-11-16, precios aproximados de terceros, sin confirmar en el carrito): A) VPS Linux ≈ US$12/mes (DigitalOcean 2 GB) o ≈ US$15/mes (Hostinger KVM 2, renovación y pago por adelantado), encaja completo con la guía pero requiere una persona técnica; B) Azure App Service B1 + MySQL B1ms ≈ US$30/mes, menos mantenimiento, usa MySQL 8 en lugar de MariaDB (probar scripts); C) hosting compartido ASP.NET (≈ US$3–9/mes) no recomendado (sin `recuperar-admin`, sin control de claves ni proxy, sin MariaDB). Dominio recomendado `.com.co` (≈ $59.000–120.000/año; ojo con la renovación del `.co`, ≈ $126.000–137.000).
+- Recomendación: A si hay una persona técnica de confianza; B si no la hay. Pregunta abierta a la responsable: quién mantendrá el servidor.
+
+## D-82 — ¿Se implementan los favoritos (HU-056 a HU-058)? · PENDIENTE (2026-11-16)
+- Contexto: la auditoría del 2026-11-16 encontró que los favoritos del comprador (guardar vehículos, verlos y quitarlos) están en los requisitos v3.0, pero no están implementados ni hay una decisión que los saque del alcance.
+- Opciones:
+  - A) **No por ahora.** Se publica sin favoritos; se reconsidera con el uso real.
+  - B) **Favoritos para comprador con cuenta**, en una entrega aparte después de publicar (migración nueva; entrega pequeña).
+  - C) Como B, antes de publicar.
+- Recomendación del coordinador: B. No bloquea la publicación y conviene medir primero si los compradores se registran.
+- No bloquea P9.
