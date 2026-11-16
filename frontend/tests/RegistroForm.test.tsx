@@ -20,6 +20,8 @@ async function rellenar(user: ReturnType<typeof userEvent.setup>, datos = VALIDO
   await user.type(screen.getByLabelText('Correo electrónico'), datos.email)
   await user.type(screen.getByLabelText('Teléfono'), datos.telefono)
   await user.type(screen.getByLabelText('Contraseña'), datos.password)
+  // P9 (CA-P9-01, D-44): la autorización de datos es obligatoria.
+  await user.click(screen.getByRole('checkbox', { name: /Autorizo el tratamiento de mis datos personales/ }))
 }
 
 function errorDe(id: string) {
@@ -145,6 +147,7 @@ describe('RegistroForm', () => {
       email: VALIDOS.email,
       telefono: VALIDOS.telefono,
       password: VALIDOS.password,
+      autorizacionDatos: true,
     })
   })
 

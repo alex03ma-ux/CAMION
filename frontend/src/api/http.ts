@@ -28,12 +28,15 @@ export class ApiError extends Error {
   readonly errores: ErroresPorCampo
   /** Campo opcional `estado` del cuerpo de error (contrato P2), si viene. */
   readonly estado: string | undefined
+  /** P9 (CA-P9-42): segundos del encabezado `Retry-After` de un 429, si llega como número. */
+  readonly reintentarEnSegundos: number | undefined
 
   constructor(
     status: number,
     mensaje: string,
     errores: ErroresPorCampo = {},
     estado?: string,
+    reintentarEnSegundos?: number,
   ) {
     super(mensaje)
     this.name = 'ApiError'
@@ -41,6 +44,7 @@ export class ApiError extends Error {
     this.mensaje = mensaje
     this.errores = errores
     this.estado = estado
+    this.reintentarEnSegundos = reintentarEnSegundos
   }
 }
 
@@ -124,7 +128,7 @@ export async function peticion(
 
   const datos = await leerJson(respuesta)
 
-  if (!respuesta.ok) throw errorDeRespuesta(respuesta.status, datos, mensajesPorCodigo)
+  if (!respuesta.ok) throw errorDeRespuesta(respuesta.status, datos, mensajesPorCodigo, respuesta.headers)
 
   return datos
 }
@@ -134,6 +138,7 @@ function errorDeRespuesta(
   status: number,
   datos: unknown,
   mensajesPorCodigo: Partial<Record<number, string>>,
+  encabezados?: Headers,
 ): ApiError {
   const cuerpo: CuerpoError = esObjeto(datos) ? (datos as CuerpoError) : {}
   // Un 5xx (p. ej. el proxy de Vite cuando el backend está apagado) se
@@ -146,7 +151,26 @@ function errorDeRespuesta(
     typeof cuerpo.estado === 'string' && cuerpo.estado.trim() !== ''
       ? cuerpo.estado.trim().toUpperCase()
       : undefined
-  return new ApiError(status, mensaje, normalizarErrores(cuerpo.errores), estado)
+  const reintentar = status === 429 ? segundosDeRetryAfter(encabezados?.get('Retry-After') ?? null) : undefined
+  return new ApiError(status, mensaje, normalizarErrores(cuerpo.errores), estado, reintentar)
+}
+
+/** `Retry-After` en segundos (entero positivo); la forma de fecha HTTP no se usa en la API y se ignora. */
+export function segundosDeRetryAfter(valor: string | null): number | undefined {
+  if (valor === null || !/^\d{1,9}$/.test(valor.trim())) return undefined
+  const segundos = Number(valor.trim())
+  return segundos > 0 ? segundos : undefined
+}
+
+/**
+ * P9 (CA-P9-46): cuánto falta para volver a intentar, en palabras ("Podrás intentarlo de nuevo en unos 12 minutos.").
+ * Vacío si el servidor no lo indicó.
+ */
+export function textoEspera(segundos: number | undefined): string {
+  if (segundos === undefined) return ''
+  if (segundos < 60) return `Podrás intentarlo de nuevo en ${segundos} ${segundos === 1 ? 'segundo' : 'segundos'}.`
+  const minutos = Math.ceil(segundos / 60)
+  return `Podrás intentarlo de nuevo en ${minutos === 1 ? '1 minuto' : `unos ${minutos} minutos`}.`
 }
 
 /** P8: archivo descargado con su nombre (del encabezado Content-Disposition, si viene). */
@@ -185,7 +209,7 @@ export async function descargarArchivo(
     if (error instanceof DOMException && error.name === 'AbortError') throw error
     throw new ApiError(0, MENSAJE_SIN_CONEXION)
   }
-  if (!respuesta.ok) throw errorDeRespuesta(respuesta.status, await leerJson(respuesta), mensajesPorCodigo)
+  if (!respuesta.ok) throw errorDeRespuesta(respuesta.status, await leerJson(respuesta), mensajesPorCodigo, respuesta.headers)
   const contenido = await respuesta.blob()
   return { contenido, nombre: nombreDeDisposicion(respuesta.headers.get('Content-Disposition')) }
 }

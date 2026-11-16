@@ -992,6 +992,20 @@ form.admin-portada-form {
   font-weight: 600;
 }
 
+/* P9 (CA-P9-15): enlace a los términos junto a la casilla, fuera de su etiqueta. */
+.autorizacion-terminos {
+  margin: 4px 0 0;
+  padding-left: 28px;
+  font-size: 14px;
+}
+
+.autorizacion-terminos a {
+  display: inline-block;
+  padding: 4px 0;
+  color: var(--rojo-oscuro);
+  font-weight: 600;
+}
+
 /* Campo trampa: presente en el DOM, fuera de la vista (no display:none, que algunos robots detectan). */
 .campo-trampa {
   position: absolute;

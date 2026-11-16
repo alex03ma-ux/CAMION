@@ -2,7 +2,7 @@
 import { vi } from 'vitest'
 
 export type RespuestaSimulada =
-  | { status: number; body?: unknown }
+  | { status: number; body?: unknown; /** P9: encabezados extra (p. ej. Retry-After). */ headers?: Record<string, string> }
   | { red: true } // simula fallo de red (fetch rechaza)
 
 export type Llamada = { url: string; init: RequestInit | undefined }
@@ -39,7 +39,7 @@ export function simularFetch(
     const cuerpo = r.body === undefined ? null : JSON.stringify(r.body)
     return new Response(cuerpo, {
       status: r.status,
-      headers: cuerpo ? { 'Content-Type': 'application/json' } : undefined,
+      headers: { ...(cuerpo ? { 'Content-Type': 'application/json' } : {}), ...(r.headers ?? {}) },
     })
   })
   vi.stubGlobal('fetch', fn)

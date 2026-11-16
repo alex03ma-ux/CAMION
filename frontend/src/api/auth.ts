@@ -9,6 +9,8 @@ export type RegistroCompradorRequest = {
   email: string
   telefono: string
   password: string
+  /** P9 (CA-P9-06, 08, 12; D-44): autorización del tratamiento de datos; debe ser `true`. */
+  autorizacionDatos: boolean
 }
 
 export type RegistroCompradorResponse = {
@@ -75,6 +77,10 @@ export const MENSAJE_BLOQUEO =
   'Cuenta bloqueada temporalmente por varios intentos fallidos. Intenta de nuevo en 15 minutos.'
 export const MENSAJE_SESION_TERMINADA = 'Tu sesión terminó. Inicia sesión de nuevo.'
 export const MENSAJE_REVISA_DATOS = 'Revisa los datos marcados.'
+/** P9 (CA-P9-46): respaldo si el 429 del registro o del inicio de sesión no trae `error`. */
+export const MENSAJE_MUCHOS_INTENTOS = 'Hiciste muchos intentos. Espera unos minutos e intenta de nuevo.'
+/** P9 (CA-P9-03, 08): mismo texto que la API. */
+export const MENSAJE_AUTORIZACION_REGISTRO = 'Debes autorizar el tratamiento de tus datos para crear tu cuenta.'
 
 // ---- Validadores de forma de las respuestas ----
 
@@ -101,6 +107,7 @@ export async function registrarComprador(
     mensajesPorCodigo: {
       400: MENSAJE_REVISA_DATOS,
       409: MENSAJE_CORREO_DUPLICADO,
+      429: MENSAJE_MUCHOS_INTENTOS,
     },
   })
   const cuerpo = esObjetoJson(respuesta) ? respuesta : {}
@@ -119,6 +126,7 @@ export async function registrarAsesor(
     mensajesPorCodigo: {
       400: MENSAJE_REVISA_DATOS,
       409: MENSAJE_CORREO_DUPLICADO,
+      429: MENSAJE_MUCHOS_INTENTOS,
     },
   })
   const cuerpo = esObjetoJson(respuesta) ? respuesta : {}
@@ -136,6 +144,7 @@ export async function iniciarSesion(datos: LoginRequest): Promise<LoginResponse>
       400: MENSAJE_LOGIN_FALTAN_DATOS,
       401: MENSAJE_CREDENCIALES,
       423: MENSAJE_BLOQUEO,
+      429: MENSAJE_MUCHOS_INTENTOS,
     },
   })
   if (!esObjetoJson(respuesta)) throw respuestaInvalida()
