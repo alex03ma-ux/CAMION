@@ -275,7 +275,9 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
             "POST /api/admin/suscripciones/{id}/pagos", "POST /api/admin/pagos/{id}/anular", "PUT /api/admin/parametros/contacto",
             // P8 (D-73 D): generar el enlace de recuperación (administrador) y usarlo (anónimo). Reportes, indicadores y
             // actividad son solo GET (CA-P8-69).
-            "POST /api/admin/usuarios/{id}/enlace-recuperacion", "POST /api/auth/restablecer-contrasena"
+            "POST /api/admin/usuarios/{id}/enlace-recuperacion", "POST /api/auth/restablecer-contrasena",
+            // P9 (HU-085, D-63 B): datos de la empresa; solo el administrador.
+            "PUT /api/admin/parametros/empresa"
         }.OrderBy(x => x, StringComparer.Ordinal).ToArray(), modifican);
 
         // CA-SE006-13: toda ruta bajo /api/admin exige SoloAdministrador (P2: 5 acciones + la lista; P4p: 4 GET y 18 acciones;
@@ -283,7 +285,8 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
         var admin = todos.Where(e => e.RoutePattern.RawText!.TrimStart('/').StartsWith("api/admin", StringComparison.Ordinal)).ToList();
         // P7: pagos (lista, registrar, anular), parámetros (leer, guardar) y panel. D-67: efecto de la anulación (GET).
         // P8: 5 reportes, 5 CSV, indicadores, 2 actividades (GET) y el enlace de recuperación (POST).
-        Assert.Equal(52, admin.Count);
+        // P9: datos de la empresa (leer y guardar).
+        Assert.Equal(54, admin.Count);
         foreach (var e in admin)
         {
             var politicas = e.Metadata.GetOrderedMetadata<IAuthorizeData>().Select(a => a.Policy).ToArray();

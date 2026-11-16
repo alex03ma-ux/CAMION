@@ -71,7 +71,8 @@ public sealed class ParametrosTests(P7Fixture fixture) : IClassFixture<P7Fixture
     public async Task Publico_solo_contacto()
     {
         var json = await _api.ContactoPublico();
-        Assert.Equal(new[] { "correo", "horario", "instagram", "tiktok", "whatsapp", "whatsappEnlace" },
+        // P9 (CA-P9-33): se añade "empresa" (null mientras no estén los tres datos); los demás campos no cambian.
+        Assert.Equal(new[] { "correo", "empresa", "horario", "instagram", "tiktok", "whatsapp", "whatsappEnlace" },
             json.EnumerateObject().Select(p => p.Name).Order(StringComparer.Ordinal).ToArray());
         Assert.Equal(HttpStatusCode.MethodNotAllowed,
             (await _api.Enviar(HttpMethod.Put, "/api/portal/contacto", null, CuerpoContacto())).StatusCode);
