@@ -22,6 +22,7 @@ import {
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo } from './Campo'
 import { NotaObligatorio } from './NotaObligatorio'
+import { recargarContactoPortal } from './useContactoPortal'
 
 type Props = { token: string; onSesionTerminada: () => void }
 
@@ -122,6 +123,8 @@ export function AdminParametros({ token, onSesionTerminada }: Props) {
       setGuardando(false)
       setDatos(guardado)
       setForm(formularioDesdeContacto(guardado))
+      // P9: el pie y los mensajes de esta misma carga toman el contacto nuevo.
+      recargarContactoPortal()
       setAviso({ tipo: 'exito', texto: 'Se guardaron los datos de contacto. El portal los mostrará en la siguiente carga.' })
     } catch (error) {
       setGuardando(false)

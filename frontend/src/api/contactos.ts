@@ -2,6 +2,7 @@
 // POST /api/contactos es anónimo; si hay sesión se envía el token para ligar el lead a la cuenta (CA-P5-02).
 // La API vuelve a validar todo: la validación de aquí solo evita viajes inútiles y usa los mismos mensajes.
 import { ApiError, esObjetoJson, peticion, type ErroresPorCampo } from './http'
+import { CONTACTO_PORTAL_RESPALDO, formatearCelular } from './parametros'
 
 export type ContactoRequest = {
   slug: string
@@ -36,9 +37,24 @@ export const MENSAJE_VEHICULO_NO_DISPONIBLE =
 export const MENSAJE_VEHICULO_PROPIO = 'Este vehículo es tuyo; no puedes contactarte a ti mismo.'
 export const MENSAJE_DEMASIADO_GRANDE = 'La solicitud es demasiado grande.'
 export const MENSAJE_MUCHAS_SOLICITUDES = 'Has enviado muchas solicitudes. Intenta de nuevo en unos minutos.'
-/** CA-P5-56: 5xx o sin conexión. Nunca se muestran detalles técnicos. */
-export const MENSAJE_CONTACTO_FALLO =
-  'No pudimos enviar tus datos. Intenta de nuevo en unos minutos o escríbenos por WhatsApp al 316 615 2907.'
+/**
+ * CA-P5-56: 5xx o sin conexión. Nunca se muestran detalles técnicos. P9 (CA-P9-57): el componente arma el texto
+ * con el WhatsApp vigente del portal (`whatsapp` = 10 dígitos o ya formateado).
+ */
+export function mensajeContactoFallo(whatsapp: string): string {
+  return `No pudimos enviar tus datos. Intenta de nuevo en unos minutos o escríbenos por WhatsApp al ${formatearCelular(whatsapp)}.`
+}
+/** Texto con el número de respaldo (D-42); la capa api/ no conoce el contacto vigente (CA-P9-59). */
+export const MENSAJE_CONTACTO_FALLO = mensajeContactoFallo(CONTACTO_PORTAL_RESPALDO.whatsapp)
+
+/**
+ * P9 (CA-P9-57): texto del aviso tras un envío fallido. 5xx, sin conexión o un error desconocido llevan el WhatsApp
+ * vigente; los demás códigos, el mensaje de la API (validación, 404, 409, 413, 429...).
+ */
+export function mensajeErrorEnvio(error: unknown, whatsapp: string): string {
+  if (error instanceof ApiError && error.status !== 0 && error.status < 500) return error.mensaje
+  return mensajeContactoFallo(whatsapp)
+}
 
 export const MENSAJES_CONTACTO: Record<CampoContacto, string> = {
   nombre: 'Escribe tu nombre (entre 2 y 150 caracteres).',
@@ -150,10 +166,10 @@ export async function enviarContacto(datos: ContactoRequest, token?: string): Pr
 
 /**
  * Enlace "Escribir por WhatsApp" (D-47, CA-P5-61, 62): el `whatsapp` del detalle (o el del portal si no
- * llega uno válido) con un texto inicial que nombra el vehículo.
+ * llega uno válido) con un texto inicial que nombra el vehículo. P9: `respaldo` = enlace vigente del portal.
  */
-export function enlaceWhatsapp(whatsapp: string | null, titulo: string): string {
-  const base = whatsapp !== null && /^https:\/\/wa\.me\/\d{8,15}$/.test(whatsapp) ? whatsapp : WHATSAPP_PORTAL
+export function enlaceWhatsapp(whatsapp: string | null, titulo: string, respaldo: string = WHATSAPP_PORTAL): string {
+  const base = whatsapp !== null && /^https:\/\/wa\.me\/\d{8,15}$/.test(whatsapp) ? whatsapp : respaldo
   const texto = `Hola, me interesa el vehículo ${titulo} que vi en Financiamos Tu Camión.`
   return `${base}?text=${encodeURIComponent(texto)}`
 }
