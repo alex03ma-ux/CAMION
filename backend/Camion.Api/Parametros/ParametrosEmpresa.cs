@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Camion.Api.Auth;
 using Camion.Api.Contracts;
@@ -17,6 +18,10 @@ public static class ParametrosEmpresa
     public const string MensajeNit = "Escribe el NIT con su dígito de verificación, por ejemplo 900.123.456-7.";
     public const string MensajeDireccion =
         "Escribe la dirección de notificaciones (entre 5 y 200 caracteres, sin los signos < >).";
+
+    // B-4 (revisión de seguridad P9): otro administrador guardó la empresa por primera vez al mismo tiempo.
+    public const string MensajeConflicto =
+        "Otro administrador acaba de guardar los datos de la empresa. Recarga la página, revisa los datos y vuelve a guardar.";
 
     public const int MinRazonSocial = 2;
     public const int MaxRazonSocial = 150;
@@ -110,16 +115,26 @@ public static class ParametrosEmpresa
         return errores;
     }
 
-    /// <summary>Texto opcional recortado: vacío = null (válido); si no, longitud y sin &lt; &gt; ni caracteres de control.</summary>
+    /// <summary>
+    /// Texto opcional recortado: vacío = null (válido); si no, longitud y sin &lt; &gt;, caracteres de control ni caracteres
+    /// invisibles de formato (B-3 de la revisión de P9).
+    /// </summary>
     private static string? Texto(string? bruto, int min, int max, out bool valido)
     {
         var texto = (bruto ?? "").Trim();
         valido = true;
         if (texto.Length == 0) return null;
         valido = texto.Length >= min && texto.Length <= max && texto.IndexOfAny(['<', '>']) < 0 &&
-                 !ValidacionAuth.TieneControl(texto);
+                 !ValidacionAuth.TieneControl(texto) && !TieneFormato(texto);
         return valido ? texto : null;
     }
+
+    /// <summary>
+    /// B-3 (revisión de seguridad P9): caracteres de UnicodeCategory.Format (U+202E cambio de dirección del texto, U+200B
+    /// espacio de ancho cero, U+FEFF...), que alterarían cómo se ve el pie público. Lo usan el PUT y la revalidación al leer.
+    /// </summary>
+    public static bool TieneFormato(string texto) =>
+        texto.Any(c => CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.Format);
 
     /// <summary>
     /// CA-P9-29: NIT colombiano con dígito de verificación (módulo 11 de la DIAN). Base de 6 a 10 dígitos (con puntos o

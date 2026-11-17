@@ -79,6 +79,20 @@ public static class ConfiguracionServidor
         return o;
     }
 
+    /// <summary>
+    /// M-1 (revisión de seguridad P9): aviso al arrancar fuera de Development sin proxies de confianza. Solo nombres de
+    /// claves, nunca valores.
+    /// </summary>
+    public const string AvisoSinProxy =
+        "No hay Proxy:KnownProxies ni Proxy:KnownNetworks configurados. Si la API está detrás de un proxy inverso (nginx, " +
+        "IIS, Caddy, CDN), todos los visitantes llegan con la IP del proxy y comparten el mismo cupo de LimitesAuth " +
+        "(registro e inicio de sesión): cualquiera podría agotarlo para todos. Configura Proxy__KnownProxies o " +
+        "Proxy__KnownNetworks (y Proxy__ForwardLimit) según docs/GUIA-PUBLICACION.md.";
+
+    /// <summary>M-1 (revisión P9): true si hay que escribir <see cref="AvisoSinProxy"/> (fuera de Development y sin proxy).</summary>
+    public static bool AvisarSinProxy(ForwardedHeadersOptions? opcionesProxy, bool esDesarrollo) =>
+        !esDesarrollo && opcionesProxy is null;
+
     private static int LimiteReenvios(string? valor) =>
         string.IsNullOrWhiteSpace(valor) ? 1
         : int.TryParse(valor, out var n) && n is >= 1 and <= 10 ? n

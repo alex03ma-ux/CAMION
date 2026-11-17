@@ -260,6 +260,9 @@ if (args.Length > 0 && args[0] == RecuperarAdmin.NombreComando)
 // P9 (CA-P9-64): fuera de Development, una versión de borrador no impide arrancar (montaje en privado, PP.6) pero se avisa.
 if (!app.Environment.IsDevelopment() && PoliticaDatos.EsBorrador(versionPolitica))
     app.Logger.LogWarning("{Aviso}", PoliticaDatos.AvisoBorrador);
+// M-1 (revisión de seguridad P9): sin proxies de confianza fuera de Development se avisa, sin impedir el arranque.
+if (ConfiguracionServidor.AvisarSinProxy(opcionesProxy, app.Environment.IsDevelopment()))
+    app.Logger.LogWarning("{Aviso}", ConfiguracionServidor.AvisoSinProxy);
 
 // RN-SE-006: los tres roles existen desde el arranque. Si la base no responde, la API arranca igual
 // (los registros vuelven a asegurar su rol) y /health/database informa del problema.

@@ -86,6 +86,7 @@ public static class ParametrosEndpoints
             if (!ParametrosEmpresa.Iguales(anterior.Valor, valor))
             {
                 var fila = await db.ConfiguracionesSistema.FirstOrDefaultAsync(c => c.Clave == ParametrosEmpresa.Clave, ct);
+                var filaNueva = fila is null;
                 if (fila is null)
                 {
                     fila = new ConfiguracionSistema { Clave = ParametrosEmpresa.Clave };
@@ -97,7 +98,21 @@ public static class ParametrosEndpoints
                 Auditoria.AgregarEvento(db, adminId, Auditoria.EntidadParametro, ParametrosEmpresa.Clave,
                     Auditoria.Cambiar, anterior.Configurado ? ParametrosEmpresa.Datos(anterior.Valor) : null,
                     ParametrosEmpresa.Datos(valor), ahora);
-                await db.SaveChangesAsync(ct);
+                try
+                {
+                    await db.SaveChangesAsync(ct);
+                }
+                catch (DbUpdateException) when (filaNueva)
+                {
+                    // B-4 (revisión de seguridad P9): dos PUT simultáneos sin fila previa insertan la misma clave y uno
+                    // choca con la clave primaria. Como en los registros simultáneos (AuthEndpoints): se deshace todo
+                    // (ni valor ni auditoría) y, si la fila ya existe, 409 en vez de 500.
+                    await tx.RollbackAsync(ct);
+                    db.ChangeTracker.Clear();
+                    if (await db.ConfiguracionesSistema.AsNoTracking().AnyAsync(c => c.Clave == ParametrosEmpresa.Clave, ct))
+                        return Results.Conflict(new ErrorResponse(ParametrosEmpresa.MensajeConflicto));
+                    throw; // Lo atiende el manejador global: 500 con { error }.
+                }
             }
             await tx.CommitAsync(ct);
             return Results.Ok(await EmpresaAdminAsync(db, await ParametrosEmpresa.LeerAsync(db, ct), ct));
