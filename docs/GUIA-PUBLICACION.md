@@ -116,7 +116,7 @@ Cada autorización de datos (contacto, avisos, crédito, búsqueda, registro de 
   2. En una entrega aparte, con su propia PR, se publica el texto en `#/privacidad` y `#/terminos`, y la constante del aviso de revisión del frontend pasa a `false`.
   3. En el servidor se fija la variable de entorno `PoliticaDatos__Version` con el formato `V<n>-<AAAA-MM-DD>`. Para la primera versión es `V1-` más la fecha de vigencia que se entregue. Nunca se reutiliza un valor anterior: cada cambio del texto lleva un número nuevo.
   4. Se reinicia la API y se comprueba que el log de arranque ya no muestra el aviso de borrador. Luego se envía una solicitud de prueba y se revisa que la fila nueva de `consentimientos_datos` tenga la versión nueva. Por ejemplo, solo lectura: `SELECT formulario, version_politica, aceptado_en FROM consentimientos_datos ORDER BY id DESC LIMIT 1;`.
-- **Qué hacer con las autorizaciones ya guardadas con el borrador** (pedirlas otra vez o no): PENDIENTE de D-85. Ese paso no se hace sin la decisión.
+- **Qué hacer con las autorizaciones ya guardadas con el borrador** (D-85 A, TOMADA 2026-11-16): se conservan tal cual, con su versión `BORRADOR-2026-11-04`; no se modifican ni se piden de nuevo. Solo las autorizaciones nuevas llevan la versión aprobada. Se le pregunta al abogado si hace falta pedir una nueva; si lo indica, será una entrega aparte.
 
 ---
 
