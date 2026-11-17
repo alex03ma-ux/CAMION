@@ -80,7 +80,7 @@ describe('Detalle', () => {
     expect(main).not.toHaveTextContent(/null|undefined|NaN/)
     expect(screen.getByText('Tractocamión listo para trabajar.')).toBeInTheDocument()
     expect(screen.getByText('Motor revisado, llantas al 70 %.')).toBeInTheDocument()
-    expect(document.title).toBe(`${V2.titulo} | Financiamos Tu Camión`)
+    expect(document.title).toBe(`${V2.titulo} | Financiamos tu Camión`)
   })
 
   it('CA-D11-02 DISPONIBLE y no negociable: sin etiquetas Reservado ni Negociable', async () => {
@@ -130,7 +130,7 @@ describe('Detalle', () => {
     expect(screen.getByRole('link', { name: 'Ir al inicio' })).toHaveAttribute('href', '#/')
     expect(screen.queryByText(/\$\s/)).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Ficha técnica' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(within(screen.getByRole('main')).queryByRole('img')).not.toBeInTheDocument()
   })
 
   it('CA-DET-14 un 404 sin cuerpo usa el mismo mensaje', async () => {

@@ -858,7 +858,7 @@ describe('Aviso de vencimiento en "Mi suscripción" (CA-P7-50)', () => {
     const enlace = await screen.findByRole('link', { name: /Escribir por WhatsApp para renovar/ })
     await waitFor(() => expect(enlace.getAttribute('href')).toMatch(/^https:\/\/wa\.me\/573166152907\?text=/))
     const texto = decodeURIComponent(enlace.getAttribute('href')!.split('?text=')[1])
-    expect(texto).toBe('Hola, quiero renovar mi plan de asesor en Financiamos Tu Camión.')
+    expect(texto).toBe('Hola, quiero renovar mi plan de asesor en Financiamos tu Camión.')
     expect(enlace).toHaveAttribute('target', '_blank')
   })
 

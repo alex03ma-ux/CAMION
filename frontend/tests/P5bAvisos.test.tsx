@@ -44,7 +44,7 @@ describe('"Vende tu camión": estructura (CA-P5b-08, 18, 31, 53, 55, 57, 58)', (
     abrirAnonimo('#/vende-tu-camion')
     const form = await formVende()
     expect(screen.getByRole('heading', { level: 1, name: 'Vende tu camión' })).toBeInTheDocument()
-    expect(document.title).toBe('Vende tu camión | Financiamos Tu Camión')
+    expect(document.title).toBe('Vende tu camión | Financiamos tu Camión')
     expect(within(form).getByText('Campo obligatorio')).toBeInTheDocument()
     expect(nombre()).toHaveAttribute('aria-required', 'true')
     expect(nombre()).toHaveAttribute('autocomplete', 'name')

@@ -57,6 +57,7 @@ import { Resultados } from './components/Resultados'
 import { SolicitudCredito, TITULO_CREDITO, TITULO_CREDITO_VEHICULO } from './components/SolicitudCredito'
 import { Ventas } from './components/Ventas'
 import { fijarNoIndex } from './seo'
+import { MARCA, NOMBRE_PORTAL, SUFIJO_TITULO, TITULO_POR_DEFECTO } from './marca'
 import {
   esRutaContactos,
   esRutaInventario,
@@ -102,30 +103,28 @@ function loginCon(aviso: DatosAviso | null, email = ''): Vista {
   return { tipo: 'login', aviso, email }
 }
 
-const NOMBRE_PORTAL = 'Financiamos Tu Camión'
-
 function tituloDocumento(ruta: Ruta): string {
-  if (ruta.nombre === 'buscar') return `Buscar vehículos | ${NOMBRE_PORTAL}`
-  if (ruta.nombre === 'vehiculo') return `Detalle del vehículo | ${NOMBRE_PORTAL}`
-  if (ruta.nombre === 'cuenta') return `Mi cuenta | ${NOMBRE_PORTAL}`
-  if (ruta.nombre === 'inventario') return `Inventario | ${NOMBRE_PORTAL}`
-  if (ruta.nombre === 'inventarioNuevo') return `Registrar vehículo | ${NOMBRE_PORTAL}`
-  if (ruta.nombre === 'inventarioVehiculo') return `Editar vehículo | ${NOMBRE_PORTAL}`
-  if (ruta.nombre === 'publicaciones') return `Mis publicaciones | ${NOMBRE_PORTAL}`
-  if (ruta.nombre === 'contactos' || ruta.nombre === 'contacto') return `Contactos | ${NOMBRE_PORTAL}`
-  if (ruta.nombre === 'privacidad') return `Política de tratamiento de datos | ${NOMBRE_PORTAL}`
-  if (ruta.nombre === 'terminos') return `Términos y condiciones | ${NOMBRE_PORTAL}`
-  if (ruta.nombre === 'vendeTuCamion') return `Vende tu camión | ${NOMBRE_PORTAL}`
-  if (ruta.nombre === 'seguroTodoRiesgo') return `Compra tu seguro todo riesgo | ${NOMBRE_PORTAL}`
+  if (ruta.nombre === 'buscar') return `Buscar vehículos | ${SUFIJO_TITULO}`
+  if (ruta.nombre === 'vehiculo') return `Detalle del vehículo | ${SUFIJO_TITULO}`
+  if (ruta.nombre === 'cuenta') return `Mi cuenta | ${SUFIJO_TITULO}`
+  if (ruta.nombre === 'inventario') return `Inventario | ${SUFIJO_TITULO}`
+  if (ruta.nombre === 'inventarioNuevo') return `Registrar vehículo | ${SUFIJO_TITULO}`
+  if (ruta.nombre === 'inventarioVehiculo') return `Editar vehículo | ${SUFIJO_TITULO}`
+  if (ruta.nombre === 'publicaciones') return `Mis publicaciones | ${SUFIJO_TITULO}`
+  if (ruta.nombre === 'contactos' || ruta.nombre === 'contacto') return `Contactos | ${SUFIJO_TITULO}`
+  if (ruta.nombre === 'privacidad') return `Política de tratamiento de datos | ${SUFIJO_TITULO}`
+  if (ruta.nombre === 'terminos') return `Términos y condiciones | ${SUFIJO_TITULO}`
+  if (ruta.nombre === 'vendeTuCamion') return `Vende tu camión | ${SUFIJO_TITULO}`
+  if (ruta.nombre === 'seguroTodoRiesgo') return `Compra tu seguro todo riesgo | ${SUFIJO_TITULO}`
   if (ruta.nombre === 'credito')
-    return `${ruta.slug === null ? TITULO_CREDITO : TITULO_CREDITO_VEHICULO} | ${NOMBRE_PORTAL}`
-  if (ruta.nombre === 'buscoVehiculo') return `${TITULO_BUSQUEDA} | ${NOMBRE_PORTAL}`
-  if (ruta.nombre === 'misSolicitudes') return `${TITULO_MIS_SOLICITUDES} | ${NOMBRE_PORTAL}`
-  if (ruta.nombre === 'ventas') return `Mis ventas | ${NOMBRE_PORTAL}`
-  if (ruta.nombre === 'misIndicadores') return `${TITULO_MIS_INDICADORES} | ${NOMBRE_PORTAL}`
-  if (ruta.nombre === 'restablecerContrasena') return `${TITULO_RESTABLECER} | ${NOMBRE_PORTAL}`
-  if (ruta.nombre === 'noEncontrada') return `${TITULO_NO_ENCONTRADA} | ${NOMBRE_PORTAL}`
-  return NOMBRE_PORTAL
+    return `${ruta.slug === null ? TITULO_CREDITO : TITULO_CREDITO_VEHICULO} | ${SUFIJO_TITULO}`
+  if (ruta.nombre === 'buscoVehiculo') return `${TITULO_BUSQUEDA} | ${SUFIJO_TITULO}`
+  if (ruta.nombre === 'misSolicitudes') return `${TITULO_MIS_SOLICITUDES} | ${SUFIJO_TITULO}`
+  if (ruta.nombre === 'ventas') return `Mis ventas | ${SUFIJO_TITULO}`
+  if (ruta.nombre === 'misIndicadores') return `${TITULO_MIS_INDICADORES} | ${SUFIJO_TITULO}`
+  if (ruta.nombre === 'restablecerContrasena') return `${TITULO_RESTABLECER} | ${SUFIJO_TITULO}`
+  if (ruta.nombre === 'noEncontrada') return `${TITULO_NO_ENCONTRADA} | ${SUFIJO_TITULO}`
+  return TITULO_POR_DEFECTO
 }
 
 const cargarFiltros = (signal: AbortSignal) => obtenerFiltros(signal)
@@ -594,8 +593,9 @@ export default function App() {
   function renderCuenta() {
     return (
     <div className="container cuenta">
-      <p className="eyebrow">RED DE VENTA</p>
-      <h1 tabIndex={-1}>Financiamos Tu Camión</h1>
+      {/* P10 (CA-P10-17, D-87). */}
+      <p className="eyebrow">{MARCA.toUpperCase()}</p>
+      <h1 tabIndex={-1}>{NOMBRE_PORTAL}</h1>
       <p>Tu próximo negocio puede comenzar con un camión.</p>
 
       {vista.tipo === 'verificando' && (

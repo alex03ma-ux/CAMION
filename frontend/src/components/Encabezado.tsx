@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type MouseEvent } from 'react'
 import { categoriasDisponibles, Q_MAX, type OpcionCatalogo } from '../api/catalogo'
 import { HASH_CUENTA, HASH_INICIO, HASH_REGISTRO, hashBuscar, navegar, type Ruta } from '../rutas'
+import { ALT_LOGO_HORIZONTAL, LOGO } from '../marca'
 import { IconoLupa, IconoUsuario } from './IconosPortal'
 
 type EncabezadoProps = {
@@ -18,26 +19,24 @@ function saltarAlContenido(evento: MouseEvent<HTMLAnchorElement>) {
   principal?.focus()
 }
 
-/** Logo de texto con el camión de línea (rojo, negro y blanco). */
-export function LogoPortal({ claro = false }: { claro?: boolean }) {
+/**
+ * P10 (CA-P10-02, 03, 06; D-87, D-91 A): logo horizontal de VCA Automotores en el encabezado blanco, con WebP y
+ * respaldo PNG. `width`/`height` reservan el espacio (sin saltos al cargar); el CSS lo muestra a 56 px de alto
+ * (36 px en móvil). Su texto alternativo es el nombre accesible del enlace a la portada.
+ */
+export function LogoEncabezado() {
   return (
-    <a className={claro ? 'cat-logo cat-logo-claro' : 'cat-logo'} href={HASH_INICIO}>
-      <span className="cat-logo-texto">
-        <span className="cat-logo-eyebrow">Financiamos Tu</span>{' '}
-        <span className="cat-logo-nombre">Camión</span>
-      </span>
-      <svg className="cat-logo-camion" viewBox="0 0 64 40" aria-hidden="true" focusable="false">
-        <path
-          d="M2 34h40V6H18M42 14h10l8 10v10h-6M18 34h14"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+    <a className="cat-logo cat-logo-imagen" href={HASH_INICIO}>
+      <picture>
+        <source srcSet={LOGO.horizontalWebp} type="image/webp" />
+        <img
+          src={LOGO.horizontalPng}
+          alt={ALT_LOGO_HORIZONTAL}
+          width={LOGO.horizontalAncho / 2}
+          height={LOGO.horizontalAlto / 2}
+          decoding="async"
         />
-        <circle cx="13" cy="34" r="4.5" fill="none" stroke="currentColor" strokeWidth="3" />
-        <circle cx="49" cy="34" r="4.5" fill="none" stroke="currentColor" strokeWidth="3" />
-      </svg>
+      </picture>
     </a>
   )
 }
@@ -56,7 +55,7 @@ export function Encabezado({ ruta, tipos, conSesion }: EncabezadoProps) {
         Saltar al contenido
       </a>
       <div className="cat-encabezado-interior">
-        <LogoPortal />
+        <LogoEncabezado />
         <nav className="cat-nav" aria-label="Principal">
           <ul>
             <li>

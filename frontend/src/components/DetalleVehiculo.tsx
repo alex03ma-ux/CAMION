@@ -12,6 +12,7 @@ import {
   formatoKm,
   textoUbicacion,
 } from '../catalogo/formato'
+import { SUFIJO_TITULO } from '../marca'
 import { usePeticion } from '../catalogo/usePeticion'
 import { HASH_INICIO, hashCreditoVehiculo, hashVolverAResultados } from '../rutas'
 import { Aviso } from './Aviso'
@@ -61,7 +62,7 @@ export function DetalleVehiculo({ slug, sesion = null }: { slug: string; sesion?
   const vehiculo = estado.estado === 'ok' ? estado.datos : null
 
   useEffect(() => {
-    if (vehiculo) document.title = `${vehiculo.titulo} | Financiamos Tu Camión`
+    if (vehiculo) document.title = `${vehiculo.titulo} | ${SUFIJO_TITULO}`
   }, [vehiculo])
 
   let titulo = 'Detalle del vehículo'

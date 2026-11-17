@@ -5,6 +5,7 @@
 // Si la lectura falla no se guarda nada (el siguiente componente que se monte vuelve a intentarlo).
 import { useEffect, useState } from 'react'
 import { CONTACTO_PORTAL_RESPALDO, obtenerContactoPortal, type ContactoPortal } from '../api/parametros'
+import { LEMA } from '../marca'
 
 let enCache: ContactoPortal | null = null
 let enCurso: Promise<ContactoPortal> | null = null
@@ -64,7 +65,7 @@ export function useContactoPortal(): ContactoPortal {
 }
 
 /** Texto prellenado del WhatsApp para renovar: breve y sin datos personales (CA-P7-26). */
-export const TEXTO_WHATSAPP_RENOVAR = 'Hola, quiero renovar mi plan de asesor en Financiamos Tu Camión.'
+export const TEXTO_WHATSAPP_RENOVAR = `Hola, quiero renovar mi plan de asesor en ${LEMA}.`
 
 /** Enlace de wa.me con un texto prellenado. */
 export function enlaceWhatsappConTexto(enlace: string, texto: string): string {

@@ -34,6 +34,9 @@ import {
 } from './IconosPortal'
 import { RejillaVehiculos } from './TarjetaVehiculo'
 
+/** D-92 (decisión de la responsable, 2026-11-16): h1 de la portada. */
+export const TITULO_PORTADA = 'Venta de camiones usados'
+
 type InicioProps = {
   tipos: readonly OpcionCatalogo[]
 }
@@ -76,9 +79,13 @@ export function Inicio({ tipos }: InicioProps) {
         )}
         <div className="cat-portada-interior">
           <p className="cat-portada-eyebrow">Camiones, carros, carrocerías y maquinaria</p>
-          <h1 id="inicio-titulo" tabIndex={-1}>
-            Tu próximo negocio empieza con el <span className="texto-rojo">vehículo correcto</span>
+          {/* P10 (CA-P10-20, D-92): h1 con las palabras que se buscan; la frase de D-42 queda como subtítulo igual. */}
+          <h1 id="inicio-titulo" className="cat-portada-h1" tabIndex={-1}>
+            {TITULO_PORTADA}
           </h1>
+          <p className="cat-portada-frase">
+            Tu próximo negocio empieza con el <span className="texto-rojo">vehículo correcto</span>
+          </p>
           <p className="cat-portada-texto">Compra con respaldo y te ayudamos con la financiación.</p>
           <BusquedaPortada categorias={categorias} />
         </div>

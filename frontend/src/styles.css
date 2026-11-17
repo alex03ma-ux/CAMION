@@ -668,19 +668,6 @@ main:focus:not(:focus-visible) {
   line-height: 1.2;
 }
 
-.cat-logo-eyebrow {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: #52657b;
-}
-
-.cat-logo-nombre {
-  font-size: 18px;
-  font-weight: 800;
-}
-
 form.cat-busqueda {
   flex: 1 1 260px;
   display: flex;

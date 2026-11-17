@@ -56,7 +56,7 @@ describe('Pantalla "Página no encontrada" (CA-P9-48, 50)', () => {
     expect(within(main).getByRole('link', { name: 'Ver todos los vehículos' })).toHaveAttribute('href', '#/buscar')
     expect(screen.getByRole('banner')).toBeInTheDocument()
     expect(screen.getByRole('contentinfo')).toBeInTheDocument()
-    expect(document.title).toBe('Página no encontrada | Financiamos Tu Camión')
+    expect(document.title).toBe('Página no encontrada | Financiamos tu Camión')
     expect(noIndex()).not.toBeNull()
   })
 
@@ -75,7 +75,7 @@ describe('Pantalla "Página no encontrada" (CA-P9-48, 50)', () => {
 
   it('#contenido (ancla de "Saltar al contenido") sigue mostrando la portada', async () => {
     abrirAnonimo('#contenido')
-    await waitFor(() => expect(document.title).toBe('Financiamos Tu Camión'))
+    await waitFor(() => expect(document.title).toBe('Venta de camiones usados y crédito | Financiamos tu Camión'))
     expect(screen.queryByRole('heading', { level: 1, name: 'Página no encontrada' })).not.toBeInTheDocument()
   })
 })
@@ -153,32 +153,34 @@ describe('noindex en pantallas privadas (CA-P9-55)', () => {
 })
 
 describe('SEO básico (CA-P9-52 a 54)', () => {
-  const archivos = import.meta.glob('../{index.html,public/robots.txt,public/favicon.svg}', {
+  const archivos = import.meta.glob('../{index.html,public/robots.txt}', {
     query: '?raw',
     import: 'default',
     eager: true,
   })
   const html = archivos['../index.html']
   const robots = archivos['../public/robots.txt']
-  const favicon = archivos['../public/favicon.svg']
 
   it('index.html: meta description aprobada tal cual, sin tasas, aprobaciones ni "peritados"', () => {
     const doc = new DOMParser().parseFromString(html, 'text/html')
     const descripcion = doc.querySelector('meta[name="description"]')?.getAttribute('content')
     expect(descripcion).toBe(DESCRIPCION)
     expect(descripcion).not.toMatch(/tasa|aprobad|aprobaci|peritad/i)
-    expect(doc.querySelector('title')?.textContent).toBe('Financiamos Tu Camión')
+    expect(doc.querySelector('title')?.textContent).toBe('Venta de camiones usados y crédito | Financiamos tu Camión')
     expect(doc.documentElement.getAttribute('lang')).toBe('es')
   })
 
-  it('index.html enlaza el favicon SVG y el PNG de 32×32 de public/', () => {
+  it('P10 (CA-P10-07, 09): index.html enlaza favicon.ico, el PNG de 32×32, el ícono de Apple y el manifiesto (sin favicon.svg)', () => {
     const doc = new DOMParser().parseFromString(html, 'text/html')
     const iconos = Array.from(doc.querySelectorAll('link[rel="icon"]')).map((l) => [l.getAttribute('href'), l.getAttribute('type')])
     expect(iconos).toEqual([
-      ['/favicon.svg', 'image/svg+xml'],
-      ['/favicon-32.png', 'image/png'],
+      ['/favicon.ico', null],
+      ['/marca/favicon-32.png', 'image/png'],
     ])
-    expect(favicon).toContain('#d71920')
+    expect(doc.querySelector('link[rel="apple-touch-icon"]')?.getAttribute('href')).toBe('/marca/apple-touch-icon.png')
+    expect(doc.querySelector('link[rel="manifest"]')?.getAttribute('href')).toBe('/site.webmanifest')
+    expect(doc.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe('#d71920')
+    expect(html).not.toContain('favicon.svg')
   })
 
   it('robots.txt bloquea /api/ y /health, permite el resto y no tiene Sitemap', () => {

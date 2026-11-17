@@ -322,7 +322,7 @@ describe('Botón "Escribir por WhatsApp" (D-47)', () => {
   it('CA-P5-61 usa el enlace del asesor con un texto que nombra el vehículo, en otra pestaña', async () => {
     const { api } = abrirFicha()
     const boton = await screen.findByRole('link', { name: /Escribir por WhatsApp/ })
-    const texto = encodeURIComponent(`Hola, me interesa el vehículo ${V1.titulo} que vi en Financiamos Tu Camión.`)
+    const texto = encodeURIComponent(`Hola, me interesa el vehículo ${V1.titulo} que vi en Financiamos tu Camión.`)
     expect(boton).toHaveAttribute('href', `${WA_ASESOR}?text=${texto}`)
     expect(boton).toHaveAttribute('target', '_blank')
     expect(boton).toHaveAttribute('rel', 'noopener noreferrer')

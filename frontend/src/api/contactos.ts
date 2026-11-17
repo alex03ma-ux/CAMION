@@ -3,6 +3,7 @@
 // La API vuelve a validar todo: la validación de aquí solo evita viajes inútiles y usa los mismos mensajes.
 import { ApiError, esObjetoJson, peticion, type ErroresPorCampo } from './http'
 import { CONTACTO_PORTAL_RESPALDO, formatearCelular } from './parametros'
+import { LEMA } from '../marca'
 
 export type ContactoRequest = {
   slug: string
@@ -170,6 +171,6 @@ export async function enviarContacto(datos: ContactoRequest, token?: string): Pr
  */
 export function enlaceWhatsapp(whatsapp: string | null, titulo: string, respaldo: string = WHATSAPP_PORTAL): string {
   const base = whatsapp !== null && /^https:\/\/wa\.me\/\d{8,15}$/.test(whatsapp) ? whatsapp : respaldo
-  const texto = `Hola, me interesa el vehículo ${titulo} que vi en Financiamos Tu Camión.`
+  const texto = `Hola, me interesa el vehículo ${titulo} que vi en ${LEMA}.`
   return `${base}?text=${encodeURIComponent(texto)}`
 }

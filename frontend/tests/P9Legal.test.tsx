@@ -51,7 +51,7 @@ describe('#/terminos (CA-P9-17, 19, 21)', () => {
     window.location.hash = '#/terminos'
     render(<App />)
     const h1 = await screen.findByRole('heading', { level: 1, name: 'Términos y condiciones de uso' })
-    expect(document.title).toBe('Términos y condiciones | Financiamos Tu Camión')
+    expect(document.title).toBe('Términos y condiciones | Financiamos tu Camión')
     const main = screen.getByRole('main')
     expect(within(main).getByRole('note')).toHaveTextContent('En revisión legal')
     expect(within(main).getByText(/se publicarán en esta página cuando termine su revisión legal/)).toBeInTheDocument()
@@ -84,7 +84,7 @@ describe('#/privacidad (CA-P9-18, 19, 21)', () => {
     window.location.hash = '#/privacidad'
     render(<App />)
     await screen.findByRole('heading', { level: 1, name: 'Política de tratamiento de datos personales' })
-    expect(document.title).toBe('Política de tratamiento de datos | Financiamos Tu Camión')
+    expect(document.title).toBe('Política de tratamiento de datos | Financiamos tu Camión')
     const main = screen.getByRole('main')
     expect(within(main).getByRole('note')).toHaveTextContent(/^En revisión legal$/)
     expect(main).not.toHaveTextContent(MARCAS_BORRADOR)
@@ -102,7 +102,7 @@ describe('Pie: enlaces legales (CA-P9-22)', () => {
     expect(politica).toHaveAttribute('href', '#/privacidad')
     expect(terminos).not.toHaveAttribute('target')
     expect(politica).not.toHaveAttribute('target')
-    expect(legal.closest('.cat-pie-legal')).toHaveTextContent(/© \d{4} Financiamos Tu Camión/)
+    expect(legal.closest('.cat-pie-legal')).toHaveTextContent(/© \d{4} VCA Automotores/)
   })
 })
 

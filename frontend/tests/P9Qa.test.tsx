@@ -173,7 +173,7 @@ describe('QA CA-P9-21: foco en el h1 de #/privacidad al llegar desde otra ruta',
     window.dispatchEvent(new HashChangeEvent('hashchange'))
     const h1 = await screen.findByRole('heading', { level: 1, name: 'Política de tratamiento de datos personales' })
     await waitFor(() => expect(h1).toHaveFocus())
-    expect(document.title).toBe('Política de tratamiento de datos | Financiamos Tu Camión')
+    expect(document.title).toBe('Política de tratamiento de datos | Financiamos tu Camión')
     expect(noIndex()).toBeNull()
   })
 })

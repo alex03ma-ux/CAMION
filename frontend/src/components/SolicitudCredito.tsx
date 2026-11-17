@@ -5,6 +5,7 @@
 // administración (D-58 A); aquí no se muestra nada de eso.
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { obtenerDetalle } from '../api/catalogo'
+import { LEMA } from '../marca'
 import {
   CORREO_MAX,
   mensajeErrorEnvio,
@@ -46,7 +47,7 @@ export const TITULO_CREDITO_VEHICULO = 'Solicita crédito para este vehículo'
  */
 export function enlaceWhatsappCredito(enlace: string, titulo: string | null): string {
   const texto = titulo
-    ? `Hola, quiero información de crédito para el vehículo ${titulo} que vi en Financiamos Tu Camión.`
+    ? `Hola, quiero información de crédito para el vehículo ${titulo} que vi en ${LEMA}.`
     : 'Hola, quiero información de crédito para un vehículo.'
   return `${enlace}?text=${encodeURIComponent(texto)}`
 }

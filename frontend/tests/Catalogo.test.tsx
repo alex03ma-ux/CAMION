@@ -67,7 +67,7 @@ describe('Encabezado', () => {
     expect(within(nav).getByRole('link', { name: 'Camiones' })).toHaveAttribute('href', '#/buscar?tipoId=2')
     expect(within(nav).getByRole('link', { name: 'Carrocerías' })).toHaveAttribute('href', '#/buscar?tipoId=3')
     expect(within(nav).getByRole('link', { name: 'Maquinaria' })).toHaveAttribute('href', '#/buscar?tipoId=4')
-    expect(within(encabezado()).getByRole('link', { name: /Financiamos Tu Camión/ })).toHaveAttribute('href', '#/')
+    expect(within(encabezado()).getByRole('link', { name: 'VCA Automotores, Venta de Camiones. Financiamos tu Camión' })).toHaveAttribute('href', '#/')
     // Rediseño: en el inicio la búsqueda está en la portada; en las demás pantallas, en el encabezado.
     expect(within(encabezado()).queryByRole('searchbox')).not.toBeInTheDocument()
     expect(screen.getByRole('searchbox', { name: 'Buscar vehículos' })).toBeInTheDocument()
@@ -330,7 +330,7 @@ describe('Navegación por hash', () => {
       window.location.hash = '#/buscar'
     })
     expect(await screen.findByRole('heading', { level: 1, name: 'Buscar vehículos' })).toBeInTheDocument()
-    expect(document.title).toBe('Buscar vehículos | Financiamos Tu Camión')
+    expect(document.title).toBe('Buscar vehículos | Financiamos tu Camión')
 
     act(() => {
       window.location.hash = '#/vehiculo/chevrolet-npr-2020'
@@ -355,7 +355,8 @@ describe('Navegación por hash', () => {
   it('CA-UI-02 un hash que no empieza por / (ancla) muestra el inicio', async () => {
     simularFetch({ [RUTA_FILTROS]: respuestaFiltros(), [RUTA_INICIO]: INICIO_OK })
     abrirApp('#contenido')
-    expect(screen.getByRole('heading', { level: 1, name: 'Tu próximo negocio empieza con el vehículo correcto' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Venta de camiones usados' })).toBeInTheDocument()
+    expect(screen.getByText(/Tu próximo negocio empieza con el/)).toHaveTextContent('Tu próximo negocio empieza con el vehículo correcto')
     expect(await screen.findByRole('heading', { name: 'Destacados' })).toBeInTheDocument()
   })
 

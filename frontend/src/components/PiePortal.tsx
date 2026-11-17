@@ -4,6 +4,7 @@ import {
   HASH_BUSCAR,
   HASH_BUSCO_VEHICULO,
   HASH_CUENTA,
+  HASH_INICIO,
   HASH_PRIVACIDAD,
   HASH_REGISTRO,
   HASH_SEGURO_TODO_RIESGO,
@@ -11,7 +12,7 @@ import {
   HASH_VENDE_TU_CAMION,
   hashBuscar,
 } from '../rutas'
-import { LogoPortal } from './Encabezado'
+import { ALT_LOGO_CUADRADO, LOGO, MARCA } from '../marca'
 import { IconoInstagram, IconoTiktok } from './IconosPortal'
 import { useContactoPortal } from './useContactoPortal'
 
@@ -47,7 +48,20 @@ export function PiePortal({ tipos, conSesion }: PiePortalProps) {
     <footer className="cat-pie">
       <div className="cat-pie-interior">
         <div className="cat-pie-marca">
-          <LogoPortal claro />
+          {/* P10 (CA-P10-05): logo cuadrado con transparencia; nunca el horizontal (texto negro) sobre el fondo oscuro. */}
+          <a className="cat-logo cat-pie-logo" href={HASH_INICIO}>
+            <picture>
+              <source srcSet={LOGO.cuadradoWebp} type="image/webp" />
+              <img
+                src={LOGO.cuadradoPng}
+                alt={ALT_LOGO_CUADRADO}
+                width={Math.round(LOGO.cuadradoAncho / 2.5)}
+                height={Math.round(LOGO.cuadradoAlto / 2.5)}
+                loading="lazy"
+                decoding="async"
+              />
+            </picture>
+          </a>
           <p>Portal de venta de vehículos de trabajo en Colombia.</p>
         </div>
         <nav className="cat-pie-columna" aria-label="Categorías del pie de página">
@@ -138,7 +152,7 @@ export function PiePortal({ tipos, conSesion }: PiePortalProps) {
         </section>
       </div>
       <div className="cat-pie-legal">
-        <p>© {new Date().getFullYear()} Financiamos Tu Camión</p>
+        <p>© {new Date().getFullYear()} {MARCA}</p>
         <nav aria-label="Información legal">
           <ul className="cat-pie-legal-enlaces">
             <li>
