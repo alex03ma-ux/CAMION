@@ -18,6 +18,7 @@ import { detalle, pagina, respuestaFiltros, rutaDetalle, rutaPublicaciones, TIPO
 import { cabecera, RUTA_FILTROS, simularFetch, TOKEN_FICTICIO, type RespuestaSimulada } from './helpers'
 import { abrirApp, CATALOGOS_INVENTARIO, RUTA_CATALOGOS_INV, type Rutas } from './p4pDatos'
 import { cuerpo, detalleLead, lead, paginaLeads, rutaLeads } from './p5Datos'
+import { irA, ubicacionActual } from './helpers'
 
 const RUTA_CREDITOS = '/api/creditos'
 const RUTA_BUSQUEDAS = '/api/busquedas'
@@ -62,7 +63,7 @@ const LISTAS: RespuestaSimulada = {
 
 function abrirAnonimo(hash: string, rutas: Rutas = {}) {
   const api = simularFetch({ [RUTA_FILTROS]: FILTROS_CON_VOLQUETA, [RUTA_LISTAS]: LISTAS, ...rutas })
-  window.location.hash = hash
+  irA(hash)
   render(<App />)
   return { api, user: userEvent.setup() }
 }
@@ -76,57 +77,57 @@ const formBusqueda = () => screen.findByRole('form', { name: 'Formulario Busco u
 
 describe('Rutas y accesos del portal (CA-P6-02, 03, 26)', () => {
   it('lee las rutas nuevas; un slug mal codificado abre "no encontrada" (P9)', () => {
-    expect(leerRuta('#/credito')).toEqual({ nombre: 'credito', slug: null })
-    expect(leerRuta('#/credito/chevrolet-npr-2020')).toEqual({ nombre: 'credito', slug: 'chevrolet-npr-2020' })
-    expect(leerRuta('#/credito/%E0%A4%A')).toEqual({ nombre: 'noEncontrada' })
-    expect(leerRuta('#/busco-un-vehiculo/')).toEqual({ nombre: 'buscoVehiculo' })
-    expect(leerRuta('#/mis-solicitudes')).toEqual({ nombre: 'misSolicitudes' })
+    expect(leerRuta('/credito')).toEqual({ nombre: 'credito', slug: null })
+    expect(leerRuta('/credito/chevrolet-npr-2020')).toEqual({ nombre: 'credito', slug: 'chevrolet-npr-2020' })
+    expect(leerRuta('/credito/%E0%A4%A')).toEqual({ nombre: 'noEncontrada' })
+    expect(leerRuta('/busco-un-vehiculo/')).toEqual({ nombre: 'buscoVehiculo' })
+    expect(leerRuta('/mis-solicitudes')).toEqual({ nombre: 'misSolicitudes' })
   })
 
   it('la banda de crédito de la portada abre #/credito y la franja de servicios sigue sin enlaces', async () => {
-    abrirAnonimo('#/', { [RUTA_INICIO]: { status: 200, body: { destacados: [], recientes: [] } } })
+    abrirAnonimo('/', { [RUTA_INICIO]: { status: 200, body: { destacados: [], recientes: [] } } })
     const banda = await screen.findByRole('region', { name: '¿Necesitas crédito para tu camión?' })
-    expect(within(banda).getByRole('link', { name: /Quiero un crédito/ })).toHaveAttribute('href', '#/credito')
+    expect(within(banda).getByRole('link', { name: /Quiero un crédito/ })).toHaveAttribute('href', '/credito')
     const servicios = screen.getByRole('region', { name: 'Nuestros servicios' })
     expect(within(servicios).queryAllByRole('link')).toHaveLength(0)
     // D-56 (d) B (responsable, 2026-11-12): la portada también ofrece la búsqueda, además del catálogo y el pie.
     expect(within(screen.getByRole('main')).getByRole('link', { name: /Busco un vehículo/ })).toHaveAttribute(
       'href',
-      '#/busco-un-vehiculo',
+      '/busco-un-vehiculo',
     )
   })
 
   it('el pie ofrece "Busco un vehículo" en Servicios y el menú principal no cambia', async () => {
-    abrirAnonimo('#/busco-un-vehiculo')
+    abrirAnonimo('/busco-un-vehiculo')
     await formBusqueda()
     const pie = screen.getByRole('navigation', { name: 'Servicios en el pie de página' })
-    expect(within(pie).getByRole('link', { name: 'Busco un vehículo' })).toHaveAttribute('href', '#/busco-un-vehiculo')
+    expect(within(pie).getByRole('link', { name: 'Busco un vehículo' })).toHaveAttribute('href', '/busco-un-vehiculo')
     const encabezado = screen.getByRole('banner')
     expect(within(encabezado).queryByRole('link', { name: /Busco|crédito/i })).not.toBeInTheDocument()
   })
 
   it('el catálogo ofrece "Busco un vehículo" cuando no hay resultados', async () => {
-    abrirAnonimo('#/buscar', { [rutaPublicaciones()]: pagina([]) })
+    abrirAnonimo('/vehiculos', { [rutaPublicaciones()]: pagina([]) })
     const acceso = await screen.findByRole('complementary', { name: '¿No encuentras lo que buscas?' })
-    expect(within(acceso).getByRole('link', { name: 'Busco un vehículo' })).toHaveAttribute('href', '#/busco-un-vehiculo')
+    expect(within(acceso).getByRole('link', { name: 'Busco un vehículo' })).toHaveAttribute('href', '/busco-un-vehiculo')
   })
 
   it('el catálogo ofrece "Busco un vehículo" al final de la lista de resultados', async () => {
-    abrirAnonimo('#/buscar', { [rutaPublicaciones()]: pagina([V1, V2]) })
+    abrirAnonimo('/vehiculos', { [rutaPublicaciones()]: pagina([V1, V2]) })
     await screen.findByText('Kenworth T800 2018')
     const acceso = screen.getByRole('complementary', { name: '¿No encuentras lo que buscas?' })
     expect(within(acceso).getByRole('link', { name: 'Busco un vehículo' })).toBeInTheDocument()
   })
 
   it('la ficha ofrece "Solicitar crédito para este vehículo" junto al contacto', async () => {
-    abrirAnonimo(`#/vehiculo/${V1.slug}`, { [rutaDetalle(V1.slug)]: { status: 200, body: detalle(V1) } })
+    abrirAnonimo(`/vehiculo/${V1.slug}`, { [rutaDetalle(V1.slug)]: { status: 200, body: detalle(V1) } })
     const enlace = await screen.findByRole('link', { name: 'Solicitar crédito para este vehículo' })
-    expect(enlace).toHaveAttribute('href', '#/credito/chevrolet-npr-2020')
+    expect(enlace).toHaveAttribute('href', '/credito/chevrolet-npr-2020')
     expect(screen.getByRole('form', { name: 'Formulario de contacto' })).toBeInTheDocument()
   })
 
   it('CA-P6-05 el asesor dueño no ve el acceso al crédito en su propia ficha', async () => {
-    abrirApp(`#/vehiculo/${V1.slug}`, ['ASESOR'], {
+    abrirApp(`/vehiculo/${V1.slug}`, ['ASESOR'], {
       [RUTA_FILTROS]: respuestaFiltros(),
       [rutaDetalle(V1.slug)]: { status: 200, body: detalle(V1, { esPropio: true }) },
     })
@@ -139,10 +140,10 @@ describe('Rutas y accesos del portal (CA-P6-02, 03, 26)', () => {
 
 describe('Crédito desde la portada (CA-P6-01, 08, 11 a 14, 27, 35, 36)', () => {
   it('pide solo nombre, teléfono, correo y comentario; explica la intermediación; casilla sin marcar', async () => {
-    abrirAnonimo('#/credito')
+    abrirAnonimo('/credito')
     const form = await formCredito()
     expect(screen.getByRole('heading', { level: 1, name: 'Solicita tu crédito' })).toBeInTheDocument()
-    expect(document.title).toBe('Solicita tu crédito | Financiamos Tu Camión')
+    expect(document.title).toBe('Crédito para camión | Financiamos tu Camión')
     expect(screen.getByText(/Somos intermediarios: gestionamos tu crédito ante bancos/)).toBeInTheDocument()
     expect(within(form).getByText('Campo obligatorio')).toBeInTheDocument()
     expect(screen.getByLabelText('Nombre')).toHaveAttribute('aria-required', 'true')
@@ -168,7 +169,7 @@ describe('Crédito desde la portada (CA-P6-01, 08, 11 a 14, 27, 35, 36)', () => 
   })
 
   it('anónimo: POST sin token con el cuerpo del contrato y confirmación con WhatsApp y tres salidas', async () => {
-    const { api, user } = abrirAnonimo('#/credito', { [RUTA_CREDITOS]: OK })
+    const { api, user } = abrirAnonimo('/credito', { [RUTA_CREDITOS]: OK })
     await formCredito()
     await user.type(screen.getByLabelText('Nombre'), ' Ana Pérez ')
     await user.type(screen.getByLabelText('Teléfono o WhatsApp'), '300 123 4567')
@@ -194,15 +195,15 @@ describe('Crédito desde la portada (CA-P6-01, 08, 11 a 14, 27, 35, 36)', () => 
     expect(screen.queryByRole('form', { name: 'Formulario de solicitud de crédito' })).not.toBeInTheDocument()
     const whatsapp = screen.getByRole('link', { name: /Escribir por WhatsApp/ })
     expect(whatsapp.getAttribute('href')).toMatch(/^https:\/\/wa\.me\/573166152907\?text=/)
-    expect(screen.getByRole('link', { name: 'Volver al inicio' })).toHaveAttribute('href', '#/')
-    expect(screen.getByRole('link', { name: 'Ver vehículos' })).toHaveAttribute('href', '#/buscar')
+    expect(screen.getByRole('link', { name: 'Volver al inicio' })).toHaveAttribute('href', '/')
+    expect(screen.getByRole('link', { name: 'Ver vehículos' })).toHaveAttribute('href', '/vehiculos')
     await user.click(screen.getByRole('button', { name: 'Enviar otra solicitud' }))
     expect(screen.getByLabelText('Nombre')).toHaveValue('')
     expect(casilla()).not.toBeChecked()
   })
 
   it('comentario vacío viaja como null y el correo en blanco también', async () => {
-    const { api, user } = abrirAnonimo('#/credito', { [RUTA_CREDITOS]: OK })
+    const { api, user } = abrirAnonimo('/credito', { [RUTA_CREDITOS]: OK })
     await formCredito()
     await user.type(screen.getByLabelText('Nombre'), 'Ana')
     await user.type(screen.getByLabelText('Teléfono o WhatsApp'), '3001234567')
@@ -214,7 +215,7 @@ describe('Crédito desde la portada (CA-P6-01, 08, 11 a 14, 27, 35, 36)', () => 
   })
 
   it('validación en el navegador: errores por campo, foco al primero y sin llamar a la API', async () => {
-    const { api, user } = abrirAnonimo('#/credito')
+    const { api, user } = abrirAnonimo('/credito')
     await formCredito()
     fireEvent.change(screen.getByLabelText('Correo (opcional)'), { target: { value: 'no-es-correo' } })
     await user.click(enviar())
@@ -234,7 +235,7 @@ describe('Crédito desde la portada (CA-P6-01, 08, 11 a 14, 27, 35, 36)', () => 
   })
 
   it('un 400 del servidor marca el comentario y conserva lo escrito', async () => {
-    const { user } = abrirAnonimo('#/credito', {
+    const { user } = abrirAnonimo('/credito', {
       [RUTA_CREDITOS]: {
         status: 400,
         body: { error: 'Revisa los datos marcados.', errores: { mensaje: ['El comentario no puede pasar de 500 caracteres.'] } },
@@ -259,7 +260,7 @@ describe('Crédito desde la portada (CA-P6-01, 08, 11 a 14, 27, 35, 36)', () => 
     ['500', { status: 500, body: { error: 'detalle interno' } } as RespuestaSimulada, MENSAJE_FALLO],
     ['sin conexión', { red: true } as RespuestaSimulada, MENSAJE_FALLO],
   ])('%s: muestra el mensaje del contrato sin trazas y conserva el formulario', async (_n, respuesta, mensaje) => {
-    const { user } = abrirAnonimo('#/credito', { [RUTA_CREDITOS]: respuesta })
+    const { user } = abrirAnonimo('/credito', { [RUTA_CREDITOS]: respuesta })
     await formCredito()
     await user.type(screen.getByLabelText('Nombre'), 'Ana')
     await user.type(screen.getByLabelText('Teléfono o WhatsApp'), '3001234567')
@@ -271,7 +272,7 @@ describe('Crédito desde la portada (CA-P6-01, 08, 11 a 14, 27, 35, 36)', () => 
   })
 
   it('CA-P6-06 con sesión de comprador prellena el perfil y envía el token', async () => {
-    const { api, user } = abrirApp('#/credito', ['COMPRADOR'], { [RUTA_FILTROS]: respuestaFiltros(), [RUTA_CREDITOS]: OK })
+    const { api, user } = abrirApp('/credito', ['COMPRADOR'], { [RUTA_FILTROS]: respuestaFiltros(), [RUTA_CREDITOS]: OK })
     await waitFor(() => expect(screen.getByLabelText('Nombre')).toHaveValue('Persona Ficticia'))
     expect(screen.getByLabelText('Correo (opcional)')).toHaveValue('persona.ficticia@ejemplo.test')
     expect(casilla()).not.toBeChecked()
@@ -284,13 +285,13 @@ describe('Crédito desde la portada (CA-P6-01, 08, 11 a 14, 27, 35, 36)', () => 
 
 describe('Crédito desde la ficha (CA-P6-03 a 05)', () => {
   it('muestra el vehículo (no editable) y envía su slug', async () => {
-    const { api, user } = abrirAnonimo(`#/credito/${V1.slug}`, {
+    const { api, user } = abrirAnonimo(`/credito/${V1.slug}`, {
       [rutaDetalle(V1.slug)]: { status: 200, body: detalle(V1) },
       [RUTA_CREDITOS]: OK,
     })
     await formCredito()
     expect(screen.getByRole('heading', { level: 1, name: 'Solicita crédito para este vehículo' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Chevrolet NPR 2020' })).toHaveAttribute('href', '#/vehiculo/chevrolet-npr-2020')
+    expect(screen.getByRole('link', { name: 'Chevrolet NPR 2020' })).toHaveAttribute('href', '/vehiculo/chevrolet-npr-2020')
     expect(screen.queryByDisplayValue('Chevrolet NPR 2020')).not.toBeInTheDocument()
     await user.type(screen.getByLabelText('Nombre'), 'Ana')
     await user.type(screen.getByLabelText('Teléfono o WhatsApp'), '3001234567')
@@ -304,14 +305,14 @@ describe('Crédito desde la ficha (CA-P6-03 a 05)', () => {
   })
 
   it('un vehículo que ya no es visible no muestra el formulario', async () => {
-    abrirAnonimo('#/credito/no-existe', { [rutaDetalle('no-existe')]: { status: 404, body: { error: 'No.' } } })
+    abrirAnonimo('/credito/no-existe', { [rutaDetalle('no-existe')]: { status: 404, body: { error: 'No.' } } })
     expect(await screen.findByText(MENSAJE_NO_DISPONIBLE)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Ver el catálogo' })).toHaveAttribute('href', '#/buscar')
+    expect(screen.getByRole('link', { name: 'Ver el catálogo' })).toHaveAttribute('href', '/vehiculos')
     expect(screen.queryByRole('form', { name: 'Formulario de solicitud de crédito' })).not.toBeInTheDocument()
   })
 
   it('un 404 al enviar muestra el mensaje del contrato y el enlace al catálogo', async () => {
-    const { user } = abrirAnonimo(`#/credito/${V1.slug}`, {
+    const { user } = abrirAnonimo(`/credito/${V1.slug}`, {
       [rutaDetalle(V1.slug)]: { status: 200, body: detalle(V1) },
       [RUTA_CREDITOS]: { status: 404, body: { error: MENSAJE_NO_DISPONIBLE } },
     })
@@ -325,7 +326,7 @@ describe('Crédito desde la ficha (CA-P6-03 a 05)', () => {
   })
 
   it('el asesor dueño ve que el vehículo es suyo y no el formulario; la consulta lleva su token', async () => {
-    const { api } = abrirApp(`#/credito/${V1.slug}`, ['ASESOR'], {
+    const { api } = abrirApp(`/credito/${V1.slug}`, ['ASESOR'], {
       [RUTA_FILTROS]: respuestaFiltros(),
       [rutaDetalle(V1.slug)]: { status: 200, body: detalle(V1, { esPropio: true }) },
     })
@@ -336,7 +337,7 @@ describe('Crédito desde la ficha (CA-P6-03 a 05)', () => {
   })
 
   it('un 409 al enviar muestra "Este vehículo es tuyo"', async () => {
-    const { user } = abrirAnonimo(`#/credito/${V1.slug}`, {
+    const { user } = abrirAnonimo(`/credito/${V1.slug}`, {
       [rutaDetalle(V1.slug)]: { status: 200, body: detalle(V1) },
       [RUTA_CREDITOS]: { status: 409, body: { error: 'Este vehículo es tuyo; no puedes contactarte a ti mismo.' } },
     })
@@ -353,12 +354,12 @@ describe('Crédito desde la ficha (CA-P6-03 a 05)', () => {
 
 describe('"Busco un vehículo" (CA-P6-16 a 23, 34 a 36)', () => {
   it('todas las categorías activas de /api/catalogo/listas-busqueda y modelos por marca y categoría', async () => {
-    const { api, user } = abrirAnonimo('#/busco-un-vehiculo')
+    const { api, user } = abrirAnonimo('/busco-un-vehiculo')
     const form = await formBusqueda()
     expect(api.llamadasA(RUTA_LISTAS)).toHaveLength(1)
     expect(cabecera(api.llamadasA(RUTA_LISTAS)[0].init, 'Authorization')).toBeUndefined()
     expect(screen.getByRole('heading', { level: 1, name: 'Busco un vehículo' })).toBeInTheDocument()
-    expect(document.title).toBe('Busco un vehículo | Financiamos Tu Camión')
+    expect(document.title).toBe('Busco un vehículo | Financiamos tu Camión')
     const categoria = screen.getByLabelText('Categoría')
     expect(categoria).toHaveAttribute('aria-required', 'true')
     expect(within(categoria).getAllByRole('option').map((o) => o.textContent)).toEqual([
@@ -408,7 +409,7 @@ describe('"Busco un vehículo" (CA-P6-16 a 23, 34 a 36)', () => {
   })
 
   it('envía los criterios con números y null, el presupuesto con miles en pantalla y sin token', async () => {
-    const { api, user } = abrirAnonimo('#/busco-un-vehiculo', { [RUTA_BUSQUEDAS]: OK })
+    const { api, user } = abrirAnonimo('/busco-un-vehiculo', { [RUTA_BUSQUEDAS]: OK })
     await formBusqueda()
     await user.selectOptions(screen.getByLabelText('Categoría'), '2')
     await user.selectOptions(screen.getByLabelText('Marca (opcional)'), '11')
@@ -450,7 +451,7 @@ describe('"Busco un vehículo" (CA-P6-16 a 23, 34 a 36)', () => {
   })
 
   it('solo la categoría y los datos de contacto bastan; lo demás viaja como null', async () => {
-    const { api, user } = abrirAnonimo('#/busco-un-vehiculo', { [RUTA_BUSQUEDAS]: OK })
+    const { api, user } = abrirAnonimo('/busco-un-vehiculo', { [RUTA_BUSQUEDAS]: OK })
     await formBusqueda()
     await user.selectOptions(screen.getByLabelText('Categoría'), '4')
     await user.type(screen.getByLabelText('Nombre'), 'Ana')
@@ -472,7 +473,7 @@ describe('"Busco un vehículo" (CA-P6-16 a 23, 34 a 36)', () => {
   })
 
   it('validación: categoría, años, presupuesto y autorización; foco a la categoría y sin llamar a la API', async () => {
-    const { api, user } = abrirAnonimo('#/busco-un-vehiculo')
+    const { api, user } = abrirAnonimo('/busco-un-vehiculo')
     await formBusqueda()
     await user.type(screen.getByLabelText('Año desde (opcional)'), '1949')
     fireEvent.change(screen.getByLabelText('Presupuesto máximo en pesos (opcional)'), { target: { value: '999999' } })
@@ -488,7 +489,7 @@ describe('"Busco un vehículo" (CA-P6-16 a 23, 34 a 36)', () => {
   })
 
   it('"desde" mayor que "hasta" marca el año final', async () => {
-    const { user } = abrirAnonimo('#/busco-un-vehiculo')
+    const { user } = abrirAnonimo('/busco-un-vehiculo')
     await formBusqueda()
     await user.type(screen.getByLabelText('Año desde (opcional)'), '2020')
     await user.type(screen.getByLabelText('Año hasta (opcional)'), '2015')
@@ -498,7 +499,7 @@ describe('"Busco un vehículo" (CA-P6-16 a 23, 34 a 36)', () => {
   })
 
   it('un 400 del servidor en tipoId se muestra en la categoría con el foco', async () => {
-    const { user } = abrirAnonimo('#/busco-un-vehiculo', {
+    const { user } = abrirAnonimo('/busco-un-vehiculo', {
       [RUTA_BUSQUEDAS]: {
         status: 400,
         body: { error: 'Revisa los datos marcados.', errores: { tipoId: ['Elige la categoría del vehículo que buscas.'] } },
@@ -517,7 +518,7 @@ describe('"Busco un vehículo" (CA-P6-16 a 23, 34 a 36)', () => {
   })
 
   it('429 y sin conexión muestran los mensajes del contrato', async () => {
-    const { user } = abrirAnonimo('#/busco-un-vehiculo', {
+    const { user } = abrirAnonimo('/busco-un-vehiculo', {
       [RUTA_BUSQUEDAS]: [{ status: 429, body: { error: MENSAJE_429 } }, { red: true }],
     })
     await formBusqueda()
@@ -532,13 +533,13 @@ describe('"Busco un vehículo" (CA-P6-16 a 23, 34 a 36)', () => {
   })
 
   it('mientras cargan las listas lo anuncia en role="status"', async () => {
-    abrirAnonimo('#/busco-un-vehiculo')
+    abrirAnonimo('/busco-un-vehiculo')
     expect(screen.getByRole('status')).toHaveTextContent('Cargando las opciones...')
     await formBusqueda()
   })
 
   it('si fallan las listas, usa las categorías del catálogo y deja enviar solo con la categoría; reintentar las recupera', async () => {
-    const { api, user } = abrirAnonimo('#/busco-un-vehiculo', {
+    const { api, user } = abrirAnonimo('/busco-un-vehiculo', {
       [RUTA_LISTAS]: [{ status: 500 }, LISTAS],
       [RUTA_BUSQUEDAS]: OK,
     })
@@ -567,7 +568,7 @@ describe('"Busco un vehículo" (CA-P6-16 a 23, 34 a 36)', () => {
   })
 
   it('si fallan las listas y el catálogo, ofrece reintentar y no muestra el formulario', async () => {
-    const { api, user } = abrirAnonimo('#/busco-un-vehiculo', {
+    const { api, user } = abrirAnonimo('/busco-un-vehiculo', {
       [RUTA_LISTAS]: [{ status: 500 }, LISTAS],
       [RUTA_FILTROS]: { red: true },
     })
@@ -579,7 +580,7 @@ describe('"Busco un vehículo" (CA-P6-16 a 23, 34 a 36)', () => {
   })
 
   it('CA-P6-23 con sesión envía el token y prellena el contacto', async () => {
-    const { api, user } = abrirApp('#/busco-un-vehiculo', ['COMPRADOR'], {
+    const { api, user } = abrirApp('/busco-un-vehiculo', ['COMPRADOR'], {
       [RUTA_FILTROS]: respuestaFiltros(),
       [RUTA_LISTAS]: LISTAS,
       [RUTA_BUSQUEDAS]: OK,
@@ -756,7 +757,7 @@ const detalleBusqueda = (id: number, extra: Record<string, unknown> = {}) =>
 
 describe('Bandeja del administrador (CA-P6-40, 44)', () => {
   it('muestra "Crédito" y "Búsqueda" con su estado Registrado / En gestión / Cerrado', async () => {
-    abrirApp('#/contactos', ['ADMINISTRADOR'], {
+    abrirApp('/contactos', ['ADMINISTRADOR'], {
       ...ADMIN_BASE,
       [rutaLeads()]: paginaLeads([
         credito(1),
@@ -780,7 +781,7 @@ describe('Bandeja del administrador (CA-P6-40, 44)', () => {
   })
 
   it('filtra por origen CREDITO', async () => {
-    const { api, user } = abrirApp('#/contactos', ['ADMINISTRADOR'], {
+    const { api, user } = abrirApp('/contactos', ['ADMINISTRADOR'], {
       ...ADMIN_BASE,
       [rutaLeads()]: paginaLeads([lead(1)]),
       [rutaLeads('origen=CREDITO')]: paginaLeads([credito(2)]),
@@ -795,7 +796,7 @@ describe('Bandeja del administrador (CA-P6-40, 44)', () => {
 
 describe('Detalle de un crédito (CA-P6-39, 41, 43, 45, 49)', () => {
   it('con vehículo: precio, estado, enlace a la ficha visible, comentario, sin "Reasignar" ni datos financieros', async () => {
-    abrirApp('#/contactos/5', ['ADMINISTRADOR'], {
+    abrirApp('/contactos/5', ['ADMINISTRADOR'], {
       ...ADMIN_BASE,
       '/api/leads/5': {
         status: 200,
@@ -811,7 +812,7 @@ describe('Detalle de un crédito (CA-P6-39, 41, 43, 45, 49)', () => {
     expect(screen.getByRole('heading', { level: 3, name: 'Comentario' })).toBeInTheDocument()
     expect(screen.getByText('Quiero financiar este camión')).toBeInTheDocument()
     expect(screen.getByText('Precio publicado').nextElementSibling).toHaveTextContent('$ 120.000.000')
-    expect(screen.getByRole('link', { name: 'Ver en el portal' })).toHaveAttribute('href', '#/vehiculo/chevrolet-npr-2020')
+    expect(screen.getByRole('link', { name: 'Ver en el portal' })).toHaveAttribute('href', '/vehiculo/chevrolet-npr-2020')
     expect(screen.getByText(/Solicitud de crédito · versión BORRADOR-2026-11-04/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Reasignar' })).not.toBeInTheDocument()
     expect(screen.getByText(/no se reasigna a un asesor/)).toBeInTheDocument()
@@ -822,7 +823,7 @@ describe('Detalle de un crédito (CA-P6-39, 41, 43, 45, 49)', () => {
   })
 
   it('un vehículo que ya no se ve en el portal no se enlaza', async () => {
-    abrirApp('#/contactos/5', ['ADMINISTRADOR'], {
+    abrirApp('/contactos/5', ['ADMINISTRADOR'], {
       ...ADMIN_BASE,
       '/api/leads/5': {
         status: 200,
@@ -835,7 +836,7 @@ describe('Detalle de un crédito (CA-P6-39, 41, 43, 45, 49)', () => {
   })
 
   it('el cierre ofrece los resultados del crédito y envía REMITIDO_ENTIDAD', async () => {
-    const { api, user } = abrirApp('#/contactos/5', ['ADMINISTRADOR'], {
+    const { api, user } = abrirApp('/contactos/5', ['ADMINISTRADOR'], {
       ...ADMIN_BASE,
       '/api/leads/5': { status: 200, body: detalleLead(5, credito(5)) },
       '/api/leads/5/cerrar': {
@@ -881,7 +882,7 @@ describe('Detalle de un crédito (CA-P6-39, 41, 43, 45, 49)', () => {
 
 describe('Detalle de una búsqueda (CA-P6-42, 46, 50 a 54, 56)', () => {
   it('muestra los criterios legibles, la descripción y los relacionados con su estado; sin "Reasignar"', async () => {
-    abrirApp('#/contactos/7', ['ADMINISTRADOR'], {
+    abrirApp('/contactos/7', ['ADMINISTRADOR'], {
       ...ADMIN_BASE,
       '/api/leads/7': {
         status: 200,
@@ -913,7 +914,7 @@ describe('Detalle de una búsqueda (CA-P6-42, 46, 50 a 54, 56)', () => {
   })
 
   it('"Ver coincidencias" y relacionar con nota interna: POST del contrato y mensaje', async () => {
-    const { api, user } = abrirApp('#/contactos/7', ['ADMINISTRADOR'], {
+    const { api, user } = abrirApp('/contactos/7', ['ADMINISTRADOR'], {
       ...ADMIN_BASE,
       '/api/leads/7': { status: 200, body: detalleBusqueda(7) },
       '/api/leads/7/coincidencias': {
@@ -952,7 +953,7 @@ describe('Detalle de una búsqueda (CA-P6-42, 46, 50 a 54, 56)', () => {
   })
 
   it('Escape cancela el diálogo y devuelve el foco al botón; sin nota viaja null', async () => {
-    const { api, user } = abrirApp('#/contactos/7', ['ADMINISTRADOR'], {
+    const { api, user } = abrirApp('/contactos/7', ['ADMINISTRADOR'], {
       ...ADMIN_BASE,
       '/api/leads/7': { status: 200, body: detalleBusqueda(7) },
       '/api/leads/7/coincidencias': {
@@ -977,7 +978,7 @@ describe('Detalle de una búsqueda (CA-P6-42, 46, 50 a 54, 56)', () => {
 
   it('un 409 al relacionar se anuncia, cierra el diálogo y vuelve a leer la búsqueda', async () => {
     const MENSAJE_TOPE = 'Esta búsqueda ya tiene 10 vehículos relacionados.'
-    const { api, user } = abrirApp('#/contactos/7', ['ADMINISTRADOR'], {
+    const { api, user } = abrirApp('/contactos/7', ['ADMINISTRADOR'], {
       ...ADMIN_BASE,
       '/api/leads/7': { status: 200, body: detalleBusqueda(7) },
       '/api/leads/7/coincidencias': {
@@ -996,7 +997,7 @@ describe('Detalle de una búsqueda (CA-P6-42, 46, 50 a 54, 56)', () => {
   })
 
   it('un 400 en la nota se muestra dentro del diálogo sin cerrarlo', async () => {
-    const { user } = abrirApp('#/contactos/7', ['ADMINISTRADOR'], {
+    const { user } = abrirApp('/contactos/7', ['ADMINISTRADOR'], {
       ...ADMIN_BASE,
       '/api/leads/7': { status: 200, body: detalleBusqueda(7) },
       '/api/leads/7/coincidencias': {
@@ -1023,7 +1024,7 @@ describe('Detalle de una búsqueda (CA-P6-42, 46, 50 a 54, 56)', () => {
   })
 
   it('retirar: confirma, envía la ruta sin cuerpo y anuncia el cambio', async () => {
-    const { api, user } = abrirApp('#/contactos/7', ['ADMINISTRADOR'], {
+    const { api, user } = abrirApp('/contactos/7', ['ADMINISTRADOR'], {
       ...ADMIN_BASE,
       '/api/leads/7': { status: 200, body: detalleBusqueda(7, { vehiculosRelacionados: [relacionado(60, 'Chevrolet NPR 2020')] }) },
       '/api/leads/7/vehiculos/60/retirar': { status: 200, body: detalleBusqueda(7) },
@@ -1041,7 +1042,7 @@ describe('Detalle de una búsqueda (CA-P6-42, 46, 50 a 54, 56)', () => {
   })
 
   it('cerrada: se consultan coincidencias pero no se relaciona ni se retira; resultados de la búsqueda al cerrar', async () => {
-    const { user } = abrirApp('#/contactos/7', ['ADMINISTRADOR'], {
+    const { user } = abrirApp('/contactos/7', ['ADMINISTRADOR'], {
       ...ADMIN_BASE,
       '/api/leads/7': {
         status: 200,
@@ -1066,7 +1067,7 @@ describe('Detalle de una búsqueda (CA-P6-42, 46, 50 a 54, 56)', () => {
   })
 
   it('el cierre de una búsqueda ofrece "Encontró vehículo" y "Sin vehículo disponible"', async () => {
-    const { user } = abrirApp('#/contactos/7', ['ADMINISTRADOR'], {
+    const { user } = abrirApp('/contactos/7', ['ADMINISTRADOR'], {
       ...ADMIN_BASE,
       '/api/leads/7': { status: 200, body: detalleBusqueda(7) },
     })
@@ -1082,7 +1083,7 @@ describe('Detalle de una búsqueda (CA-P6-42, 46, 50 a 54, 56)', () => {
 
   it('con 10 relacionados el botón "Relacionar" queda desactivado', async () => {
     const diez = Array.from({ length: 10 }, (_, i) => relacionado(100 + i, `Vehículo ${i}`))
-    const { user } = abrirApp('#/contactos/7', ['ADMINISTRADOR'], {
+    const { user } = abrirApp('/contactos/7', ['ADMINISTRADOR'], {
       ...ADMIN_BASE,
       '/api/leads/7': { status: 200, body: detalleBusqueda(7, { vehiculosRelacionados: diez }) },
       '/api/leads/7/coincidencias': {
@@ -1150,17 +1151,17 @@ const SOLICITUDES = [
 
 describe('"Mis solicitudes" del comprador (CA-P6-66, 68 a 72, 75, 76)', () => {
   it('el perfil del comprador ofrece "Mis solicitudes"', async () => {
-    abrirApp('#/cuenta', ['COMPRADOR'])
-    expect(await screen.findByRole('link', { name: 'Mis solicitudes' })).toHaveAttribute('href', '#/mis-solicitudes')
+    abrirApp('/cuenta', ['COMPRADOR'])
+    expect(await screen.findByRole('link', { name: 'Mis solicitudes' })).toHaveAttribute('href', '/mis-solicitudes')
   })
 
   it('lista con fecha, tipo, resumen y estado; enlace solo si el vehículo sigue disponible; recomendados en la búsqueda', async () => {
-    const { api } = abrirApp('#/mis-solicitudes', ['COMPRADOR'], {
+    const { api } = abrirApp('/mis-solicitudes', ['COMPRADOR'], {
       [RUTA_MIS]: { status: 200, body: { items: SOLICITUDES, total: 5, pagina: 1, tamano: 20 } },
     })
     await screen.findByText('Camión Kenworth T800')
     expect(screen.getByRole('heading', { level: 1, name: 'Mis solicitudes' })).toBeInTheDocument()
-    expect(document.title).toBe('Mis solicitudes | Financiamos Tu Camión')
+    expect(document.title).toBe('Mis solicitudes | Financiamos tu Camión')
     expect(cabecera(api.llamadasA(RUTA_MIS)[0].init, 'Authorization')).toBe(`Bearer ${TOKEN_FICTICIO}`)
     expect(screen.getByText('(5 solicitudes)')).toBeInTheDocument()
     const tarjeta = (nombre: string) => screen.getByRole('article', { name: nombre })
@@ -1170,11 +1171,11 @@ describe('"Mis solicitudes" del comprador (CA-P6-66, 68 a 72, 75, 76)', () => {
     expect(within(busqueda).getByRole('heading', { name: 'Te recomendamos estos vehículos' })).toBeInTheDocument()
     expect(within(busqueda).getByRole('link', { name: 'Kenworth T800 2018' })).toHaveAttribute(
       'href',
-      '#/vehiculo/kenworth-t800-2018',
+      '/vehiculo/kenworth-t800-2018',
     )
     const credito = tarjeta('Crédito')
     expect(within(credito).getByText('Registrada')).toBeInTheDocument()
-    expect(within(credito).getByRole('link', { name: 'Chevrolet NPR 2020' })).toHaveAttribute('href', '#/vehiculo/chevrolet-npr-2020')
+    expect(within(credito).getByRole('link', { name: 'Chevrolet NPR 2020' })).toHaveAttribute('href', '/vehiculo/chevrolet-npr-2020')
     const contacto = tarjeta('Contacto por vehículo')
     expect(within(contacto).getByText('Finalizada')).toBeInTheDocument()
     expect(within(contacto).getByText('Este vehículo ya no está disponible')).toBeInTheDocument()
@@ -1187,22 +1188,22 @@ describe('"Mis solicitudes" del comprador (CA-P6-66, 68 a 72, 75, 76)', () => {
   })
 
   it('sin solicitudes muestra el texto y los accesos', async () => {
-    abrirApp('#/mis-solicitudes', ['COMPRADOR'], {
+    abrirApp('/mis-solicitudes', ['COMPRADOR'], {
       [RUTA_MIS]: { status: 200, body: { items: [], total: 0, pagina: 1, tamano: 20 } },
     })
     expect(await screen.findByText('Aún no tienes solicitudes.')).toBeInTheDocument()
     const accesos = screen.getByRole('list', { name: 'Empieza aquí' })
     expect(within(accesos).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual([
-      '#/buscar',
-      '#/credito',
-      '#/busco-un-vehiculo',
-      '#/vende-tu-camion',
-      '#/seguro-todo-riesgo',
+      '/vehiculos',
+      '/credito',
+      '/busco-un-vehiculo',
+      '/vende-tu-camion',
+      '/seguro-todo-riesgo',
     ])
   })
 
   it('pagina de 20 en 20', async () => {
-    const { api, user } = abrirApp('#/mis-solicitudes', ['COMPRADOR'], {
+    const { api, user } = abrirApp('/mis-solicitudes', ['COMPRADOR'], {
       [RUTA_MIS]: { status: 200, body: { items: SOLICITUDES, total: 25, pagina: 1, tamano: 20 } },
       '/api/mis-solicitudes?pagina=2&tamano=20': {
         status: 200,
@@ -1216,7 +1217,7 @@ describe('"Mis solicitudes" del comprador (CA-P6-66, 68 a 72, 75, 76)', () => {
   })
 
   it('un error ofrece reintentar', async () => {
-    const { user } = abrirApp('#/mis-solicitudes', ['COMPRADOR'], {
+    const { user } = abrirApp('/mis-solicitudes', ['COMPRADOR'], {
       [RUTA_MIS]: [{ red: true }, { status: 200, body: { items: [SOLICITUDES[1]], total: 1, pagina: 1, tamano: 20 } }],
     })
     await user.click(await screen.findByRole('button', { name: 'Reintentar' }))
@@ -1224,21 +1225,21 @@ describe('"Mis solicitudes" del comprador (CA-P6-66, 68 a 72, 75, 76)', () => {
   })
 
   it('un 401 termina la sesión y lleva al ingreso', async () => {
-    abrirApp('#/mis-solicitudes', ['COMPRADOR'], { [RUTA_MIS]: { status: 401 } })
-    await waitFor(() => expect(window.location.hash).toBe('#/cuenta'))
+    abrirApp('/mis-solicitudes', ['COMPRADOR'], { [RUTA_MIS]: { status: 401 } })
+    await waitFor(() => expect(ubicacionActual()).toBe('/cuenta'))
     expect(await screen.findByText(/Tu sesión terminó/)).toBeInTheDocument()
   })
 })
 
 describe('Permisos (CA-P6-60, 63, 74)', () => {
   it('sin sesión, #/mis-solicitudes lleva al ingreso sin llamar a la API', async () => {
-    const { api } = abrirAnonimo('#/mis-solicitudes')
-    await waitFor(() => expect(window.location.hash).toBe('#/cuenta'))
+    const { api } = abrirAnonimo('/mis-solicitudes')
+    await waitFor(() => expect(ubicacionActual()).toBe('/cuenta'))
     expect(api.llamadas.some((l) => l.url.startsWith('/api/mis-solicitudes'))).toBe(false)
   })
 
   it.each([['ASESOR'], ['ADMINISTRADOR']])('%s: no ve el acceso ni llama a la API', async (rol) => {
-    const { api } = abrirApp('#/mis-solicitudes', [rol], {
+    const { api } = abrirApp('/mis-solicitudes', [rol], {
       [RUTA_CATALOGOS_INV]: { status: 200, body: CATALOGOS_INVENTARIO },
     })
     expect(await screen.findByText('No tienes permiso para realizar esta acción.')).toBeInTheDocument()
@@ -1246,7 +1247,7 @@ describe('Permisos (CA-P6-60, 63, 74)', () => {
   })
 
   it('el perfil del asesor no ofrece "Mis solicitudes"', async () => {
-    abrirApp('#/cuenta', ['ASESOR'], {
+    abrirApp('/cuenta', ['ASESOR'], {
       '/api/asesor/suscripcion': { status: 404, body: { error: 'Sin suscripción.' } },
       '/api/leads/resumen': { status: 200, body: { nuevos: 0, abiertos: 0 } },
     })
@@ -1255,7 +1256,7 @@ describe('Permisos (CA-P6-60, 63, 74)', () => {
   })
 
   it('el asesor no ve los orígenes nuevos ni el filtro por origen', async () => {
-    const { api } = abrirApp('#/contactos', ['ASESOR'], { [rutaLeads()]: paginaLeads([lead(1)]) })
+    const { api } = abrirApp('/contactos', ['ASESOR'], { [rutaLeads()]: paginaLeads([lead(1)]) })
     await screen.findByText('Visitante 1')
     expect(screen.queryByLabelText('Origen')).not.toBeInTheDocument()
     expect(screen.queryByText(/Crédito|Búsqueda/)).not.toBeInTheDocument()
@@ -1263,13 +1264,13 @@ describe('Permisos (CA-P6-60, 63, 74)', () => {
   })
 
   it('un comprador en #/contactos ve "No tienes permiso" sin llamar a /api/leads', async () => {
-    const { api } = abrirApp('#/contactos', ['COMPRADOR'])
+    const { api } = abrirApp('/contactos', ['COMPRADOR'])
     expect(await screen.findByText('No tienes permiso para realizar esta acción.')).toBeInTheDocument()
     expect(api.llamadas.some((l) => l.url.startsWith('/api/leads'))).toBe(false)
   })
 
   it('un asesor que abre por id una búsqueda recibe 404 "Contacto no encontrado."', async () => {
-    abrirApp('#/contactos/7', ['ASESOR'], {
+    abrirApp('/contactos/7', ['ASESOR'], {
       '/api/leads/7': { status: 404, body: { error: 'Contacto no encontrado.' } },
     })
     expect(await screen.findByText('Contacto no encontrado.')).toBeInTheDocument()

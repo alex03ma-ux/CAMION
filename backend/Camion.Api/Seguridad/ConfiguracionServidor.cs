@@ -199,6 +199,17 @@ public static class ConfiguracionServidor
         ["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
     };
 
+    /// <summary>
+    /// P10 (CA-P10-76): clave de HttpContext.Items con la que una ruta que entrega HTML del frontend (/vehiculo/{slug}, D-88 A)
+    /// pide su propia Content-Security-Policy en lugar de la de la API. El resto de encabezados no cambia.
+    /// </summary>
+    public const string ClaveCspPropia = "camion:csp";
+
+    /// <summary>P10 (CA-P10-76): la política del frontend propuesta en docs/GUIA-PUBLICACION.md §6.</summary>
+    public const string CspFrontend =
+        "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; object-src 'none'; " +
+        "base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
+
     /// <summary>Acepta una lista JSON (Proxy:KnownProxies:0, :1...) o un texto separado por comas o punto y coma.</summary>
     private static string[] Lista(IConfiguration c, string clave)
     {

@@ -6,6 +6,7 @@ using System.Text.Json;
 using Camion.Api.Data;
 using Camion.Api.Endpoints;
 using Camion.Api.Models;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
@@ -54,18 +55,23 @@ public sealed class CatalogoApi : IDisposable
     public HttpClient Cliente { get; }
     public Siembra Datos { get; private set; } = null!;
 
-    public CatalogoApi(DateTimeOffset? ahora = null, TimeZoneInfo? zona = null)
+    /// <param name="configurar">P10: configuración adicional del host (por ejemplo Portal:PermitirIndexacion).</param>
+    public CatalogoApi(DateTimeOffset? ahora = null, TimeZoneInfo? zona = null, Action<IWebHostBuilder>? configurar = null)
     {
         Reloj = new RelojFijo(ahora ?? new DateTimeOffset(T), zona);
-        Factory = Base.WithWebHostBuilder(b => b.ConfigureTestServices(s => s.AddSingleton<TimeProvider>(Reloj)));
+        Factory = Base.WithWebHostBuilder(b =>
+        {
+            configurar?.Invoke(b);
+            b.ConfigureTestServices(s => s.AddSingleton<TimeProvider>(Reloj));
+        });
         Cliente = Factory.CreateClient();
     }
 
     /// <summary>Crea la API, siembra los catálogos base y, si se pide, los datos de referencia de P3.md.</summary>
     public static async Task<CatalogoApi> Crear(bool visibles = true, bool noVisibles = true, Action<Siembra>? extra = null,
-        DateTimeOffset? ahora = null, TimeZoneInfo? zona = null)
+        DateTimeOffset? ahora = null, TimeZoneInfo? zona = null, Action<IWebHostBuilder>? configurar = null)
     {
-        var api = new CatalogoApi(ahora, zona);
+        var api = new CatalogoApi(ahora, zona, configurar);
         using var scope = api.Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<CamionDbContext>();
         var s = await Siembra.Base(db);

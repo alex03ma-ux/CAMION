@@ -4,7 +4,7 @@
 // Empieza siempre sin marcar (quien la usa no debe recordarla entre envíos) y la API vuelve a exigirla.
 // P9 (CA-P9-15, D-84 A): debajo, fuera de la etiqueta, un enlace a los términos; no hay casilla de términos.
 import type { Ref } from 'react'
-import { HASH_PRIVACIDAD, HASH_TERMINOS } from '../rutas'
+import { RUTA_PRIVACIDAD, RUTA_TERMINOS } from '../rutas'
 
 type AutorizacionDatosProps = {
   id: string
@@ -47,7 +47,7 @@ export function AutorizacionDatos({
         <label htmlFor={id} className="campo-obligatorio">
           {TEXTO_AUTORIZACION}{' '}
           {/* Pestaña nueva para no perder lo escrito en el formulario (CA-P5-13). */}
-          <a href={HASH_PRIVACIDAD} target="_blank" rel="noopener noreferrer">
+          <a href={RUTA_PRIVACIDAD} target="_blank" rel="noopener noreferrer">
             {TEXTO_ENLACE_POLITICA}
             <span className="sr-only"> (se abre en una pestaña nueva)</span>
           </a>
@@ -64,7 +64,7 @@ export function AutorizacionDatos({
       {/* Fuera de la etiqueta: no cambia el nombre accesible de la casilla en los formularios (CA-P9-15). */}
       <p className="autorizacion-terminos">
         Consulta también los{' '}
-        <a href={HASH_TERMINOS} target="_blank" rel="noopener noreferrer">
+        <a href={RUTA_TERMINOS} target="_blank" rel="noopener noreferrer">
           {TEXTO_ENLACE_TERMINOS}
           <span className="sr-only"> (se abre en una pestaña nueva)</span>
         </a>

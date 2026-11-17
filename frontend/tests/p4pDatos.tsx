@@ -3,6 +3,7 @@ import { render } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from '../src/App'
 import { simularFetch, TOKEN_FICTICIO, type RespuestaSimulada } from './helpers'
+import { irA } from './helpers'
 
 export type Rutas = Record<string, RespuestaSimulada | RespuestaSimulada[]>
 
@@ -100,7 +101,7 @@ export function abrirApp(hash: string, roles: string[], rutas: Rutas = {}) {
       roles,
     }),
   )
-  window.location.hash = hash
+  irA(hash)
   const api = simularFetch({ '/api/auth/me': { status: 200, body: perfil(roles) }, ...rutas })
   render(<App />)
   return { api, user: userEvent.setup() }

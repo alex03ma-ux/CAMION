@@ -26,6 +26,7 @@ import {
   suscripcion,
   type Rutas,
 } from './p4pDatos'
+import { ubicacionActual } from './helpers'
 
 const PLAN_PRUEBA = plan(5, 'Prueba', { precioCop: 0, esPrueba: true })
 const BASE: Rutas = {
@@ -427,7 +428,7 @@ describe('Filtros de ventas', () => {
 
 describe('Pantalla de ventas', () => {
   it('administrador (#/cuenta/ventas): todas las ventas, revertidas con motivo y enlace al vehículo', async () => {
-    abrirApp('#/cuenta/ventas', ['ADMINISTRADOR'], {
+    abrirApp('/cuenta/ventas', ['ADMINISTRADOR'], {
       [RUTA_CATALOGOS_INV]: CATALOGOS_INVENTARIO,
       [RUTA_VENTAS]: paginaDe([
         venta(2),
@@ -447,13 +448,13 @@ describe('Pantalla de ventas', () => {
     expect(screen.getByText('No se cerró el negocio')).toBeInTheDocument()
     expect(screen.getAllByText('$ 95.000.000')).toHaveLength(2)
     expect(screen.getAllByText('Portal web', { selector: 'dd' })).toHaveLength(2)
-    expect(screen.getAllByRole('link', { name: /Ver vehículo/ })[0]).toHaveAttribute('href', '#/inventario/15')
+    expect(screen.getAllByRole('link', { name: /Ver vehículo/ })[0]).toHaveAttribute('href', '/inventario/15')
     expect(screen.getByLabelText('Asesor')).toBeInTheDocument()
   })
 
   it('rango de fechas inválido no consulta; sin resultados muestra "Limpiar filtros"', async () => {
     const filtrada = '/api/ventas?estado=REVERTIDA&pagina=1&tamano=20'
-    const { user, api } = abrirApp('#/cuenta/ventas', ['ADMINISTRADOR'], {
+    const { user, api } = abrirApp('/cuenta/ventas', ['ADMINISTRADOR'], {
       [RUTA_CATALOGOS_INV]: CATALOGOS_INVENTARIO,
       [RUTA_VENTAS]: paginaDe([venta(1)]),
       [filtrada]: paginaDe([]),
@@ -475,7 +476,7 @@ describe('Pantalla de ventas', () => {
   })
 
   it('400 del servidor: el mensaje va junto al filtro', async () => {
-    abrirApp('#/cuenta/ventas?estado=VIGENTE', ['ADMINISTRADOR'], {
+    abrirApp('/cuenta/ventas?estado=VIGENTE', ['ADMINISTRADOR'], {
       [RUTA_CATALOGOS_INV]: CATALOGOS_INVENTARIO,
       '/api/ventas?estado=VIGENTE&pagina=1&tamano=20': {
         status: 400,
@@ -487,7 +488,7 @@ describe('Pantalla de ventas', () => {
   })
 
   it('asesor (#/ventas): "Mis ventas", sin filtro de asesor y nunca envía asesorId', async () => {
-    const { api } = abrirApp('#/ventas?asesorId=8', ['ASESOR'], {
+    const { api } = abrirApp('/ventas?asesorId=8', ['ASESOR'], {
       [RUTA_VENTAS]: paginaDe([{ ...venta(1), asesor: null }]),
     })
     expect(await screen.findByText(/Vigente$/, { selector: 'span.estado' })).toBeInTheDocument()
@@ -497,13 +498,13 @@ describe('Pantalla de ventas', () => {
   })
 
   it('comprador en #/ventas: "No tienes permiso" y no llama a /api/ventas', async () => {
-    const { api } = abrirApp('#/ventas', ['COMPRADOR'])
+    const { api } = abrirApp('/ventas', ['COMPRADOR'])
     expect(await screen.findByText('No tienes permiso para realizar esta acción.')).toBeInTheDocument()
     expect(api.llamadas.some((l) => l.url.startsWith('/api/ventas'))).toBe(false)
   })
 
   it('asesor en #/cuenta/ventas (sección del administrador): sin permiso y sin llamadas', async () => {
-    const { api } = abrirApp('#/cuenta/ventas', ['ASESOR'])
+    const { api } = abrirApp('/cuenta/ventas', ['ASESOR'])
     expect(await screen.findByText('No tienes permiso para realizar esta acción.')).toBeInTheDocument()
     expect(api.llamadas.some((l) => l.url.startsWith('/api/ventas'))).toBe(false)
   })
@@ -583,7 +584,7 @@ describe('Validación de los parámetros (CA-P7-37, 41)', () => {
 describe('Pantalla Parámetros', () => {
   it('muestra los valores, valida en cliente, guarda con PUT y no ofrece valores de negocio', async () => {
     const guardado = { ...CONTACTO_ADMIN, whatsapp: '3001234567', configurado: true, actualizadoPor: 'Admin', actualizadoEn: '2026-11-12T15:00:00Z' }
-    const { user, api } = abrirApp('#/cuenta/parametros', ['ADMINISTRADOR'], {
+    const { user, api } = abrirApp('/cuenta/parametros', ['ADMINISTRADOR'], {
       [RUTA_PARAMETROS]: [{ status: 200, body: CONTACTO_ADMIN }, { status: 200, body: guardado }],
     })
     const whatsapp = await screen.findByLabelText('WhatsApp del portal')
@@ -617,7 +618,7 @@ describe('Pantalla Parámetros', () => {
   })
 
   it('400 del servidor: errores por campo', async () => {
-    const { user } = abrirApp('#/cuenta/parametros', ['ADMINISTRADOR'], {
+    const { user } = abrirApp('/cuenta/parametros', ['ADMINISTRADOR'], {
       [RUTA_PARAMETROS]: [
         { status: 200, body: CONTACTO_ADMIN },
         {
@@ -634,7 +635,7 @@ describe('Pantalla Parámetros', () => {
   })
 
   it('un asesor en #/cuenta/parametros ve "No tienes permiso" y no llama a /api/admin', async () => {
-    const { api } = abrirApp('#/cuenta/parametros', ['ASESOR'])
+    const { api } = abrirApp('/cuenta/parametros', ['ASESOR'])
     expect(await screen.findByText('No tienes permiso para realizar esta acción.')).toBeInTheDocument()
     expect(api.llamadas.some((l) => l.url.startsWith('/api/admin/'))).toBe(false)
   })
@@ -720,7 +721,7 @@ const PANEL = {
 
 describe('Panel Inicio del administrador (CA-P7-45 a 49, 51)', () => {
   it('contadores con enlace a la lista filtrada, ceros en palabras y sin dinero', async () => {
-    abrirApp('#/cuenta/inicio', ['ADMINISTRADOR'], { '/api/admin/panel': { status: 200, body: PANEL } })
+    abrirApp('/cuenta/inicio', ['ADMINISTRADOR'], { '/api/admin/panel': { status: 200, body: PANEL } })
     expect(await screen.findByRole('heading', { level: 2, name: 'Inicio' })).toBeInTheDocument()
     const nav = screen.getByRole('navigation', { name: 'Administración' })
     const enlaces = within(nav).getAllByRole('link').map((a) => a.textContent)
@@ -744,25 +745,25 @@ describe('Panel Inicio del administrador (CA-P7-45 a 49, 51)', () => {
     expect(within(nav).getByRole('link', { name: 'Inicio' })).toHaveAttribute('aria-current', 'page')
 
     const asesores = await screen.findByRole('link', { name: /Asesores pendientes de aprobación/ })
-    expect(asesores).toHaveAttribute('href', '#/cuenta/usuarios?rol=ASESOR&estado=PENDIENTE')
+    expect(asesores).toHaveAttribute('href', '/cuenta/usuarios?rol=ASESOR&estado=PENDIENTE')
     expect(asesores).toHaveTextContent('2')
     expect(screen.getByRole('link', { name: /Vende tu camión: abiertas/ })).toHaveAttribute(
       'href',
-      '#/contactos?estado=ABIERTO&responsable=ADMINISTRACION&origen=VENDE_TU_CAMION',
+      '/contactos?estado=ABIERTO&responsable=ADMINISTRACION&origen=VENDE_TU_CAMION',
     )
     // O-5: los dos contadores de suscripciones abren la lista con la misma consulta del panel.
     expect(screen.getByRole('link', { name: /Suscripciones vencidas/ })).toHaveAttribute(
       'href',
-      '#/cuenta/suscripciones?vista=vencidasSinRenovar',
+      '/cuenta/suscripciones?vista=vencidasSinRenovar',
     )
     expect(screen.getByRole('link', { name: /vencen en los próximos 7 días/ })).toHaveAttribute(
       'href',
-      '#/cuenta/suscripciones?vista=porVencer',
+      '/cuenta/suscripciones?vista=porVencer',
     )
-    expect(screen.getByRole('link', { name: /Vehículos en estado Activo/ })).toHaveAttribute('href', '#/inventario?estado=ACTIVO')
+    expect(screen.getByRole('link', { name: /Vehículos en estado Activo/ })).toHaveAttribute('href', '/inventario?estado=ACTIVO')
     expect(screen.getByRole('link', { name: /Ventas vigentes/ })).toHaveAttribute(
       'href',
-      '#/cuenta/ventas?estado=VIGENTE&desde=2026-10-14',
+      '/cuenta/ventas?estado=VIGENTE&desde=2026-10-14',
     )
     expect(screen.getByText('Sin suscripciones vencidas')).toBeInTheDocument()
     expect(screen.getAllByText('Sin solicitudes abiertas')).toHaveLength(3)
@@ -771,7 +772,7 @@ describe('Panel Inicio del administrador (CA-P7-45 a 49, 51)', () => {
 
   it('el enlace de asesores pendientes abre Usuarios ya filtrado', async () => {
     const filtrada = '/api/admin/usuarios?estado=PENDIENTE&rol=ASESOR&pagina=1&tamano=20'
-    const { user, api } = abrirApp('#/cuenta/inicio', ['ADMINISTRADOR'], {
+    const { user, api } = abrirApp('/cuenta/inicio', ['ADMINISTRADOR'], {
       '/api/admin/panel': { status: 200, body: PANEL },
       [filtrada]: paginaDe([]),
     })
@@ -782,7 +783,7 @@ describe('Panel Inicio del administrador (CA-P7-45 a 49, 51)', () => {
 
   it('O-5: "vencidas sin renovar" abre Suscripciones con vista, la muestra y permite quitarla', async () => {
     const filtrada = '/api/admin/suscripciones?vista=vencidasSinRenovar&pagina=1&tamano=20'
-    const { user, api } = abrirApp('#/cuenta/inicio', ['ADMINISTRADOR'], {
+    const { user, api } = abrirApp('/cuenta/inicio', ['ADMINISTRADOR'], {
       '/api/admin/panel': { status: 200, body: PANEL },
       ...BASE,
       [filtrada]: paginaDe([]),
@@ -792,14 +793,14 @@ describe('Panel Inicio del administrador (CA-P7-45 a 49, 51)', () => {
     await waitFor(() => expect(api.llamadasA(filtrada)).toHaveLength(1))
     expect(await screen.findByText('Vencidas sin renovar')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Quitar este filtro' }))
-    await waitFor(() => expect(window.location.hash).toBe('#/cuenta/suscripciones'))
+    await waitFor(() => expect(ubicacionActual()).toBe('/cuenta/suscripciones'))
     await waitFor(() => expect(api.llamadasA(RUTA_SUSCRIPCIONES)).toHaveLength(1))
     expect(screen.queryByRole('button', { name: 'Quitar este filtro' })).not.toBeInTheDocument()
   })
 
   it('O-5: la vista se combina con el filtro de estado y un 400 muestra "Vista no válida."', async () => {
     const conEstado = '/api/admin/suscripciones?estado=ACTIVA&vista=porVencer&pagina=1&tamano=20'
-    const { user, api } = abrirApp('#/cuenta/suscripciones?vista=porvencer', ['ADMINISTRADOR'], {
+    const { user, api } = abrirApp('/cuenta/suscripciones?vista=porvencer', ['ADMINISTRADOR'], {
       ...BASE,
       '/api/admin/suscripciones?vista=porVencer&pagina=1&tamano=20': paginaDe([ACTIVA]),
       [conEstado]: { status: 400, body: { error: 'Revisa los filtros.', errores: { vista: ['Vista no válida.'] } } },
@@ -812,13 +813,13 @@ describe('Panel Inicio del administrador (CA-P7-45 a 49, 51)', () => {
   })
 
   it.each([['ASESOR'], ['COMPRADOR']])('%s en #/cuenta/inicio: sin permiso, sin llamada y sin enlace en su perfil', async (rol) => {
-    const { api } = abrirApp('#/cuenta/inicio', [rol])
+    const { api } = abrirApp('/cuenta/inicio', [rol])
     expect(await screen.findByText('No tienes permiso para realizar esta acción.')).toBeInTheDocument()
     expect(api.llamadas.some((l) => l.url === '/api/admin/panel')).toBe(false)
   })
 
   it('error del servidor: mensaje y Reintentar', async () => {
-    const { user, api } = abrirApp('#/cuenta/inicio', ['ADMINISTRADOR'], {
+    const { user, api } = abrirApp('/cuenta/inicio', ['ADMINISTRADOR'], {
       '/api/admin/panel': [{ status: 500 }, { status: 200, body: PANEL }],
     })
     expect(await screen.findByRole('alert')).toBeInTheDocument()
@@ -858,7 +859,7 @@ describe('Aviso de vencimiento en "Mi suscripción" (CA-P7-50)', () => {
     const enlace = await screen.findByRole('link', { name: /Escribir por WhatsApp para renovar/ })
     await waitFor(() => expect(enlace.getAttribute('href')).toMatch(/^https:\/\/wa\.me\/573166152907\?text=/))
     const texto = decodeURIComponent(enlace.getAttribute('href')!.split('?text=')[1])
-    expect(texto).toBe('Hola, quiero renovar mi plan de asesor en Financiamos Tu Camión.')
+    expect(texto).toBe('Hola, quiero renovar mi plan de asesor en Financiamos tu Camión.')
     expect(enlace).toHaveAttribute('target', '_blank')
   })
 
@@ -908,16 +909,16 @@ describe('Aviso de vencimiento en "Mi suscripción" (CA-P7-50)', () => {
 
 describe('Rutas de P7', () => {
   it('secciones nuevas, #/ventas y filtros en la consulta', () => {
-    expect(leerRuta('#/cuenta/inicio')).toEqual({ nombre: 'cuenta', registro: false, seccion: 'inicio' })
-    expect(leerRuta('#/cuenta/parametros')).toEqual({ nombre: 'cuenta', registro: false, seccion: 'parametros' })
-    expect(leerRuta('#/cuenta/ventas?estado=VIGENTE')).toEqual({
+    expect(leerRuta('/cuenta/inicio')).toEqual({ nombre: 'cuenta', registro: false, seccion: 'inicio' })
+    expect(leerRuta('/cuenta/parametros')).toEqual({ nombre: 'cuenta', registro: false, seccion: 'parametros' })
+    expect(leerRuta('/cuenta/ventas?estado=VIGENTE')).toEqual({
       nombre: 'cuenta',
       registro: false,
       seccion: 'ventas',
       consulta: 'estado=VIGENTE',
     })
-    expect(leerRuta('#/ventas')).toEqual({ nombre: 'ventas' })
-    expect(leerRuta('#/inventario?estado=ACTIVO')).toEqual({ nombre: 'inventario', consulta: 'estado=ACTIVO' })
-    expect(leerRuta('#/contactos?origen=CREDITO')).toEqual({ nombre: 'contactos', consulta: 'origen=CREDITO' })
+    expect(leerRuta('/ventas')).toEqual({ nombre: 'ventas' })
+    expect(leerRuta('/inventario?estado=ACTIVO')).toEqual({ nombre: 'inventario', consulta: 'estado=ACTIVO' })
+    expect(leerRuta('/contactos?origen=CREDITO')).toEqual({ nombre: 'contactos', consulta: 'origen=CREDITO' })
   })
 })

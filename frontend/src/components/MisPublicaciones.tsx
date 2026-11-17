@@ -1,4 +1,4 @@
-// P4b — "Mis publicaciones" (#/publicaciones, HU-065, RN-GC-002). El asesor ve las suyas con el
+// P4b — "Mis publicaciones" (/publicaciones, HU-065, RN-GC-002). El asesor ve las suyas con el
 // contador de cupo y destacados de su plan (D-38, D-40, D-41); el administrador ve todas y puede
 // filtrarlas por asesor. La interfaz solo oculta: la API protege cada acción (401/403/404/409).
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
@@ -38,7 +38,7 @@ import {
   TEXTOS_ACCION_PUBLICACION,
   textoContadorCupo,
 } from '../publicaciones/estados'
-import { HASH_CUENTA, HASH_INVENTARIO, hashVehiculo } from '../rutas'
+import { RUTA_CUENTA, RUTA_INVENTARIO, rutaVehiculo } from '../rutas'
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo, CampoSelect } from './Campo'
 import { DialogoConfirmacion } from './DialogoAccion'
@@ -62,7 +62,7 @@ export function MisPublicaciones({ token, perfil, onSesionTerminada }: MisPublic
         </h1>
         <Aviso aviso={{ tipo: 'error', texto: MENSAJE_SIN_PERMISO }} />
         <p>
-          <a href={HASH_CUENTA}>Volver a mi cuenta</a>
+          <a href={RUTA_CUENTA}>Volver a mi cuenta</a>
         </p>
       </div>
     )
@@ -355,7 +355,7 @@ function PanelPublicaciones({
           : 'Tus publicaciones en el portal. Para publicar un vehículo, usa «Publicar» en tu inventario.'}
       </p>
       <div className="inv-barra">
-        <a className="inv-boton-enlace inv-boton-secundario" href={HASH_INVENTARIO}>
+        <a className="inv-boton-enlace inv-boton-secundario" href={RUTA_INVENTARIO}>
           {esAdmin ? 'Ir al inventario' : 'Ir a mi inventario'}
         </a>
       </div>
@@ -517,7 +517,7 @@ function PanelPublicaciones({
                           <a
                             key={accion}
                             className="inv-boton-enlace inv-boton-pequeno"
-                            href={hashVehiculo(p.slugPublico ?? '')}
+                            href={rutaVehiculo(p.slugPublico ?? '')}
                           >
                             Ver en el portal {sr}
                           </a>

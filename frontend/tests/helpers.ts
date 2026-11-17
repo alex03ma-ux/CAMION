@@ -1,5 +1,20 @@
 // Utilidades de prueba: fetch simulado por ruta y sesiones ficticias.
+import { act } from '@testing-library/react'
 import { vi } from 'vitest'
+import { ubicacionActual } from '../src/rutas'
+
+export { ubicacionActual }
+
+/**
+ * P10 (CA-P10-50): navega a una dirección del portal como lo haría el navegador (pushState + popstate), dentro de
+ * act. Sirve antes de renderizar (abre la app en esa dirección) y después (equivale a Atrás/Adelante o a un enlace).
+ */
+export function irA(direccion: string) {
+  act(() => {
+    window.history.pushState(null, '', direccion)
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  })
+}
 
 export type RespuestaSimulada =
   | { status: number; body?: unknown; /** P9: encabezados extra (p. ej. Retry-After). */ headers?: Record<string, string> }
@@ -105,10 +120,10 @@ export const FILTROS_SIN_DATOS: RespuestaSimulada = {
 
 /**
  * P3: la app abre en el catálogo; las pruebas de P1/P2 abren la pantalla de
- * cuenta (`#/cuenta`) antes de renderizar <App />.
+ * cuenta (`/cuenta`) antes de renderizar <App />.
  */
 export function irACuenta() {
-  window.location.hash = '#/cuenta'
+  irA('/cuenta')
 }
 
 /** Token ficticio: no es un JWT real. */

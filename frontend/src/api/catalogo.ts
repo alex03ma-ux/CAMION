@@ -84,7 +84,7 @@ export type OpcionesFiltros = {
 }
 
 /**
- * Filtros de búsqueda tal como viajan en la URL (`#/buscar?…`) y en la API.
+ * Filtros de búsqueda tal como viajan en la URL (`/vehiculos?…`, `/camiones?…`) y en la API.
  * Todos son texto; la cadena vacía significa "sin filtro".
  */
 export type FiltrosCatalogo = {
@@ -415,13 +415,15 @@ function normalizar(nombre: string): string {
  * Carros es HU-005 y Camiones HU-006; Carrocería y Maquinaria vienen de D-17.
  */
 export const CATEGORIAS = [
-  { nombre: 'Carro', enlace: 'Carros' },
-  { nombre: 'Camión', enlace: 'Camiones' },
-  { nombre: 'Carrocería', enlace: 'Carrocerías' },
-  { nombre: 'Maquinaria', enlace: 'Maquinaria' },
+  { nombre: 'Carro', enlace: 'Carros', slug: 'carros' },
+  { nombre: 'Camión', enlace: 'Camiones', slug: 'camiones' },
+  { nombre: 'Carrocería', enlace: 'Carrocerías', slug: 'carrocerias' },
+  { nombre: 'Maquinaria', enlace: 'Maquinaria', slug: 'maquinaria' },
 ] as const
 
 export type NombreCategoria = (typeof CATEGORIAS)[number]['nombre']
+/** P10 (CA-P10-39): dirección de cada categoría (`/camiones`…). */
+export type SlugCategoria = (typeof CATEGORIAS)[number]['slug']
 
 /** Busca un tipo por nombre sin distinguir mayúsculas ni tildes. */
 export function tipoPorNombre(
@@ -435,10 +437,10 @@ export function tipoPorNombre(
 /** Categorías principales que existen en `tipos`, con su id; las que no existen se omiten. */
 export function categoriasDisponibles(
   tipos: readonly OpcionCatalogo[],
-): { tipo: OpcionCatalogo; enlace: string }[] {
+): { tipo: OpcionCatalogo; enlace: string; slug: SlugCategoria }[] {
   return CATEGORIAS.flatMap((c) => {
     const tipo = tipoPorNombre(tipos, c.nombre)
-    return tipo ? [{ tipo, enlace: c.enlace }] : []
+    return tipo ? [{ tipo, enlace: c.enlace, slug: c.slug }] : []
   })
 }
 

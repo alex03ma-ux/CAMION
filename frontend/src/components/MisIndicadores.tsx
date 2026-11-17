@@ -1,4 +1,4 @@
-// P8 — "Mis indicadores" del asesor en #/mis-indicadores (D-70 A; CA-P8-51 a 55). Solo lo suyo: sus vehículos por
+// P8 — "Mis indicadores" del asesor en /mis-indicadores (D-70 A; CA-P8-51 a 55). Solo lo suyo: sus vehículos por
 // estado, sus publicaciones visibles hoy, los contactos de los que es responsable con su resultado y sus ventas
 // vigentes. Sin avisos, créditos, búsquedas, pagos, cifras de otros asesores, comparaciones ni exportación.
 // Quien no es asesor ve "No tienes permiso" sin llamar a la API; la API lo protege igual (SoloAsesor: 403 / 401).
@@ -18,7 +18,7 @@ import {
 import { ROL_ASESOR, tieneRol } from '../auth/roles'
 import { formatoCop, formatoMiles } from '../catalogo/formato'
 import { nombreEstado } from '../inventario/estados'
-import { HASH_CUENTA } from '../rutas'
+import { RUTA_CUENTA } from '../rutas'
 import { Aviso, type DatosAviso } from './Aviso'
 import { erroresPeriodoDe, FiltroPeriodo } from './FiltroPeriodo'
 import { Cifras, TablaDatos } from './PiezasReporte'
@@ -38,7 +38,7 @@ export function MisIndicadores({ token, perfil, onSesionTerminada }: Props) {
         </h1>
         <Aviso aviso={{ tipo: 'error', texto: MENSAJE_SIN_PERMISO }} />
         <p>
-          <a href={HASH_CUENTA}>Volver a mi cuenta</a>
+          <a href={RUTA_CUENTA}>Volver a mi cuenta</a>
         </p>
       </div>
     )

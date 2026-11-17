@@ -1,10 +1,11 @@
-// P6 — Solicitud de crédito (HU-039, HU-040): #/credito (desde la banda de la portada) y #/credito/<slug> (desde la
+// P6 — Solicitud de crédito (HU-039, HU-040): /credito (desde la banda de la portada) y /credito/<slug> (desde la
 // ficha de un vehículo). Sin cuenta o con cualquier sesión; con sesión se prellenan los datos del perfil y se envía el
 // token para ligar la solicitud a la cuenta (CA-P6-06). Solo nombre, teléfono, correo opcional y comentario opcional
 // (D-55 B): nunca monto, cuota, ingresos ni tipo de vehículo (CA-P6-08, CA-P6-12). La atiende siempre la
 // administración (D-58 A); aquí no se muestra nada de eso.
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { obtenerDetalle } from '../api/catalogo'
+import { LEMA } from '../marca'
 import {
   CORREO_MAX,
   mensajeErrorEnvio,
@@ -28,7 +29,7 @@ import {
   type FormularioCredito,
 } from '../api/solicitudes'
 import { usePeticion } from '../catalogo/usePeticion'
-import { HASH_BUSCAR, hashVehiculo } from '../rutas'
+import { RUTA_BUSCAR, rutaVehiculo } from '../rutas'
 import { AutorizacionDatos } from './AutorizacionDatos'
 import { Aviso, type DatosAviso } from './Aviso'
 import type { SesionAviso } from './AvisoPublico'
@@ -46,7 +47,7 @@ export const TITULO_CREDITO_VEHICULO = 'Solicita crédito para este vehículo'
  */
 export function enlaceWhatsappCredito(enlace: string, titulo: string | null): string {
   const texto = titulo
-    ? `Hola, quiero información de crédito para el vehículo ${titulo} que vi en Financiamos Tu Camión.`
+    ? `Hola, quiero información de crédito para el vehículo ${titulo} que vi en ${LEMA}.`
     : 'Hola, quiero información de crédito para un vehículo.'
   return `${enlace}?text=${encodeURIComponent(texto)}`
 }
@@ -111,7 +112,7 @@ function CreditoVehiculo({ slug, sesion }: { slug: string; sesion: SesionAviso |
         <div className="cat-vacio">
           <Aviso aviso={{ tipo: 'error', texto: MENSAJE_VEHICULO_NO_DISPONIBLE }} />
           <p>
-            <a className="cat-acceso" href={HASH_BUSCAR}>
+            <a className="cat-acceso" href={RUTA_BUSCAR}>
               Ver el catálogo
             </a>
           </p>
@@ -128,7 +129,7 @@ function CreditoVehiculo({ slug, sesion }: { slug: string; sesion: SesionAviso |
       {estado.estado === 'ok' && estado.datos.esPropio && (
         <p className="cat-aviso-propio" role="note">
           Este vehículo es tuyo; no puedes pedir crédito para tu propia publicación.{' '}
-          <a href={hashVehiculo(estado.datos.slug)}>Volver a la ficha</a>
+          <a href={rutaVehiculo(estado.datos.slug)}>Volver a la ficha</a>
         </p>
       )}
       {estado.estado === 'ok' && !estado.datos.esPropio && (
@@ -257,7 +258,7 @@ function FormularioCreditoPublico({ slug, tituloVehiculo, sesion }: FormularioCr
       {tituloVehiculo !== null && slug !== null && (
         <p className="credito-vehiculo">
           <span className="credito-vehiculo-etiqueta">Vehículo:</span>{' '}
-          <a href={hashVehiculo(slug)}>{tituloVehiculo}</a>
+          <a href={rutaVehiculo(slug)}>{tituloVehiculo}</a>
         </p>
       )}
       <form
@@ -338,7 +339,7 @@ function FormularioCreditoPublico({ slug, tituloVehiculo, sesion }: FormularioCr
           <Aviso aviso={aviso} />
           {noDisponible && (
             <p>
-              <a href={HASH_BUSCAR}>Ver el catálogo</a>
+              <a href={RUTA_BUSCAR}>Ver el catálogo</a>
             </p>
           )}
         </div>

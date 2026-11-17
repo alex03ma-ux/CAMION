@@ -43,7 +43,7 @@ function abrirDetalle(d: DetalleVehiculo, extra = {}) {
     [rutaDetalle(d.slug)]: { status: 200, body: d },
     ...extra,
   })
-  abrirApp(`#/vehiculo/${d.slug}`)
+  abrirApp(`/vehiculo/${d.slug}`)
   return api
 }
 
@@ -80,7 +80,8 @@ describe('Detalle', () => {
     expect(main).not.toHaveTextContent(/null|undefined|NaN/)
     expect(screen.getByText('Tractocamión listo para trabajar.')).toBeInTheDocument()
     expect(screen.getByText('Motor revisado, llantas al 70 %.')).toBeInTheDocument()
-    expect(document.title).toBe(`${V2.titulo} | Financiamos Tu Camión`)
+    // P10 (CA-P10-22): marca, línea, año y municipio.
+    expect(document.title).toBe(`Kenworth T800 2018 en ${V2.municipio} | Financiamos tu Camión`)
   })
 
   it('CA-D11-02 DISPONIBLE y no negociable: sin etiquetas Reservado ni Negociable', async () => {
@@ -125,17 +126,17 @@ describe('Detalle', () => {
       [RUTA_FILTROS]: respuestaFiltros(),
       [rutaDetalle('no-existe')]: { status: 404, body: { error: 'Este vehículo no está disponible.' } },
     })
-    abrirApp('#/vehiculo/no-existe')
+    abrirApp('/vehiculo/no-existe')
     expect(await screen.findByRole('heading', { level: 1, name: 'Este vehículo no está disponible.' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Ir al inicio' })).toHaveAttribute('href', '#/')
+    expect(screen.getByRole('link', { name: 'Ir al inicio' })).toHaveAttribute('href', '/')
     expect(screen.queryByText(/\$\s/)).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Ficha técnica' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(within(screen.getByRole('main')).queryByRole('img')).not.toBeInTheDocument()
   })
 
   it('CA-DET-14 un 404 sin cuerpo usa el mismo mensaje', async () => {
     simularFetch({ [RUTA_FILTROS]: respuestaFiltros(), [rutaDetalle('x')]: { status: 404 } })
-    abrirApp('#/vehiculo/x')
+    abrirApp('/vehiculo/x')
     expect(await screen.findByRole('heading', { level: 1, name: 'Este vehículo no está disponible.' })).toBeInTheDocument()
   })
 
@@ -144,7 +145,7 @@ describe('Detalle', () => {
       [RUTA_FILTROS]: respuestaFiltros(),
       [rutaDetalle(V1.slug)]: [{ red: true }, { status: 200, body: detalle(V1) }],
     })
-    abrirApp(`#/vehiculo/${V1.slug}`)
+    abrirApp(`/vehiculo/${V1.slug}`)
     expect(screen.getByText('Cargando vehículo...')).toHaveAttribute('role', 'status')
     expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo conectar con el servidor.')
     await userEvent.setup().click(screen.getByRole('button', { name: 'Reintentar' }))
@@ -157,13 +158,13 @@ describe('Detalle', () => {
       [rutaPublicaciones('marcaId=10&pagina=2')]: pagina([V1], 30, 2),
       [rutaDetalle(V1.slug)]: { status: 200, body: detalle(V1) },
     })
-    abrirApp('#/buscar?marcaId=10&pagina=2')
+    abrirApp('/vehiculos?marcaId=10&pagina=2')
     const user = userEvent.setup()
     await user.click(await screen.findByRole('link', { name: V1.titulo }))
     await screen.findByRole('heading', { level: 1, name: V1.titulo })
     expect(screen.getByRole('link', { name: 'Volver a resultados' })).toHaveAttribute(
       'href',
-      '#/buscar?marcaId=10&pagina=2',
+      '/vehiculos?marcaId=10&pagina=2',
     )
   })
 

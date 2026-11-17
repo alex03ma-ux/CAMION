@@ -12,6 +12,7 @@ import { mesEnCurso } from '../src/api/reportes'
 import { simularFetch } from './helpers'
 import { abrirConSesion, CAT, CAT_ADMIN, CATALOGOS, detalleCamion, me, ME } from './inventarioDatos'
 import { abrirApp } from './p4pDatos'
+import { irA, ubicacionActual } from './helpers'
 
 const DETALLE_9 = '/api/inventario/vehiculos/9'
 const ACTIVIDAD_9 = '/api/admin/vehiculos/9/actividad?pagina=1&tamano=20'
@@ -23,7 +24,7 @@ describe('Actividad en el detalle del vehículo (CA-P8-60)', () => {
       [CATALOGOS]: { status: 200, body: CAT },
       [DETALLE_9]: { status: 200, body: detalleCamion() },
     })
-    abrirConSesion('#/inventario/9')
+    abrirConSesion('/inventario/9')
     expect(await screen.findByText(/Precio anterior: \$ 120\.000\.000/)).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: /^Actividad/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /actividad/i })).toBeNull()
@@ -39,7 +40,7 @@ describe('Actividad en el detalle del vehículo (CA-P8-60)', () => {
       [DETALLE_9]: { status: 200, body: detalleCamion({ asesor: { id: 5, nombre: 'Asesor Uno Ficticio' } }) },
       [ACTIVIDAD_9]: { status: 200, body: { items: [], total: 0, pagina: 1, tamano: 20 } },
     })
-    abrirConSesion('#/inventario/9')
+    abrirConSesion('/inventario/9')
     const boton = await screen.findByRole('button', { name: 'Ver actividad' })
     expect(api.llamadasA(ACTIVIDAD_9)).toHaveLength(0)
     await userEvent.setup().click(boton)
@@ -51,7 +52,7 @@ describe('Mis indicadores: alcance del asesor (CA-P8-52, 54)', () => {
   it('nunca envía asesorId ni otros filtros aunque vengan en la URL; no hay CSV', async () => {
     const mes = mesEnCurso()
     const ruta = `/api/asesor/indicadores?desde=${mes.desde}&hasta=${mes.hasta}`
-    const { api } = abrirApp('#/mis-indicadores?asesorId=99&origen=CREDITO', ['ASESOR'], {
+    const { api } = abrirApp('/mis-indicadores?asesorId=99&origen=CREDITO', ['ASESOR'], {
       [ruta]: {
         status: 200,
         body: {
@@ -81,12 +82,12 @@ describe('Código de recuperación fuera de la URL y del almacenamiento (CA-P8-6
   const CODIGO = 'QaCodigoFicticio_123-z'
 
   it('se quita con replaceState, no queda en el historial ni en localStorage/sessionStorage y solo viaja en el cuerpo', async () => {
-    window.location.hash = `#/restablecer-contrasena?codigo=${CODIGO}`
+    irA(`/restablecer-contrasena#codigo=${CODIGO}`)
     const largoHistorial = window.history.length
     const api = simularFetch({ [RUTA]: { status: 200, body: { mensaje: 'Listo. Tu contraseña cambió; inicia sesión con la nueva.' } } })
     render(<App />)
     await screen.findByRole('heading', { level: 1, name: 'Crear una contraseña nueva' })
-    await waitFor(() => expect(window.location.hash).toBe('#/restablecer-contrasena'))
+    await waitFor(() => expect(ubicacionActual()).toBe('/restablecer-contrasena'))
     expect(window.location.href).not.toContain(CODIGO)
     expect(window.history.length).toBe(largoHistorial) // reemplaza la entrada, no añade una con el código
     expect(JSON.stringify(window.history.state ?? null)).not.toContain(CODIGO)

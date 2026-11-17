@@ -44,7 +44,7 @@ import {
   type Categoria,
   type CampoVehiculo,
 } from '../inventario/reglasCategoria'
-import { HASH_INVENTARIO } from '../rutas'
+import { RUTA_INVENTARIO } from '../rutas'
 import {
   descartarAvisoPendiente,
   dejarAvisoPendiente,
@@ -620,7 +620,7 @@ export function InventarioFormulario({
         {titulo}
       </h1>
       <p className="inv-volver">
-        <a href={HASH_INVENTARIO}>Volver al inventario</a>
+        <a href={RUTA_INVENTARIO}>Volver al inventario</a>
       </p>
 
       {carga.estado === 'cargando' && <p role="status">Cargando vehículo...</p>}
@@ -800,7 +800,7 @@ export function InventarioFormulario({
                       ? 'Registrar vehículo'
                       : 'Guardar cambios'}
                 </button>
-                <a className="inv-boton-enlace inv-boton-secundario" href={HASH_INVENTARIO}>
+                <a className="inv-boton-enlace inv-boton-secundario" href={RUTA_INVENTARIO}>
                   Cancelar
                 </a>
               </div>
@@ -830,7 +830,7 @@ export function InventarioFormulario({
               <p className="campo-ayuda">Los datos y las fotos ya están guardados.</p>
               <a
                 className="inv-boton-enlace inv-boton-listo"
-                href={HASH_INVENTARIO}
+                href={RUTA_INVENTARIO}
                 onClick={() => {
                   marcarVehiculoReciente(detalle.id)
                   dejarAvisoPendiente({ tipo: 'exito', texto: 'Listo. El vehículo quedó guardado; lo verás resaltado en la lista.' })

@@ -17,6 +17,7 @@ import {
   ME,
   me,
 } from './inventarioDatos'
+import { ubicacionActual } from './helpers'
 
 const SESION_TERMINADA = 'Tu sesión terminó. Inicia sesión de nuevo.'
 const SIN_PERMISO = 'No tienes permiso para realizar esta acción.'
@@ -24,22 +25,22 @@ const SIN_PERMISO = 'No tienes permiso para realizar esta acción.'
 describe('Enlace en "Mi cuenta" (CA-UI-01)', () => {
   it('asesor ve "Mi inventario" hacia #/inventario', async () => {
     simularFetch({ [ME]: me(['ASESOR']) })
-    abrirConSesion('#/cuenta')
+    abrirConSesion('/cuenta')
     const enlace = await screen.findByRole('link', { name: 'Mi inventario' })
-    expect(enlace).toHaveAttribute('href', '#/inventario')
+    expect(enlace).toHaveAttribute('href', '/inventario')
   })
 
   it('administrador ve "Inventario" hacia #/inventario', async () => {
     simularFetch({ [ME]: me(['ADMINISTRADOR']) })
-    abrirConSesion('#/cuenta')
+    abrirConSesion('/cuenta')
     const enlace = await screen.findByRole('link', { name: 'Inventario' })
-    expect(enlace).toHaveAttribute('href', '#/inventario')
+    expect(enlace).toHaveAttribute('href', '/inventario')
     expect(screen.queryByRole('link', { name: 'Mi inventario' })).toBeNull()
   })
 
   it('comprador no ve ningún enlace de inventario', async () => {
     simularFetch({ [ME]: me(['COMPRADOR']) })
-    abrirConSesion('#/cuenta')
+    abrirConSesion('/cuenta')
     await screen.findByText(/Bienvenido/)
     expect(screen.queryByRole('link', { name: /inventario/i })).toBeNull()
   })
@@ -51,7 +52,7 @@ describe('Enlace en "Mi cuenta" (CA-UI-01)', () => {
       [LISTA]: lista([item({ id: 9 })]),
     })
     const u = userEvent.setup()
-    abrirConSesion('#/cuenta')
+    abrirConSesion('/cuenta')
     await u.click(await screen.findByRole('link', { name: 'Mi inventario' }))
     expect(await screen.findByRole('heading', { level: 1, name: 'Mi inventario' })).toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'Chevrolet NPR 2020' })).toBeInTheDocument()
@@ -61,7 +62,7 @@ describe('Enlace en "Mi cuenta" (CA-UI-01)', () => {
 })
 
 describe('Guardia de ruta (CA-UI-02)', () => {
-  for (const hash of ['#/inventario', '#/inventario/nuevo', '#/inventario/5']) {
+  for (const hash of ['/inventario', '/inventario/nuevo', '/inventario/5']) {
     it(`comprador en ${hash}: "No tienes permiso..." y ninguna llamada a /api/inventario`, async () => {
       const api = simularFetch({ [ME]: me(['COMPRADOR']) })
       abrirConSesion(hash)
@@ -74,7 +75,7 @@ describe('Guardia de ruta (CA-UI-02)', () => {
     it(`sin sesión en ${hash}: va a #/cuenta sin pedir datos del inventario`, async () => {
       const api = simularFetch({})
       abrirSinSesion(hash)
-      await waitFor(() => expect(window.location.hash).toBe('#/cuenta'))
+      await waitFor(() => expect(ubicacionActual()).toBe('/cuenta'))
       expect(api.llamadas.some((l) => l.url.startsWith('/api/inventario'))).toBe(false)
       expect(await screen.findByRole('button', { name: /Iniciar sesión|Ingresar/ })).toBeInTheDocument()
     })
@@ -82,7 +83,7 @@ describe('Guardia de ruta (CA-UI-02)', () => {
 
   it('usuario sin rol: también ve "No tienes permiso..."', async () => {
     const api = simularFetch({ [ME]: me([]) })
-    abrirConSesion('#/inventario')
+    abrirConSesion('/inventario')
     expect(await screen.findByText(SIN_PERMISO)).toBeInTheDocument()
     expect(api.llamadas.some((l) => l.url.startsWith('/api/inventario'))).toBe(false)
   })
@@ -93,7 +94,7 @@ describe('Guardia de ruta (CA-UI-02)', () => {
       [CATALOGOS]: { status: 403 },
       [LISTA]: { status: 403 },
     })
-    abrirConSesion('#/inventario')
+    abrirConSesion('/inventario')
     expect(await screen.findByText(SIN_PERMISO)).toBeInTheDocument()
   })
 })
@@ -105,16 +106,16 @@ describe('401 termina la sesión (CA-SE006-05)', () => {
       [CATALOGOS]: { status: 200, body: CAT },
       [LISTA]: { status: 401 },
     })
-    abrirConSesion('#/inventario')
-    await waitFor(() => expect(window.location.hash).toBe('#/cuenta'))
+    abrirConSesion('/inventario')
+    await waitFor(() => expect(ubicacionActual()).toBe('/cuenta'))
     await waitFor(() => expect(screen.getByText(SESION_TERMINADA)).toBeInTheDocument())
     expect(window.localStorage.getItem('camion.sesion')).toBeNull()
   })
 
   it('401 en los catálogos del formulario', async () => {
     simularFetch({ [ME]: me(['ADMINISTRADOR']), [CATALOGOS]: { status: 401 } })
-    abrirConSesion('#/inventario/nuevo')
-    await waitFor(() => expect(window.location.hash).toBe('#/cuenta'))
+    abrirConSesion('/inventario/nuevo')
+    await waitFor(() => expect(ubicacionActual()).toBe('/cuenta'))
     await waitFor(() => expect(screen.getByText(SESION_TERMINADA)).toBeInTheDocument())
     expect(window.localStorage.getItem('camion.sesion')).toBeNull()
   })
@@ -125,8 +126,8 @@ describe('401 termina la sesión (CA-SE006-05)', () => {
       [CATALOGOS]: { status: 200, body: CAT },
       '/api/inventario/vehiculos/9': { status: 401 },
     })
-    abrirConSesion('#/inventario/9')
-    await waitFor(() => expect(window.location.hash).toBe('#/cuenta'))
+    abrirConSesion('/inventario/9')
+    await waitFor(() => expect(ubicacionActual()).toBe('/cuenta'))
     await waitFor(() => expect(screen.getByText(SESION_TERMINADA)).toBeInTheDocument())
     expect(window.localStorage.getItem('camion.sesion')).toBeNull()
   })
@@ -138,9 +139,9 @@ describe('401 termina la sesión (CA-SE006-05)', () => {
       '/api/inventario/vehiculos/9': [{ status: 200, body: detalleCamion() }, { status: 401 }],
     })
     const u = userEvent.setup()
-    abrirConSesion('#/inventario/9')
+    abrirConSesion('/inventario/9')
     await u.click(await screen.findByRole('button', { name: 'Guardar cambios' }))
-    await waitFor(() => expect(window.location.hash).toBe('#/cuenta'))
+    await waitFor(() => expect(ubicacionActual()).toBe('/cuenta'))
     await waitFor(() => expect(screen.getByText(SESION_TERMINADA)).toBeInTheDocument())
     expect(window.localStorage.getItem('camion.sesion')).toBeNull()
   })
@@ -153,7 +154,7 @@ describe('Vehículo inexistente o ajeno (CA-SE006-01 en la interfaz)', () => {
       [CATALOGOS]: { status: 200, body: CAT },
       '/api/inventario/vehiculos/77': { status: 404, body: { error: 'Vehículo no encontrado.' } },
     })
-    abrirConSesion('#/inventario/77')
+    abrirConSesion('/inventario/77')
     expect(await screen.findByText('Vehículo no encontrado.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Guardar cambios' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Reintentar' })).toBeNull()

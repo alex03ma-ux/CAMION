@@ -1,5 +1,5 @@
-// P8 — Reportes del administrador en #/cuenta/reportes (HU-076 a HU-080, RN-RE-002 a 006; D-68 A, D-71; CA-P8-01 a 33,
-// 42 a 50, 73). Cinco reportes en pestañas (#/cuenta/reportes?tipo=...), cada uno con sus filtros (por defecto el mes en
+// P8 — Reportes del administrador en /cuenta/reportes (HU-076 a HU-080, RN-RE-002 a 006; D-68 A, D-71; CA-P8-01 a 33,
+// 42 a 50, 73). Cinco reportes en pestañas (/cuenta/reportes?tipo=...), cada uno con sus filtros (por defecto el mes en
 // curso), sus cifras, la tabla de filas paginada y "Descargar CSV" con los mismos filtros. El CSV se pide con fetch y el
 // token en el encabezado, y se guarda desde un blob: el token nunca va en la URL. Sin datos personales de clientes.
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
@@ -52,7 +52,7 @@ import { nombreEstadoSuscripcion } from '../api/suscripciones'
 import { nombreEstadoVenta, nombreOrigenVenta } from '../api/ventas'
 import { formatoCop, formatoMiles } from '../catalogo/formato'
 import { nombreEstado } from '../inventario/estados'
-import { conConsulta, hashInventarioVehiculo, hashSeccionAdmin } from '../rutas'
+import { conConsulta, rutaInventarioVehiculo, rutaSeccionAdmin } from '../rutas'
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo, CampoSelect } from './Campo'
 import { Cifras, PaginacionBotones, plural, TablaDatos } from './PiezasReporte'
@@ -70,8 +70,8 @@ export function tipoReporteDesdeConsulta(consulta: string | undefined): TipoRepo
   return TIPOS_REPORTE.includes(tipo as TipoReporte) ? (tipo as TipoReporte) : 'vehiculos'
 }
 
-export function hashReporte(tipo: TipoReporte): string {
-  return conConsulta(hashSeccionAdmin('reportes'), tipo === 'vehiculos' ? {} : { tipo })
+export function rutaReporte(tipo: TipoReporte): string {
+  return conConsulta(rutaSeccionAdmin('reportes'), tipo === 'vehiculos' ? {} : { tipo })
 }
 
 export function AdminReportes({ token, consulta, onSesionTerminada }: Props) {
@@ -94,7 +94,7 @@ export function AdminReportes({ token, consulta, onSesionTerminada }: Props) {
         <ul>
           {TIPOS_REPORTE.map((t) => (
             <li key={t}>
-              <a href={hashReporte(t)} aria-current={t === tipo ? 'page' : undefined}>
+              <a href={rutaReporte(t)} aria-current={t === tipo ? 'page' : undefined}>
                 {NOMBRES_REPORTE[t]}
               </a>
             </li>
@@ -535,7 +535,7 @@ function ContenidoReporte({ resultado, idBase }: { resultado: Resultado; idBase:
 function enlaceVehiculo(v: { id: number; titulo: string } | null): ReactNode {
   if (!v) return '—'
   const titulo = v.titulo || `Vehículo ${v.id}`
-  return v.id > 0 ? <a href={hashInventarioVehiculo(v.id)}>{titulo}</a> : titulo
+  return v.id > 0 ? <a href={rutaInventarioVehiculo(v.id)}>{titulo}</a> : titulo
 }
 
 function ContenidoVehiculos({ d, idBase }: { d: ReportePorTipo['vehiculos']; idBase: string }) {

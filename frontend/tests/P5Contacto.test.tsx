@@ -18,7 +18,7 @@ function abrirFicha(contacto?: RespuestaSimulada | RespuestaSimulada[], extra: R
     ...(contacto ? { [RUTA_CONTACTOS]: contacto } : {}),
     ...extra,
   })
-  abrirApp(`#/vehiculo/${V1.slug}`)
+  abrirApp(`/vehiculo/${V1.slug}`)
   return { api, user: userEvent.setup() }
 }
 
@@ -55,7 +55,7 @@ describe('Formulario de contacto: estructura (CA-P5-12, CA-P5-13, CA-P5-22)', ()
     expect(casilla()).not.toBeChecked()
     // P9: el pie también enlaza la política (CA-P9-22); aquí se mira la del formulario.
     const enlace = within(form).getByRole('link', { name: /Política de tratamiento de datos/ })
-    expect(enlace).toHaveAttribute('href', '#/privacidad')
+    expect(enlace).toHaveAttribute('href', '/privacidad')
     expect(enlace).toHaveAttribute('target', '_blank')
     expect(enlace).toHaveAttribute('rel', 'noopener noreferrer')
   })
@@ -222,7 +222,7 @@ describe('Envío del contacto', () => {
     await user.click(enviar())
     expect(await screen.findByText(texto)).toHaveAttribute('role', 'alert')
     expect(nombre()).toHaveValue('Ana')
-    if (status === 404) expect(screen.getByRole('link', { name: 'Ver el catálogo' })).toHaveAttribute('href', '#/buscar')
+    if (status === 404) expect(screen.getByRole('link', { name: 'Ver el catálogo' })).toHaveAttribute('href', '/vehiculos')
   })
 
   it.each([
@@ -297,7 +297,7 @@ describe('Asesor en su propia publicación (CA-P5-11)', () => {
       [rutaDetalle(V1.slug)]: { status: 200, body: { ...detalle(V1, { whatsapp: WA_ASESOR }), esPropio: true } },
       '/api/auth/me': { status: 200, body: PERFIL_ASESOR },
     })
-    abrirApp(`#/vehiculo/${V1.slug}`)
+    abrirApp(`/vehiculo/${V1.slug}`)
     expect(await screen.findByText(/Esta es una de tus publicaciones/)).toBeInTheDocument()
     expect(screen.queryByRole('form', { name: 'Formulario de contacto' })).not.toBeInTheDocument()
     const conToken = api.llamadasA(rutaDetalle(V1.slug)).filter((l) => cabecera(l.init, 'Authorization'))
@@ -312,7 +312,7 @@ describe('Asesor en su propia publicación (CA-P5-11)', () => {
       [rutaDetalle(V1.slug)]: { status: 200, body: { ...detalle(V1, { whatsapp: WA_ASESOR }), esPropio: false } },
       '/api/auth/me': { status: 200, body: PERFIL_ASESOR },
     })
-    abrirApp(`#/vehiculo/${V1.slug}`)
+    abrirApp(`/vehiculo/${V1.slug}`)
     expect(await formulario()).toBeInTheDocument()
     expect(screen.queryByText(/Esta es una de tus publicaciones/)).not.toBeInTheDocument()
   })
@@ -322,7 +322,10 @@ describe('Botón "Escribir por WhatsApp" (D-47)', () => {
   it('CA-P5-61 usa el enlace del asesor con un texto que nombra el vehículo, en otra pestaña', async () => {
     const { api } = abrirFicha()
     const boton = await screen.findByRole('link', { name: /Escribir por WhatsApp/ })
-    const texto = encodeURIComponent(`Hola, me interesa el vehículo ${V1.titulo} que vi en Financiamos Tu Camión.`)
+    // P10 (CA-P10-83): el texto lleva la dirección de la ficha.
+    const texto = encodeURIComponent(
+      `Hola, me interesa el vehículo ${V1.titulo} que vi en Financiamos tu Camión: ${window.location.origin}/vehiculo/${V1.slug}`,
+    )
     expect(boton).toHaveAttribute('href', `${WA_ASESOR}?text=${texto}`)
     expect(boton).toHaveAttribute('target', '_blank')
     expect(boton).toHaveAttribute('rel', 'noopener noreferrer')
@@ -361,10 +364,10 @@ describe('Teléfono colombiano (CA-P5-04, CA-P5-05)', () => {
   )
 })
 
-describe('#/privacidad (D-44, CA-P5-17)', () => {
+describe('/privacidad (D-44, CA-P5-17)', () => {
   it('muestra la franja de revisión legal (P9), el aviso de revisión legal y el contacto, sin el borrador', async () => {
     simularFetch({})
-    abrirApp('#/privacidad')
+    abrirApp('/privacidad')
     expect(await screen.findByRole('heading', { level: 1, name: 'Política de tratamiento de datos personales' })).toBeInTheDocument()
     expect(screen.getByText('En revisión legal')).toBeInTheDocument()
     expect(screen.getByText(/se publicará en esta página cuando termine su revisión legal/)).toBeInTheDocument()

@@ -6,6 +6,7 @@ import App from '../src/App'
 import { descartarAvisoPendiente } from '../src/inventario/avisoPendiente'
 import { olvidarFiltrosInventario } from '../src/components/InventarioLista'
 import { guardarSesionFicticia, type RespuestaSimulada } from './helpers'
+import { irA } from './helpers'
 
 export const ME = '/api/auth/me'
 export const CATALOGOS = '/api/inventario/catalogos'
@@ -157,7 +158,7 @@ export function abrirConSesion(hash: string) {
   olvidarFiltrosInventario()
   descartarAvisoPendiente()
   guardarSesionFicticia(Date.now() + 60 * 60 * 1000)
-  window.location.hash = hash
+  irA(hash)
   return render(createElement(App))
 }
 
@@ -165,7 +166,7 @@ export function abrirConSesion(hash: string) {
 export function abrirSinSesion(hash: string) {
   olvidarFiltrosInventario()
   descartarAvisoPendiente()
-  window.location.hash = hash
+  irA(hash)
   return render(createElement(App))
 }
 

@@ -18,6 +18,7 @@ using System.Threading.RateLimiting;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.DataProtection;
 using Camion.Api.Seguridad;
+using Camion.Api.Seo;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("CamionDatabase")
@@ -77,6 +78,15 @@ var avisoClaves = ConfiguracionServidor.ProtegerClaves(proteccion, builder.Confi
 ConfiguracionRecuperacion.ValidarUrlPortal(
     builder.Configuration[ConfiguracionRecuperacion.ClaveUrlPortal] ?? new OpcionesRecuperacion().UrlPortal,
     builder.Environment.IsDevelopment());
+// P10 (CA-P10-58, D-88 A, D-89 A): URL pública (Portal:UrlPublica o Recuperacion:UrlPortal), indexación (apagada por
+// defecto) y plantilla de /vehiculo/{slug} (Portal:RutaIndexHtml). Una clave mal puesta impide arrancar.
+var opcionesPortal = ConfiguracionPortal.Leer(builder.Configuration, builder.Environment.IsDevelopment(),
+    builder.Environment.ContentRootPath);
+builder.Services.AddSingleton(opcionesPortal);
+builder.Services.AddSingleton<PlantillaPortal>();
+// P10 (M-1 de la revisión de seguridad): cupo por IP de /sitemap.xml y /vehiculo/* y caché del sitemap (sección "LimitesSeo").
+builder.Services.Configure<OpcionesLimitesSeo>(builder.Configuration.GetSection("LimitesSeo"));
+builder.Services.AddSingleton<CacheSitemap>();
 builder.Services.AddTransient<ProveedorTokenRecuperacion>();
 builder.Services.Configure<OpcionesRecuperacion>(builder.Configuration.GetSection("Recuperacion"));
 
@@ -182,7 +192,23 @@ builder.Services.AddRateLimiter(options =>
             AutoReplenishment = true
         });
     }
+    // P10 (M-1): cupo por IP de /sitemap.xml y /vehiculo/* (marca LimitePeticionesSeo), IPv6 agrupada por /64.
+    static RateLimitPartition<string> Seo(HttpContext http)
+    {
+        if (http.GetEndpoint()?.Metadata.GetMetadata<LimitePeticionesSeo>() is null)
+            return RateLimitPartition.GetNoLimiter("libre");
+        var o = http.RequestServices.GetRequiredService<IOptions<OpcionesLimitesSeo>>().Value;
+        var ip = ConfiguracionServidor.ClaveIp(http.Connection.RemoteIpAddress);
+        return RateLimitPartition.GetFixedWindowLimiter("seo:" + ip, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = Math.Max(1, o.LimiteVentana),
+            Window = TimeSpan.FromMinutes(Math.Max(1, o.VentanaMinutos)),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        });
+    }
     options.GlobalLimiter = PartitionedRateLimiter.CreateChained(
+        PartitionedRateLimiter.Create<HttpContext, string>(Seo),
         PartitionedRateLimiter.Create<HttpContext, string>(http => Ventana(http, "corta:",
             o => (o.LimiteVentanaCorta, TimeSpan.FromMinutes(Math.Max(1, o.VentanaCortaMinutos))))),
         PartitionedRateLimiter.Create<HttpContext, string>(http => Ventana(http, "dia:",
@@ -204,6 +230,14 @@ builder.Services.AddRateLimiter(options =>
             http.Response.Headers.RetryAfter = ((int)Math.Ceiling(Math.Max(1, espera.TotalSeconds))).ToString(
                 System.Globalization.CultureInfo.InvariantCulture);
         var metadatos = http.GetEndpoint()?.Metadata;
+        // P10 (M-1): sitemap y fichas responden texto plano (no son rutas JSON de la API).
+        if (metadatos?.GetMetadata<LimitePeticionesSeo>() is not null)
+        {
+            http.Response.Headers.CacheControl = "no-store";
+            http.Response.ContentType = "text/plain; charset=utf-8";
+            await http.Response.WriteAsync(LimitePeticionesSeo.Mensaje, ct);
+            return;
+        }
         var auth = metadatos?.GetMetadata<LimitePeticionesAuth>();
         string mensaje;
         if (auth is not null)
@@ -298,6 +332,8 @@ app.Use(async (context, next) =>
     context.Response.OnStarting(() =>
     {
         foreach (var (nombre, valor) in ConfiguracionServidor.Encabezados) context.Response.Headers[nombre] = valor;
+        // P10 (CA-P10-76): el HTML de /vehiculo/{slug} lleva la política del frontend; las respuestas JSON no cambian.
+        if (context.Items[ConfiguracionServidor.ClaveCspPropia] is string csp) context.Response.Headers.ContentSecurityPolicy = csp;
         return Task.CompletedTask;
     });
     await next(context);
@@ -384,6 +420,8 @@ app.MapPanelEndpoints();
 app.MapReportesEndpoints();
 app.MapActividadEndpoints();
 app.MapRecuperacionEndpoints();
+// P10: robots.txt, sitemap.xml y la ficha /vehiculo/{slug} con sus etiquetas (D-88 A, D-89 A).
+app.MapSeoEndpoints(opcionesPortal);
 
 app.Run();
 

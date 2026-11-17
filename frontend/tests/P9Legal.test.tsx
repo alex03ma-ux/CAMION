@@ -8,9 +8,10 @@ import { PiePortal } from '../src/components/PiePortal'
 import { Privacidad } from '../src/components/Privacidad'
 import { Terminos } from '../src/components/Terminos'
 import { olvidarContactoPortal } from '../src/components/useContactoPortal'
-import { HASH_TERMINOS, leerRuta } from '../src/rutas'
+import { RUTA_TERMINOS, leerRuta } from '../src/rutas'
 import { CONTACTO_PORTAL_POR_DEFECTO, RUTA_CONTACTO_PORTAL, simularFetch, type RespuestaSimulada } from './helpers'
 import { abrirApp } from './p4pDatos'
+import { irA } from './helpers'
 
 const base = (CONTACTO_PORTAL_POR_DEFECTO as { body: Record<string, unknown> }).body
 const EMPRESA = { razonSocial: 'Financiamos Tu Camión S.A.S.', nit: '800197268-4', direccion: 'Calle 10 # 20-30, Bogotá' }
@@ -21,11 +22,11 @@ const LINEA_EMPRESA =
 const MARCAS_BORRADOR = /NOTA PARA REVISIÓN|\[RAZÓN SOCIAL\]|\[NIT\]|\[DOMINIO\]|BORRADOR/
 
 describe('Rutas legales (CA-P9-23)', () => {
-  it('#/terminos con y sin barra final', () => {
-    expect(HASH_TERMINOS).toBe('#/terminos')
-    expect(leerRuta('#/terminos')).toEqual({ nombre: 'terminos' })
-    expect(leerRuta('#/terminos/')).toEqual({ nombre: 'terminos' })
-    expect(leerRuta('#/privacidad/')).toEqual({ nombre: 'privacidad' })
+  it('/terminos con y sin barra final', () => {
+    expect(RUTA_TERMINOS).toBe('/terminos')
+    expect(leerRuta('/terminos')).toEqual({ nombre: 'terminos' })
+    expect(leerRuta('/terminos/')).toEqual({ nombre: 'terminos' })
+    expect(leerRuta('/privacidad/')).toEqual({ nombre: 'privacidad' })
   })
 })
 
@@ -43,20 +44,20 @@ describe('Constante única del aviso de revisión (CA-P9-18, 20)', () => {
   })
 })
 
-describe('#/terminos (CA-P9-17, 19, 21)', () => {
+describe('/terminos (CA-P9-17, 19, 21)', () => {
   it('anónimo: título, franja, aviso, contacto vigente e "Ir al inicio"; sin texto de los borradores', async () => {
     const api = simularFetch({
       [RUTA_CONTACTO_PORTAL]: { status: 200, body: { ...base, whatsapp: '3001234567', whatsappEnlace: 'https://wa.me/573001234567' } },
     })
-    window.location.hash = '#/terminos'
+    irA('/terminos')
     render(<App />)
     const h1 = await screen.findByRole('heading', { level: 1, name: 'Términos y condiciones de uso' })
-    expect(document.title).toBe('Términos y condiciones | Financiamos Tu Camión')
+    expect(document.title).toBe('Términos y condiciones | Financiamos tu Camión')
     const main = screen.getByRole('main')
     expect(within(main).getByRole('note')).toHaveTextContent('En revisión legal')
     expect(within(main).getByText(/se publicarán en esta página cuando termine su revisión legal/)).toBeInTheDocument()
     expect(await within(main).findByRole('link', { name: /300 123 4567/ })).toHaveAttribute('href', 'https://wa.me/573001234567')
-    expect(within(main).getByRole('link', { name: 'Ir al inicio' })).toHaveAttribute('href', '#/')
+    expect(within(main).getByRole('link', { name: 'Ir al inicio' })).toHaveAttribute('href', '/')
     expect(main).not.toHaveTextContent(MARCAS_BORRADOR)
     // No exige sesión: no se llama a /api/auth/me.
     expect(api.llamadasAuth()).toHaveLength(0)
@@ -66,25 +67,24 @@ describe('#/terminos (CA-P9-17, 19, 21)', () => {
   it('al llegar desde otra ruta, el foco va al h1', async () => {
     simularFetch({})
     render(<App />)
-    window.location.hash = '#/terminos'
-    window.dispatchEvent(new HashChangeEvent('hashchange'))
+    irA('/terminos')
     const h1 = await screen.findByRole('heading', { level: 1, name: 'Términos y condiciones de uso' })
     await waitFor(() => expect(h1).toHaveFocus())
   })
 
   it('con sesión de asesor también se ve', async () => {
-    abrirApp('#/terminos', ['ASESOR'])
+    abrirApp('/terminos', ['ASESOR'])
     expect(await screen.findByRole('heading', { level: 1, name: 'Términos y condiciones de uso' })).toBeInTheDocument()
   })
 })
 
-describe('#/privacidad (CA-P9-18, 19, 21)', () => {
+describe('/privacidad (CA-P9-18, 19, 21)', () => {
   it('franja "En revisión legal", título del documento y sin texto de los borradores', async () => {
     simularFetch({})
-    window.location.hash = '#/privacidad'
+    irA('/privacidad')
     render(<App />)
     await screen.findByRole('heading', { level: 1, name: 'Política de tratamiento de datos personales' })
-    expect(document.title).toBe('Política de tratamiento de datos | Financiamos Tu Camión')
+    expect(document.title).toBe('Política de tratamiento de datos | Financiamos tu Camión')
     const main = screen.getByRole('main')
     expect(within(main).getByRole('note')).toHaveTextContent(/^En revisión legal$/)
     expect(main).not.toHaveTextContent(MARCAS_BORRADOR)
@@ -98,11 +98,11 @@ describe('Pie: enlaces legales (CA-P9-22)', () => {
     const legal = screen.getByRole('navigation', { name: 'Información legal' })
     const terminos = within(legal).getByRole('link', { name: 'Términos y condiciones' })
     const politica = within(legal).getByRole('link', { name: 'Política de tratamiento de datos' })
-    expect(terminos).toHaveAttribute('href', '#/terminos')
-    expect(politica).toHaveAttribute('href', '#/privacidad')
+    expect(terminos).toHaveAttribute('href', '/terminos')
+    expect(politica).toHaveAttribute('href', '/privacidad')
     expect(terminos).not.toHaveAttribute('target')
     expect(politica).not.toHaveAttribute('target')
-    expect(legal.closest('.cat-pie-legal')).toHaveTextContent(/© \d{4} Financiamos Tu Camión/)
+    expect(legal.closest('.cat-pie-legal')).toHaveTextContent(/© \d{4} VCA Automotores/)
   })
 })
 

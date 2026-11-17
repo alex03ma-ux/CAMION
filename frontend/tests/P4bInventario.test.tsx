@@ -27,7 +27,7 @@ function abrirAsesor(rutas: Rutas = {}) {
     [RUTA_MAPA]: paginaPub([PUB_2, PUB_5], 100),
     ...rutas,
   })
-  abrirConSesion('#/inventario')
+  abrirConSesion('/inventario')
   return { api, user: userEvent.setup() }
 }
 
@@ -44,7 +44,7 @@ describe('Estado de la publicación en cada vehículo', () => {
     abrirAsesor()
     await screen.findByRole('heading', { level: 3, name: 'Chevrolet NPR 2020' })
     await esperarBloques()
-    expect(screen.getByRole('link', { name: 'Mis publicaciones' })).toHaveAttribute('href', '#/publicaciones')
+    expect(screen.getByRole('link', { name: 'Mis publicaciones' })).toHaveAttribute('href', '/publicaciones')
 
     const libre = tarjeta('Chevrolet NPR 2020')
     expect(within(libre).getByText('Sin publicación')).toBeInTheDocument()
@@ -57,11 +57,11 @@ describe('Estado de la publicación en cada vehículo', () => {
     expect(within(publicado).queryByRole('button', { name: /^Publicar/ })).toBeNull()
     expect(within(publicado).getByRole('link', { name: 'Gestionar en Mis publicaciones Kenworth T800 2018' })).toHaveAttribute(
       'href',
-      '#/publicaciones',
+      '/publicaciones',
     )
     expect(within(publicado).getByRole('link', { name: 'Abrir en el portal Kenworth T800 2018' })).toHaveAttribute(
       'href',
-      '#/vehiculo/kenworth-t800-2018-2',
+      '/vehiculo/kenworth-t800-2018-2',
     )
     expect(within(publicado).getByRole('button', { name: 'Marcar vendido Kenworth T800 2018' })).toBeInTheDocument()
 
@@ -303,7 +303,7 @@ describe('Reasignar a otro asesor (D-34)', () => {
       [CATALOGOS]: { status: 200, body: CAT },
       [DETALLE_9]: { status: 200, body: detalleCamion() },
     })
-    abrirConSesion('#/inventario/9')
+    abrirConSesion('/inventario/9')
     expect(await screen.findByText(/Precio anterior: \$ 120\.000\.000/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Reasignar a otro asesor' })).toBeNull()
   })
@@ -318,7 +318,7 @@ describe('Reasignar a otro asesor (D-34)', () => {
       ],
       [RUTA_REASIGNAR]: { status: 200, body: {} },
     })
-    abrirConSesion('#/inventario/9')
+    abrirConSesion('/inventario/9')
     const user = userEvent.setup()
     await user.click(await screen.findByRole('button', { name: 'Reasignar a otro asesor' }))
     const dialogo = screen.getByRole('dialog', { name: 'Reasignar a otro asesor' })
@@ -349,7 +349,7 @@ describe('Reasignar a otro asesor (D-34)', () => {
       [DETALLE_9]: { status: 200, body: detalleCamion({ asesor: { id: 5, nombre: 'Asesor Uno Ficticio' } }) },
       [RUTA_REASIGNAR]: { status: 409, body: { error: mensaje } },
     })
-    abrirConSesion('#/inventario/9')
+    abrirConSesion('/inventario/9')
     const user = userEvent.setup()
     await user.click(await screen.findByRole('button', { name: 'Reasignar a otro asesor' }))
     const dialogo = screen.getByRole('dialog')

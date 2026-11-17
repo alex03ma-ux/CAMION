@@ -1,4 +1,4 @@
-// P9 (D-44, HU-086, RN-PA-006; CA-P9-17, 19, 21, 35): #/terminos. Los términos y condiciones están en revisión legal
+// P9 (D-44, HU-086, RN-PA-006; CA-P9-17, 19, 21, 35): /terminos. Los términos y condiciones están en revisión legal
 // y no se publican todavía: franja "En revisión legal", un aviso breve y el contacto vigente. No exige sesión. Nunca se
 // copia texto de docs/legal/TERMINOS-Y-CONDICIONES.md hasta que el abogado lo apruebe.
 import { PaginaLegal } from './PaginaLegal'

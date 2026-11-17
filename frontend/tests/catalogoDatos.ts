@@ -5,7 +5,7 @@ import { createElement } from 'react'
 import App from '../src/App'
 import type { DetalleVehiculo, TarjetaVehiculo } from '../src/api/catalogo'
 import { olvidarUltimaBusqueda } from '../src/rutas'
-import { RUTA_FILTROS, type RespuestaSimulada } from './helpers'
+import { irA, RUTA_FILTROS, type RespuestaSimulada } from './helpers'
 
 export const RUTA_INICIO = '/api/catalogo/inicio'
 
@@ -140,10 +140,10 @@ export function pagina(items: TarjetaVehiculo[], total = items.length, numero = 
   return { status: 200, body: { items, total, pagina: numero, tamano: 12 } }
 }
 
-/** Abre la app en `hash` (sin sesión salvo que la prueba la guarde antes). */
-export function abrirApp(hash: string) {
+/** Abre la app en `direccion` (sin sesión salvo que la prueba la guarde antes). */
+export function abrirApp(direccion: string) {
   olvidarUltimaBusqueda()
-  window.location.hash = hash
+  irA(direccion)
   return render(createElement(App))
 }
 

@@ -3,12 +3,12 @@ import type { PerfilUsuario } from '../api/auth'
 import { MINUTOS_INACTIVIDAD } from '../auth/inactivity'
 import { esAdministrador, nombreRol, ROL_ASESOR, tieneRol } from '../auth/roles'
 import {
-  hashSeccionAdmin,
-  HASH_INVENTARIO,
-  HASH_MIS_INDICADORES,
-  HASH_MIS_SOLICITUDES,
-  HASH_PUBLICACIONES,
-  HASH_VENTAS,
+  rutaSeccionAdmin,
+  RUTA_INVENTARIO,
+  RUTA_MIS_INDICADORES,
+  RUTA_MIS_SOLICITUDES,
+  RUTA_PUBLICACIONES,
+  RUTA_VENTAS,
 } from '../rutas'
 import { EnlaceContactos } from './EnlaceContactos'
 import { textoAccesoInventario } from './InventarioPagina'
@@ -66,30 +66,30 @@ export function PerfilPanel({
         Por seguridad, la sesión se cierra sola tras {MINUTOS_INACTIVIDAD} minutos sin actividad.
       </p>
       {verMisSolicitudes && (
-        <a className="inv-boton-enlace inv-boton-bloque" href={HASH_MIS_SOLICITUDES}>
+        <a className="inv-boton-enlace inv-boton-bloque" href={RUTA_MIS_SOLICITUDES}>
           Mis solicitudes
         </a>
       )}
       {verSuscripcion && <MiSuscripcion token={token} onSesionTerminada={onSesionTerminada} />}
       {accesoInventario && (
-        <a className="inv-boton-enlace inv-boton-bloque" href={HASH_INVENTARIO}>
+        <a className="inv-boton-enlace inv-boton-bloque" href={RUTA_INVENTARIO}>
           {accesoInventario}
         </a>
       )}
       {accesoInventario && (
-        <a className="inv-boton-enlace inv-boton-bloque inv-boton-secundario" href={HASH_PUBLICACIONES}>
+        <a className="inv-boton-enlace inv-boton-bloque inv-boton-secundario" href={RUTA_PUBLICACIONES}>
           {esAdministrador(perfil.roles) ? 'Publicaciones' : 'Mis publicaciones'}
         </a>
       )}
       {/* P7 (D-62 c A): "Mis ventas" del asesor; el administrador las ve en Administración, Ventas. */}
       {accesoInventario && !esAdministrador(perfil.roles) && (
-        <a className="inv-boton-enlace inv-boton-bloque inv-boton-secundario" href={HASH_VENTAS}>
+        <a className="inv-boton-enlace inv-boton-bloque inv-boton-secundario" href={RUTA_VENTAS}>
           Mis ventas
         </a>
       )}
       {/* P8 (D-70 A): "Mis indicadores" del asesor, sin exportar; la API (SoloAsesor) lo vuelve a comprobar. */}
       {tieneRol(perfil.roles, ROL_ASESOR) && !esAdministrador(perfil.roles) && (
-        <a className="inv-boton-enlace inv-boton-bloque inv-boton-secundario" href={HASH_MIS_INDICADORES}>
+        <a className="inv-boton-enlace inv-boton-bloque inv-boton-secundario" href={RUTA_MIS_INDICADORES}>
           Mis indicadores
         </a>
       )}
@@ -109,32 +109,32 @@ export function PerfilPanel({
       {verAdministracion && (
         <nav className="perfil-admin-enlaces" aria-label="Más administración">
           {/* P7 (D-64 A): el panel de contadores es la primera sección. */}
-          <a className="inv-boton-enlace inv-boton-secundario" href={hashSeccionAdmin('inicio')}>
+          <a className="inv-boton-enlace inv-boton-secundario" href={rutaSeccionAdmin('inicio')}>
             Inicio del administrador
           </a>
-          <a className="inv-boton-enlace inv-boton-secundario" href={hashSeccionAdmin('planes')}>
+          <a className="inv-boton-enlace inv-boton-secundario" href={rutaSeccionAdmin('planes')}>
             Planes
           </a>
-          <a className="inv-boton-enlace inv-boton-secundario" href={hashSeccionAdmin('suscripciones')}>
+          <a className="inv-boton-enlace inv-boton-secundario" href={rutaSeccionAdmin('suscripciones')}>
             Suscripciones
           </a>
-          <a className="inv-boton-enlace inv-boton-secundario" href={hashSeccionAdmin('catalogos')}>
+          <a className="inv-boton-enlace inv-boton-secundario" href={rutaSeccionAdmin('catalogos')}>
             Catálogos
           </a>
-          <a className="inv-boton-enlace inv-boton-secundario" href={hashSeccionAdmin('ventas')}>
+          <a className="inv-boton-enlace inv-boton-secundario" href={rutaSeccionAdmin('ventas')}>
             Ventas
           </a>
           {/* P8 (D-68 A, D-69 A). */}
-          <a className="inv-boton-enlace inv-boton-secundario" href={hashSeccionAdmin('reportes')}>
+          <a className="inv-boton-enlace inv-boton-secundario" href={rutaSeccionAdmin('reportes')}>
             Reportes
           </a>
-          <a className="inv-boton-enlace inv-boton-secundario" href={hashSeccionAdmin('indicadores')}>
+          <a className="inv-boton-enlace inv-boton-secundario" href={rutaSeccionAdmin('indicadores')}>
             Indicadores
           </a>
-          <a className="inv-boton-enlace inv-boton-secundario" href={hashSeccionAdmin('portada')}>
+          <a className="inv-boton-enlace inv-boton-secundario" href={rutaSeccionAdmin('portada')}>
             Portada
           </a>
-          <a className="inv-boton-enlace inv-boton-secundario" href={hashSeccionAdmin('parametros')}>
+          <a className="inv-boton-enlace inv-boton-secundario" href={rutaSeccionAdmin('parametros')}>
             Parámetros
           </a>
         </nav>

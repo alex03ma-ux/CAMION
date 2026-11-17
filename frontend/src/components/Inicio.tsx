@@ -9,14 +9,17 @@ import {
 import { obtenerPortada } from '../api/portada'
 import { usePeticion } from '../catalogo/usePeticion'
 import {
-  HASH_BUSCAR,
-  HASH_BUSCO_VEHICULO,
-  HASH_CREDITO,
-  HASH_SEGURO_TODO_RIESGO,
-  HASH_VENDE_TU_CAMION,
-  hashBuscar,
+  RUTA_BUSCAR,
+  RUTA_BUSCO_VEHICULO,
+  RUTA_CREDITO,
+  RUTA_SEGURO_TODO_RIESGO,
+  RUTA_VENDE_TU_CAMION,
+  rutaBuscar,
+  rutaCategoria,
   navegar,
 } from '../rutas'
+import { fijarJsonLd, JSONLD_ORGANIZACION, origenActual } from '../seo'
+import { jsonLdOrganizacion } from '../seoDatos'
 import { Aviso } from './Aviso'
 import {
   IconoCamion,
@@ -33,6 +36,10 @@ import {
   IlustracionCamion,
 } from './IconosPortal'
 import { RejillaVehiculos } from './TarjetaVehiculo'
+import { useContactoPortal } from './useContactoPortal'
+
+/** D-92 (decisión de la responsable, 2026-11-16): h1 de la portada. */
+export const TITULO_PORTADA = 'Venta de camiones usados'
 
 type InicioProps = {
   tipos: readonly OpcionCatalogo[]
@@ -66,6 +73,13 @@ export function Inicio({ tipos }: InicioProps) {
   const categorias = categoriasDisponibles(tipos)
   const fotoPortada = useFotoPortada()
 
+  // P10 (CA-P10-61 a 63, D-90 C): datos de la empresa para Google, solo en la portada, con el contacto vigente.
+  const contacto = useContactoPortal()
+  useEffect(() => {
+    fijarJsonLd(JSONLD_ORGANIZACION, jsonLdOrganizacion(contacto, origenActual()))
+  }, [contacto])
+  useEffect(() => () => fijarJsonLd(JSONLD_ORGANIZACION, null), [])
+
   return (
     <div className="cat-inicio">
       <section className="cat-portada" aria-labelledby="inicio-titulo">
@@ -76,9 +90,13 @@ export function Inicio({ tipos }: InicioProps) {
         )}
         <div className="cat-portada-interior">
           <p className="cat-portada-eyebrow">Camiones, carros, carrocerías y maquinaria</p>
-          <h1 id="inicio-titulo" tabIndex={-1}>
-            Tu próximo negocio empieza con el <span className="texto-rojo">vehículo correcto</span>
+          {/* P10 (CA-P10-20, D-92): h1 con las palabras que se buscan; la frase de D-42 queda como subtítulo igual. */}
+          <h1 id="inicio-titulo" className="cat-portada-h1" tabIndex={-1}>
+            {TITULO_PORTADA}
           </h1>
+          <p className="cat-portada-frase">
+            Tu próximo negocio empieza con el <span className="texto-rojo">vehículo correcto</span>
+          </p>
           <p className="cat-portada-texto">Compra con respaldo y te ayudamos con la financiación.</p>
           <BusquedaPortada categorias={categorias} />
         </div>
@@ -86,11 +104,11 @@ export function Inicio({ tipos }: InicioProps) {
 
       <div className="cat-pagina">
         <ul className="cat-categorias" aria-label="Categorías">
-          {categorias.map(({ tipo, enlace }) => (
+          {categorias.map(({ tipo, enlace, slug }) => (
             <li key={tipo.id}>
               <a
                 className={enlace === 'Camiones' ? 'cat-categoria cat-categoria-principal' : 'cat-categoria'}
-                href={hashBuscar({ tipoId: String(tipo.id) })}
+                href={rutaCategoria(slug)}
                 aria-label={enlace}
               >
                 {ICONO_CATEGORIA[enlace]}
@@ -123,7 +141,7 @@ export function Inicio({ tipos }: InicioProps) {
           estado.datos.recientes.length === 0 && (
             <div className="cat-vacio">
               <p role="status">{MENSAJE_SIN_VEHICULOS}</p>
-              <a className="cat-acceso" href={HASH_BUSCAR}>
+              <a className="cat-acceso" href={RUTA_BUSCAR}>
                 Ir a la búsqueda
               </a>
             </div>
@@ -136,7 +154,7 @@ export function Inicio({ tipos }: InicioProps) {
                 <IconoEstrella className="texto-rojo" />
                 Destacados
               </h2>
-              <a className="cat-ver-todos" href={HASH_BUSCAR}>
+              <a className="cat-ver-todos" href={RUTA_BUSCAR}>
                 Ver todos <IconoFlecha />
               </a>
             </div>
@@ -171,7 +189,7 @@ export function Inicio({ tipos }: InicioProps) {
             <h2 id="inicio-credito">¿Necesitas crédito para tu camión?</h2>
             <p>Te ayudamos a encontrar el plan de pagos ideal.</p>
             {/* P6 (D-42, CA-P6-02): abre el formulario de crédito, ya no el registro. */}
-            <a className="cat-credito-boton" href={HASH_CREDITO}>
+            <a className="cat-credito-boton" href={RUTA_CREDITO}>
               Quiero un crédito <IconoFlecha />
             </a>
           </div>
@@ -184,7 +202,7 @@ export function Inicio({ tipos }: InicioProps) {
             <div>
               <h2 id="inicio-vende">¿Quieres vender tu camión?</h2>
               <p>Cuéntanos qué vehículo tienes y te contactamos. No necesitas cuenta.</p>
-              <a className="cat-aviso-boton" href={HASH_VENDE_TU_CAMION}>
+              <a className="cat-aviso-boton" href={RUTA_VENDE_TU_CAMION}>
                 Vende tu camión <IconoFlecha />
               </a>
             </div>
@@ -194,7 +212,7 @@ export function Inicio({ tipos }: InicioProps) {
             <div>
               <h2 id="inicio-seguro">Asegura tu vehículo todo riesgo</h2>
               <p>Déjanos tus datos y te ayudamos con tu seguro todo riesgo.</p>
-              <a className="cat-aviso-boton" href={HASH_SEGURO_TODO_RIESGO}>
+              <a className="cat-aviso-boton" href={RUTA_SEGURO_TODO_RIESGO}>
                 Compra tu seguro <IconoFlecha />
               </a>
             </div>
@@ -205,7 +223,7 @@ export function Inicio({ tipos }: InicioProps) {
             <div>
               <h2 id="inicio-busco">¿No encuentras el vehículo que buscas?</h2>
               <p>Cuéntanos qué necesitas y te contactamos con opciones. No necesitas cuenta.</p>
-              <a className="cat-aviso-boton" href={HASH_BUSCO_VEHICULO}>
+              <a className="cat-aviso-boton" href={RUTA_BUSCO_VEHICULO}>
                 Busco un vehículo <IconoFlecha />
               </a>
             </div>
@@ -241,7 +259,7 @@ function BusquedaPortada({ categorias }: { categorias: { tipo: OpcionCatalogo; e
   const [tipoId, setTipoId] = useState('')
   function enviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault()
-    navegar(hashBuscar({ q: q.trim(), tipoId }))
+    navegar(rutaBuscar({ q: q.trim(), tipoId }))
   }
   return (
     <form className="cat-busqueda-portada" role="search" onSubmit={enviar}>

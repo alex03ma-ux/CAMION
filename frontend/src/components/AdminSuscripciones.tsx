@@ -47,7 +47,7 @@ import { DialogoConfirmacion } from './DialogoAccion'
 import { NotaObligatorio } from './NotaObligatorio'
 import { PagosSuscripcion } from './PagosSuscripcion'
 import { SeccionActividad } from './Actividad'
-import { hashSeccionAdmin, navegar } from '../rutas'
+import { navegar, rutaSeccionAdmin, ubicacionActual } from '../rutas'
 
 type AdminSuscripcionesProps = {
   token: string
@@ -363,9 +363,9 @@ export function AdminSuscripciones({ token, onSesionTerminada, consulta }: Admin
   /** Quita la vista del panel: vuelve a la lista con los demás filtros aplicados. */
   function quitarVista() {
     setResultado(null)
-    const hash = hashSeccionAdmin('suscripciones', { asesorId: filtros.asesorId, estado: filtros.estado })
-    if (window.location.hash === hash) setFiltros((f) => ({ ...f, vista: '', pagina: 1 }))
-    else navegar(hash)
+    const destino = rutaSeccionAdmin('suscripciones', { asesorId: filtros.asesorId, estado: filtros.estado })
+    if (ubicacionActual() === destino) setFiltros((f) => ({ ...f, vista: '', pagina: 1 }))
+    else navegar(destino)
   }
 
   function irAPagina(pagina: number) {

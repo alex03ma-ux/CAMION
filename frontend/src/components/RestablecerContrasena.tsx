@@ -1,31 +1,35 @@
-// P8 — Pantalla pública #/restablecer-contrasena?codigo=... (HU-063, RN-US-006; D-73 D, D-12; CA-P8-67).
+// P8 — Pantalla pública /restablecer-contrasena#codigo=... (P10, CA-P10-43; antes #/restablecer-contrasena?codigo=...) (HU-063, RN-US-006; D-73 D, D-12; CA-P8-67).
 // Lee el código del fragmento una sola vez y enseguida lo quita de la URL con history.replaceState, para que no quede
 // en el historial ni en la barra de direcciones. Pide la contraseña nueva y su confirmación con las reglas de P1 visibles.
 // Al terminar, todas las sesiones de la cuenta quedan cerradas (lo hace la API) y se ofrece iniciar sesión.
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { ApiError, MENSAJE_INESPERADO } from '../api/http'
 import {
-  codigoDelHash,
+  codigoRecuperacionActual,
   MENSAJE_CODIGO_NO_VALIDO,
   MENSAJE_CONFIRMAR_PASSWORD,
   MENSAJE_PASSWORD_NO_COINCIDE,
+  olvidarCodigoRecuperacion,
   restablecerContrasena,
 } from '../api/recuperacion'
 import { erroresPassword, PASSWORD_MAX } from '../auth/passwordRules'
-import { HASH_CUENTA } from '../rutas'
+import { RUTA_CUENTA } from '../rutas'
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo } from './Campo'
 import { NotaObligatorio } from './NotaObligatorio'
 import { ReglasPassword } from './ReglasPassword'
 
 export const TITULO_RESTABLECER = 'Crear una contraseña nueva'
-export const HASH_RESTABLECER = '#/restablecer-contrasena'
 
-/** Quita el código de la URL sin añadir una entrada al historial. */
+/**
+ * Quita el código de la URL sin añadir una entrada al historial (CA-P10-43): `/restablecer-contrasena#codigo=…` pasa a
+ * `/restablecer-contrasena`. También olvida el código guardado en memoria de un enlace viejo (CA-P10-42).
+ */
 export function quitarCodigoDeLaUrl(): void {
-  if (!/[?&]codigo=/.test(window.location.hash)) return
+  olvidarCodigoRecuperacion()
+  if (!/codigo=/.test(window.location.hash)) return
   const { pathname, search } = window.location
-  window.history.replaceState(window.history.state, '', `${pathname}${search}${HASH_RESTABLECER}`)
+  window.history.replaceState(window.history.state, '', `${pathname}${search}`)
 }
 
 type Estado =
@@ -37,7 +41,7 @@ type Errores = { password?: string[]; confirmacion?: string[] }
 
 export function RestablecerContrasena() {
   // El código se lee una sola vez, al montar, del hash actual.
-  const [codigo] = useState(() => codigoDelHash(window.location.hash))
+  const [codigo] = useState(codigoRecuperacionActual)
   const [estado, setEstado] = useState<Estado>(() => (codigo === '' ? { tipo: 'codigoInvalido' } : { tipo: 'formulario' }))
   const [password, setPassword] = useState('')
   const [confirmacion, setConfirmacion] = useState('')
@@ -113,7 +117,7 @@ export function RestablecerContrasena() {
         <div ref={refResultado} tabIndex={-1} className="restablecer-resultado">
           <Aviso aviso={{ tipo: 'error', texto: MENSAJE_CODIGO_NO_VALIDO }} />
           <p>
-            <a href={HASH_CUENTA}>Ir a iniciar sesión</a>
+            <a href={RUTA_CUENTA}>Ir a iniciar sesión</a>
           </p>
         </div>
       )}
@@ -122,7 +126,7 @@ export function RestablecerContrasena() {
         <div ref={refResultado} tabIndex={-1} className="restablecer-resultado">
           <Aviso aviso={{ tipo: 'exito', texto: estado.mensaje }} />
           <p className="form-ayuda">Por seguridad, se cerraron las sesiones abiertas de tu cuenta en todos los equipos.</p>
-          <a className="inv-boton-enlace inv-boton-bloque" href={HASH_CUENTA}>
+          <a className="inv-boton-enlace inv-boton-bloque" href={RUTA_CUENTA}>
             Iniciar sesión
           </a>
         </div>
@@ -162,7 +166,7 @@ export function RestablecerContrasena() {
             {enviando ? 'Guardando...' : 'Guardar contraseña nueva'}
           </button>
           <p className="auth-switch">
-            <a href={HASH_CUENTA}>Volver a iniciar sesión</a>
+            <a href={RUTA_CUENTA}>Volver a iniciar sesión</a>
           </p>
         </form>
       )}

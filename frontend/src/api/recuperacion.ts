@@ -4,6 +4,7 @@
 import { MENSAJE_REVISA_DATOS, MENSAJE_SESION_TERMINADA } from './auth'
 import { ApiError, esObjetoJson, MENSAJE_INESPERADO, peticion } from './http'
 import { correoPortalValido, normalizarCelular } from './parametros'
+import { LEMA } from '../marca'
 
 export type EnlaceRecuperacion = { enlace: string; venceEn: string | null; mensaje: string }
 
@@ -15,31 +16,35 @@ export const MENSAJE_DEMASIADOS_INTENTOS = 'Demasiados intentos. Espera unos min
 export const MENSAJE_PASSWORD_NO_COINCIDE = 'Las contraseñas no coinciden.'
 export const MENSAJE_CONFIRMAR_PASSWORD = 'Escribe de nuevo la contraseña.'
 /** Asunto del correo del inicio de sesión para pedir ayuda con la contraseña (pedido de la responsable, 2026-11-13). */
-export const ASUNTO_CORREO_OLVIDO = 'Olvidé mi contraseña – Financiamos Tu Camión'
+export const ASUNTO_CORREO_OLVIDO = `Olvidé mi contraseña – ${LEMA}`
 
 /** `mailto:` al correo del portal para pedir ayuda; null si el correo configurado no cumple la regla estricta (B-2). */
 export function enlaceCorreoOlvido(correoPortal: string): string | null {
   const limpio = correoPortal.trim()
   if (!correoPortalValido(limpio)) return null
-  const cuerpo = 'Hola, olvidé mi contraseña de Financiamos Tu Camión. Mi correo registrado es: '
+  const cuerpo = `Hola, olvidé mi contraseña de ${LEMA}. Mi correo registrado es: `
   return `mailto:${limpio}?subject=${encodeURIComponent(ASUNTO_CORREO_OLVIDO)}&body=${encodeURIComponent(cuerpo)}`
 }
 
 /** Texto prellenado del WhatsApp del inicio de sesión (CA-P8-68). */
-export const TEXTO_WHATSAPP_OLVIDO = 'Hola, olvidé mi contraseña de Financiamos Tu Camión.'
+export const TEXTO_WHATSAPP_OLVIDO = `Hola, olvidé mi contraseña de ${LEMA}.`
 
-/** Solo se acepta un enlace a la propia pantalla de restablecimiento (nunca otro esquema ni otra ruta). */
+/**
+ * Solo se acepta un enlace a la propia pantalla de restablecimiento (nunca otro esquema ni otra ruta). P10 (CA-P10-43):
+ * formato `https://<dominio>/restablecer-contrasena#codigo=<código>`; el código va en el fragmento, que el navegador no
+ * envía al servidor (CA-P10-44).
+ */
 export function enlaceValido(enlace: string): boolean {
-  return /^https?:\/\/[^\s/?#]+\/?#\/restablecer-contrasena\?codigo=[A-Za-z0-9_\-%.~]+$/.test(enlace)
+  return /^https?:\/\/[^\s/?#]+\/restablecer-contrasena#codigo=[A-Za-z0-9_\-%.~]+$/.test(enlace)
 }
 
 /** Texto breve del WhatsApp que envía el administrador, con el enlace. */
 export function textoWhatsappEnlace(enlace: string): string {
-  return `Hola. Este es tu enlace para crear una contraseña nueva en Financiamos Tu Camión. Vence en 60 minutos y sirve una sola vez: ${enlace}`
+  return `Hola. Este es tu enlace para crear una contraseña nueva en ${LEMA}. Vence en 60 minutos y sirve una sola vez: ${enlace}`
 }
 
 /** Asunto del correo que envía el administrador desde su propio programa de correo. */
-export const ASUNTO_CORREO_ENLACE = 'Recupera tu contraseña – Financiamos Tu Camión'
+export const ASUNTO_CORREO_ENLACE = `Recupera tu contraseña – ${LEMA}`
 
 /**
  * Pedido de la responsable (2026-11-13): enviar el enlace también por correo sin servicio externo (D-73 D).
@@ -51,7 +56,7 @@ export function enlaceCorreoUsuario(correo: string, enlace: string): string | nu
   if (!correoPortalValido(limpio) || !enlaceValido(enlace)) return null
   const asunto = encodeURIComponent(ASUNTO_CORREO_ENLACE)
   const cuerpo = encodeURIComponent(
-    'Hola.\n\nEste es tu enlace para crear una contraseña nueva en Financiamos Tu Camión:\n\n' +
+    `Hola.\n\nEste es tu enlace para crear una contraseña nueva en ${LEMA}:\n\n` +
       `${enlace}\n\n` +
       'Vence en 60 minutos y sirve una sola vez. Si no pediste este cambio, ignora este mensaje.',
   )
@@ -85,15 +90,39 @@ export function enlaceWhatsappUsuario(telefono: string, enlace: string): string 
   return `https://wa.me/57${celular}?text=${encodeURIComponent(textoWhatsappEnlace(enlace))}`
 }
 
-/** Lee el código del fragmento `#/restablecer-contrasena?codigo=...`; '' si no hay. */
+/**
+ * Lee el código del fragmento: `#codigo=...` (P10, CA-P10-43) o el formato viejo `#/restablecer-contrasena?codigo=...`
+ * (CA-P10-42); '' si no hay.
+ */
 export function codigoDelHash(hash: string): string {
-  const coincidencia = /[?&]codigo=([^&]*)/.exec(hash)
+  const coincidencia = /(?:^#|[?&])codigo=([^&]*)/.exec(hash)
   if (!coincidencia) return ''
   try {
     return decodeURIComponent(coincidencia[1]).trim()
   } catch {
     return ''
   }
+}
+
+/**
+ * CA-P10-42: código de un enlace viejo (`/#/restablecer-contrasena?codigo=…`), leído al convertir la dirección. Vive
+ * solo en memoria (nunca en la URL, en el almacenamiento ni en la consola) hasta que la pantalla lo toma.
+ */
+let codigoPendiente = ''
+
+export function guardarCodigoRecuperacion(codigo: string): void {
+  codigoPendiente = codigo
+}
+
+/** Código del enlace abierto: el guardado en memoria o, si no hay, el del fragmento `#codigo=` de la dirección. */
+export function codigoRecuperacionActual(): string {
+  if (codigoPendiente !== '') return codigoPendiente
+  return typeof window === 'undefined' ? '' : codigoDelHash(window.location.hash)
+}
+
+/** Olvida el código en memoria (la pantalla ya lo tomó). */
+export function olvidarCodigoRecuperacion(): void {
+  codigoPendiente = ''
 }
 
 export async function generarEnlaceRecuperacion(token: string, usuarioId: string): Promise<EnlaceRecuperacion> {

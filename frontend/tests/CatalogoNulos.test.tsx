@@ -38,7 +38,7 @@ describe('Catálogo con marca/año null (P4a)', () => {
         body: { destacados: [], recientes: [SIN_MARCA_SIN_TITULO, SIN_MARCA_CON_TITULO, RESERVADO] },
       },
     })
-    abrirApp('#/')
+    abrirApp('/')
     expect(await screen.findByRole('heading', { level: 3, name: 'Carrocería' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 3, name: 'Furgón en aluminio' })).toBeInTheDocument()
     for (const art of screen.getAllByRole('article')) {
@@ -51,7 +51,7 @@ describe('Catálogo con marca/año null (P4a)', () => {
   it('el detalle sin marca ni año no muestra esas filas ni "null"', async () => {
     const d = detalle(SIN_MARCA_CON_TITULO, { carroceria: 'Furgón' })
     simularFetch({ [RUTA_FILTROS]: respuestaFiltros(), [rutaDetalle(d.slug)]: { status: 200, body: d } })
-    abrirApp(`#/vehiculo/${d.slug}`)
+    abrirApp(`/vehiculo/${d.slug}`)
     expect(await screen.findByRole('heading', { level: 1, name: 'Furgón en aluminio' })).toBeInTheDocument()
     const dl = screen.getByRole('heading', { name: 'Ficha técnica' }).parentElement?.querySelector('dl') as HTMLElement
     const nombres = Array.from(dl.querySelectorAll('dt')).map((dt) => dt.textContent)

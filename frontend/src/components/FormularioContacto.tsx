@@ -22,7 +22,8 @@ import {
   type FormularioContacto as Formulario,
 } from '../api/contactos'
 import { ApiError } from '../api/http'
-import { HASH_BUSCAR } from '../rutas'
+import { RUTA_BUSCAR, rutaVehiculo } from '../rutas'
+import { absoluta } from '../seo'
 import { AutorizacionDatos } from './AutorizacionDatos'
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo, CampoAreaTexto } from './Campo'
@@ -147,7 +148,7 @@ export function FormularioContacto({ slug, titulo, whatsapp, sesion }: Formulari
       </p>
       <a
         className="boton-whatsapp"
-        href={enlaceWhatsapp(whatsapp, titulo, contacto.whatsappEnlace)}
+        href={enlaceWhatsapp(whatsapp, titulo, contacto.whatsappEnlace, absoluta(rutaVehiculo(slug)))}
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -238,7 +239,7 @@ export function FormularioContacto({ slug, titulo, whatsapp, sesion }: Formulari
           <Aviso aviso={aviso} />
           {noDisponible && (
             <p>
-              <a href={HASH_BUSCAR}>Ver el catálogo</a>
+              <a href={RUTA_BUSCAR}>Ver el catálogo</a>
             </p>
           )}
         </div>

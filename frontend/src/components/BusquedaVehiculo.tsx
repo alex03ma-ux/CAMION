@@ -1,4 +1,4 @@
-// P6 — "Busco un vehículo" (HU-034, RN-BU-001, D-56 a A): #/busco-un-vehiculo. Sin cuenta o con cualquier sesión;
+// P6 — "Busco un vehículo" (HU-034, RN-BU-001, D-56 a A): /busco-un-vehiculo. Sin cuenta o con cualquier sesión;
 // con sesión se prellenan los datos del perfil y se envía el token para ligarla a la cuenta (CA-P6-23).
 // Categoría obligatoria; marca, modelo, años, presupuesto, departamento y ciudad (DIVIPOLA, D-29) y descripción
 // opcionales. La búsqueda no se publica ni la ve ningún asesor (CA-P6-24): la atiende la administración (D-58 A).
@@ -48,7 +48,7 @@ type BusquedaVehiculoProps = {
 
 const cargarListas = (signal: AbortSignal) => obtenerListasBusqueda(signal)
 
-/** Pantalla #/busco-un-vehiculo: espera las listas y muestra el formulario. */
+/** Pantalla /busco-un-vehiculo: espera las listas y muestra el formulario. */
 export function BusquedaVehiculo({ opciones, onReintentarOpciones, sesion }: BusquedaVehiculoProps) {
   const [estadoListas, reintentarListas] = usePeticion(cargarListas, 'listas-busqueda')
   const contacto = useContactoPortal()

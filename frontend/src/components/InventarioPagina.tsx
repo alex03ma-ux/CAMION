@@ -1,4 +1,4 @@
-// Pantallas del inventario (P4a): #/inventario, #/inventario/nuevo y #/inventario/<id>.
+// Pantallas del inventario (P4a): /inventario, /inventario/nuevo y /inventario/<id>.
 // Solo ASESOR y ADMINISTRADOR (política AsesorOAdministrador, RN-SE-006). La interfaz
 // oculta el acceso a los demás, pero quien protege es la API (401/403/404).
 import { useCallback, useEffect, useState } from 'react'
@@ -7,7 +7,7 @@ import { MENSAJE_SIN_PERMISO } from '../api/http'
 import { obtenerCatalogosInventario, type DetalleInventario } from '../api/inventario'
 import { esAdministrador, ROL_ASESOR, tieneRol } from '../auth/roles'
 import { usePeticion } from '../catalogo/usePeticion'
-import { HASH_CUENTA, hashInventarioVehiculo, navegar, type Ruta } from '../rutas'
+import { RUTA_CUENTA, rutaInventarioVehiculo, navegar, type Ruta } from '../rutas'
 import {
   dejarAvisoPendiente,
   leerAvisoPendiente,
@@ -60,7 +60,7 @@ export function InventarioPagina({ ruta, token, perfil, onSesionTerminada }: Inv
         </h1>
         <Aviso aviso={{ tipo: 'error', texto: MENSAJE_SIN_PERMISO }} />
         <p>
-          <a href={HASH_CUENTA}>Volver a mi cuenta</a>
+          <a href={RUTA_CUENTA}>Volver a mi cuenta</a>
         </p>
       </div>
     )
@@ -98,7 +98,7 @@ function InventarioConAcceso({
     (detalle: DetalleInventario, aviso: DatosAviso) => {
       marcarVehiculoReciente(detalle.id)
       dejarAvisoPendiente(aviso)
-      navegar(hashInventarioVehiculo(detalle.id))
+      navegar(rutaInventarioVehiculo(detalle.id))
     },
     [],
   )
@@ -117,7 +117,7 @@ function InventarioConAcceso({
         </h1>
         <Aviso aviso={{ tipo: 'error', texto: error.mensaje || MENSAJE_SIN_PERMISO }} />
         <p>
-          <a href={HASH_CUENTA}>Volver a mi cuenta</a>
+          <a href={RUTA_CUENTA}>Volver a mi cuenta</a>
         </p>
       </div>
     )

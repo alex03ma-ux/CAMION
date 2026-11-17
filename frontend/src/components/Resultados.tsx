@@ -12,7 +12,7 @@ import type { ErroresPorCampo } from '../api/http'
 import { textoTotal } from '../catalogo/formato'
 import type { EstadoPeticion } from '../catalogo/usePeticion'
 import { usePeticion } from '../catalogo/usePeticion'
-import { HASH_BUSCAR, HASH_BUSCO_VEHICULO, hashBuscar, navegar, recordarBusqueda } from '../rutas'
+import { RUTA_BUSCAR, RUTA_BUSCO_VEHICULO, rutaBuscar, navegar, recordarBusqueda } from '../rutas'
 import { Aviso } from './Aviso'
 import { Filtros } from './Filtros'
 import { Paginacion } from './Paginacion'
@@ -20,8 +20,8 @@ import { RejillaVehiculos } from './TarjetaVehiculo'
 
 type ResultadosProps = {
   filtros: FiltrosCatalogo
-  /** Hash actual (`#/buscar?…`), para recordar la búsqueda y reiniciar el formulario. */
-  hash: string
+  /** Dirección actual (`/vehiculos?…`, `/camiones?…`), para recordar la búsqueda y reiniciar el formulario. */
+  ubicacion: string
   opciones: EstadoPeticion<OpcionesFiltros>
   onReintentarOpciones: () => void
 }
@@ -44,7 +44,7 @@ function erroresPorFiltro(errores: ErroresPorCampo): ErroresPorCampo {
 }
 
 /** Resultados de búsqueda con filtros y paginación (HU-004 a HU-012). */
-export function Resultados({ filtros, hash, opciones, onReintentarOpciones }: ResultadosProps) {
+export function Resultados({ filtros, ubicacion, opciones, onReintentarOpciones }: ResultadosProps) {
   const consulta = consultaPublicaciones(filtros)
   // La consulta resume todos los filtros: se vuelve a pedir solo cuando cambia.
   const [estado, reintentar] = usePeticion(
@@ -54,8 +54,8 @@ export function Resultados({ filtros, hash, opciones, onReintentarOpciones }: Re
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false)
 
   useEffect(() => {
-    recordarBusqueda(hash)
-  }, [hash])
+    recordarBusqueda(ubicacion)
+  }, [ubicacion])
 
   const datosOpciones = opciones.estado === 'ok' ? opciones.datos : null
   const error400 = estado.estado === 'error' && estado.error.status === 400
@@ -68,7 +68,7 @@ export function Resultados({ filtros, hash, opciones, onReintentarOpciones }: Re
   )
   const titulo = categoria ? categoria.enlace : 'Buscar vehículos'
 
-  const limpiar = () => navegar(HASH_BUSCAR)
+  const limpiar = () => navegar(RUTA_BUSCAR)
 
   let contador = ''
   if (estado.estado === 'cargando') contador = 'Buscando vehículos...'
@@ -121,11 +121,11 @@ export function Resultados({ filtros, hash, opciones, onReintentarOpciones }: Re
               </div>
             )}
             <Filtros
-              key={hash}
+              key={ubicacion}
               filtros={filtros}
               opciones={datosOpciones}
               erroresServidor={erroresServidor}
-              onAplicar={(nuevos) => navegar(hashBuscar(nuevos))}
+              onAplicar={(nuevos) => navegar(rutaBuscar(nuevos))}
               onLimpiar={limpiar}
             />
           </div>
@@ -167,7 +167,7 @@ export function Resultados({ filtros, hash, opciones, onReintentarOpciones }: Re
           {estado.estado === 'ok' && estado.datos.total > 0 && estado.datos.items.length === 0 && (
             <div className="cat-vacio">
               <p>Esta página no tiene resultados.</p>
-              <a className="cat-acceso" href={hashBuscar({ ...filtros, pagina: '' })}>
+              <a className="cat-acceso" href={rutaBuscar({ ...filtros, pagina: '' })}>
                 Ir a la primera página
               </a>
             </div>
@@ -198,7 +198,7 @@ function AccesoBusqueda() {
     <aside className="cat-busqueda-acceso" aria-labelledby="busqueda-acceso-titulo">
       <h2 id="busqueda-acceso-titulo">¿No encuentras lo que buscas?</h2>
       <p>Cuéntanos qué vehículo necesitas y te contactamos con opciones.</p>
-      <a className="cat-aviso-boton" href={HASH_BUSCO_VEHICULO}>
+      <a className="cat-aviso-boton" href={RUTA_BUSCO_VEHICULO}>
         Busco un vehículo
       </a>
     </aside>

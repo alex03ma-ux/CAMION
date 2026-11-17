@@ -25,7 +25,9 @@ public static class RecuperacionEndpoints
     public const string MensajeRevisar = "Revisa los datos marcados.";
     public const string MensajeListo = "Listo. Tu contraseña cambió; inicia sesión con la nueva.";
     public const string MensajeMuchos = "Demasiados intentos. Espera unos minutos e intenta de nuevo.";
-    public const string RutaFrontend = "/#/restablecer-contrasena?codigo=";
+    // P10 (CA-P10-43, CA-P10-44): ruta sin "#/" y el código en el fragmento, que el navegador nunca envía al servidor
+    // (no llega a los registros del proxy ni de la API). Antes de P10: "/#/restablecer-contrasena?codigo=".
+    public const string RutaFrontend = "/restablecer-contrasena#codigo=";
 
     public static IEndpointRouteBuilder MapRecuperacionEndpoints(this IEndpointRouteBuilder app)
     {

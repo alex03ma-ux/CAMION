@@ -29,7 +29,7 @@ function datoDe(tarjeta: HTMLElement, termino: string): string {
 
 describe('Mi suscripción (asesor)', () => {
   it('con plan: plan, estado, vence el…, días restantes y cupo; con el token', async () => {
-    const { api } = abrirApp('#/cuenta', ['ASESOR'], { [RUTA_MI_SUSCRIPCION]: CON_PLAN })
+    const { api } = abrirApp('/cuenta', ['ASESOR'], { [RUTA_MI_SUSCRIPCION]: CON_PLAN })
     const tarjeta = await screen.findByRole('region', { name: 'Mi suscripción' })
     await waitFor(() => expect(datoDe(tarjeta, 'Plan')).toBe('Profesional'))
     expect(datoDe(tarjeta, 'Estado')).toBe('Activa')
@@ -42,7 +42,7 @@ describe('Mi suscripción (asesor)', () => {
   })
 
   it('sin plan: el mensaje del contrato', async () => {
-    abrirApp('#/cuenta', ['ASESOR'], { [RUTA_MI_SUSCRIPCION]: SIN_PLAN })
+    abrirApp('/cuenta', ['ASESOR'], { [RUTA_MI_SUSCRIPCION]: SIN_PLAN })
     const tarjeta = await screen.findByRole('region', { name: 'Mi suscripción' })
     expect(
       await within(tarjeta).findByText('Aún no tienes un plan activo. Comunícate con el administrador.'),
@@ -51,7 +51,7 @@ describe('Mi suscripción (asesor)', () => {
   })
 
   it('suspendida: estado en texto y aviso de que sus publicaciones no se muestran', async () => {
-    abrirApp('#/cuenta', ['ASESOR'], {
+    abrirApp('/cuenta', ['ASESOR'], {
       [RUTA_MI_SUSCRIPCION]: {
         status: 200,
         body: { ...CON_PLAN.body, estado: 'SUSPENDIDA', estadoEfectivo: 'SUSPENDIDA', vigente: false },
@@ -63,7 +63,7 @@ describe('Mi suscripción (asesor)', () => {
   })
 
   it('vencida (estado efectivo): se muestra "Vencida"', async () => {
-    abrirApp('#/cuenta', ['ASESOR'], {
+    abrirApp('/cuenta', ['ASESOR'], {
       [RUTA_MI_SUSCRIPCION]: {
         status: 200,
         body: { ...CON_PLAN.body, estadoEfectivo: 'VENCIDA', diasRestantes: 0, vigente: false },
@@ -75,7 +75,7 @@ describe('Mi suscripción (asesor)', () => {
   })
 
   it('sin conexión: error comprensible y Reintentar', async () => {
-    const { user, api } = abrirApp('#/cuenta', ['ASESOR'], {
+    const { user, api } = abrirApp('/cuenta', ['ASESOR'], {
       [RUTA_MI_SUSCRIPCION]: [{ red: true }, SIN_PLAN],
     })
     const tarjeta = await screen.findByRole('region', { name: 'Mi suscripción' })
@@ -86,12 +86,12 @@ describe('Mi suscripción (asesor)', () => {
   })
 
   it('401: la sesión termina', async () => {
-    abrirApp('#/cuenta', ['ASESOR'], { [RUTA_MI_SUSCRIPCION]: { status: 401 } })
+    abrirApp('/cuenta', ['ASESOR'], { [RUTA_MI_SUSCRIPCION]: { status: 401 } })
     expect(await screen.findByText(/Tu sesión terminó/)).toBeInTheDocument()
   })
 
   it.each([['COMPRADOR'], ['ADMINISTRADOR']])('%s no ve la tarjeta ni consulta la suscripción', async (rol) => {
-    const { api } = abrirApp('#/cuenta', [rol])
+    const { api } = abrirApp('/cuenta', [rol])
     expect(await screen.findByRole('heading', { name: /Bienvenido/ })).toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Mi suscripción' })).not.toBeInTheDocument()
     expect(api.llamadasA(RUTA_MI_SUSCRIPCION)).toHaveLength(0)

@@ -27,7 +27,7 @@ import {
   validarMotivoInactivar,
 } from '../inventario/estados'
 import { categoriaDeTipo } from '../inventario/reglasCategoria'
-import { HASH_INVENTARIO_NUEVO, HASH_PUBLICACIONES, hashInventarioVehiculo, hashVehiculo } from '../rutas'
+import { RUTA_INVENTARIO_NUEVO, RUTA_PUBLICACIONES, rutaInventarioVehiculo, rutaVehiculo } from '../rutas'
 import { descartarAvisoPendiente, leerVehiculoReciente } from '../inventario/avisoPendiente'
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo, CampoSelect } from './Campo'
@@ -326,10 +326,10 @@ export function InventarioLista({
   return (
     <>
       <div className="inv-barra">
-        <a className="inv-boton-enlace" href={HASH_INVENTARIO_NUEVO}>
+        <a className="inv-boton-enlace" href={RUTA_INVENTARIO_NUEVO}>
           Registrar vehículo
         </a>
-        <a className="inv-boton-enlace inv-boton-secundario" href={HASH_PUBLICACIONES}>
+        <a className="inv-boton-enlace inv-boton-secundario" href={RUTA_PUBLICACIONES}>
           {esAdmin ? 'Publicaciones' : 'Mis publicaciones'}
         </a>
       </div>
@@ -492,7 +492,7 @@ export function InventarioLista({
                     </div>
                   </dl>
                   <div className="acciones-fila inv-acciones">
-                    <a className="inv-boton-enlace inv-boton-pequeno" href={hashInventarioVehiculo(item.id)}>
+                    <a className="inv-boton-enlace inv-boton-pequeno" href={rutaInventarioVehiculo(item.id)}>
                       {item.estado === 'VENDIDO' ? 'Ver' : 'Editar'}
                       {' '}<span className="sr-only">{titulo}</span>
                     </a>
@@ -633,14 +633,14 @@ function BloquePublicacion({
       )}
       <div className="acciones-fila inv-acciones">
         {publicacion && (
-          <a className="inv-boton-enlace inv-boton-pequeno inv-boton-secundario" href={HASH_PUBLICACIONES}>
+          <a className="inv-boton-enlace inv-boton-pequeno inv-boton-secundario" href={RUTA_PUBLICACIONES}>
             Gestionar en Mis publicaciones {sr}
           </a>
         )}
         {publicacion && estadoPub === 'PUBLICADA' && publicacion.slugPublico && (
           <a
             className="inv-boton-enlace inv-boton-pequeno inv-boton-secundario"
-            href={hashVehiculo(publicacion.slugPublico)}
+            href={rutaVehiculo(publicacion.slugPublico)}
           >
             Abrir en el portal {sr}
           </a>

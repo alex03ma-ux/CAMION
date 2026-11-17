@@ -6,6 +6,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import App from '../src/App'
 import { simularFetch, type RespuestaSimulada } from './helpers'
+import { irA } from './helpers'
 
 const RUTA_SEGURO = '/api/avisos/seguro-todo-riesgo'
 const MENSAJE_FALLO =
@@ -14,7 +15,7 @@ const MENSAJE_429 = 'Has enviado muchas solicitudes. Intenta de nuevo en unos mi
 
 function abrirSeguro(rutas: Record<string, RespuestaSimulada | RespuestaSimulada[]> = {}) {
   const api = simularFetch(rutas)
-  window.location.hash = '#/seguro-todo-riesgo'
+  irA('/seguro-todo-riesgo')
   render(<App />)
   return { api, user: userEvent.setup() }
 }
@@ -35,7 +36,7 @@ describe('"Compra tu seguro todo riesgo": validaciones y autorización (QA, CA-P
     expect(casilla()).toHaveAttribute('aria-required', 'true')
     expect(nombre()).toHaveAttribute('aria-required', 'true')
     expect(telefono()).toHaveAttribute('aria-required', 'true')
-    expect(within(form).getByRole('link', { name: /Política de tratamiento de datos/ })).toHaveAttribute('href', '#/privacidad')
+    expect(within(form).getByRole('link', { name: /Política de tratamiento de datos/ })).toHaveAttribute('href', '/privacidad')
 
     await user.click(enviar())
     expect(nombre()).toHaveAttribute('aria-invalid', 'true')

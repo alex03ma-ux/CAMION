@@ -1,4 +1,4 @@
-// P6 — "Mis solicitudes" del comprador (D-53, D-59): #/mis-solicitudes, en "Mi cuenta".
+// P6 — "Mis solicitudes" del comprador (D-53, D-59): /mis-solicitudes, en "Mi cuenta".
 // Una sola lista con sus contactos, avisos, créditos y búsquedas enviados con la sesión iniciada (CA-P6-66, 67),
 // de solo lectura (CA-P6-69): fecha, tipo, resumen y estado; sin notas, responsable ni resultado (CA-P6-68).
 // Solo COMPRADOR: a otro rol no se le ofrece y no se llama a la API (la API responde 403 de todos modos, CA-P6-74).
@@ -18,13 +18,13 @@ import {
 import { tieneRol } from '../auth/roles'
 import { formatoMiles } from '../catalogo/formato'
 import {
-  HASH_BUSCAR,
-  HASH_BUSCO_VEHICULO,
-  HASH_CREDITO,
-  HASH_CUENTA,
-  HASH_SEGURO_TODO_RIESGO,
-  HASH_VENDE_TU_CAMION,
-  hashVehiculo,
+  RUTA_BUSCAR,
+  RUTA_BUSCO_VEHICULO,
+  RUTA_CREDITO,
+  RUTA_CUENTA,
+  RUTA_SEGURO_TODO_RIESGO,
+  RUTA_VENDE_TU_CAMION,
+  rutaVehiculo,
 } from '../rutas'
 import { Aviso, type DatosAviso } from './Aviso'
 import { RejillaVehiculos } from './TarjetaVehiculo'
@@ -47,7 +47,7 @@ export function MisSolicitudes({ token, perfil, onSesionTerminada }: MisSolicitu
         </h1>
         <Aviso aviso={{ tipo: 'error', texto: MENSAJE_SIN_PERMISO }} />
         <p>
-          <a href={HASH_CUENTA}>Volver a mi cuenta</a>
+          <a href={RUTA_CUENTA}>Volver a mi cuenta</a>
         </p>
       </div>
     )
@@ -107,7 +107,7 @@ function ListaMisSolicitudes({ token, onSesionTerminada }: { token: string; onSe
   return (
     <div className="cat-pagina inv-pagina mis-solicitudes">
       <p className="inv-volver">
-        <a href={HASH_CUENTA}>Volver a mi cuenta</a>
+        <a href={RUTA_CUENTA}>Volver a mi cuenta</a>
       </p>
       <h1 tabIndex={-1} className="inv-titulo">
         {TITULO_MIS_SOLICITUDES}
@@ -140,19 +140,19 @@ function ListaMisSolicitudes({ token, onSesionTerminada }: { token: string; onSe
           <p>Aún no tienes solicitudes.</p>
           <ul className="mis-solicitudes-accesos" aria-label="Empieza aquí">
             <li>
-              <a href={HASH_BUSCAR}>Ver vehículos</a>
+              <a href={RUTA_BUSCAR}>Ver vehículos</a>
             </li>
             <li>
-              <a href={HASH_CREDITO}>Quiero un crédito</a>
+              <a href={RUTA_CREDITO}>Quiero un crédito</a>
             </li>
             <li>
-              <a href={HASH_BUSCO_VEHICULO}>Busco un vehículo</a>
+              <a href={RUTA_BUSCO_VEHICULO}>Busco un vehículo</a>
             </li>
             <li>
-              <a href={HASH_VENDE_TU_CAMION}>Vende tu camión</a>
+              <a href={RUTA_VENDE_TU_CAMION}>Vende tu camión</a>
             </li>
             <li>
-              <a href={HASH_SEGURO_TODO_RIESGO}>Seguro todo riesgo</a>
+              <a href={RUTA_SEGURO_TODO_RIESGO}>Seguro todo riesgo</a>
             </li>
           </ul>
         </div>
@@ -224,7 +224,7 @@ function TarjetaSolicitud({ solicitud: s }: { solicitud: MiSolicitud }) {
               <dt>Vehículo</dt>
               <dd>
                 {s.vehiculo.disponible && s.vehiculo.slug ? (
-                  <a href={hashVehiculo(s.vehiculo.slug)}>{s.vehiculo.titulo || 'Ver vehículo'}</a>
+                  <a href={rutaVehiculo(s.vehiculo.slug)}>{s.vehiculo.titulo || 'Ver vehículo'}</a>
                 ) : (
                   <>
                     {s.vehiculo.titulo && <span>{s.vehiculo.titulo}. </span>}

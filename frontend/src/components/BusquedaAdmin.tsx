@@ -21,7 +21,7 @@ import {
   type VehiculoRelacionado,
 } from '../api/leads'
 import { formatoCop, formatoMiles, textoUbicacion } from '../catalogo/formato'
-import { hashVehiculo } from '../rutas'
+import { rutaVehiculo } from '../rutas'
 import { Aviso, type DatosAviso } from './Aviso'
 import { CampoAreaTexto } from './Campo'
 import { DialogoConfirmacion } from './DialogoAccion'
@@ -222,7 +222,7 @@ export function BusquedaAdmin({ token, lead, abierto, ocupado, onActualizado, on
                   {r.visible && r.slug && (
                     <a
                       className="inv-boton-enlace inv-boton-pequeno inv-boton-secundario"
-                      href={hashVehiculo(r.slug)}
+                      href={rutaVehiculo(r.slug)}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -284,7 +284,7 @@ export function BusquedaAdmin({ token, lead, abierto, ocupado, onActualizado, on
                 {coincidencias.items.map((c) => (
                   <li key={c.publicacionId} className="busqueda-relacionado">
                     <p className="busqueda-relacionado-titulo">
-                      <a href={hashVehiculo(c.vehiculo.slug)} target="_blank" rel="noopener noreferrer">
+                      <a href={rutaVehiculo(c.vehiculo.slug)} target="_blank" rel="noopener noreferrer">
                         {c.vehiculo.titulo}{' '}
                         <span className="sr-only">(se abre en una pestaña nueva)</span>
                       </a>
