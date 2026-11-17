@@ -1072,8 +1072,9 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
 - Contexto: análisis de palabras clave del 2026-11-16 (Google Trends, Colombia, 12 meses): las búsquedas de compra se concentran en "camiones usados" y "venta de camiones" (relacionadas: "camiones usados en venta", "venta de camiones usados", "camiones usados en Colombia", "Chevrolet NPR/NQR/NHR", "venta de tractomulas usadas en Colombia"); "crédito para camión" casi no se busca. El portal hoy se presenta solo como "Financiamos Tu Camión".
 - **Decisión de la responsable:** el portal se presenta como **"Venta de Camiones"** (título) con **"Financiamos tu Camión"** como lema, con el logo de **VCA Automotores** que ella entrega (versión horizontal y versión cuadrada). Se busca mayor visibilidad en Google al publicar.
 - Pendiente de afinar en los criterios de P10: el texto exacto del `<title>` y de la meta description (propuesta del coordinador: título "Venta de camiones usados y crédito | Financiamos tu Camión"; descripción de 149 caracteres "Camiones usados en venta en Colombia: NPR, volquetas, tractomulas y maquinaria. Solicita tu crédito para camión o tu seguro todo riesgo por WhatsApp.").
+- **Título confirmado (2026-11-16):** `<title>` por defecto "Venta de camiones usados y crédito | Financiamos tu Camión" y la meta description de 149 caracteres (ya aplicada en P9).
 
-## D-88 — Vista previa al compartir el enlace de un vehículo (WhatsApp, Facebook) · PROPUESTO (2026-11-16)
+## D-88 — Vista previa al compartir el enlace de un vehículo (WhatsApp, Facebook) · TOMADA (2026-11-16)
 - Contexto (analista, criterios de P10, `docs/criterios/P10-criterios.md` §2.7): el portal es una aplicación que arma la página con JavaScript. WhatsApp, Facebook y la mayoría de las redes **no ejecutan JavaScript** al leer un enlace: solo ven el `index.html` que entrega el servidor, que hoy es igual para todas las direcciones. Por eso, aunque P10 dé a cada vehículo su propia dirección (`/vehiculo/<slug>`), al pegarla en WhatsApp saldría la vista previa genérica del portal, sin la foto ni el nombre del vehículo. Google sí ejecuta JavaScript, así que esto afecta sobre todo a la vista previa en redes. D-77 sigue igual: no hay botón "Compartir"; la vista previa aparece cuando alguien pega el enlace.
 - Opciones:
   - A) **La API entrega el HTML de las fichas.** El proxy envía `/vehiculo/<slug>` a la API, que toma el `index.html` del frontend publicado y le pone el título, la descripción, la foto de portada (Open Graph y Twitter) y los datos estructurados del vehículo. Si el vehículo no está visible (vendido, vencido, oculto), responde 404 con la página genérica y `noindex`. El resto de páginas siguen saliendo del proxy con la vista previa genérica (C).
@@ -1086,9 +1087,10 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
   - D) **La API entrega el HTML de todas las páginas** (como A, pero para todas las rutas públicas).
     - Costo: mediano. Da títulos desde el servidor y 404 reales en todas las rutas, pero duplica en la API la tabla de rutas del frontend y hace que todo el sitio dependa de la API también para el HTML.
 - Recomendación del analista: **A**, con C como base para el resto de páginas. Es lo que hace que un vehículo compartido por WhatsApp muestre su foto y su nombre, que es el canal principal de venta, a un costo pequeño. B no es viable con inventario que cambia a diario; D no aporta lo suficiente frente a A.
+- **Decisión de la responsable (2026-11-16): A.** La API entrega el HTML de `/vehiculo/<slug>` con título, foto y descripción del vehículo; el resto de páginas usa la vista previa genérica.
 - Bloquea: CA-P10-70 a CA-P10-81 (solo la parte de A). El resto de P10 sigue con C.
 
-## D-89 — ¿Desde cuándo se deja que Google indexe el portal? · PROPUESTO (2026-11-16)
+## D-89 — ¿Desde cuándo se deja que Google indexe el portal? · TOMADA (2026-11-16)
 - Contexto (criterios de P10, §2.5): P10 añade `sitemap.xml` y direcciones indexables. La guía de publicación prevé montar el servidor en privado antes de abrirlo (PP.6) y D-44 pide no abrir el portal al público hasta la revisión legal (CA-P9-64 deja un aviso en el log mientras la política sea borrador). Si Google entra antes, indexa un portal sin textos legales aprobados, con datos de prueba o en un dominio provisional, y retirarlo luego tarda semanas.
 - Opciones:
   - A) **Indexación apagada por configuración hasta abrir al público.** Una clave (`Portal:PermitirIndexacion`, por defecto `false`) hace que `robots.txt` diga `Disallow: /` y que `sitemap.xml` no exista. Se enciende en la lista de verificación de la guía, cuando D-44 y D-81 estén resueltos.
@@ -1096,9 +1098,10 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
   - B) **Indexable desde que el portal esté en su dominio**, aunque no esté abierto al público.
     - Impacto: sin paso extra; Google puede indexar el montaje privado.
 - Recomendación del analista: **A**.
+- **Decisión de la responsable (2026-11-16): A.** Indexación apagada por configuración (`Portal:PermitirIndexacion=false`) hasta abrir al público, después de D-44 y D-81.
 - Bloquea: CA-P10-52 a CA-P10-54 (P10 se implementa con A si no hay respuesta, porque es lo reversible).
 
-## D-90 — ¿Qué dirección se le muestra a Google como dirección del negocio? · PROPUESTO (2026-11-16)
+## D-90 — ¿Qué dirección se le muestra a Google como dirección del negocio? · TOMADA (2026-11-16)
 - Contexto (criterios de P10, §2.6): los datos estructurados de la empresa pueden ser `Organization` (empresa, sin sede) o `AutoDealer` (concesionario con dirección física, que Google puede mostrar en mapas y resultados locales). La única dirección que tiene el portal es la **dirección de notificaciones** de P9 (D-83 A), que es un dato legal y no necesariamente un lugar donde se atiende al público. D-42 había dicho "Dirección: por ahora no se publica" (D-83 lo cambió solo para el pie). D-45: la empresa es intermediaria, los vehículos son de terceros.
 - Opciones:
   - A) **Sin dirección física en los datos estructurados.** `Organization` con nombre, logo, WhatsApp, correo y redes; razón social y NIT solo cuando los tres datos de la empresa estén completos (como el pie).
@@ -1107,9 +1110,10 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
     - Impacto: Google puede mandar visitantes a esa dirección como si fuera un punto de venta.
   - C) **A ahora, y `AutoDealer` con la dirección de una sede de atención** cuando la responsable confirme que existe (el perfil de Google Business se gestiona aparte, fuera del portal).
 - Recomendación del analista: **C** (A ahora).
+- **Decisión de la responsable (2026-11-16): C.** Por ahora no se publica dirección del negocio a Google; se agrega cuando haya una sede o patio de atención confirmado.
 - Bloquea: CA-P10-62 (solo la dirección). P10 sigue con A.
 
-## D-91 — Archivos del logo para la web y el favicon · PROPUESTO (2026-11-16)
+## D-91 — Archivos del logo para la web y el favicon · TOMADA (2026-11-16)
 - Contexto (criterios de P10, §2.1): la versión horizontal entregada (`docs/marca/WhatsApp Image 2026-11-16 at 8.54.30 PM.jpeg`) es un JPEG comprimido por WhatsApp, **sin transparencia**, con fondo blanco, un margen blanco grande y una franja gris en la parte de abajo; el texto "VENTA DE CAMIONES" es negro, así que no se lee sobre el pie oscuro. La versión cuadrada (PNG con transparencia) tiene demasiado detalle para un favicon de 16 o 32 píxeles.
 - (a) **Logo horizontal:**
   - A) Recortar y optimizar el JPEG ahora (solo en el encabezado blanco); en el pie oscuro se usa el logo cuadrado.
@@ -1120,9 +1124,10 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
   - B) Las letras "VCA" del logo cuadrado.
   - C) El logo cuadrado completo (a 16–32 px no se distingue).
   - Recomendación: **A**. Si el diseñador entrega un ícono propio, se usa ese.
+- **Decisión (2026-11-16, coordinador, no bloquea):** A ahora (recortar el horizontal y derivar los íconos del cuadrado; favicon con la cabeza del toro) y B cuando la responsable consiga los originales con transparencia y la versión para fondo oscuro.
 - Bloquea: CA-P10-07 (solo el recorte del favicon; se implementa con la recomendación si no hay respuesta).
 
-## D-92 — Título principal (h1) de la portada · PROPUESTO (2026-11-16)
+## D-92 — Título principal (h1) de la portada · TOMADA (2026-11-16)
 - Contexto (criterios de P10, §2.2): el h1 de la portada es "Tu próximo negocio empieza con el vehículo correcto" (referencia visual de D-42). No contiene las palabras que la gente busca según el análisis de D-87 ("venta de camiones", "camiones usados"). Google da peso al h1.
 - Opciones:
   - A) No cambiarlo.
@@ -1131,4 +1136,5 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
   - C) Reemplazar la frase por "Venta de camiones usados y crédito para tu camión".
     - Impacto: cambia el mensaje que eligió la responsable en D-42.
 - Recomendación del analista: **B**.
+- **Decisión de la responsable (2026-11-16): B con otro texto.** El h1 de la portada es **"Venta de camiones usados"**; la frase actual queda como subtítulo con el mismo aspecto.
 - Bloquea: CA-P10-20 (solo ese texto).
