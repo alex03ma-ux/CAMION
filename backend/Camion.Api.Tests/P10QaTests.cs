@@ -288,7 +288,7 @@ public sealed class P10QaPrefijosTests
         }
     }
 
-    [Fact(DisplayName = "QA CA-P10-72: /vehiculo/{slug}/ con barra final responde 404 noindex y /Vehiculo/ responde 200 (el SPA hace lo contrario; O-1 y O-2 de la evidencia)")]
+    [Fact(DisplayName = "QA CA-P10-72: /vehiculo/{slug}/ redirige 301 sin la barra y /Vehiculo/ da 404 noindex, como el SPA (O-1 y O-2 corregidos)")]
     public async Task Barra_final()
     {
         var plantilla = PlantillaPrueba.Crear();
@@ -299,16 +299,17 @@ public sealed class P10QaPrefijosTests
                 b.UseSetting(ConfiguracionPortal.ClaveRutaIndexHtml, plantilla);
                 b.UseSetting(ConfiguracionPortal.ClavePermitirIndexacion, "true");
             });
-            var r = await api.Get("/vehiculo/chevrolet-npr-2020/");
-            Assert.Equal(HttpStatusCode.NotFound, r.StatusCode);
-            Assert.Equal("noindex", Assert.Single(r.Headers.GetValues("X-Robots-Tag")));
-            // O-2 de la evidencia: el enrutado de ASP.NET Core no distingue mayúsculas, así que /Vehiculo/<slug> da 200 con
-            // las etiquetas del vehículo (canonical en minúsculas), mientras el SPA lo trata como "no encontrada"
-            // (CA-P10-34). Se fija el comportamiento actual para que un cambio sea visible.
+            // O-1 (corregido): una barra final redirige 301 a la dirección sin barra (ver P10SeguridadTests.Barra_final_redirige).
+            using var sinSeguir = api.Factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+                { AllowAutoRedirect = false });
+            var r = await sinSeguir.GetAsync("/vehiculo/chevrolet-npr-2020/");
+            Assert.Equal(HttpStatusCode.MovedPermanently, r.StatusCode);
+            Assert.Equal("/vehiculo/chevrolet-npr-2020", r.Headers.Location!.OriginalString);
+            // O-2 (corregido): /Vehiculo/<slug> da el 404 genérico con noindex, como el SPA (CA-P10-34).
             var mayusculas = await api.Get("/Vehiculo/chevrolet-npr-2020");
-            Assert.Equal(HttpStatusCode.OK, mayusculas.StatusCode);
-            Assert.Contains("rel=\"canonical\" href=\"https://portal.prueba.test/vehiculo/chevrolet-npr-2020\"",
-                await mayusculas.Content.ReadAsStringAsync());
+            Assert.Equal(HttpStatusCode.NotFound, mayusculas.StatusCode);
+            Assert.Equal("noindex", Assert.Single(mayusculas.Headers.GetValues("X-Robots-Tag")));
+            Assert.DoesNotContain("rel=\"canonical\"", await mayusculas.Content.ReadAsStringAsync());
             // Sin slug ("/vehiculo"): la ruta comodín también responde el 404 HTML genérico, nunca la portada con 200.
             var sinSlug = await api.Get("/vehiculo");
             Assert.NotEqual(HttpStatusCode.OK, sinSlug.StatusCode);

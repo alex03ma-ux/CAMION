@@ -6,6 +6,7 @@ using Camion.Api.Data;
 using Camion.Api.Seguridad;
 using Camion.Api.Seo;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Camion.Api.Endpoints;
 
@@ -24,6 +25,7 @@ public static class SeoEndpoints
     public const int MaxDirecciones = 50_000;
     private const int MaxSlug = 200;
     private static readonly string[] GetHead = ["GET", "HEAD"];
+    public const string PrefijoFicha = "/vehiculo";
 
     /// <summary>Páginas públicas fijas del sitemap (CA-P10-55). /privacidad y /terminos no, mientras estén en revisión.</summary>
     public static readonly string[] PaginasFijas = ["/credito", "/vende-tu-camion", "/seguro-todo-riesgo", "/busco-un-vehiculo"];
@@ -37,15 +39,16 @@ public static class SeoEndpoints
         }).AllowAnonymous();
 
         app.MapMethods("/sitemap.xml", GetHead, async (HttpContext http, CamionDbContext db, TimeProvider reloj,
-            ILoggerFactory logs, CancellationToken ct) =>
+            ILoggerFactory logs, CacheSitemap cache, IOptions<OpcionesLimitesSeo> limites, CancellationToken ct) =>
         {
             if (!portal.PermitirIndexacion)
                 return Results.Text(MensajeSinSitemap, "text/plain; charset=utf-8", Encoding.UTF8, StatusCodes.Status404NotFound);
-            var xml = await Sitemap(db, reloj.GetUtcNow().UtcDateTime, portal.UrlPublica,
-                logs.CreateLogger("Camion.Api.Seo"), ct);
+            // M-1: se reutiliza el XML generado durante unos minutos (caduca solo), sin consultar la base en cada petición.
+            var xml = await cache.ObtenerAsync(reloj, limites.Value.SitemapCacheMinutos, () => Sitemap(db,
+                reloj.GetUtcNow().UtcDateTime, portal.UrlPublica, logs.CreateLogger("Camion.Api.Seo"), ct), ct);
             http.Response.Headers.CacheControl = CacheTexto;
             return Results.Bytes(xml, "application/xml; charset=utf-8");
-        }).AllowAnonymous();
+        }).AllowAnonymous().WithMetadata(new LimitePeticionesSeo());
 
         // D-88 A: solo si se configuró la plantilla; sin ella la ruta no existe y el proxy no debe enviar /vehiculo/ a la API.
         if (portal.RutaIndexHtml is not null)
@@ -62,7 +65,18 @@ public static class SeoEndpoints
                         StatusCodes.Status503ServiceUnavailable);
                 }
 
-                var datos = string.IsNullOrEmpty(slug) || slug.Length > MaxSlug
+                // O-2: la ruta distingue mayúsculas, como el SPA (/Vehiculo/x es "no encontrada"). El enrutado de ASP.NET Core
+                // no las distingue, así que se compara el prefijo exacto.
+                var exacta = http.Request.Path.StartsWithSegments(PrefijoFicha, StringComparison.Ordinal);
+                // O-1: /vehiculo/<slug>/ (una barra final) redirige 301 a /vehiculo/<slug>, con la misma consulta.
+                if (exacta && slug is { Length: > 1 } conBarra && conBarra[^1] == '/' && !conBarra[..^1].Contains('/'))
+                {
+                    http.Response.Headers.CacheControl = CacheFicha;
+                    // Codificado como la canónica (FichaSeo.Canonica), sin el origen.
+                    var destino = PrefijoFicha + "/" + Uri.EscapeDataString(conBarra[..^1]) + http.Request.QueryString.ToUriComponent();
+                    return Results.Redirect(destino, permanent: true);
+                }
+                var datos = !exacta || string.IsNullOrEmpty(slug) || slug.Length > MaxSlug
                     ? null
                     : await Ficha(db, reloj.GetUtcNow().UtcDateTime, slug, ct);
                 http.Response.Headers.CacheControl = CacheFicha;
@@ -76,7 +90,7 @@ public static class SeoEndpoints
                 if (!portal.PermitirIndexacion) http.Response.Headers["X-Robots-Tag"] = "noindex";
                 return Results.Text(leida.Con(_ => FichaSeo.Bloque(portal.UrlPublica, portal.PermitirIndexacion, datos)),
                     "text/html; charset=utf-8", Encoding.UTF8);
-            }).AllowAnonymous();
+            }).AllowAnonymous().WithMetadata(new LimitePeticionesSeo());
 
         return app;
     }

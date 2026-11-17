@@ -566,7 +566,7 @@ public sealed class P10VistaPreviaTests(P10Encendida encendida, P10Apagada apaga
         Assert.Equal("", await r.Content.ReadAsStringAsync());
     }
 
-    [Fact(DisplayName = "CA-P10-75: sin las marcas, el index.html se entrega sin cambios y se avisa en el log una vez")]
+    [Fact(DisplayName = "CA-P10-75, B-2: sin las marcas, /vehiculo/ responde 503 (nunca el archivo tal cual) y se avisa en el log una vez")]
     public async Task Sin_marcas()
     {
         const string sinMarcas = "<!doctype html><html><head><title>Genérico</title></head><body></body></html>";
@@ -575,9 +575,20 @@ public sealed class P10VistaPreviaTests(P10Encendida encendida, P10Apagada apaga
         {
             using var api = await CatalogoApi.Crear(noVisibles: false,
                 configurar: b => b.UseSetting(ConfiguracionPortal.ClaveRutaIndexHtml, ruta));
-            Assert.Equal(sinMarcas, await Html(await api.Get("/vehiculo/chevrolet-npr-2020")));
-            Assert.Equal(sinMarcas, await Html(await api.Get("/vehiculo/no-existe"), HttpStatusCode.NotFound));
-            Assert.Single(api.Base.Logs, l => l.Contains("|Warning|") && l.Contains(PlantillaPortal.MarcaInicio));
+            foreach (var slug in new[] { "chevrolet-npr-2020", "no-existe" })
+            {
+                var r = await api.Get("/vehiculo/" + slug);
+                Assert.Equal(HttpStatusCode.ServiceUnavailable, r.StatusCode);
+                Assert.Equal("text/plain; charset=utf-8", r.Content.Headers.ContentType!.ToString());
+                Assert.Equal(SeoEndpoints.MensajeNoDisponible, await r.Content.ReadAsStringAsync());
+            }
+            var aviso = Assert.Single(api.Base.Logs, l => l.Contains("|Warning|") && l.Contains(PlantillaPortal.MarcaInicio));
+            Assert.DoesNotContain(ruta, aviso);
+
+            // Al publicar un index.html con las marcas, vuelve a funcionar sin reiniciar.
+            File.WriteAllText(ruta, PlantillaPrueba.Completa);
+            File.SetLastWriteTimeUtc(ruta, DateTime.UtcNow.AddMinutes(5));
+            Assert.Contains("Chevrolet NPR 2020 en Medellín", await Html(await api.Get("/vehiculo/chevrolet-npr-2020")));
         }
         finally
         {

@@ -63,10 +63,20 @@ public static class ConfiguracionPortal
     {
         if (string.IsNullOrWhiteSpace(valor)) return null;
         var ruta = Path.GetFullPath(Path.Combine(contentRoot, valor.Trim()));
+        // B-2 (revisión de seguridad P10): solo un .html, en cualquier entorno, para no servir por error otro archivo
+        // (por ejemplo appsettings.json) en /vehiculo/*.
+        if (!string.Equals(Path.GetExtension(ruta), ".html", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException($"{ClaveRutaIndexHtml} debe apuntar a un archivo .html (el index.html publicado).");
         if (!esDesarrollo && !File.Exists(ruta))
             throw new InvalidOperationException(
                 $"{ClaveRutaIndexHtml}: no existe el index.html publicado del frontend. Revisa la clave o quítala para " +
                 "desactivar la vista previa de las fichas.");
+        if (File.Exists(ruta) && new FileInfo(ruta).Length > MaxBytesIndexHtml)
+            throw new InvalidOperationException(
+                $"{ClaveRutaIndexHtml}: el archivo pasa de {MaxBytesIndexHtml / 1024} KB; no parece el index.html del frontend.");
         return ruta;
     }
+
+    /// <summary>B-2: tope de tamaño de la plantilla, al arrancar y al releerla (el index.html de Vite pesa unos pocos KB).</summary>
+    public const long MaxBytesIndexHtml = 512 * 1024;
 }

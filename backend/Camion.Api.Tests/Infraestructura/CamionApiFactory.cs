@@ -73,6 +73,10 @@ public sealed class CamionApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("LimitesAuth:RegistroLimiteVentana", "100000");
         builder.UseSetting("LimitesAuth:RegistroLimiteDiario", "100000");
         builder.UseSetting("LimitesAuth:LoginLimiteVentana", "100000");
+        // P10 (M-1): mismo criterio para el cupo de sitemap y fichas; sin caché del sitemap para que cada prueba vea la base.
+        // P10SeguridadTests baja el cupo y enciende la caché.
+        builder.UseSetting("LimitesSeo:LimiteVentana", "100000");
+        builder.UseSetting("LimitesSeo:SitemapCacheMinutos", "0");
         // D-78: el entorno Testing no es Development, así que el enlace debe ser https://; las claves de DataProtection
         // irían a una carpeta temporal (además se sustituye el proveedor por uno efímero, abajo).
         builder.UseSetting("Recuperacion:UrlPortal", UrlPortalPruebas);

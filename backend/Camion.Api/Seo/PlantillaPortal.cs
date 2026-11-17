@@ -13,17 +13,23 @@ public sealed class PlantillaPortal(OpcionesPortal opciones, ILogger<PlantillaPo
     public const string MarcaFin = "<!--camion:meta:fin-->";
 
     private readonly object _candado = new();
-    private Leida? _actual;
+    // Última versión vista del archivo (fecha y tamaño) y su resultado: la plantilla o null si se rechazó (sin marcas o
+    // demasiado grande). Así el aviso del log sale una vez por versión del archivo y no en cada petición.
+    private (DateTime Fecha, long Largo, Leida? Resultado)? _vista;
 
-    /// <summary>Plantilla leída. <see cref="Bloque"/> es null si el archivo no tiene las dos marcas.</summary>
+    /// <summary>Plantilla leída, siempre con las dos marcas.</summary>
     public sealed record Leida(DateTime Fecha, long Largo, string Completo, string Antes, string? Bloque, string Despues)
     {
-        /// <summary>El archivo con el bloque reemplazado; sin marcas, el archivo tal cual.</summary>
+        /// <summary>El archivo con el bloque reemplazado.</summary>
         public string Con(Func<string, string> bloqueNuevo) =>
             Bloque is null ? Completo : Antes + MarcaInicio + bloqueNuevo(Bloque) + MarcaFin + Despues;
     }
 
-    /// <summary>La plantilla vigente, o null si no se puede leer (se escribe el error en el log, sin la ruta).</summary>
+    /// <summary>
+    /// La plantilla vigente, o null (la ruta responde 503) si no existe, no se puede leer, pasa de
+    /// <see cref="ConfiguracionPortal.MaxBytesIndexHtml"/> o no tiene las dos marcas (B-2: nunca se sirve otro archivo tal cual).
+    /// Los mensajes del log nombran la clave, nunca la ruta.
+    /// </summary>
     public Leida? Obtener()
     {
         var ruta = opciones.RutaIndexHtml;
@@ -39,13 +45,22 @@ public sealed class PlantillaPortal(OpcionesPortal opciones, ILogger<PlantillaPo
             }
             lock (_candado)
             {
-                if (_actual is { } a && a.Fecha == info.LastWriteTimeUtc && a.Largo == info.Length) return a;
-                var texto = File.ReadAllText(ruta, Encoding.UTF8);
-                _actual = Partir(info.LastWriteTimeUtc, info.Length, texto);
-                if (_actual.Bloque is null)
-                    log.LogWarning("El index.html del frontend no tiene las marcas {Inicio} y {Fin}: /vehiculo/ lo entrega " +
-                                   "sin las etiquetas del vehículo.", MarcaInicio, MarcaFin);
-                return _actual;
+                if (_vista is { } v && v.Fecha == info.LastWriteTimeUtc && v.Largo == info.Length) return v.Resultado;
+                Leida? resultado = null;
+                if (info.Length > ConfiguracionPortal.MaxBytesIndexHtml)
+                    log.LogError("El index.html del frontend ({Clave}) pasa de {Kb} KB; /vehiculo/ responde 503.",
+                        ConfiguracionPortal.ClaveRutaIndexHtml, ConfiguracionPortal.MaxBytesIndexHtml / 1024);
+                else
+                {
+                    var leida = Partir(info.LastWriteTimeUtc, info.Length, File.ReadAllText(ruta, Encoding.UTF8));
+                    if (leida.Bloque is null)
+                        log.LogWarning("El index.html del frontend ({Clave}) no tiene las marcas {Inicio} y {Fin}; " +
+                                       "/vehiculo/ responde 503.", ConfiguracionPortal.ClaveRutaIndexHtml, MarcaInicio, MarcaFin);
+                    else
+                        resultado = leida;
+                }
+                _vista = (info.LastWriteTimeUtc, info.Length, resultado);
+                return resultado;
             }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
