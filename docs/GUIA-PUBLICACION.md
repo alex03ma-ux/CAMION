@@ -53,12 +53,15 @@ Marca cada punto antes de abrir el portal al público.
 - [ ] `Recuperacion:UrlPortal` con `https://` y el dominio real.
 - [ ] `Proxy:KnownProxies` o `Proxy:KnownNetworks` con la IP o la red del proxy.
 - [ ] `Portal:UrlPublica` con `https://` y el dominio real (o confirmar que `Recuperacion:UrlPortal` es la dirección pública: se usa si falta la otra). Sin ruta, consulta ni fragmento.
-- [ ] Frontend compilado con `VITE_URL_PUBLICA` igual a `Portal:UrlPublica` (sección 9).
+- [ ] Frontend compilado con `VITE_URL_PUBLICA` igual a `Portal:UrlPublica`, con `https://` (sección 9).
 - [ ] `Portal:RutaIndexHtml` apuntando al `index.html` publicado del frontend (D-88 A, sección 9) y la regla `/vehiculo/` del proxy hacia la API.
-- [ ] `Portal:PermitirIndexacion` sigue en `false` mientras el portal se monta en privado (D-89 A).
+- [ ] La indexación sigue apagada en **los dos lados** mientras el portal se monta en privado (D-89 A): `Portal:PermitirIndexacion` en `false` (o sin poner) en la API y el frontend compilado **sin** `VITE_PERMITIR_INDEXACION=true`.
 
 **Abrir a Google** (solo al abrir al público, después de D-44 y D-81; D-89 A)
-- [ ] `Portal__PermitirIndexacion=true` y reiniciar la API.
+- [ ] Encender **las dos claves juntas** (ver "Indexación: dos claves que van juntas" en la sección 3):
+  - en la API, `Portal__PermitirIndexacion=true` y reiniciarla;
+  - en el frontend, volver a compilar con `VITE_PERMITIR_INDEXACION=true` y `VITE_URL_PUBLICA=https://<dominio>`, y publicar el `dist` nuevo.
+- [ ] Comprobar que la portada y una categoría **ya no** llevan `<meta name="robots" content="noindex">` (`view-source:`), y que una ficha servida por la API no lleva `X-Robots-Tag: noindex`.
 - [ ] `https://<dominio>/robots.txt` muestra los `Allow`/`Disallow` de la sección 11 y la línea `Sitemap:`; `https://<dominio>/sitemap.xml` responde 200 con las fichas visibles.
 - [ ] Dar de alta el dominio en Google Search Console verificándolo **por DNS** (sin código en el portal) y enviar `https://<dominio>/sitemap.xml`.
 
@@ -105,7 +108,19 @@ En ASP.NET Core, cada clave con `:` se escribe como variable de entorno con `__`
 | `Portal__UrlPublica` | No | No (por defecto, `Recuperacion__UrlPortal`) | P10: dirección pública del portal para `robots.txt`, `sitemap.xml`, `canonical` y la vista previa de las fichas. Absoluta, sin ruta, consulta ni fragmento; fuera de Development, `https://`. **No** es `Portal__Origen` (ese activa CORS). |
 | `Portal__PermitirIndexacion` | No | No (por defecto `false`) | P10 (D-89 A): con `false`, `robots.txt` dice `Disallow: /`, `sitemap.xml` da 404 y las fichas llevan `noindex`. Se pone `true` solo al abrir al público. |
 | `Portal__RutaIndexHtml` | No | Sí, con la vista previa de D-88 A | P10: ruta del `index.html` **publicado** del frontend (por ejemplo `/srv/camion/frontend/index.html`). Vacía: la API no atiende `/vehiculo/` y el proxy no debe enviárselo. Fuera de Development, si está puesta y el archivo no existe, la API no arranca. |
-| `VITE_URL_PUBLICA` (al compilar el frontend, no en la API) | No | No | P10: la misma dirección que `Portal__UrlPublica`, con `https://`. Con ella `index.html` lleva `og:url` y `og:image` absolutos para la vista previa genérica. |
+| `VITE_URL_PUBLICA` (al compilar el frontend, no en la API) | No | Sí, al publicar | P10: la misma dirección que `Portal__UrlPublica`, **con `https://`**, sin ruta ni barra final. Con ella `index.html` lleva `og:url`, `og:image` y `twitter:image` absolutos para la vista previa genérica; si falta o no es `https://`, esas tres etiquetas se omiten (`frontend/etiquetasHtml.ts`). |
+| `VITE_PERMITIR_INDEXACION` (al compilar el frontend, no en la API) | No | No (por defecto apagada) | P10 (D-89 A): solo con el valor exacto `true` el `index.html` compilado y las páginas públicas dejan de llevar `<meta name="robots" content="noindex">`. Va **junto** con `Portal__PermitirIndexacion` (abajo). |
+
+**Indexación: dos claves que van juntas (D-89 A).** La indexación se controla en dos sitios y hay que cambiar **los dos a la vez**:
+
+| Dónde | Clave | Qué controla |
+|---|---|---|
+| API (variable de entorno, se aplica al reiniciar) | `Portal__PermitirIndexacion=true` | `robots.txt` con `Allow` y `Sitemap`, `sitemap.xml` con 200 y las fichas `/vehiculo/<slug>` sin `noindex` ni `X-Robots-Tag`. |
+| Frontend (al compilar, `npm run build`) | `VITE_PERMITIR_INDEXACION=true` | El `index.html` publicado y las páginas que arma el navegador sin `noindex`. |
+
+- Si solo se enciende la API, `robots.txt` deja entrar a Google pero todas las páginas del frontend siguen con `noindex` y no se indexan. Si solo se enciende el frontend, `robots.txt` sigue con `Disallow: /` y Google no entra.
+- `VITE_URL_PUBLICA` (con `https://`) se pone **siempre** al compilar para publicar, esté o no encendida la indexación: es la que da la vista previa genérica en redes.
+- Para apagar de nuevo: `Portal__PermitirIndexacion=false` (o quitarla) y reiniciar, y recompilar el frontend sin `VITE_PERMITIR_INDEXACION`.
 
 Comportamiento al arrancar:
 - **Sin** `ConnectionStrings:CamionDatabase` o `Jwt:Key`, la API no arranca en ningún entorno.
@@ -368,7 +383,7 @@ dotnet Camion.Api.dll recuperar-admin <correo>
 3. La carpeta publicada **no** debe contener `appsettings.Development.json` ni ningún secreto.
 
 **Frontend**
-1. En `frontend/`: `npm ci` y `npm run build`, con la variable `VITE_URL_PUBLICA=https://<dominio>` (igual que `Portal__UrlPublica`) para que la vista previa genérica lleve direcciones absolutas.
+1. En `frontend/`: `npm ci` y `npm run build`, con la variable `VITE_URL_PUBLICA=https://<dominio>` (igual que `Portal__UrlPublica`) para que la vista previa genérica lleve direcciones absolutas. Añade `VITE_PERMITIR_INDEXACION=true` **solo** al abrir al público y a la vez que `Portal__PermitirIndexacion=true` en la API (sección 3, "Indexación: dos claves que van juntas").
 2. Copia el contenido de `frontend/dist` a la carpeta que sirve el proxy.
 3. Desde P10 el portal usa direcciones sin `#` (por ejemplo `/cuenta`): el proxy **debe** responder `index.html` a cualquier ruta que no sea un archivo ni de la API (sección 6, "Reglas del proxy"). Los enlaces viejos con `#/` los convierte el propio frontend.
 
@@ -377,6 +392,7 @@ dotnet Camion.Api.dll recuperar-admin <correo>
 - **Producción:** `Portal__RutaIndexHtml` es la ruta del `index.html` que sirve el proxy, por ejemplo `/srv/camion/frontend/index.html`. La cuenta del servicio de la API necesita permiso de **lectura** sobre ese archivo. Al publicar un frontend nuevo basta con copiar `dist`: la API vuelve a leer el archivo cuando cambia su fecha o su tamaño, sin reiniciar. Si el archivo no existe al arrancar, la API no arranca; si desaparece con la API en marcha, `/vehiculo/` responde 503 y queda un error en el log.
 - **Desarrollo:** no se configura. Vite sirve su propio `index.html` en `http://localhost:5173/vehiculo/<slug>` y no envía `/vehiculo/` a la API. Para revisar a mano las etiquetas que genera la API: `npm run build` en `frontend/`, `dotnet user-secrets set "Portal:RutaIndexHtml" "../../frontend/dist/index.html"` (ruta relativa a `backend/Camion.Api`) y abrir `view-source:http://localhost:5080/vehiculo/<slug>`. En Development, si el archivo no existe, la API arranca igual y esa ruta responde 503.
 - Si el `index.html` no tiene las dos marcas, la API lo entrega sin cambios y avisa una vez en el log.
+- Si el frontend se compiló con la indexación apagada, su bloque ya trae `<meta name="robots" content="noindex">`: en las fichas no visibles (404) la API lo sustituye por el suyo, y en las fichas visibles el bloque entero es de la API. Nunca salen dos etiquetas `robots`.
 - La dirección de cada ficha es `/vehiculo/<slug>`, con el `slug_publico` de la publicación tal como está guardado (no cambia en P10), codificado para URL.
 
 **CI (INF-1)**
@@ -407,7 +423,7 @@ dotnet Camion.Api.dll recuperar-admin <correo>
 - [ ] P10: recargar `https://<dominio>/vehiculo/<slug>`, `/camiones` y `/cuenta/usuarios` muestra la pantalla (no un 404 del proxy).
 - [ ] P10: `/api/no-existe` da el 404 **JSON** de la API; `/media/no-existe.jpg` da 404 de la API; `/assets/no-existe.js` da 404 (nunca `index.html`); `/health` responde la API.
 - [ ] P10 (D-88 A): `view-source:https://<dominio>/vehiculo/<slug>` muestra el título del vehículo y sus `og:*`; un slug vendido o inexistente responde 404 con `noindex`.
-- [ ] P10 (D-89 A): antes de abrir, `robots.txt` dice `Disallow: /` y `sitemap.xml` da 404. Al abrir (`Portal__PermitirIndexacion=true`), `robots.txt` lleva `Allow: /api/catalogo/`, `Allow: /api/portal/`, `Disallow: /api/`, `Disallow: /health`, `Allow: /` y `Sitemap: https://<dominio>/sitemap.xml`, y `sitemap.xml` responde 200.
+- [ ] P10 (D-89 A): antes de abrir, `robots.txt` dice `Disallow: /`, `sitemap.xml` da 404 y la portada lleva `noindex`. Al abrir (`Portal__PermitirIndexacion=true` en la API **y** frontend compilado con `VITE_PERMITIR_INDEXACION=true`), la portada ya no lleva `noindex` y `robots.txt` lleva `Allow: /api/catalogo/`, `Allow: /api/portal/`, `Disallow: /api/`, `Disallow: /health`, `Allow: /` y `Sitemap: https://<dominio>/sitemap.xml`, y `sitemap.xml` responde 200.
 - [ ] P10: un enlace de recuperación nuevo tiene la forma `https://<dominio>/restablecer-contrasena#codigo=…` y el registro del proxy solo muestra `/restablecer-contrasena` (sin el código).
 - [ ] P10: con dominio, pegar el enlace de una ficha en WhatsApp y en el Depurador de contenido compartido de Facebook muestra la foto, el título y la descripción del vehículo (anotar si alguna foto pesada no aparece).
 
