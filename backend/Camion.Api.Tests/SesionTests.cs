@@ -46,7 +46,8 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
         sp.GetRequiredService<EndpointDataSource>().Endpoints.OfType<RouteEndpoint>();
 
     private static string Metodo(RouteEndpoint e) =>
-        e.Metadata.GetMetadata<HttpMethodMetadata>()?.HttpMethods.Single() ?? "GET";
+        // P10: /robots.txt y /sitemap.xml aceptan GET y HEAD ("GET|HEAD").
+        e.Metadata.GetMetadata<HttpMethodMetadata>() is { } m ? string.Join("|", m.HttpMethods) : "GET";
 
     [Fact(DisplayName = "CA-059-12, CA-SE006-03: /me y /logout sin token -> 401")]
     public async Task Sin_token_da_401()
@@ -206,7 +207,9 @@ public sealed class SesionTests(CamionApiFactory factory) : IClassFixture<Camion
             // P7 (D-63 A, CA-P7-42): lectura pública de los datos de contacto del portal, fuera de /api/catalogo.
             "GET /api/portal/contacto",
             // P8 (HU-063, D-73 D): restablecer la contraseña con el enlace del administrador (limitado por IP).
-            "POST /api/auth/restablecer-contrasena"
+            "POST /api/auth/restablecer-contrasena",
+            // P10 (CA-P10-59, D-89 A): robots y sitemap, solo lectura. /vehiculo/{**slug} solo existe con Portal:RutaIndexHtml.
+            "GET|HEAD /robots.txt", "GET|HEAD /sitemap.xml"
         }.OrderBy(x => x, StringComparer.Ordinal).ToArray(), anonimos);
 
         // P3: todo /api/catalogo es GET, permite anónimos de forma explícita y no exige ninguna política.

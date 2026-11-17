@@ -18,6 +18,7 @@ using System.Threading.RateLimiting;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.DataProtection;
 using Camion.Api.Seguridad;
+using Camion.Api.Seo;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("CamionDatabase")
@@ -77,6 +78,12 @@ var avisoClaves = ConfiguracionServidor.ProtegerClaves(proteccion, builder.Confi
 ConfiguracionRecuperacion.ValidarUrlPortal(
     builder.Configuration[ConfiguracionRecuperacion.ClaveUrlPortal] ?? new OpcionesRecuperacion().UrlPortal,
     builder.Environment.IsDevelopment());
+// P10 (CA-P10-58, D-88 A, D-89 A): URL pública (Portal:UrlPublica o Recuperacion:UrlPortal), indexación (apagada por
+// defecto) y plantilla de /vehiculo/{slug} (Portal:RutaIndexHtml). Una clave mal puesta impide arrancar.
+var opcionesPortal = ConfiguracionPortal.Leer(builder.Configuration, builder.Environment.IsDevelopment(),
+    builder.Environment.ContentRootPath);
+builder.Services.AddSingleton(opcionesPortal);
+builder.Services.AddSingleton<PlantillaPortal>();
 builder.Services.AddTransient<ProveedorTokenRecuperacion>();
 builder.Services.Configure<OpcionesRecuperacion>(builder.Configuration.GetSection("Recuperacion"));
 
@@ -298,6 +305,8 @@ app.Use(async (context, next) =>
     context.Response.OnStarting(() =>
     {
         foreach (var (nombre, valor) in ConfiguracionServidor.Encabezados) context.Response.Headers[nombre] = valor;
+        // P10 (CA-P10-76): el HTML de /vehiculo/{slug} lleva la política del frontend; las respuestas JSON no cambian.
+        if (context.Items[ConfiguracionServidor.ClaveCspPropia] is string csp) context.Response.Headers.ContentSecurityPolicy = csp;
         return Task.CompletedTask;
     });
     await next(context);
@@ -384,6 +393,8 @@ app.MapPanelEndpoints();
 app.MapReportesEndpoints();
 app.MapActividadEndpoints();
 app.MapRecuperacionEndpoints();
+// P10: robots.txt, sitemap.xml y la ficha /vehiculo/{slug} con sus etiquetas (D-88 A, D-89 A).
+app.MapSeoEndpoints(opcionesPortal);
 
 app.Run();
 
