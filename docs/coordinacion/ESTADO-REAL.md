@@ -695,6 +695,8 @@ Resumen: de las 87 HU, el núcleo comercial (portal, inventario, publicaciones, 
 
 **a) BLOQUEA LA PUBLICACIÓN (no abrir al público sin esto)**
 
+> Actualización P9 (2026-11-16): los puntos 2 a 5 avanzaron con P9 y el punto 4 quedó resuelto en la rama. Ver **PP.7**. El texto de esta lista es el de la auditoría original y no se reescribió.
+
 1. **Revisión legal y textos definitivos (D-44 PROPUESTO).** La política y los términos son borradores, con campos `[...]` y notas para el abogado (`docs/legal/POLITICA-TRATAMIENTO-DATOS.md:3`, `:9-14`; `docs/legal/TERMINOS-Y-CONDICIONES.md:5`, `:9`, `:74-77`). Incluye las preguntas abiertas: intermediación de seguros y de crédito, "usados peritados" (`Inicio.tsx:55`), teléfono del asesor publicado (D-47), registro en el RNBD y transferencia de datos a Gmail y WhatsApp. BLOQUEADO (abogado).
 2. **Datos de la empresa** (razón social, NIT, dirección de notificaciones y dominio): los debe entregar la responsable (D-44). No aparecen en el portal (`PiePortal.tsx:136`). BLOQUEADO (responsable).
 3. **Publicar `#/privacidad` con la política aprobada y crear `#/terminos`**, sin la franja "BORRADOR" (`Privacidad.tsx:9`, `:15-25`; no existe ruta de términos, `rutas.ts:196`), y **enlazar ambas desde el pie** (`PiePortal.tsx:136`). NO IMPLEMENTADO (depende del punto 1).
@@ -734,3 +736,29 @@ Resumen: de las 87 HU, el núcleo comercial (portal, inventario, publicaciones, 
 
 - **Pagar el servidor y el dominio: sí, ya se puede.** El código está listo para desplegarse: compila, y las comprobaciones de arranque, el proxy, https, DataProtection y los comandos de administrador están IMPLEMENTADOS. Antes hay que tomar D-81. Con el servidor se puede montar todo y probarlo **en privado** (sin anunciarlo o con el acceso restringido).
 - **Publicar abiertamente: no, todavía.** Faltan los puntos 1 a 5 del grupo (a), que son legales o dependen de lo legal (Ley 1581: política aprobada y visible, términos, datos del responsable y autorización también en el registro), y los puntos 6 a 10 de puesta en marcha en el servidor. Sin esperar al abogado ya se puede programar el punto 4 (casilla en el registro) y, del grupo (b), el límite por IP del registro y del inicio de sesión.
+
+### PP.7 Actualización P9 "Prepublicación" (2026-11-16)
+
+Fuente: `docs/criterios/P9-criterios.md`, `docs/criterios/P9-evidencia.md` y `docs/coordinacion/REVISION-SEGURIDAD-P9.md`. Rama `feature/p9-prepublicacion`, **pendiente de unir a `main`**. No es una auditoría nueva del código: el documentador resume lo que verificaron QA y la revisión de seguridad.
+
+Estados: "IMPLEMENTADO y PROBADO" = el código está en la rama y sus pruebas automáticas pasaron (backend 1481/1481 y frontend 875/875, `P9-evidencia.md` §1). **Ninguno tiene prueba manual todavía**, y la prueba contra la API real fue NO APLICABLE (la API en marcha era anterior a P9). Las cifras son anteriores a `af13732` (corrección de B-5), que la evidencia no volvió a medir.
+
+**Grupo (a)**
+
+| Punto | Qué hizo P9 | Estado |
+|---|---|---|
+| 1. Revisión legal y textos definitivos (D-44) | Nada: depende del abogado | **Sigue.** BLOQUEADO (abogado) |
+| 2. Datos de la empresa | Sección "Datos de la empresa" en "Parámetros" (`GET`/`PUT /api/admin/parametros/empresa`, solo administrador, auditada; NIT con dígito de verificación de la DIAN). El pie y las páginas legales los muestran solo cuando están los tres (D-83 A) | La pantalla: IMPLEMENTADO y PROBADO. **Sigue** faltando que la responsable entregue los datos reales y el dominio: BLOQUEADO (responsable, D-44) |
+| 3. `#/privacidad` y `#/terminos`, enlazadas desde el pie | Existe `#/terminos`; las dos páginas llevan la franja "En revisión legal" (una sola constante, `TEXTOS_LEGALES_EN_REVISION`) y no traen texto de los borradores; el pie enlaza las dos | Páginas y enlaces: IMPLEMENTADO y PROBADO. **Sigue** publicar los textos aprobados y quitar la franja (depende del punto 1) |
+| 4. Casilla de autorización en el registro de comprador y en la inscripción de asesor | Casilla sin marcar en los dos formularios; la API la exige y guarda la prueba (`REGISTRO_COMPRADOR`, `INSCRIPCION_ASESOR`) en la misma transacción que la cuenta; sin migración. Sin casilla de términos por ahora (D-84 A) | **Resuelto por P9.** IMPLEMENTADO y PROBADO |
+| 5. `PoliticaDatos:Version` con la versión aprobada | Un único punto de lectura; una versión mal formada impide arrancar; fuera de Development, una versión de borrador deja un aviso en el log. Las autorizaciones del borrador se conservan con su versión (D-85 A) | Comprobaciones: IMPLEMENTADO y PROBADO. **Sigue** cambiar el valor (hoy `BORRADOR-2026-11-04`) cuando se apruebe la política (depende del punto 1) |
+| 6 a 10. Hosting y dominio, base nueva y 017, primer administrador, respaldos, proxy | Fuera del alcance de P9. M-1 de P9 añade a la lista del servidor: con proxy, configurar `Proxy:KnownProxies` o el límite de intentos pasa a ser común para todo el portal | **Siguen.** El 6 está BLOQUEADO por D-81; los demás dependen del servidor elegido (`docs/GUIA-PUBLICACION.md`) |
+
+**Grupo (b), resueltos en la rama por P9** (IMPLEMENTADO y PROBADO, sin prueba manual):
+- Punto 1: límite por IP en el registro (5 cada 60 min y 20 al día, cupo común de comprador y asesor) y en el inicio de sesión (20 cada 15 min), con 429 y `Retry-After`; el 429 no cuenta como fallo de la cuenta.
+- Punto 4, en parte: meta description, favicon, `robots.txt`, `noindex` en las rutas privadas y "Página no encontrada". **Siguen** la imagen para compartir y la limitación de las rutas con `#`. QA-P9-1: la meta description aprobada tiene 172 caracteres y el criterio pide máx. 160 (PENDIENTE de la responsable).
+- Punto 5: los mensajes de crédito, búsqueda, seguro y "Mis solicitudes" usan el WhatsApp vigente de "Parámetros".
+
+**Abierto tras P9:** M-2 (enumeración con el 409, por aceptar en `DECISIONES.md`) y B-1 a B-4 y B-6 de `REVISION-SEGURIDAD-P9.md`; D-82 (favoritos) PENDIENTE; la prueba manual (`docs/manual/P9-prepublicacion.md`), E2E y la revisión a 375 px, NO EJECUTADAS.
+
+**PP.5, ya corregido:** el README se actualizó (P0 a P8 e INF-1 a INF-3 en `main`, PR #16) y el BACKLOG muestra INF-1 a INF-3 como unidos. El comentario de `AutorizacionDatos.tsx:2` quedó cierto con P9 (CA-P9-15).

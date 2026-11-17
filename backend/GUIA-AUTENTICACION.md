@@ -99,7 +99,7 @@ Todas las respuestas de error con cuerpo tienen esta forma (JSON):
 
 Crea una cuenta de comprador. La cuenta queda **activa al instante** (no necesita aprobación) y siempre recibe el rol `COMPRADOR`.
 
-Datos que se envían: `nombreCompleto`, `email`, `telefono`, `password`.
+Datos que se envían: `nombreCompleto`, `email`, `telefono`, `password` y, desde P9, `autorizacionDatos`.
 
 | Campo | Regla |
 |---|---|
@@ -107,27 +107,31 @@ Datos que se envían: `nombreCompleto`, `email`, `telefono`, `password`.
 | email | obligatorio, formato de correo, máximo 254 caracteres; se guarda en minúsculas |
 | telefono | obligatorio, 7 a 25 caracteres; solo números, espacios, `+`, `-`, `(`, `)`; al menos 7 dígitos |
 | password | 8 a 128 caracteres, con al menos una mayúscula, una minúscula y un número (no se exige símbolo) |
+| autorizacionDatos (P9) | obligatorio, booleano `true` (HU-062, D-44). Ausente, `null` o `false`: 400. Un texto o un número (`"true"`, `1`): 400 con el formato común de JSON no válido |
+
+Con la autorización, en la **misma transacción** que crea la cuenta se guarda una fila en `consentimientos_datos` con `formulario = 'REGISTRO_COMPRADOR'`, la versión de `PoliticaDatos:Version` y la hora UTC. Si esa fila no se puede guardar, no se crea la cuenta.
 
 Respuestas:
 
 - **201**: `{ "usuarioId", "mensaje": "Cuenta creada. Ya puedes iniciar sesión." }`
-- **400**: `"Revisa los datos marcados."` con la lista `errores` por campo.
-- **409**: `"Este correo ya está registrado."` (también si dos personas se registran a la vez con el mismo correo).
+- **400**: `"Revisa los datos marcados."` con la lista `errores` por campo. Sin autorización: `errores.autorizacionDatos = ["Debes autorizar el tratamiento de tus datos para crear tu cuenta."]`. Esta validación va antes de comprobar el correo: sin autorización, un correo repetido también da 400.
+- **409**: `"Este correo ya está registrado."` (también si dos personas se registran a la vez con el mismo correo). No se guarda ningún consentimiento.
+- **429** (P9): `"Hiciste muchos intentos de registro desde tu conexión. Intenta de nuevo más tarde."`, con la cabecera `Retry-After` en segundos. Ver "Límite de intentos" más abajo.
 
 ### POST /api/auth/registro/asesor (sin iniciar sesión) — P2
 
 Crea una solicitud de asesor. La cuenta queda **PENDIENTE**: no puede iniciar sesión hasta que el administrador la apruebe. Siempre recibe el rol `ASESOR`.
 
-Datos que se envían: los cuatro del comprador más `tipoDocumento`, `numeroDocumento` y `nombreComercial`.
+Datos que se envían: los cinco del comprador (incluida `autorizacionDatos`) más `tipoDocumento`, `numeroDocumento` y `nombreComercial`.
 
 | Campo | Regla |
 |---|---|
-| nombreCompleto, email, telefono, password | las mismas reglas que en el registro de comprador |
+| nombreCompleto, email, telefono, password, autorizacionDatos | las mismas reglas que en el registro de comprador; el consentimiento se guarda con `formulario = 'INSCRIPCION_ASESOR'` |
 | tipoDocumento | obligatorio: `CC` (cédula de ciudadanía), `CE` (cédula de extranjería), `NIT` o `PAS` (pasaporte). Esta lista es **PROPUESTA** |
 | numeroDocumento | obligatorio, 4 a 30 caracteres; solo letras, números y guiones. Se guarda en mayúsculas |
 | nombreComercial | opcional, hasta 150 caracteres |
 
-Qué hace, todo en una sola operación: crea el usuario con estado `PENDIENTE` y rol `ASESOR`, crea su fila en `perfiles_asesor` con estado `PENDIENTE` y deja el evento `REGISTRO_ASESOR` en `auditoria_eventos`.
+Qué hace, todo en una sola operación: crea el usuario con estado `PENDIENTE` y rol `ASESOR`, crea su fila en `perfiles_asesor` con estado `PENDIENTE`, deja el evento `REGISTRO_ASESOR` en `auditoria_eventos` y, desde P9, guarda el consentimiento.
 
 Respuestas:
 
@@ -135,6 +139,7 @@ Respuestas:
 - **400**: `"Revisa los datos marcados."` con `errores` por campo.
 - **409**: `"Este correo ya está registrado."`
 - **409**: `"Ya existe un asesor con ese documento."`, con `errores.numeroDocumento`. No puede haber dos asesores con el mismo tipo y número de documento.
+- **429** (P9): el mismo mensaje que en el registro de comprador; los dos registros comparten el cupo.
 
 Un comprador que quiera ser asesor debe, por ahora, registrarse como asesor con **otro correo** (D-15).
 
@@ -159,6 +164,20 @@ Orden de las comprobaciones (P2): primero los datos, después el usuario, el blo
 No confundir los dos bloqueos: el **423** es temporal (15 minutos, por contraseñas mal escritas) y se quita solo; el **403 BLOQUEADA** lo pone el administrador y solo él lo quita.
 
 Si la cuenta tuviera un estado distinto de los cuatro conocidos, se responde 401 como si las credenciales fueran incorrectas.
+
+- **429** (P9): `"Hiciste muchos intentos de inicio de sesión. Espera unos minutos e intenta de nuevo."`, con `Retry-After` en segundos. Es un límite por conexión, distinto del 423: no cuenta como intento fallido de la cuenta ni la bloquea.
+
+### Límite de intentos por conexión (P9; HU-059, RN-SE-001)
+
+| Cupo | Rutas | Valores por defecto (`appsettings.json`, sección `LimitesAuth`) |
+|---|---|---|
+| Registro | `POST /api/auth/registro/comprador` y `/asesor`, **cupo compartido** | 5 cada 60 min (`RegistroLimiteVentana`, `RegistroVentanaMinutos`) y 20 al día (`RegistroLimiteDiario`) |
+| Inicio de sesión | `POST /api/auth/login` (cuentan las correctas y las fallidas) | 20 cada 15 min (`LoginLimiteVentana`, `LoginVentanaMinutos`) |
+
+- La conexión se identifica por la IP; las IPv6 se agrupan por su /64 y una IPv4 escrita como IPv6 cuenta como la IPv4.
+- El 429 se responde antes de leer la petición: no revela si el correo existe. En el log queda `limite_auth` con el cupo, sin IP ni correo.
+- `X-Forwarded-For` solo se tiene en cuenta si el proxy está en `Proxy:KnownProxies` o `Proxy:KnownNetworks`. **Detrás de un proxy sin esa configuración, todas las personas comparten la IP del proxy y el límite pasa a ser común para todo el portal** (M-1 de `docs/coordinacion/REVISION-SEGURIDAD-P9.md`). Configurarlo es obligatorio en el servidor (`docs/GUIA-PUBLICACION.md`).
+- Las pruebas suben estos cupos solo en `CamionApiFactory`.
 
 ### GET /api/auth/me (requiere token)
 
@@ -238,7 +257,7 @@ Usa una segunda terminal con el backend encendido. Los datos son **de prueba** (
 $base = "http://localhost:5080/api/auth"
 
 # Registro de comprador
-$registro = @{ nombreCompleto="Comprador Prueba"; email="comprador.prueba@example.com"; telefono="300 123 4567"; password="SoloPrueba123" } | ConvertTo-Json
+$registro = @{ nombreCompleto="Comprador Prueba"; email="comprador.prueba@example.com"; telefono="300 123 4567"; password="SoloPrueba123"; autorizacionDatos=$true } | ConvertTo-Json
 Invoke-RestMethod -Uri "$base/registro/comprador" -Method Post -ContentType "application/json" -Body $registro
 
 # Login (guarda la respuesta sin imprimir el token)
@@ -263,7 +282,7 @@ Invoke-RestMethod -Uri "$base/me" -Headers $cabecera
 Registro de asesor y login pendiente:
 
 ```powershell
-$asesor = @{ nombreCompleto="Asesor Prueba"; email="asesor.prueba@example.com"; telefono="300 765 4321"; password="SoloPrueba123"; tipoDocumento="CC"; numeroDocumento="0000-PRUEBA"; nombreComercial="Camiones de Prueba" } | ConvertTo-Json
+$asesor = @{ nombreCompleto="Asesor Prueba"; email="asesor.prueba@example.com"; telefono="300 765 4321"; password="SoloPrueba123"; tipoDocumento="CC"; numeroDocumento="0000-PRUEBA"; nombreComercial="Camiones de Prueba"; autorizacionDatos=$true } | ConvertTo-Json
 Invoke-RestMethod -Uri "$base/registro/asesor" -Method Post -ContentType "application/json" -Body $asesor
 
 # Debe responder 403 con estado PENDIENTE hasta que el administrador lo apruebe
@@ -273,7 +292,7 @@ Invoke-RestMethod -Uri "$base/login" -Method Post -ContentType "application/json
 
 Para probar los endpoints de administración necesitas una cuenta de administrador: sigue `docs/GUIA-ADMINISTRACION.md`.
 
-Nota: `Invoke-RestMethod` muestra las respuestas 400, 401, 403, 404, 409 y 423 como un error rojo; es lo esperado en esos casos.
+Nota: `Invoke-RestMethod` muestra las respuestas 400, 401, 403, 404, 409, 423 y 429 como un error rojo; es lo esperado en esos casos. Con P9, más de 5 registros en una hora desde el mismo equipo dan 429: espera o reinicia la API, porque el cupo se guarda en memoria.
 
 ## 9. Registro de eventos (auditoría)
 
