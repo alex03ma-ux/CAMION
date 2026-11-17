@@ -232,7 +232,7 @@ Formato de error común: `{ "error": string, "errores"?: { campo: string[] } }`.
 - **D-83 TOMADA (2026-11-16): A** — El pie muestra razón social, NIT y dirección de notificaciones cuando el administrador complete los tres datos; reemplaza, para la dirección de notificaciones, lo dicho en D-42. Afecta CA-P9-34 y 35.
 - **D-84 TOMADA (2026-11-16): A** — Por ahora solo el enlace a los términos; la casilla "Acepto los términos" se agrega cuando el abogado apruebe el texto. Afecta CA-P9-16.
 - **D-85 TOMADA (2026-11-16): A** — Las autorizaciones dadas con la versión borrador se conservan con su versión; se le pregunta al abogado si hace falta pedir una nueva. Afecta CA-P9-66; no bloquea P9.
-- **D-86 PENDIENTE (documental, la puede cerrar el coordinador)** — D-75 B y D-76 B citan una "migración 017" que ya ocupa `017_categorias_base_SUBIR.sql`.
+- **D-86 TOMADA (2026-11-16, documental, coordinador: las migraciones futuras toman el siguiente número libre, 018 en adelante)** — D-75 B y D-76 B citan una "migración 017" que ya ocupa `017_categorias_base_SUBIR.sql`.
 
 ## 6. Notas para el arquitecto y QA
 
