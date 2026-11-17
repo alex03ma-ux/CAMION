@@ -14,7 +14,7 @@ declare global {
 }
 
 const DESCRIPCION =
-  'Compra y vende camiones, volquetas, maquinaria amarilla y vehículos de trabajo en Colombia. Solicita tu crédito vehicular o tu seguro todo riesgo con Financiamos Tu Camión.'
+  'Camiones usados en venta en Colombia: NPR, volquetas, tractomulas y maquinaria. Solicita tu crédito para camión o tu seguro todo riesgo por WhatsApp.'
 
 const noIndex = () => document.head.querySelector('meta[name="robots"][content="noindex"]')
 
