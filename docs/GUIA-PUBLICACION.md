@@ -12,10 +12,14 @@ Esta guía explica, paso a paso, qué hace falta para poner el portal en interne
 
 ```
 Navegador ──https──> Proxy inverso (nginx, IIS, Caddy o el del proveedor)
-                       ├── /            -> archivos del frontend (frontend/dist)
-                       ├── /api, /media, /health -> API (Kestrel, http://127.0.0.1:5080)
+                       ├── /assets/     -> archivos del frontend (404 si no existe; nunca index.html)
+                       ├── /            -> archivos del frontend (frontend/dist), con respaldo a index.html (P10)
+                       ├── /api, /media, /health, /robots.txt, /sitemap.xml -> API (Kestrel, http://127.0.0.1:5080)
+                       ├── /vehiculo/   -> API (D-88 A: la ficha con su vista previa; necesita Portal:RutaIndexHtml)
                        │                              └──> MariaDB (base del portal)
 ```
+
+- Desde P10 el portal usa direcciones **sin `#`** (`/vehiculo/<slug>`, `/camiones`, `/cuenta/usuarios`). Por eso el proxy debe responder `index.html` a cualquier ruta que no sea un archivo ni de la API (sección 6, "Reglas del proxy").
 
 - El proxy recibe todo por **https** y lo pasa a la API por http **dentro del mismo servidor** (o de la red privada).
 - El frontend usa rutas relativas (`/api/...`), así que lo más sencillo es servir frontend y API desde **el mismo dominio**. Así no hace falta CORS.
@@ -48,6 +52,15 @@ Marca cada punto antes de abrir el portal al público.
 - [ ] `ASPNETCORE_ENVIRONMENT=Production`.
 - [ ] `Recuperacion:UrlPortal` con `https://` y el dominio real.
 - [ ] `Proxy:KnownProxies` o `Proxy:KnownNetworks` con la IP o la red del proxy.
+- [ ] `Portal:UrlPublica` con `https://` y el dominio real (o confirmar que `Recuperacion:UrlPortal` es la dirección pública: se usa si falta la otra). Sin ruta, consulta ni fragmento.
+- [ ] Frontend compilado con `VITE_URL_PUBLICA` igual a `Portal:UrlPublica` (sección 9).
+- [ ] `Portal:RutaIndexHtml` apuntando al `index.html` publicado del frontend (D-88 A, sección 9) y la regla `/vehiculo/` del proxy hacia la API.
+- [ ] `Portal:PermitirIndexacion` sigue en `false` mientras el portal se monta en privado (D-89 A).
+
+**Abrir a Google** (solo al abrir al público, después de D-44 y D-81; D-89 A)
+- [ ] `Portal__PermitirIndexacion=true` y reiniciar la API.
+- [ ] `https://<dominio>/robots.txt` muestra los `Allow`/`Disallow` de la sección 11 y la línea `Sitemap:`; `https://<dominio>/sitemap.xml` responde 200 con las fichas visibles.
+- [ ] Dar de alta el dominio en Google Search Console verificándolo **por DNS** (sin código en el portal) y enviar `https://<dominio>/sitemap.xml`.
 
 **Seguridad** (secciones 5 a 7)
 - [ ] Certificado https vigente y renovación automática.
@@ -89,11 +102,16 @@ En ASP.NET Core, cada clave con `:` se escribe como variable de entorno con `__`
 | `LimitesAuth__RegistroLimiteVentana`, `LimitesAuth__RegistroVentanaMinutos`, `LimitesAuth__RegistroLimiteDiario` | No | No | Límite por IP del registro de comprador e inscripción de asesor, con cupo compartido (5 cada 60 min y 20 por día). |
 | `LimitesAuth__LoginLimiteVentana`, `LimitesAuth__LoginVentanaMinutos` | No | No | Límite por IP del inicio de sesión (20 cada 15 min). Aparte sigue el bloqueo de la cuenta tras 5 contraseñas incorrectas. |
 | `PoliticaDatos__Version` | No | Sí, al aprobarse la política | Versión de la política de datos que se guarda en cada autorización. Ver la sección 3.1. |
+| `Portal__UrlPublica` | No | No (por defecto, `Recuperacion__UrlPortal`) | P10: dirección pública del portal para `robots.txt`, `sitemap.xml`, `canonical` y la vista previa de las fichas. Absoluta, sin ruta, consulta ni fragmento; fuera de Development, `https://`. **No** es `Portal__Origen` (ese activa CORS). |
+| `Portal__PermitirIndexacion` | No | No (por defecto `false`) | P10 (D-89 A): con `false`, `robots.txt` dice `Disallow: /`, `sitemap.xml` da 404 y las fichas llevan `noindex`. Se pone `true` solo al abrir al público. |
+| `Portal__RutaIndexHtml` | No | Sí, con la vista previa de D-88 A | P10: ruta del `index.html` **publicado** del frontend (por ejemplo `/srv/camion/frontend/index.html`). Vacía: la API no atiende `/vehiculo/` y el proxy no debe enviárselo. Fuera de Development, si está puesta y el archivo no existe, la API no arranca. |
+| `VITE_URL_PUBLICA` (al compilar el frontend, no en la API) | No | No | P10: la misma dirección que `Portal__UrlPublica`, con `https://`. Con ella `index.html` lleva `og:url` y `og:image` absolutos para la vista previa genérica. |
 
 Comportamiento al arrancar:
 - **Sin** `ConnectionStrings:CamionDatabase` o `Jwt:Key`, la API no arranca en ningún entorno.
 - Fuera de Development, **sin** `Media:Ruta`, `DataProtection:RutaClaves` o `Recuperacion:UrlPortal`, la API no arranca. El mensaje dice qué clave falta, nunca su valor.
 - Si `Recuperacion:UrlPortal` o `Portal:Origen` no empiezan por `https://`, o si una IP del proxy está mal escrita, la API tampoco arranca.
+- P10: si la URL pública (`Portal:UrlPublica` o, si falta, `Recuperacion:UrlPortal`) tiene ruta, consulta o fragmento, o no empieza por `https://` fuera de Development, la API no arranca. Tampoco si `Portal:PermitirIndexacion` no es `true` o `false`, ni si `Portal:RutaIndexHtml` está puesta y el archivo no existe (fuera de Development). El mensaje nombra la clave, nunca su valor ni la ruta.
 - Si `PoliticaDatos:Version` tiene más de 40 caracteres o algo distinto de mayúsculas, dígitos, `.` y `-`, la API no arranca.
 - Fuera de Development, si `PoliticaDatos:Version` empieza por `BORRADOR`, la API arranca pero escribe en el log: "La política de datos configurada es un borrador: no abrir el portal al público". Sirve para montar el servidor en privado. No se abre al público mientras salga ese aviso.
 
@@ -113,7 +131,7 @@ Cada autorización de datos (contacto, avisos, crédito, búsqueda, registro de 
 - **Mientras el abogado no apruebe la política**, la versión es `BORRADOR-2026-11-04` (`appsettings.json`). Así queda claro que la autorización se dio frente al borrador del 2026-11-04. No se inventa una versión final.
 - **Cuando se apruebe**, el cambio se hace en este orden:
   1. El abogado entrega el texto final, y la responsable la fecha de vigencia.
-  2. En una entrega aparte, con su propia PR, se publica el texto en `#/privacidad` y `#/terminos`, y la constante del aviso de revisión del frontend pasa a `false`.
+  2. En una entrega aparte, con su propia PR, se publica el texto en `/privacidad` y `/terminos`, y la constante del aviso de revisión del frontend pasa a `false`.
   3. En el servidor se fija la variable de entorno `PoliticaDatos__Version` con el formato `V<n>-<AAAA-MM-DD>`. Para la primera versión es `V1-` más la fecha de vigencia que se entregue. Nunca se reutiliza un valor anterior: cada cambio del texto lleva un número nuevo.
   4. Se reinicia la API y se comprueba que el log de arranque ya no muestra el aviso de borrador. Luego se envía una solicitud de prueba y se revisa que la fila nueva de `consentimientos_datos` tenga la versión nueva. Por ejemplo, solo lectura: `SELECT formulario, version_politica, aceptado_en FROM consentimientos_datos ORDER BY id DESC LIMIT 1;`.
 - **Qué hacer con las autorizaciones ya guardadas con el borrador** (D-85 A, TOMADA 2026-11-16): se conservan tal cual, con su versión `BORRADOR-2026-11-04`; no se modifican ni se piden de nuevo. Solo las autorizaciones nuevas llevan la versión aprobada. Se le pregunta al abogado si hace falta pedir una nueva; si lo indica, será una entrega aparte.
@@ -268,7 +286,57 @@ y luego `openssl pkcs12 -export -inkey dp.key -in dp.crt -out dp.pfx`. Ese coman
   Content-Security-Policy: default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   ```
 
+- En nginx, un `add_header` dentro de un `location` **anula** los del bloque `server`: repite los encabezados en cada `location` del frontend (`/` y `/assets/`).
+- **`/vehiculo/` (D-88 A):** esas respuestas las genera la API con la política del frontend (la de arriba), `Referrer-Policy`, `nosniff`, `X-Frame-Options: DENY` y `Cache-Control: public, max-age=300`. El proxy **no** debe añadir otra `Content-Security-Policy` en esa ruta (dos políticas se suman y la más estricta bloquearía la página).
 - `/health/database` responde sin sesión con el nombre de la base y el número de tablas. Conviene que el proxy solo lo permita desde la red interna o desde el monitor del proveedor.
+
+**Reglas del proxy (P10, direcciones sin `#`; PROPUESTO, se prueba con el portal antes de fijarlo)**
+
+Qué va a dónde:
+- A la **API**: `/api/`, `/media/`, `/health` y `/health/...`, `/robots.txt`, `/sitemap.xml` y, con D-88 A, `/vehiculo/`.
+- **Archivos del frontend**: `/assets/...` (si no existe, **404**; nunca `index.html`, que el navegador intentaría ejecutar como script), `/marca/...`, `/favicon.ico`, `/site.webmanifest` y demás archivos de `dist`.
+- **Cualquier otra ruta** (`/`, `/camiones`, `/cuenta/usuarios`, `/restablecer-contrasena`...): el archivo si existe y, si no, `index.html` con 200.
+- La regla de respaldo **nunca** se traga `/api`, `/media`, `/health` ni `/assets`: `/api/no-existe` debe dar el 404 JSON de la API y `/media/no-existe.jpg` el 404 de la API.
+- `index.html` con `Cache-Control: no-cache`; `/assets/` (nombres con huella) con `public, max-age=31536000, immutable`.
+- El `robots.txt` estático del frontend ya no se usa: lo responde la API según D-89. Si quedara un archivo en `dist`, la regla exacta `location = /robots.txt` hacia la API tiene prioridad.
+
+Ejemplo en nginx (dentro del bloque `server` con https):
+
+```nginx
+root /srv/camion/frontend;   # contenido de frontend/dist
+
+# Encabezados del frontend (arriba); se repiten en cada location del frontend porque add_header no se hereda.
+set $csp_frontend "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
+
+location ^~ /assets/ {
+    try_files $uri =404;
+    add_header Cache-Control "public, max-age=31536000, immutable" always;
+    add_header Content-Security-Policy $csp_frontend always;
+    add_header Referrer-Policy "no-referrer" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+}
+location ^~ /api/         { proxy_pass http://127.0.0.1:5080; }
+location ^~ /media/       { proxy_pass http://127.0.0.1:5080; }
+location = /health        { proxy_pass http://127.0.0.1:5080; }
+location ^~ /health/      { allow 10.0.0.0/8; deny all; proxy_pass http://127.0.0.1:5080; }   # solo red interna
+location = /robots.txt    { proxy_pass http://127.0.0.1:5080; }
+location = /sitemap.xml   { proxy_pass http://127.0.0.1:5080; }
+location ^~ /vehiculo/    { proxy_pass http://127.0.0.1:5080; }   # solo con D-88 A y Portal__RutaIndexHtml
+location / {
+    try_files $uri /index.html;
+    add_header Cache-Control "no-cache" always;
+    add_header Content-Security-Policy $csp_frontend always;
+    add_header Referrer-Policy "no-referrer" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+}
+```
+
+- En cada `proxy_pass` van además `proxy_set_header Host $host;`, `proxy_set_header X-Forwarded-For $remote_addr;` (sobrescribe, no añade) y `proxy_set_header X-Forwarded-Proto $scheme;` (ver "Proxy" arriba).
+- Sin `Portal__RutaIndexHtml`, se quita la línea de `/vehiculo/`: la ficha la sirve `location /` con `index.html` y la vista previa es la genérica.
+- **IIS:** reglas de URL Rewrite en este orden: `/api`, `/media`, `/health`, `/robots.txt`, `/sitemap.xml` y `/vehiculo/` hacia la API (ARR); después, "si no es archivo ni carpeta y no empieza por `/assets`" hacia `/index.html`.
+- **Caddy:** `reverse_proxy` para esos prefijos y, al final, `try_files {path} /index.html` con `file_server` (y `/assets/*` sin respaldo).
 
 ---
 
@@ -300,9 +368,16 @@ dotnet Camion.Api.dll recuperar-admin <correo>
 3. La carpeta publicada **no** debe contener `appsettings.Development.json` ni ningún secreto.
 
 **Frontend**
-1. En `frontend/`: `npm ci` y `npm run build`.
+1. En `frontend/`: `npm ci` y `npm run build`, con la variable `VITE_URL_PUBLICA=https://<dominio>` (igual que `Portal__UrlPublica`) para que la vista previa genérica lleve direcciones absolutas.
 2. Copia el contenido de `frontend/dist` a la carpeta que sirve el proxy.
-3. El portal usa rutas con `#` (por ejemplo `#/cuenta`), así que no hace falta configurar reescrituras.
+3. Desde P10 el portal usa direcciones sin `#` (por ejemplo `/cuenta`): el proxy **debe** responder `index.html` a cualquier ruta que no sea un archivo ni de la API (sección 6, "Reglas del proxy"). Los enlaces viejos con `#/` los convierte el propio frontend.
+
+**Plantilla de la ficha (D-88 A, `Portal__RutaIndexHtml`)**
+- La API usa el `index.html` **ya compilado** del frontend como plantilla de `/vehiculo/<slug>`: cambia solo lo que hay entre `<!--camion:meta:inicio-->` y `<!--camion:meta:fin-->` (título, descripción, `canonical`, Open Graph, Twitter y datos estructurados del vehículo) y deja igual el resto (scripts y estilos con su huella).
+- **Producción:** `Portal__RutaIndexHtml` es la ruta del `index.html` que sirve el proxy, por ejemplo `/srv/camion/frontend/index.html`. La cuenta del servicio de la API necesita permiso de **lectura** sobre ese archivo. Al publicar un frontend nuevo basta con copiar `dist`: la API vuelve a leer el archivo cuando cambia su fecha o su tamaño, sin reiniciar. Si el archivo no existe al arrancar, la API no arranca; si desaparece con la API en marcha, `/vehiculo/` responde 503 y queda un error en el log.
+- **Desarrollo:** no se configura. Vite sirve su propio `index.html` en `http://localhost:5173/vehiculo/<slug>` y no envía `/vehiculo/` a la API. Para revisar a mano las etiquetas que genera la API: `npm run build` en `frontend/`, `dotnet user-secrets set "Portal:RutaIndexHtml" "../../frontend/dist/index.html"` (ruta relativa a `backend/Camion.Api`) y abrir `view-source:http://localhost:5080/vehiculo/<slug>`. En Development, si el archivo no existe, la API arranca igual y esa ruta responde 503.
+- Si el `index.html` no tiene las dos marcas, la API lo entrega sin cambios y avisa una vez en el log.
+- La dirección de cada ficha es `/vehiculo/<slug>`, con el `slug_publico` de la publicación tal como está guardado (no cambia en P10), codificado para URL.
 
 **CI (INF-1)**
 - `.github/workflows/ci.yml` compila y prueba todo en cada push y PR, sin secretos.
@@ -329,6 +404,12 @@ dotnet Camion.Api.dll recuperar-admin <correo>
 - [ ] Tras reiniciar la API, un enlace generado antes del reinicio sigue valiendo (las claves persisten).
 - [ ] El log de arranque no muestra el aviso de "claves sin cifrar" (o se aceptó por escrito).
 - [ ] Hay un respaldo de la base nueva y se restauró una vez.
+- [ ] P10: recargar `https://<dominio>/vehiculo/<slug>`, `/camiones` y `/cuenta/usuarios` muestra la pantalla (no un 404 del proxy).
+- [ ] P10: `/api/no-existe` da el 404 **JSON** de la API; `/media/no-existe.jpg` da 404 de la API; `/assets/no-existe.js` da 404 (nunca `index.html`); `/health` responde la API.
+- [ ] P10 (D-88 A): `view-source:https://<dominio>/vehiculo/<slug>` muestra el título del vehículo y sus `og:*`; un slug vendido o inexistente responde 404 con `noindex`.
+- [ ] P10 (D-89 A): antes de abrir, `robots.txt` dice `Disallow: /` y `sitemap.xml` da 404. Al abrir (`Portal__PermitirIndexacion=true`), `robots.txt` lleva `Allow: /api/catalogo/`, `Allow: /api/portal/`, `Disallow: /api/`, `Disallow: /health`, `Allow: /` y `Sitemap: https://<dominio>/sitemap.xml`, y `sitemap.xml` responde 200.
+- [ ] P10: un enlace de recuperación nuevo tiene la forma `https://<dominio>/restablecer-contrasena#codigo=…` y el registro del proxy solo muestra `/restablecer-contrasena` (sin el código).
+- [ ] P10: con dominio, pegar el enlace de una ficha en WhatsApp y en el Depurador de contenido compartido de Facebook muestra la foto, el título y la descripción del vehículo (anotar si alguna foto pesada no aparece).
 
 ---
 
@@ -341,3 +422,8 @@ dotnet Camion.Api.dll recuperar-admin <correo>
 | Correo transaccional (D-73 C) | PENDIENTE, después de D-81. Mientras tanto, la recuperación es asistida. |
 | Script `017_categorias_base_SUBIR.sql` | PROPUESTO. Necesario para la base nueva. |
 | Exigir el CI verde en `main` (protección de rama) | Necesita aprobación de la responsable. |
+| Vista previa de las fichas (D-88) | TOMADA: A. Necesita `Portal__RutaIndexHtml` y la regla `/vehiculo/` del proxy. |
+| Indexación (D-89) | TOMADA: A. Apagada hasta abrir al público (después de D-44 y D-81). |
+| Dirección del negocio para Google (D-90) | TOMADA: C. Sin dirección en los datos estructurados hasta que haya una sede de atención confirmada. |
+| Logo y favicon (D-91) | TOMADA: recorte actual; se reemplaza cuando lleguen los originales con transparencia (no requiere programar). |
+| Reglas del proxy de P10 | PROPUESTO: probarlas con el portal real antes de fijarlas. |
