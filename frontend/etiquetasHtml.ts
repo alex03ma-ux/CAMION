@@ -37,6 +37,7 @@ export function etiquetasHtml(html: string, entorno: EntornoHtml): string {
 /** Sustituye `<!--camion:<nombre>-->`; si no hay nada que poner, quita la línea entera. */
 function poner(html: string, nombre: string, contenido: string): string {
   const marca = `<!--camion:${nombre}-->`
-  if (contenido !== '') return html.replace(marca, contenido)
-  return html.replace(new RegExp(`^[ \\t]*${marca}\\r?\\n`, 'm'), '').replace(marca, '')
+  // B-6: con una función, `$&`, `$'`, `` $` `` y `$1` del contenido no se interpretan como patrones de reemplazo.
+  if (contenido !== '') return html.replace(marca, () => contenido)
+  return html.replace(new RegExp(`^[ \\t]*${marca}\\r?\\n`, 'm'), () => '').replace(marca, () => '')
 }

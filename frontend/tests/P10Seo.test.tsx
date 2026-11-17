@@ -301,6 +301,14 @@ describe('index.html y etiquetas al compilar (CA-P10-14, 75, 82)', () => {
     expect(resultado).toContain('<!--camion:meta:inicio-->')
   })
 
+  it("B-6: un '$&', '$1' o '$`' en la URL pública se copia tal cual (no se interpreta como patrón)", () => {
+    const resultado = etiquetasHtml(html, { VITE_URL_PUBLICA: 'https://a$&b$1c$`d.example' })
+    expect(resultado).toContain('<meta property="og:image" content="https://a$&amp;b$1c$`d.example/marca/og-portal.jpg"')
+    expect(resultado).not.toContain('<!--camion:og-absolutas-->')
+    // Sin el arreglo, `$&` se convertía en la marca `<!--camion:og-absolutas-->` y `` $` `` en todo el HTML anterior.
+    expect(resultado.split('<!doctype html>')).toHaveLength(2)
+  })
+
   it('con indexación y URL pública https: sin noindex y con las tres etiquetas absolutas', () => {
     const resultado = etiquetasHtml(html, { VITE_PERMITIR_INDEXACION: 'true', VITE_URL_PUBLICA: 'https://ejemplo.co/' })
     expect(resultado).not.toContain('name="robots"')
