@@ -1067,3 +1067,8 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
 - Opciones: A) añadir una nota a D-75 y D-76: "el número se asigna al implementar; el siguiente libre es 018"; B) dejarlo como está.
 - Recomendación: A. No requiere a la responsable; la puede cerrar el coordinador.
 - **Decisión:** el número 017 lo usa `database/catalogos/017_categorias_base_SUBIR.sql`. Las migraciones futuras de P8b (D-75 B) y del conteo de visitas (D-76 B) toman el siguiente número libre (018 en adelante) cuando se hagan; la mención a "017" en D-75 y D-76 se lee como "siguiente número libre".
+
+## D-87 — Nombre visible del portal y logo · TOMADA (2026-11-16)
+- Contexto: análisis de palabras clave del 2026-11-16 (Google Trends, Colombia, 12 meses): las búsquedas de compra se concentran en "camiones usados" y "venta de camiones" (relacionadas: "camiones usados en venta", "venta de camiones usados", "camiones usados en Colombia", "Chevrolet NPR/NQR/NHR", "venta de tractomulas usadas en Colombia"); "crédito para camión" casi no se busca. El portal hoy se presenta solo como "Financiamos Tu Camión".
+- **Decisión de la responsable:** el portal se presenta como **"Venta de Camiones"** (título) con **"Financiamos tu Camión"** como lema, con el logo de **VCA Automotores** que ella entrega (versión horizontal y versión cuadrada). Se busca mayor visibilidad en Google al publicar.
+- Pendiente de afinar en los criterios de P10: el texto exacto del `<title>` y de la meta description (propuesta del coordinador: título "Venta de camiones usados y crédito | Financiamos tu Camión"; descripción de 149 caracteres "Camiones usados en venta en Colombia: NPR, volquetas, tractomulas y maquinaria. Solicita tu crédito para camión o tu seguro todo riesgo por WhatsApp.").
