@@ -16,10 +16,14 @@ public static class ParametrosEndpoints
 {
     public static IEndpointRouteBuilder MapParametrosEndpoints(this IEndpointRouteBuilder app)
     {
-        // Pública: solo los datos de contacto (CA-P7-42).
+        // Pública: solo los datos de contacto (CA-P7-42) y, desde P9, los de la empresa si están completos (CA-P9-33).
         app.MapGet("/api/portal/contacto", async (CamionDbContext db, IOptions<OpcionesContacto> opciones,
             CancellationToken ct) =>
-            Results.Ok(ParametrosPortal.Publico((await ParametrosPortal.LeerAsync(db, opciones.Value.WhatsappPortal, ct)).Valor)))
+        {
+            var contacto = ParametrosPortal.Publico((await ParametrosPortal.LeerAsync(db, opciones.Value.WhatsappPortal, ct)).Valor);
+            var empresa = ParametrosEmpresa.Publica((await ParametrosEmpresa.LeerAsync(db, ct)).Valor);
+            return Results.Ok(contacto with { Empresa = empresa });
+        })
             .AllowAnonymous();
 
         var admin = app.MapGroup("/api/admin/parametros").RequireAuthorization(Roles.PoliticaSoloAdministrador);
@@ -59,8 +63,76 @@ public static class ParametrosEndpoints
             return Results.Ok(await AdminAsync(db, await ParametrosPortal.LeerAsync(db, opciones.Value.WhatsappPortal, ct), ct));
         });
 
+        // P9 (HU-085, RN-PA-005, D-63 B; CA-P9-25): datos de la empresa, sin valores por defecto.
+        admin.MapGet("/empresa", async (CamionDbContext db, CancellationToken ct) =>
+            Results.Ok(await EmpresaAdminAsync(db, await ParametrosEmpresa.LeerAsync(db, ct), ct)));
+
+        // CA-P9-26 a CA-P9-31: valida todo antes de escribir; valor y auditoría en la misma transacción; sin cambios no se
+        // escribe ni se audita.
+        admin.MapPut("/empresa", async (EmpresaPortalRequest? request, ClaimsPrincipal principal, CamionDbContext db,
+            TimeProvider reloj, CancellationToken ct) =>
+        {
+            // Cuerpo vacío: formato común (CA-P9-31). JSON no válido o con tipos incorrectos lo atiende ThrowOnBadRequest.
+            if (request is null) return Results.BadRequest(new ErrorResponse(MensajesError.FormatoInvalido));
+            var errores = ParametrosEmpresa.Validar(request, out var valor);
+            if (errores.Count > 0 || valor is null)
+                return Results.BadRequest(new ErrorResponse(MensajesP7.Revisar, errores));
+
+            var adminId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+            var ahora = reloj.GetUtcNow().UtcDateTime;
+            await using var tx = await db.Database.BeginTransactionAsync(ct);
+            var anterior = await ParametrosEmpresa.LeerAsync(db, ct);
+            // Sin fila guardada equivale a los tres en null: guardar los tres vacíos no escribe nada.
+            if (!ParametrosEmpresa.Iguales(anterior.Valor, valor))
+            {
+                var fila = await db.ConfiguracionesSistema.FirstOrDefaultAsync(c => c.Clave == ParametrosEmpresa.Clave, ct);
+                var filaNueva = fila is null;
+                if (fila is null)
+                {
+                    fila = new ConfiguracionSistema { Clave = ParametrosEmpresa.Clave };
+                    db.ConfiguracionesSistema.Add(fila);
+                }
+                fila.ValorJson = ParametrosEmpresa.Serializar(valor);
+                fila.ActualizadoPor = adminId;
+                fila.ActualizadoEn = ahora;
+                Auditoria.AgregarEvento(db, adminId, Auditoria.EntidadParametro, ParametrosEmpresa.Clave,
+                    Auditoria.Cambiar, anterior.Configurado ? ParametrosEmpresa.Datos(anterior.Valor) : null,
+                    ParametrosEmpresa.Datos(valor), ahora);
+                try
+                {
+                    await db.SaveChangesAsync(ct);
+                }
+                catch (DbUpdateException) when (filaNueva)
+                {
+                    // B-4 (revisión de seguridad P9): dos PUT simultáneos sin fila previa insertan la misma clave y uno
+                    // choca con la clave primaria. Como en los registros simultáneos (AuthEndpoints): se deshace todo
+                    // (ni valor ni auditoría) y, si la fila ya existe, 409 en vez de 500.
+                    await tx.RollbackAsync(ct);
+                    db.ChangeTracker.Clear();
+                    if (await db.ConfiguracionesSistema.AsNoTracking().AnyAsync(c => c.Clave == ParametrosEmpresa.Clave, ct))
+                        return Results.Conflict(new ErrorResponse(ParametrosEmpresa.MensajeConflicto));
+                    throw; // Lo atiende el manejador global: 500 con { error }.
+                }
+            }
+            await tx.CommitAsync(ct);
+            return Results.Ok(await EmpresaAdminAsync(db, await ParametrosEmpresa.LeerAsync(db, ct), ct));
+        });
+
         return app;
     }
+
+    private static async Task<EmpresaPortalAdmin> EmpresaAdminAsync(CamionDbContext db, ParametrosEmpresa.Leido l,
+        CancellationToken ct)
+    {
+        var e = l.Valor;
+        return new EmpresaPortalAdmin(e.RazonSocial, e.Nit, e.Direccion, ParametrosEmpresa.Completa(e), l.Configurado,
+            l.ActualizadoEn, await NombreAsync(db, l.ActualizadoPor, ct));
+    }
+
+    private static async Task<string?> NombreAsync(CamionDbContext db, string? usuarioId, CancellationToken ct) =>
+        usuarioId is null
+            ? null
+            : await db.Users.AsNoTracking().Where(u => u.Id == usuarioId).Select(u => u.NombreCompleto).FirstOrDefaultAsync(ct);
 
     private static async Task<ContactoPortalAdmin> AdminAsync(CamionDbContext db, ParametrosPortal.Leido l, CancellationToken ct)
     {

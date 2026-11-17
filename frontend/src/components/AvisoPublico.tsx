@@ -19,13 +19,14 @@ import {
   type FormularioAviso,
   type VarianteAviso,
 } from '../api/avisos'
-import { CORREO_MAX, MENSAJE_CONTACTO_FALLO, MENSAJE_REVISA_DATOS, NOMBRE_MAX, TELEFONO_MAX } from '../api/contactos'
+import { CORREO_MAX, mensajeErrorEnvio, MENSAJE_REVISA_DATOS, NOMBRE_MAX, TELEFONO_MAX } from '../api/contactos'
 import { ApiError } from '../api/http'
 import { AutorizacionDatos } from './AutorizacionDatos'
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo, CampoAreaTexto, CampoSelect } from './Campo'
 import { NotaObligatorio } from './NotaObligatorio'
 import { CampoTrampa, ConfirmacionSolicitud } from './SolicitudComun'
+import { useContactoPortal } from './useContactoPortal'
 
 /** Sesión del visitante, si la tiene (comprador, asesor o administrador). */
 export type SesionAviso = { token: string; perfil: PerfilUsuario }
@@ -78,6 +79,8 @@ export function AvisoPublico({ variante, sesion }: AvisoPublicoProps) {
   const id = (campo: string) => `${textos.prefijoId}-${campo}`
   const perfil = sesion?.perfil ?? null
   const [form, setForm] = useState<FormularioAviso>(() => formularioInicial(perfil))
+  // P9 (CA-P9-57): WhatsApp vigente del portal en el mensaje de fallo.
+  const contacto = useContactoPortal()
   const [sitioWeb, setSitioWeb] = useState('')
   const [errores, setErrores] = useState<ErroresAviso>({})
   const [enviando, setEnviando] = useState(false)
@@ -168,7 +171,7 @@ export function AvisoPublico({ variante, sesion }: AvisoPublicoProps) {
         else window.setTimeout(() => refAviso.current?.focus(), 0)
         return
       }
-      mostrarAviso({ tipo: 'error', texto: error instanceof ApiError ? error.mensaje : MENSAJE_CONTACTO_FALLO })
+      mostrarAviso({ tipo: 'error', texto: mensajeErrorEnvio(error, contacto.whatsapp) })
     } finally {
       enviandoRef.current = false
       setEnviando(false)

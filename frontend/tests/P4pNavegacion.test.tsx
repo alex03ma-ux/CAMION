@@ -10,13 +10,13 @@ import { abrirApp, CATALOGOS_INVENTARIO, PLAN_BASICO, paginaDe, RUTA_CATALOGOS_I
 const LISTA_USUARIOS = '/api/admin/usuarios?estado=PENDIENTE&pagina=1&tamano=20'
 
 describe('Rutas de las secciones del administrador', () => {
-  it('#/cuenta/<seccion> se reconoce; lo desconocido sigue siendo el inicio', () => {
+  it('#/cuenta/<seccion> se reconoce; lo desconocido es "no encontrada" (P9, CA-P9-48)', () => {
     expect(leerRuta('#/cuenta/planes')).toEqual({ nombre: 'cuenta', registro: false, seccion: 'planes' })
     expect(leerRuta('#/cuenta/suscripciones')).toEqual({ nombre: 'cuenta', registro: false, seccion: 'suscripciones' })
     expect(leerRuta('#/cuenta/catalogos/')).toEqual({ nombre: 'cuenta', registro: false, seccion: 'catalogos' })
     expect(leerRuta('#/cuenta/usuarios')).toEqual({ nombre: 'cuenta', registro: false, seccion: 'usuarios' })
     expect(leerRuta('#/cuenta')).toEqual({ nombre: 'cuenta', registro: false })
-    expect(leerRuta('#/cuenta/otra')).toEqual({ nombre: 'inicio' })
+    expect(leerRuta('#/cuenta/otra')).toEqual({ nombre: 'noEncontrada' })
   })
 })
 

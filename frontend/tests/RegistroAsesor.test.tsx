@@ -38,6 +38,8 @@ async function rellenarAsesor(user: Usuario, extra: { numero?: string; comercial
     await user.type(screen.getByLabelText('Nombre comercial (opcional)'), extra.comercial)
   }
   await user.type(screen.getByLabelText('Contraseña'), ASESOR.password)
+  // P9 (CA-P9-02, D-44): la autorización de datos es obligatoria.
+  await user.click(screen.getByRole('checkbox', { name: /Autorizo el tratamiento de mis datos personales/ }))
 }
 
 function errorDe(id: string) {
@@ -253,6 +255,7 @@ describe('Registro de asesor', () => {
       tipoDocumento: 'CC',
       numeroDocumento: 'AB-12345',
       nombreComercial: 'Camiones Ficticios',
+      autorizacionDatos: true,
     })
   })
 
@@ -297,7 +300,7 @@ describe('Registro de asesor', () => {
 })
 
 describe('Registro de comprador sin cambios (no regresión P2)', () => {
-  it('CA-N03-R06 el comprador sigue usando /registro/comprador con los 4 campos de P1', async () => {
+  it('CA-N03-R06 el comprador sigue usando /registro/comprador con los 4 campos de P1 y, desde P9, autorizacionDatos', async () => {
     const api = simularFetch({
       [RUTA_COMPRADOR]: {
         status: 201,
@@ -311,6 +314,7 @@ describe('Registro de comprador sin cambios (no regresión P2)', () => {
     await user.type(screen.getByLabelText('Correo electrónico'), 'comprador.ficticio@ejemplo.test')
     await user.type(screen.getByLabelText('Teléfono'), '+57 300 000 0000')
     await user.type(screen.getByLabelText('Contraseña'), 'Camion2026')
+    await user.click(screen.getByRole('checkbox', { name: /Autorizo el tratamiento de mis datos personales/ }))
     await user.click(screen.getByRole('button', { name: 'Crear cuenta' }))
 
     await waitFor(() =>
@@ -325,6 +329,7 @@ describe('Registro de comprador sin cambios (no regresión P2)', () => {
       email: 'comprador.ficticio@ejemplo.test',
       telefono: '+57 300 000 0000',
       password: 'Camion2026',
+      autorizacionDatos: true,
     })
   })
 
@@ -343,6 +348,7 @@ describe('Registro de comprador sin cambios (no regresión P2)', () => {
     await user.type(screen.getByLabelText('Correo electrónico'), 'comprador.ficticio@ejemplo.test')
     await user.type(screen.getByLabelText('Teléfono'), '+57 300 000 0000')
     await user.type(screen.getByLabelText('Contraseña'), 'Camion2026')
+    await user.click(screen.getByRole('checkbox', { name: /Autorizo el tratamiento de mis datos personales/ }))
     await user.click(screen.getByRole('button', { name: 'Crear cuenta' }))
     await waitFor(() => expect(api.llamadasA(RUTA_COMPRADOR)).toHaveLength(1))
   })

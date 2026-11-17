@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { iniciarSesion, MENSAJE_LOGIN_FALTAN_DATOS, type LoginResponse } from '../api/auth'
-import { ApiError, MENSAJE_INESPERADO } from '../api/http'
+import { ApiError, MENSAJE_INESPERADO, textoEspera } from '../api/http'
 import { enlaceCorreoOlvido, TEXTO_WHATSAPP_OLVIDO } from '../api/recuperacion'
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo } from './Campo'
@@ -19,6 +19,10 @@ function avisoDeError(error: unknown): DatosAviso {
       tipo: error.estado === 'PENDIENTE' ? 'info' : 'advertencia',
       texto: error.mensaje,
     }
+  }
+  // P9 (CA-P9-46): límite por IP; si llegó Retry-After, se dice cuánto esperar.
+  if (error.status === 429) {
+    return { tipo: 'error', texto: [error.mensaje, textoEspera(error.reintentarEnSegundos)].filter(Boolean).join(' ') }
   }
   return { tipo: 'error', texto: error.mensaje }
 }
@@ -82,7 +86,8 @@ export function LoginForm({
       setPassword('')
       await onSesionIniciada(respuesta)
     } catch (error) {
-      setPassword('')
+      // P9 (CA-P9-46): un 429 no evaluó la contraseña; se conserva lo escrito. En los demás casos se borra.
+      if (!(error instanceof ApiError && error.status === 429)) setPassword('')
       setAviso(avisoDeError(error))
       refPassword.current?.focus()
     } finally {

@@ -1,11 +1,13 @@
 import { categoriasDisponibles, type OpcionCatalogo } from '../api/catalogo'
-import { enlaceRedSeguro, formatearCelular, HOSTS_INSTAGRAM, HOSTS_TIKTOK } from '../api/parametros'
+import { enlaceRedSeguro, formatearCelular, formatearNit, HOSTS_INSTAGRAM, HOSTS_TIKTOK } from '../api/parametros'
 import {
   HASH_BUSCAR,
   HASH_BUSCO_VEHICULO,
   HASH_CUENTA,
+  HASH_PRIVACIDAD,
   HASH_REGISTRO,
   HASH_SEGURO_TODO_RIESGO,
+  HASH_TERMINOS,
   HASH_VENDE_TU_CAMION,
   hashBuscar,
 } from '../rutas'
@@ -31,8 +33,9 @@ export const HORARIO_ATENCION = [
 ] as const
 
 /**
- * Pie de página oscuro del portal. Solo lleva enlaces que existen y datos confirmados. Dirección,
- * páginas legales e Instagram/TikTok se añaden cuando la responsable los entregue (D-42); no se inventan.
+ * Pie de página oscuro del portal. Solo lleva enlaces que existen y datos confirmados (D-42); no se inventan.
+ * P9 (CA-P9-22, 34; D-83 A): la franja inferior enlaza las páginas legales y muestra razón social, NIT y dirección de
+ * notificaciones solo cuando el administrador completó los tres (sin respaldo fijo si faltan o si la lectura falla).
  */
 export function PiePortal({ tipos, conSesion }: PiePortalProps) {
   // P7: valores vigentes; si la lectura falla, los de respaldo (D-42).
@@ -134,7 +137,25 @@ export function PiePortal({ tipos, conSesion }: PiePortalProps) {
           )}
         </section>
       </div>
-      <p className="cat-pie-legal">© {new Date().getFullYear()} Financiamos Tu Camión</p>
+      <div className="cat-pie-legal">
+        <p>© {new Date().getFullYear()} Financiamos Tu Camión</p>
+        <nav aria-label="Información legal">
+          <ul className="cat-pie-legal-enlaces">
+            <li>
+              <a href={HASH_TERMINOS}>Términos y condiciones</a>
+            </li>
+            <li>
+              <a href={HASH_PRIVACIDAD}>Política de tratamiento de datos</a>
+            </li>
+          </ul>
+        </nav>
+        {contacto.empresa && (
+          <p className="cat-pie-empresa">
+            {contacto.empresa.razonSocial} · NIT {formatearNit(contacto.empresa.nit)} · Dirección de notificaciones:{' '}
+            {contacto.empresa.direccion}
+          </p>
+        )}
+      </div>
     </footer>
   )
 }

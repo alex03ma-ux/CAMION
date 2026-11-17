@@ -600,3 +600,165 @@ Cobertura (QA, antes de D-78): 64 de 75 criterios con prueba automática que pas
 - Revisión de seguridad: **CON OBSERVACIONES**. M-1, M-2, B-1 y B-4 corregidos por D-78. **B-2** (límite de 10.000 filas comprobado después de cargar todo; paginación en memoria) y **B-3** (detalles del escape de fórmulas del CSV) siguen abiertos.
 - Al arrancar por primera vez la API con D-78 se crea la carpeta de claves (`C:\CAMION_claves` por defecto). No debe borrarse ni subirse a Git. Para producción hay que llevarla al servidor (INF-2).
 - Un administrador que olvida su contraseña sigue sin salida dentro del sistema: D-79 PENDIENTE.
+
+---
+
+## Preparación para publicar (2026-11-16)
+
+| Dato | Valor |
+|---|---|
+| Fecha | 2026-11-16 |
+| Rama auditada | `feature/inf-publicacion` (no se cambió de rama ni se hizo fetch) |
+| Commit auditado | `1aecf64ce84cbcef7ad71b3387146aaad2e402dc` |
+| Referencias locales | `main` y `origin/main` locales = `a3d03d4` (sin fetch). Según el coordinador, la PR #16 ya se unió en el remoto con este contenido: NO VERIFICADO aquí |
+| `git status` | solo `?? frontend/respaldos/` (no se leyó) |
+| Pregunta | "¿Ya estamos completos para pagar servidor y publicar la página? ¿Qué falta?" |
+
+### PP.1 Compilación y base (ejecutado en esta auditoría)
+
+- `dotnet build` de `backend/Camion.Api` (salida a una carpeta temporal): **0 errores, 0 advertencias** (22,6 s).
+- `npm run build` y las pruebas: **NO EJECUTADOS** en esta auditoría, por instrucción. El CI de la PR #16 los ejecuta (`.github/workflows/ci.yml:103-115`).
+- Estructura de la base (solo `SELECT` a `information_schema` de `camion_ventas` local): **49 tablas, exactamente las mismas** que crean `002` + `003` + `004` + los `_SUBIR` + `005`. La lista de scripts de `docs/GUIA-PUBLICACION.md:142-162` crea la estructura completa. `017_categorias_base_SUBIR.sql` solo hace 4 `INSERT ... WHERE NOT EXISTS` (`database/catalogos/017_categorias_base_SUBIR.sql:14-21`). Sigue **PROPUESTO** y no se ha aplicado en ninguna base (`docs/GUIA-PUBLICACION.md:149`, `:324`).
+- El 002 no inserta filas (no tiene `INSERT`). El demo está aislado en `database/demo/` y la guía lo excluye (`docs/GUIA-PUBLICACION.md:167`). Las secciones BAJAR de 003 y 004 están comentadas (`003_p2_estados_asesor.sql:106`, `004_p4a_inventario.sql:239-307`).
+
+### PP.2 Cobertura HU y RN de la matriz oficial (D-1), verificada en código
+
+Estados: IMPLEMENTADO (el código existe; sus pruebas automáticas pasaron en el CI de la PR #16 según el coordinador, no se volvieron a ejecutar hoy) / PARCIAL / NO IMPLEMENTADO / FUERA DE ALCANCE (D-n).
+
+| HU | RN | Estado | Evidencia |
+|---|---|---|---|
+| HU-001 a HU-003 Portal, recientes, destacados | RN-CA-001, RN-CA-002, RN-VE-011, RN-VE-012, RN-VE-013 | IMPLEMENTADO | `CatalogoEndpoints.cs:40-43` (anónimo), `ConsultasCatalogo.cs` (vigencia), `Inicio.tsx` |
+| HU-004 a HU-012 Buscar, categorías, filtros, limpiar | RN-CA-003 a RN-CA-011 | IMPLEMENTADO | `CatalogoEndpoints.cs:59-62` (q, tipoId, marcaId, lineaId, precio, año, km), `:216` filtros, `Filtros.tsx` |
+| HU-013 a HU-018 Registrar vehículo, fotos, información complementaria, precio, km, características | RN-VE-001, RN-VE-002 (modificada por D-2), RN-VE-003, RN-VE-005, RN-VE-006, RN-VE-010 | IMPLEMENTADO | `InventarioEndpoints.cs:180`, `:501` (fotos), `:576`, `:617`; D-30 (al menos 1 foto) |
+| HU-019 Editar / HU-020 Inactivar | RN-VE-004, RN-VE-008, RN-VE-009 | IMPLEMENTADO | `InventarioEndpoints.cs:324`, `:434`; auditoría `Auth/Auditoria.cs:8` |
+| HU-021 / HU-022 Inventario propio y general | RN-CO-009, RN-AD-001 | IMPLEMENTADO | `InventarioEndpoints.cs:71-74` (el asesor ve lo suyo y el administrador todo) |
+| HU-023 a HU-027 Crear, modificar, inactivar, renovar, destacar publicación | RN-CO-001 a RN-CO-004, RN-SU-002 | IMPLEMENTADO (el asesor gestiona sus destacados según su plan, D-38) | `PublicacionesEndpoints.cs:117`, `:186`, `:191`, `:240`, `:280` |
+| HU-028 Vencimiento automático | RN-CO-005 | IMPLEMENTADO (vigencia = plan, D-41; se calcula al consultar, sin tarea programada) | `ConsultasCatalogo.cs` (`Visibles`), D-41 |
+| HU-029 a HU-033 Contactar, generar, asignar, gestionar, cerrar lead | RN-CL-001 a RN-CL-004 | IMPLEMENTADO (asignación según D-7 y D-46) | `ContactosEndpoints.cs:21`, `LeadsEndpoints.cs:31`, `:123`, `:256`, `:314`; `BarridoLeads.cs` |
+| HU-034 a HU-038 Búsquedas | RN-BU-001, RN-BU-002 (modificada por D-7: las atiende el administrador) | IMPLEMENTADO | `SolicitudesEndpoints.cs:29`, `LeadsEndpoints.cs:145`, `:182`, `:229`, `:256` |
+| HU-039 a HU-042 Créditos | RN-CO-006 a RN-CO-008 (D-7, D-54) | IMPLEMENTADO (solicitud de contacto al administrador; la gestión ante bancos ocurre fuera, D-45) | `SolicitudesEndpoints.cs:25`, `SolicitudCredito.tsx` |
+| HU-043 a HU-045 Aprobar, rechazar, activar acceso | RN-US-001 (solo asesores, D-3), RN-US-002, RN-US-003 | IMPLEMENTADO | `AdminUsuariosEndpoints.cs:20-31`, `:153` |
+| HU-046 Enviar credenciales | RN-US-004 | FUERA DE ALCANCE (D-5: autorregistro con contraseña propia) | — |
+| HU-047 Bloquear / HU-048 Consultar usuarios | RN-US-005, RN-US-001 | Bloquear y consultar IMPLEMENTADOS; las "alertas de acceso" de RN-US-005 NO IMPLEMENTADAS | `AdminUsuariosEndpoints.cs:26`, `:59` |
+| HU-049 a HU-051 Planes | RN-PL-001, RN-PL-002 | IMPLEMENTADO | `PlanesEndpoints.cs:44`, `:76`, `:108-110` |
+| HU-052 a HU-055 Contenido y marketing | RN-MKT-001, RN-CA-012 | FUERA DE ALCANCE (D-75 A; P8b opcional) | sin código |
+| HU-056 a HU-058 Favoritos | RN-SE-005 | **NO IMPLEMENTADO y sin decisión** (no hay D-n ni fila en el BACKLOG; la tabla `favoritos` existe en la base, pero no está mapeada) | buscar `favorit` en `backend/Camion.Api` y `frontend/src` no da resultados |
+| HU-059 Iniciar sesión | RN-SE-001 | IMPLEMENTADO | `AuthEndpoints.cs:184`; bloqueo tras 5 intentos `Program.cs:54-56` |
+| HU-060 Cierre automático | RN-SE-002 (D-12) | IMPLEMENTADO (30 min sin actividad; token de 2 h) | `frontend/src/auth/inactivity.ts:14`, `AuthEndpoints.cs:235`, `:272` |
+| HU-061 Auditoría | RN-SE-003 | IMPLEMENTADO (línea de tiempo solo para el administrador, D-72) | `Auth/Auditoria.cs:8`, `ActividadEndpoints.cs:19`, `:29` |
+| HU-062 Proteger datos personales | RN-SE-004 | **PARCIAL**: casilla y prueba de autorización en contacto, avisos, crédito y búsqueda. **Falta en el registro de comprador y en la inscripción de asesor.** La política no está publicada (D-44) | `ContactosEndpoints.cs:63-89`, `AvisosEndpoints.cs:76`, `SolicitudesEndpoints.cs:104`; `RegistroForm.tsx:1-33` no usa `AutorizacionDatos`; `Models/Lead.cs:130-131` (constantes sin uso) |
+| HU-063 Recuperar contraseña | RN-US-006 | IMPLEMENTADO como recuperación asistida (D-73 D, D-78, D-79 A). El correo (D-73 C) sigue PENDIENTE de D-81 | `RecuperacionEndpoints.cs:32`, `:60`, `Program.cs:201-214` |
+| HU-064 Marcar vendido | RN-GC-001, RN-VE-014 | IMPLEMENTADO (con reversión, D-62) | `VentasEndpoints.cs:24`, `:90` |
+| HU-065 Mis publicaciones | RN-GC-002 | IMPLEMENTADO | `PublicacionesEndpoints.cs:27`, `MisPublicaciones.tsx:55` |
+| HU-066 a HU-069 Suscripción: consultar, renovar, suspender, reactivar | RN-SU-001 a RN-SU-005 | IMPLEMENTADO (renueva el administrador, D-36; pagos registrados, D-61 B y D-67) | `SuscripcionesEndpoints.cs:217`, `:118`, `:201`, `:205`; `PagosEndpoints.cs:25-68` |
+| HU-070 Configurar notificaciones | RN-NO-001 | NO IMPLEMENTADO (depende del correo, D-73 C, que depende de D-81; sin WhatsApp automático, D-74 A) | sin código |
+| HU-071 a HU-074 Avisos de lead, crédito y vencimientos | RN-NO-002 a RN-NO-005 | PARCIAL: solo dentro del panel (D-48, D-64 b) | `EnlaceContactos.tsx:1`, `PanelEndpoints.cs:20`, `:53`, `MisPublicaciones.tsx:373` |
+| HU-075 a HU-080 Dashboard, reportes, exportación, indicadores | RN-RE-001 a RN-RE-006 | IMPLEMENTADO (exportación en CSV, no en Excel ni PDF, D-71) | `PanelEndpoints.cs:27`, `ReportesEndpoints.cs:47`, `:57`, `:88`, `:98` |
+| HU-081 Parámetros generales | RN-PA-001 | PARCIAL por decisión: solo los datos de contacto (D-63 A; la opción C se rechazó) | `ParametrosEndpoints.cs:20`, `:31` |
+| HU-082 a HU-084 Marcas, modelos, carrocerías | RN-PA-002 a RN-PA-004 | IMPLEMENTADO | `AdminCatalogosEndpoints.cs:23-27`, `:139`, `:163` |
+| HU-085 Información corporativa / HU-086 Textos legales | RN-PA-005, RN-PA-006 | NO IMPLEMENTADO; BLOQUEADO por D-44 (D-63 B: "cuando se libere D-44") | sin código |
+| HU-087 Configuración comercial (promociones) | RN-PA-007 | FUERA DE ALCANCE (D-75 A; P8b opcional) | sin código |
+| HU-N01, HU-N02 Avisos (D-6) | — | IMPLEMENTADO | `AvisosEndpoints.cs:23`, `:31` |
+| HU-N03 Registro de comprador (D-8) | — | IMPLEMENTADO (sin casilla de autorización) | `AuthEndpoints.cs:37`; asesor en `:103` |
+| HU-089/HU-090 CRM (lista de 90 HU) | — | FUERA DE ALCANCE (D-1) | — |
+| D-15 "Solicitar ser asesor" (P2b) | — | NO IMPLEMENTADO (PENDIENTE en el BACKLOG) | sin ruta |
+| D-43 Alquiler | — | EN PAUSA | — |
+
+Resumen: de las 87 HU, el núcleo comercial (portal, inventario, publicaciones, leads, búsquedas, créditos, usuarios, planes, suscripciones, ventas, reportes y catálogos) está IMPLEMENTADO. Quedan NO IMPLEMENTADAS: favoritos (HU-056 a HU-058, sin decisión), configurar notificaciones (HU-070), e información corporativa y textos legales (HU-085 y HU-086, bloqueadas por D-44). PARCIALES: HU-062 (datos personales), HU-071 a HU-074 (solo en el panel) y HU-081 (solo contacto). Fuera de alcance por decisión: HU-046 (D-5), HU-052 a HU-055 y HU-087 (D-75).
+
+### PP.3 Preparación técnica para producción (verificada)
+
+| Punto | Estado | Evidencia |
+|---|---|---|
+| Claves obligatorias: sin `ConnectionStrings:CamionDatabase` o `Jwt:Key` (≥ 32 bytes) la API no arranca. Fuera de Development tampoco arranca sin `Media:Ruta`, `DataProtection:RutaClaves` y `Recuperacion:UrlPortal` (https) | IMPLEMENTADO | `Program.cs:23-30`, `:75-77`; `ConfiguracionServidor.cs:37-48` |
+| Proxy (KnownProxies/Networks), IPv6 agrupada por /64, HSTS de 30 días, redirección a https, encabezados de seguridad, sin encabezado `Server` | IMPLEMENTADO | `Program.cs:32`, `:40-42`, `:235-253`; `ConfiguracionServidor.cs:57-109`, `:179-186` |
+| CORS solo con `Portal:Origen` | IMPLEMENTADO, pero el frontend **no puede** usar otro origen: todas sus llamadas son relativas (`/api/...`) y nada en `frontend/src` lee el `VITE_API_BASE_URL` de `frontend/.env.example` | `Program.cs:34-38`; `frontend/src/api/http.ts:114`; `frontend/src/api/catalogo.ts:321` |
+| El frontend de producción llama a `/api` y `/media` del mismo dominio | Funciona si el proxy envía `/api`, `/media` y `/health` a la API (así lo pide la guía). La API **no** sirve `frontend/dist` (no hay `UseStaticFiles`), así que el proxy debe servirlo | `vite.config.ts:6-20`; `docs/GUIA-PUBLICACION.md:14-16`; `Program.cs:281-337` |
+| DataProtection (DPAPI en Windows, certificado en Linux) | IMPLEMENTADO | `Program.cs:67-73`; `ConfiguracionServidor.cs:136-152` |
+| Orden de los scripts, con el 017 | DOCUMENTADO; el 017 es PROPUESTO y no se ha aplicado | `docs/GUIA-PUBLICACION.md:142-170` |
+| Primer administrador (`promover-admin`) y `recuperar-admin` | IMPLEMENTADO (D-13, D-79) | `Program.cs:185-214`; `docs/GUIA-PUBLICACION.md:176-185`, `:264-272` |
+| Respaldos | Solo DOCUMENTADO (el repositorio no tiene script ni tarea programada) | `docs/GUIA-PUBLICACION.md:295-301` |
+| Versión de la política que se guarda en cada consentimiento | `BORRADOR-2026-11-04` | `backend/Camion.Api/appsettings.json:9-10` |
+| `/health/database` sin sesión (devuelve el nombre de la base y el número de tablas) | IMPLEMENTADO sin protección; la guía pide limitarlo en el proxy | `Program.cs:288-304`; `docs/GUIA-PUBLICACION.md:255` |
+| Límite por IP en registro e inicio de sesión | NO IMPLEMENTADO. El límite solo existe en contacto, avisos, crédito, búsqueda y restablecer contraseña. El inicio de sesión bloquea la cuenta tras 5 intentos | `AuthEndpoints.cs:37`, `:103`, `:184` sin `LimitePeticiones*`; `ContactosEndpoints.cs:136`; `Program.cs:54-56` |
+| Sesión guardada en `localStorage` (expuesta si hubiera XSS; la CSP del frontend depende del proxy y la guía la marca como "propuesta, hay que probarla") | IMPLEMENTADO así | `frontend/src/auth/session.ts:1`, `:19`; `docs/GUIA-PUBLICACION.md:244-253` |
+| Datos DEMO o contraseñas de prueba en el código o en los scripts de producción | No se encontraron. El 002 no inserta filas. El demo está en `database/demo/`, que se excluye. No hay cuentas ni contraseñas en `frontend/src` ni en `backend/Camion.Api`. La base local tiene datos de prueba, pero por D-80 A producción usa una base nueva | `docs/GUIA-PUBLICACION.md:167`; D-80 |
+| Textos "BORRADOR" visibles al público | Sí: `#/privacidad` muestra "BORRADOR — en revisión legal" y no contiene la política | `frontend/src/components/Privacidad.tsx:9`, `:15-25` |
+| Página de términos | NO EXISTE (no hay ruta) | `frontend/src/rutas.ts:38-61`, `:196` |
+| Enlaces legales en el pie | NO HAY (solo "© Financiamos Tu Camión") | `frontend/src/components/PiePortal.tsx:136` |
+| Datos de la empresa (razón social, NIT, dirección) en el portal | NO HAY. Los borradores legales los tienen como `[RAZÓN SOCIAL]`, `[NIT]` y `[DOMINIO]` | `docs/legal/POLITICA-TRATAMIENTO-DATOS.md:9-14`; `docs/legal/TERMINOS-Y-CONDICIONES.md:9` |
+| Contacto configurable | El pie, la ficha y la página de privacidad leen `GET /api/portal/contacto` (con un respaldo fijo). **Siguen fijos** el teléfono escrito en 3 mensajes y el WhatsApp de respaldo | `ParametrosEndpoints.cs:20`; fijos en `frontend/src/api/contactos.ts:41`, `:52`, `BusquedaVehiculo.tsx:101`, `MisSolicitudes.tsx:113`, `PiePortal.tsx:25-27`, `api/parametros.ts:42-44`, `appsettings.json:18` |
+| SEO básico | Solo `<title>` (y un título por ruta). **No hay** meta description, favicon, `robots.txt` ni sitemap (no existe `frontend/public/`). Los buscadores no indexan bien las rutas con `#` | `frontend/index.html:1-12`; `frontend/src/App.tsx:112` |
+| Página 404 | NO HAY: una ruta desconocida muestra la portada sin aviso | `frontend/src/rutas.ts:224` |
+
+### PP.4 Lo que falta, en tres grupos
+
+**a) BLOQUEA LA PUBLICACIÓN (no abrir al público sin esto)**
+
+> Actualización P9 (2026-11-16): los puntos 2 a 5 avanzaron con P9 y el punto 4 quedó resuelto en la rama. Ver **PP.7**. El texto de esta lista es el de la auditoría original y no se reescribió.
+
+1. **Revisión legal y textos definitivos (D-44 PROPUESTO).** La política y los términos son borradores, con campos `[...]` y notas para el abogado (`docs/legal/POLITICA-TRATAMIENTO-DATOS.md:3`, `:9-14`; `docs/legal/TERMINOS-Y-CONDICIONES.md:5`, `:9`, `:74-77`). Incluye las preguntas abiertas: intermediación de seguros y de crédito, "usados peritados" (`Inicio.tsx:55`), teléfono del asesor publicado (D-47), registro en el RNBD y transferencia de datos a Gmail y WhatsApp. BLOQUEADO (abogado).
+2. **Datos de la empresa** (razón social, NIT, dirección de notificaciones y dominio): los debe entregar la responsable (D-44). No aparecen en el portal (`PiePortal.tsx:136`). BLOQUEADO (responsable).
+3. **Publicar `#/privacidad` con la política aprobada y crear `#/terminos`**, sin la franja "BORRADOR" (`Privacidad.tsx:9`, `:15-25`; no existe ruta de términos, `rutas.ts:196`), y **enlazar ambas desde el pie** (`PiePortal.tsx:136`). NO IMPLEMENTADO (depende del punto 1).
+4. **Casilla de autorización en el registro de comprador y en la inscripción de asesor**, guardando la prueba (D-44, "pendiente técnico"). Hoy falta: `RegistroForm.tsx:1-33` no usa `AutorizacionDatos`, y `AuthEndpoints.cs:37` y `:103` no guardan consentimiento. `Models/Lead.cs:130-131` y `CamionDbContext.cs:589` ya admiten `REGISTRO_COMPRADOR` e `INSCRIPCION_ASESOR`, así que probablemente no hace falta migración (a confirmar). El comentario de `AutorizacionDatos.tsx:2` dice que los registros usan la casilla, y no es cierto. NO IMPLEMENTADO.
+5. **`PoliticaDatos:Version` con la versión aprobada** (hoy `BORRADOR-2026-11-04`, `appsettings.json:10`). Si se publica así, cada autorización queda ligada a un borrador. Es configuración y depende del punto 1.
+6. **Hosting y dominio (D-81 PENDIENTE)**, certificado https y las variables de `docs/GUIA-PUBLICACION.md:65-93` en el servidor: `ASPNETCORE_ENVIRONMENT=Production`, una `Jwt__Key` nueva, un usuario propio de MariaDB, `Media__Ruta`, `DataProtection__RutaClaves`, `Recuperacion__UrlPortal` con https y `Proxy__KnownProxies`. El código ya las exige (`Program.cs:23-30`); falta configurarlas. BLOQUEADO (D-81).
+7. **Base nueva (D-80 A)** con los scripts en orden, y **aprobar el 017** (PROPUESTO, `docs/GUIA-PUBLICACION.md:149`, `:324`): sin él no hay categorías y no se pueden crear vehículos.
+8. **Primer administrador** con `promover-admin` en el servidor (`docs/GUIA-PUBLICACION.md:176-185`), y **planes y contacto** cargados desde el panel (la base nueva no trae planes, `:187-190`).
+9. **Respaldos** diarios de la base, las fotos y las claves, con una restauración probada (`docs/GUIA-PUBLICACION.md:295-301`). Solo están DOCUMENTADOS; hay que programarlos en el servidor elegido.
+10. **Proxy:** servir `frontend/dist`; enviar `/api`, `/media` y `/health` a la API; poner encabezados de seguridad y CSP al frontend (propuesta sin probar, `docs/GUIA-PUBLICACION.md:244-253`); restringir `/health/database` (`Program.cs:288`; guía `:255`). Después, la comprobación final de la guía (`:305-314`).
+
+**b) IMPORTANTE, puede ir poco después de publicar**
+
+1. Límite por IP en `POST /api/auth/registro/*` y `/login` (`AuthEndpoints.cs:37`, `:103`, `:184`): hoy un robot puede crear cuentas sin límite. Se recomienda hacerlo antes de anunciar el portal.
+2. Canal para los derechos del titular (consultar, corregir y suprimir datos, Ley 1581): no hay rutas para editar o borrar los datos de visitantes ni las cuentas (`LeadsEndpoints.cs:16`). Se atenderían a mano por correo o WhatsApp, y la política debe decirlo (lo define el abogado).
+3. Correo transaccional con dominio propio (D-73 C, después de D-81) para la recuperación y los avisos (HU-070 a HU-074).
+4. SEO básico: meta description, favicon, `robots.txt` e imagen para compartir (`frontend/index.html:1-12`); página 404 (`rutas.ts:224`). Las rutas con `#` limitan la indexación; si el posicionamiento importa, hay que cambiar el enrutado (requiere decisión).
+5. Teléfono escrito a mano en 3 mensajes (`api/contactos.ts:41`, `BusquedaVehiculo.tsx:101`, `MisSolicitudes.tsx:113`): si el administrador cambia el WhatsApp, esos textos quedan desactualizados.
+6. Conteo propio de visitas (D-76 B, "al publicar").
+7. B-2 de P8 (reportes paginados en memoria; aceptable con el volumen actual, `REVISION-SEGURIDAD-P8.md:128`) y P6-B (BACKLOG).
+8. E2E: Playwright no está instalado y no se ha ejecutado ninguna prueba de extremo a extremo (secciones P6.3 a P8.3).
+9. Exigir el CI verde en `main` (protección de rama; necesita aprobación, `docs/GUIA-PUBLICACION.md:325`).
+
+**c) OPCIONAL / mejoras**
+
+- P8b promociones (D-75 B), P2b "solicitar ser asesor" (D-15), contenido de marketing (HU-052 a HU-055), favoritos (HU-056 a HU-058; **requiere decisión**, no hay D-n), botón "Compartir" (D-77), alquiler (D-43, en pausa), HSTS a 1 año (`Program.cs:40`), dividir el paquete del frontend (O-5), y quitar `VITE_API_BASE_URL` de `frontend/.env.example` o implementarlo.
+
+### PP.5 Diferencias entre documentación y código (nuevas)
+
+- `README.md:13` dice "`main` contiene P0 a P7" y `README.md:40` que P8 está "pendiente de unir". Está desactualizado: según `BACKLOG.md`, P8 se unió con la PR #15, y según el coordinador INF-1/2/3 se unieron con la PR #16.
+- `BACKLOG.md` muestra INF-1, INF-2 e INF-3 "EN CURSO", sin la PR #16.
+- `AutorizacionDatos.tsx:2` afirma que los registros usan la casilla, y no la usan.
+- `frontend/.env.example` documenta `VITE_API_BASE_URL`, que el código no lee. Además, `Portal:Origen` (CORS) no sirve con el frontend actual, que solo usa rutas relativas.
+- `docs/GUIA-PUBLICACION.md:198-200` dice que la comparación con la base local no se pudo ejecutar. En esta auditoría sí se ejecutó y las 49 tablas coinciden (PP.1).
+
+### PP.6 Veredicto
+
+- **Pagar el servidor y el dominio: sí, ya se puede.** El código está listo para desplegarse: compila, y las comprobaciones de arranque, el proxy, https, DataProtection y los comandos de administrador están IMPLEMENTADOS. Antes hay que tomar D-81. Con el servidor se puede montar todo y probarlo **en privado** (sin anunciarlo o con el acceso restringido).
+- **Publicar abiertamente: no, todavía.** Faltan los puntos 1 a 5 del grupo (a), que son legales o dependen de lo legal (Ley 1581: política aprobada y visible, términos, datos del responsable y autorización también en el registro), y los puntos 6 a 10 de puesta en marcha en el servidor. Sin esperar al abogado ya se puede programar el punto 4 (casilla en el registro) y, del grupo (b), el límite por IP del registro y del inicio de sesión.
+
+### PP.7 Actualización P9 "Prepublicación" (2026-11-16)
+
+Fuente: `docs/criterios/P9-criterios.md`, `docs/criterios/P9-evidencia.md` y `docs/coordinacion/REVISION-SEGURIDAD-P9.md`. Rama `feature/p9-prepublicacion`, **pendiente de unir a `main`**. No es una auditoría nueva del código: el documentador resume lo que verificaron QA y la revisión de seguridad.
+
+Estados: "IMPLEMENTADO y PROBADO" = el código está en la rama y sus pruebas automáticas pasaron (backend 1481/1481 y frontend 875/875, `P9-evidencia.md` §1). **Ninguno tiene prueba manual todavía**, y la prueba contra la API real fue NO APLICABLE (la API en marcha era anterior a P9). Las cifras son anteriores a `af13732` (corrección de B-5), que la evidencia no volvió a medir.
+
+**Grupo (a)**
+
+| Punto | Qué hizo P9 | Estado |
+|---|---|---|
+| 1. Revisión legal y textos definitivos (D-44) | Nada: depende del abogado | **Sigue.** BLOQUEADO (abogado) |
+| 2. Datos de la empresa | Sección "Datos de la empresa" en "Parámetros" (`GET`/`PUT /api/admin/parametros/empresa`, solo administrador, auditada; NIT con dígito de verificación de la DIAN). El pie y las páginas legales los muestran solo cuando están los tres (D-83 A) | La pantalla: IMPLEMENTADO y PROBADO. **Sigue** faltando que la responsable entregue los datos reales y el dominio: BLOQUEADO (responsable, D-44) |
+| 3. `#/privacidad` y `#/terminos`, enlazadas desde el pie | Existe `#/terminos`; las dos páginas llevan la franja "En revisión legal" (una sola constante, `TEXTOS_LEGALES_EN_REVISION`) y no traen texto de los borradores; el pie enlaza las dos | Páginas y enlaces: IMPLEMENTADO y PROBADO. **Sigue** publicar los textos aprobados y quitar la franja (depende del punto 1) |
+| 4. Casilla de autorización en el registro de comprador y en la inscripción de asesor | Casilla sin marcar en los dos formularios; la API la exige y guarda la prueba (`REGISTRO_COMPRADOR`, `INSCRIPCION_ASESOR`) en la misma transacción que la cuenta; sin migración. Sin casilla de términos por ahora (D-84 A) | **Resuelto por P9.** IMPLEMENTADO y PROBADO |
+| 5. `PoliticaDatos:Version` con la versión aprobada | Un único punto de lectura; una versión mal formada impide arrancar; fuera de Development, una versión de borrador deja un aviso en el log. Las autorizaciones del borrador se conservan con su versión (D-85 A) | Comprobaciones: IMPLEMENTADO y PROBADO. **Sigue** cambiar el valor (hoy `BORRADOR-2026-11-04`) cuando se apruebe la política (depende del punto 1) |
+| 6 a 10. Hosting y dominio, base nueva y 017, primer administrador, respaldos, proxy | Fuera del alcance de P9. M-1 de P9 añade a la lista del servidor: con proxy, configurar `Proxy:KnownProxies` o el límite de intentos pasa a ser común para todo el portal | **Siguen.** El 6 está BLOQUEADO por D-81; los demás dependen del servidor elegido (`docs/GUIA-PUBLICACION.md`) |
+
+**Grupo (b), resueltos en la rama por P9** (IMPLEMENTADO y PROBADO, sin prueba manual):
+- Punto 1: límite por IP en el registro (5 cada 60 min y 20 al día, cupo común de comprador y asesor) y en el inicio de sesión (20 cada 15 min), con 429 y `Retry-After`; el 429 no cuenta como fallo de la cuenta.
+- Punto 4, en parte: meta description, favicon, `robots.txt`, `noindex` en las rutas privadas y "Página no encontrada". **Siguen** la imagen para compartir y la limitación de las rutas con `#`. QA-P9-1: la meta description aprobada tiene 172 caracteres y el criterio pide máx. 160 (PENDIENTE de la responsable).
+- Punto 5: los mensajes de crédito, búsqueda, seguro y "Mis solicitudes" usan el WhatsApp vigente de "Parámetros".
+
+**Abierto tras P9:** M-2 (enumeración con el 409, por aceptar en `DECISIONES.md`) y B-1 a B-4 y B-6 de `REVISION-SEGURIDAD-P9.md`; D-82 (favoritos) PENDIENTE; la prueba manual (`docs/manual/P9-prepublicacion.md`), E2E y la revisión a 375 px, NO EJECUTADAS.
+
+**PP.5, ya corregido:** el README se actualizó (P0 a P8 e INF-1 a INF-3 en `main`, PR #16) y el BACKLOG muestra INF-1 a INF-3 como unidos. El comentario de `AutorizacionDatos.tsx:2` quedó cierto con P9 (CA-P9-15).

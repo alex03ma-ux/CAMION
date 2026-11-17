@@ -14,6 +14,18 @@ export type ContactoPortal = {
   horario: string[]
   instagram: string | null
   tiktok: string | null
+  /**
+   * P9 (CA-P9-33, D-83 A): razón social, NIT y dirección de notificaciones, solo si los tres están guardados;
+   * null si falta alguno o si la lectura falla (no hay respaldo fijo).
+   */
+  empresa: EmpresaPortal | null
+}
+
+/** P9: datos de la empresa publicados en el portal. `nit` normalizado ("800197268-4"). */
+export type EmpresaPortal = {
+  razonSocial: string
+  nit: string
+  direccion: string
 }
 
 export type ContactoPortalAdmin = ContactoPortal & {
@@ -45,6 +57,7 @@ export const CONTACTO_PORTAL_RESPALDO: ContactoPortal = {
   horario: ['Lunes a viernes: 9:00 a. m. a 5:00 p. m.', 'Sábados: 9:00 a. m. a 3:00 p. m.'],
   instagram: null,
   tiktok: null,
+  empresa: null,
 }
 
 // ---- Límites y mensajes del contrato ----
@@ -197,7 +210,18 @@ export function leerContactoPortal(valor: unknown): ContactoPortal | null {
     horario,
     instagram: textoONulo(valor.instagram),
     tiktok: textoONulo(valor.tiktok),
+    empresa: leerEmpresaPublica(valor.empresa),
   }
+}
+
+/** CA-P9-33: solo con los tres datos y un NIT válido; si no, null (el pie no muestra nada de la empresa). */
+function leerEmpresaPublica(valor: unknown): EmpresaPortal | null {
+  if (!esObjetoJson(valor)) return null
+  const razonSocial = texto(valor.razonSocial).trim()
+  const direccion = texto(valor.direccion).trim()
+  const nit = normalizarNit(texto(valor.nit))
+  if (razonSocial === '' || direccion === '' || nit === null) return null
+  return { razonSocial, nit, direccion }
 }
 
 function leerContactoAdmin(valor: unknown): ContactoPortalAdmin {
@@ -238,4 +262,149 @@ export async function guardarContactoAdmin(token: string, f: FormularioContactoP
     mensajesPorCodigo: { 401: MENSAJE_SESION_TERMINADA },
   })
   return leerContactoAdmin(respuesta)
+}
+
+// ---- P9: datos de la empresa (HU-085, RN-PA-005, D-63 B, D-83 A; contrato P9 §3.5 y §3.6) ----
+
+export type EmpresaPortalAdmin = {
+  razonSocial: string | null
+  nit: string | null
+  direccion: string | null
+  /** true si los tres están guardados (solo entonces se publican). */
+  completo: boolean
+  /** false = aún no se guardó nada. */
+  configurado: boolean
+  actualizadoEn: string | null
+  actualizadoPor: string | null
+}
+
+export type FormularioEmpresa = { razonSocial: string; nit: string; direccion: string }
+export type CampoEmpresa = keyof FormularioEmpresa
+export type ErroresEmpresa = Partial<Record<CampoEmpresa, string[]>>
+export const CAMPOS_EMPRESA: readonly CampoEmpresa[] = ['razonSocial', 'nit', 'direccion']
+
+export const RAZON_SOCIAL_MIN = 2
+export const RAZON_SOCIAL_MAX = 150
+export const DIRECCION_MIN = 5
+export const DIRECCION_MAX = 200
+/** Entrada bruta del NIT (con puntos y espacios), igual que el servidor. */
+export const NIT_MAX = 40
+
+export const MENSAJE_EMPRESA_RAZON_SOCIAL = 'Escribe la razón social (entre 2 y 150 caracteres, sin los signos < >).'
+export const MENSAJE_EMPRESA_NIT = 'Escribe el NIT con su dígito de verificación, por ejemplo 900.123.456-7.'
+export const MENSAJE_EMPRESA_DIRECCION =
+  'Escribe la dirección de notificaciones (entre 5 y 200 caracteres, sin los signos < >).'
+
+/** Pesos de la DIAN para el dígito de verificación, de derecha a izquierda. */
+const PESOS_DIAN = [3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71] as const
+
+/** Dígito de verificación de la DIAN (módulo 11) para una base de hasta 15 dígitos. */
+export function digitoVerificacionNit(digitos: string): number {
+  let suma = 0
+  for (let i = 0; i < digitos.length; i++) suma += Number(digitos[digitos.length - 1 - i]) * PESOS_DIAN[i]
+  const r = suma % 11
+  return r === 0 || r === 1 ? r : 11 - r
+}
+
+/**
+ * CA-P9-29 (misma regla que `ParametrosEmpresa.NormalizarNit` del servidor): base de 6 a 10 dígitos, con puntos o
+ * espacios como separadores, un guion obligatorio y 1 dígito de verificación correcto; base solo de ceros no vale.
+ * Devuelve "800197268-4" o null.
+ */
+export function normalizarNit(bruto: string): string | null {
+  const t = bruto.trim()
+  if (t === '' || t.length > NIT_MAX) return null
+  const partes = t.split('-')
+  if (partes.length !== 2) return null
+  const [base, dvBruto] = partes
+  const dv = dvBruto.trim()
+  if (!/^[0-9. ]*$/.test(base)) return null
+  const digitos = base.replace(/[. ]/g, '')
+  if (digitos.length < 6 || digitos.length > 10 || /^0+$/.test(digitos)) return null
+  if (!/^[0-9]$/.test(dv)) return null
+  return digitoVerificacionNit(digitos) === Number(dv) ? `${digitos}-${dv}` : null
+}
+
+/** "800197268-4" → "800.197.268-4" (puntos de miles en la base). Si no tiene esa forma, se deja igual. */
+export function formatearNit(nit: string): string {
+  const m = /^(\d+)-(\d)$/.exec(nit)
+  if (!m) return nit
+  return `${m[1].replace(/\B(?=(\d{3})+(?!\d))/g, '.')}-${m[2]}`
+}
+
+/** Como `char.IsControl` de .NET: U+0000–U+001F y U+007F–U+009F. */
+const PATRON_CONTROL_AMPLIO = /[\u0000-\u001F\u007F-\u009F]/
+
+function textoEmpresaValido(valor: string, min: number, max: number): boolean {
+  const t = valor.trim()
+  if (t === '') return true // vacío = se retira (CA-P9-27)
+  return t.length >= min && t.length <= max && !/[<>]/.test(t) && !PATRON_CONTROL_AMPLIO.test(t)
+}
+
+/** CA-P9-27 a 30: cada campo es opcional; si se escribe, debe cumplir su regla. */
+export function validarEmpresa(f: FormularioEmpresa): ErroresEmpresa {
+  const errores: ErroresEmpresa = {}
+  if (!textoEmpresaValido(f.razonSocial, RAZON_SOCIAL_MIN, RAZON_SOCIAL_MAX))
+    errores.razonSocial = [MENSAJE_EMPRESA_RAZON_SOCIAL]
+  if (f.nit.trim() !== '' && normalizarNit(f.nit) === null) errores.nit = [MENSAJE_EMPRESA_NIT]
+  if (!textoEmpresaValido(f.direccion, DIRECCION_MIN, DIRECCION_MAX)) errores.direccion = [MENSAJE_EMPRESA_DIRECCION]
+  return errores
+}
+
+export function formularioDesdeEmpresa(e: EmpresaPortalAdmin): FormularioEmpresa {
+  return {
+    razonSocial: e.razonSocial ?? '',
+    nit: e.nit ? formatearNit(e.nit) : '',
+    direccion: e.direccion ?? '',
+  }
+}
+
+/** Vacío o solo espacios = null (CA-P9-27). El servidor normaliza el NIT. */
+export function cuerpoDesdeEmpresa(f: FormularioEmpresa) {
+  const o = (v: string) => (v.trim() === '' ? null : v.trim())
+  return { razonSocial: o(f.razonSocial), nit: o(f.nit), direccion: o(f.direccion) }
+}
+
+/** Reparte `errores` de un 400 por campo (sin distinguir mayúsculas). */
+export function erroresEmpresaDe(error: ApiError): { porCampo: ErroresEmpresa; otros: string[] } {
+  const porCampo: ErroresEmpresa = {}
+  const otros: string[] = []
+  for (const [clave, mensajes] of Object.entries(error.errores)) {
+    const campo = CAMPOS_EMPRESA.find((c) => c.toLowerCase() === clave.toLowerCase())
+    if (campo) porCampo[campo] = Array.from(new Set([...(porCampo[campo] ?? []), ...mensajes]))
+    else otros.push(...mensajes)
+  }
+  return { porCampo, otros }
+}
+
+function leerEmpresaAdmin(valor: unknown): EmpresaPortalAdmin {
+  if (!esObjetoJson(valor)) throw new ApiError(200, MENSAJE_INESPERADO)
+  return {
+    razonSocial: textoONulo(valor.razonSocial),
+    nit: textoONulo(valor.nit),
+    direccion: textoONulo(valor.direccion),
+    completo: valor.completo === true,
+    configurado: valor.configurado === true,
+    actualizadoEn: textoONulo(valor.actualizadoEn),
+    actualizadoPor: textoONulo(valor.actualizadoPor),
+  }
+}
+
+export async function obtenerEmpresaAdmin(token: string, signal?: AbortSignal): Promise<EmpresaPortalAdmin> {
+  const respuesta = await peticion('/api/admin/parametros/empresa', {
+    token,
+    signal,
+    mensajesPorCodigo: { 401: MENSAJE_SESION_TERMINADA },
+  })
+  return leerEmpresaAdmin(respuesta)
+}
+
+export async function guardarEmpresaAdmin(token: string, f: FormularioEmpresa): Promise<EmpresaPortalAdmin> {
+  const respuesta = await peticion('/api/admin/parametros/empresa', {
+    method: 'PUT',
+    token,
+    body: cuerpoDesdeEmpresa(f),
+    mensajesPorCodigo: { 401: MENSAJE_SESION_TERMINADA },
+  })
+  return leerEmpresaAdmin(respuesta)
 }

@@ -49,7 +49,9 @@ public static class AyudasP2
             ["password"] = PasswordValida,
             ["tipoDocumento"] = tipo,
             ["numeroDocumento"] = numero ?? DocumentoUnico(),
-            ["nombreComercial"] = comercial
+            ["nombreComercial"] = comercial,
+            // P9 (CA-P9-08): la inscripción exige autorizacionDatos = true.
+            ["autorizacionDatos"] = true
         };
 
     public static Task<HttpResponseMessage> RegistrarAsesor(HttpClient c, object cuerpo) =>

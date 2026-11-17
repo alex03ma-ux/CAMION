@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { PerfilUsuario } from '../api/auth'
 import { ApiError, MENSAJE_INESPERADO, MENSAJE_SIN_PERMISO } from '../api/http'
 import { formatearFechaHora } from '../api/leads'
+import { formatearCelular } from '../api/parametros'
 import {
   listarMisSolicitudes,
   MENSAJE_VEHICULO_YA_NO_DISPONIBLE,
@@ -27,6 +28,7 @@ import {
 } from '../rutas'
 import { Aviso, type DatosAviso } from './Aviso'
 import { RejillaVehiculos } from './TarjetaVehiculo'
+import { useContactoPortal } from './useContactoPortal'
 
 export const TITULO_MIS_SOLICITUDES = 'Mis solicitudes'
 
@@ -55,6 +57,8 @@ export function MisSolicitudes({ token, perfil, onSesionTerminada }: MisSolicitu
 
 function ListaMisSolicitudes({ token, onSesionTerminada }: { token: string; onSesionTerminada: () => void }) {
   const [pagina, setPagina] = useState(1)
+  // P9 (CA-P9-58): WhatsApp vigente del portal en la introducción.
+  const contacto = useContactoPortal()
   const [intento, setIntento] = useState(0)
   const [datos, setDatos] = useState<PaginaMisSolicitudes | null>(null)
   const [cargando, setCargando] = useState(true)
@@ -110,7 +114,7 @@ function ListaMisSolicitudes({ token, onSesionTerminada }: { token: string; onSe
       </h1>
       <p className="inv-intro">
         Aquí ves lo que nos enviaste con tu sesión iniciada: contactos por vehículos, créditos, búsquedas y avisos. Si
-        quieres cambiar o cancelar algo, escríbenos por WhatsApp al 316 615 2907.
+        quieres cambiar o cancelar algo, escríbenos por WhatsApp al {formatearCelular(contacto.whatsapp)}.
       </p>
 
       <h2 ref={tituloLista} tabIndex={-1} className="inv-subtitulo">

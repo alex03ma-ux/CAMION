@@ -1011,3 +1011,64 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
 - Opciones presentadas: A) servidor propio (VPS Windows o Linux); B) servicio administrado (Azure, Railway u otro); C) un tercero de confianza siguiendo `docs/GUIA-PUBLICACION.md`. En todos los casos hace falta un dominio propio.
 - Recomendación del coordinador: comparar precios del dominio y de una o dos opciones antes de decidir; la guía de publicación es válida para cualquiera.
 - Bloquea: la publicación (y con ella el correo transaccional de D-73 C). No bloquea INF-1, INF-2 ni INF-3.
+- Comparación presentada (2026-11-16, precios aproximados de terceros, sin confirmar en el carrito): A) VPS Linux ≈ US$12/mes (DigitalOcean 2 GB) o ≈ US$15/mes (Hostinger KVM 2, renovación y pago por adelantado), encaja completo con la guía pero requiere una persona técnica; B) Azure App Service B1 + MySQL B1ms ≈ US$30/mes, menos mantenimiento, usa MySQL 8 en lugar de MariaDB (probar scripts); C) hosting compartido ASP.NET (≈ US$3–9/mes) no recomendado (sin `recuperar-admin`, sin control de claves ni proxy, sin MariaDB). Dominio recomendado `.com.co` (≈ $59.000–120.000/año; ojo con la renovación del `.co`, ≈ $126.000–137.000).
+- Recomendación: A si hay una persona técnica de confianza; B si no la hay. Pregunta abierta a la responsable: quién mantendrá el servidor.
+
+## D-82 — ¿Se implementan los favoritos (HU-056 a HU-058)? · PENDIENTE (2026-11-16)
+- Contexto: la auditoría del 2026-11-16 encontró que los favoritos del comprador (guardar vehículos, verlos y quitarlos) están en los requisitos v3.0, pero no están implementados ni hay una decisión que los saque del alcance.
+- Opciones:
+  - A) **No por ahora.** Se publica sin favoritos; se reconsidera con el uso real.
+  - B) **Favoritos para comprador con cuenta**, en una entrega aparte después de publicar (migración nueva; entrega pequeña).
+  - C) Como B, antes de publicar.
+- Recomendación del coordinador: B. No bloquea la publicación y conviene medir primero si los compradores se registran.
+- No bloquea P9.
+
+## D-83 — ¿Se muestra la dirección de notificaciones en el pie del portal? · TOMADA (2026-11-16)
+- Contexto (analista, criterios de P9, `docs/criterios/P9-criterios.md`, CA-P9-34 y 35): el encargo de P9 pide que razón social, NIT y dirección de notificaciones sean editables por el administrador y se vean en el pie cuando estén completos. D-42 (2026-11-04) dice: "Dirección: por ahora no se publica (decisión de la responsable)". La política en borrador recuerda que la norma pide identificar al responsable con su domicilio y dirección, y pregunta al abogado si basta una dirección de notificaciones (`docs/legal/POLITICA-TRATAMIENTO-DATOS.md:16`).
+- Opciones:
+  - A) **Los tres datos en el pie cuando el administrador los complete.** Mientras falte alguno, no se muestra nada. Publicar la dirección pasa a ser un acto consciente del administrador al llenarla.
+    - Impacto: reemplaza la parte de dirección de D-42. Sin trabajo adicional.
+  - B) **Pie con razón social y NIT; la dirección solo en `#/privacidad` y `#/terminos`** (sección "Responsable").
+    - Impacto: dos reglas de visibilidad; la dirección queda visible igualmente, pero menos expuesta.
+  - C) **Nada de la empresa en el pie hasta que el abogado apruebe (D-44).** Se pueden guardar desde el panel, pero no se muestran.
+    - Impacto: los datos no se ven al publicar; si el abogado los exige visibles, otro cambio pequeño.
+- Recomendación del analista: **A**, con la confirmación del abogado dentro de D-44 sobre qué dirección usar. El administrador decide cuándo aparece al llenarla, y D-42 se respeta mientras esté vacía.
+- Bloquea: CA-P9-34 y CA-P9-35 (el resto de P9 sigue).
+
+- **Decisión de la responsable (2026-11-16): A.** El pie muestra razón social, NIT y dirección de notificaciones cuando el administrador complete los tres datos. Reemplaza, para la dirección de notificaciones, lo dicho en D-42 ("Dirección: por ahora no se publica").
+
+## D-84 — ¿El registro pide aceptar los términos con una casilla propia? · TOMADA (2026-11-16)
+- Contexto: P9 añade la casilla de autorización de datos al registro (D-44) y un enlace a `#/terminos` junto a cada casilla. Los términos están en borrador y no se publican hasta la revisión legal; aceptar un texto que el usuario no puede leer no sirve como aceptación.
+- Opciones:
+  - A) **Ahora solo la autorización de datos, más el enlace a los términos.** La casilla "Acepto los términos y condiciones" se añade, con su prueba guardada, en la entrega que publique los textos aprobados.
+    - Impacto: P9 sin cambios. Las cuentas creadas antes no tendrán la aceptación de los términos (en producción, si no se abre al público antes de D-44, no habrá ninguna, D-80).
+  - B) **Casilla obligatoria de términos desde ya.**
+    - Impacto: se aceptaría un texto no publicado; además necesita migración (un formulario o tipo nuevo de aceptación), y el abogado podría cambiar los términos.
+- Recomendación del analista: **A**.
+- Bloquea: CA-P9-16 (solo como confirmación; P9 sigue con A si no hay respuesta).
+
+- **Decisión de la responsable (2026-11-16): A.** Por ahora solo el enlace a los términos; la casilla "Acepto los términos" se agrega cuando el abogado apruebe el texto.
+
+## D-85 — ¿Qué pasa con las autorizaciones dadas con la versión borrador cuando se apruebe la política? · TOMADA (2026-11-16)
+- Contexto: cada autorización guarda la versión de la política (`PoliticaDatos:Version`, hoy `BORRADOR-2026-11-04`). Cuando el abogado apruebe la política, la versión cambiará (CA-P9-66). Las cuentas y solicitudes creadas antes conservarán la versión borrador.
+- Opciones:
+  - A) **No hacer nada.** Cada autorización queda ligada a la versión que la persona vio; solo las nuevas llevan la versión aprobada.
+    - Impacto: sin trabajo. Válido si el portal no se abre al público antes de aprobarse la política (la base de producción es nueva, D-80).
+  - B) **Pedir de nuevo la autorización** a los usuarios con cuenta cuya última autorización tenga otra versión, al iniciar sesión.
+    - Impacto: entrega aparte (pantalla y regla nuevas). Los visitantes sin cuenta no se pueden volver a contactar desde el portal.
+  - C) **Lo que indique el abogado** dentro de D-44.
+- Recomendación del analista: **A**, preguntando al abogado (C) si hace falta algo más; y no abrir el portal al público con una versión `BORRADOR` (CA-P9-64 deja una advertencia en el log).
+- Bloquea: nada de P9.
+
+- **Decisión de la responsable (2026-11-16): A.** Las autorizaciones dadas con la versión borrador se conservan con su versión; se le pregunta al abogado si hace falta pedir una nueva.
+
+## D-86 — Número de migración citado en D-75 B y D-76 B · TOMADA (2026-11-16, documental, coordinador)
+- Contradicción documental: D-75 B (promociones, P8b) y D-76 B (conteo propio de visitas) dicen "migración 017", pero el 017 ya lo usa `database/catalogos/017_categorias_base_SUBIR.sql` (PROPUESTO). P9 no necesita migración; la siguiente libre es la **018**.
+- Opciones: A) añadir una nota a D-75 y D-76: "el número se asigna al implementar; el siguiente libre es 018"; B) dejarlo como está.
+- Recomendación: A. No requiere a la responsable; la puede cerrar el coordinador.
+- **Decisión:** el número 017 lo usa `database/catalogos/017_categorias_base_SUBIR.sql`. Las migraciones futuras de P8b (D-75 B) y del conteo de visitas (D-76 B) toman el siguiente número libre (018 en adelante) cuando se hagan; la mención a "017" en D-75 y D-76 se lee como "siguiente número libre".
+
+## D-87 — Nombre visible del portal y logo · TOMADA (2026-11-16)
+- Contexto: análisis de palabras clave del 2026-11-16 (Google Trends, Colombia, 12 meses): las búsquedas de compra se concentran en "camiones usados" y "venta de camiones" (relacionadas: "camiones usados en venta", "venta de camiones usados", "camiones usados en Colombia", "Chevrolet NPR/NQR/NHR", "venta de tractomulas usadas en Colombia"); "crédito para camión" casi no se busca. El portal hoy se presenta solo como "Financiamos Tu Camión".
+- **Decisión de la responsable:** el portal se presenta como **"Venta de Camiones"** (título) con **"Financiamos tu Camión"** como lema, con el logo de **VCA Automotores** que ella entrega (versión horizontal y versión cuadrada). Se busca mayor visibilidad en Google al publicar.
+- Pendiente de afinar en los criterios de P10: el texto exacto del `<title>` y de la meta description (propuesta del coordinador: título "Venta de camiones usados y crédito | Financiamos tu Camión"; descripción de 149 caracteres "Camiones usados en venta en Colombia: NPR, volquetas, tractomulas y maquinaria. Solicita tu crédito para camión o tu seguro todo riesgo por WhatsApp.").

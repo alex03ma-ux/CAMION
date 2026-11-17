@@ -39,6 +39,8 @@ public static class AuthEndpoints
             UserManager<ApplicationUser> users,
             RoleManager<IdentityRole> roles,
             CamionDbContext db,
+            IConfiguration configuracion,
+            TimeProvider reloj,
             ILoggerFactory loggerFactory) =>
         {
             var log = loggerFactory.CreateLogger(CategoriaAuditoria);
@@ -80,6 +82,8 @@ public static class AuthEndpoints
                     return ErrorInterno();
                 }
                 db.PerfilesComprador.Add(new PerfilComprador { UsuarioId = user.Id });
+                // CA-P9-06, CA-P9-11: la prueba de la autorización, en la misma transacción que la cuenta.
+                db.ConsentimientosDatos.Add(Consentimiento(ConsentimientoDatos.RegistroComprador, user.Id, configuracion, reloj));
                 await db.SaveChangesAsync();
                 await tx.CommitAsync();
             }
@@ -97,7 +101,9 @@ public static class AuthEndpoints
             log.LogInformation("Auditoria registro_comprador exitoso usuarioId={UsuarioId}", user.Id);
             return Results.Created("/api/auth/me",
                 new RegistroCompradorResponse(user.Id, "Cuenta creada. Ya puedes iniciar sesión."));
-        });
+        })
+        // CA-P9-38, CA-P9-39: cupo por IP compartido con el registro de asesor.
+        .WithMetadata(new LimitePeticionesAuth(LimitePeticionesAuth.Registro));
 
         // P2 (HU-043, D-3, D-5): registro público de asesor; rol fijo ASESOR y cuenta PENDIENTE hasta su aprobación.
         auth.MapPost("/registro/asesor", async (
@@ -105,6 +111,8 @@ public static class AuthEndpoints
             UserManager<ApplicationUser> users,
             RoleManager<IdentityRole> roles,
             CamionDbContext db,
+            IConfiguration configuracion,
+            TimeProvider reloj,
             ILoggerFactory loggerFactory) =>
         {
             var log = loggerFactory.CreateLogger(CategoriaAuditoria);
@@ -159,6 +167,8 @@ public static class AuthEndpoints
                 });
                 Auditoria.Agregar(db, user.Id, user.Id, Auditoria.RegistroAsesor,
                     estadoAnterior: null, EstadosCuenta.Pendiente, motivo: null, incluirMotivo: false);
+                // CA-P9-07, CA-P9-11: la prueba de la autorización, con el perfil y la auditoría.
+                db.ConsentimientosDatos.Add(Consentimiento(ConsentimientoDatos.InscripcionAsesor, user.Id, configuracion, reloj));
                 await db.SaveChangesAsync();
                 await tx.CommitAsync();
             }
@@ -178,7 +188,9 @@ public static class AuthEndpoints
 
             log.LogInformation("Auditoria registro_asesor exitoso usuarioId={UsuarioId}", user.Id);
             return Results.Created("/api/auth/me", new RegistroCompradorResponse(user.Id, MensajeSolicitudAsesor));
-        });
+        })
+        // CA-P9-38, CA-P9-39: cupo por IP compartido con el registro de comprador.
+        .WithMetadata(new LimitePeticionesAuth(LimitePeticionesAuth.Registro));
 
         // HU-059, RN-SE-001, HU-062: mismo mensaje para cualquier fallo de credenciales.
         auth.MapPost("/login", async (
@@ -255,7 +267,9 @@ public static class AuthEndpoints
             return Results.Ok(new AuthResponse(
                 new JwtSecurityTokenHandler().WriteToken(token), "Bearer", expiry,
                 user.Id, user.NombreCompleto, user.Email ?? "", userRoles.ToArray()));
-        });
+        })
+        // CA-P9-40, CA-P9-41: cupo por IP; el 429 ocurre antes de leer el cuerpo (no cuenta como fallo de la cuenta).
+        .WithMetadata(new LimitePeticionesAuth(LimitePeticionesAuth.Login));
 
         // La sesión (session_version y EstadoCuenta) ya se validó en OnTokenValidated.
         auth.MapGet("/me", async (ClaimsPrincipal principal, UserManager<ApplicationUser> users) =>
@@ -296,6 +310,18 @@ public static class AuthEndpoints
 
         return app;
     }
+
+    // CA-P9-06, CA-P9-07: entidad 'Usuario' (Auditoria.EntidadUsuario) y entidad_id = usuario_id = id de la cuenta nueva.
+    private static ConsentimientoDatos Consentimiento(string formulario, string usuarioId, IConfiguration configuracion,
+        TimeProvider reloj) => new()
+    {
+        Formulario = formulario,
+        VersionPolitica = PoliticaDatos.Version(configuracion),
+        AceptadoEn = reloj.GetUtcNow().UtcDateTime,
+        UsuarioId = usuarioId,
+        Entidad = Auditoria.EntidadUsuario,
+        EntidadId = usuarioId
+    };
 
     private static Task<bool> DocumentoRegistrado(CamionDbContext db, string tipo, string numero) =>
         db.PerfilesAsesor.AnyAsync(p => p.TipoDocumento == tipo && p.NumeroDocumento == numero);

@@ -83,7 +83,9 @@ public sealed record ContactoPortalResponse(
     string Correo,
     IReadOnlyList<string> Horario,
     string? Instagram,
-    string? Tiktok);
+    string? Tiktok,
+    // P9 (CA-P9-33): datos de la empresa solo si los tres están guardados; si no, null.
+    EmpresaPortalPublica? Empresa = null);
 
 public sealed record ContactoPortalAdmin(
     string Whatsapp,
@@ -92,6 +94,29 @@ public sealed record ContactoPortalAdmin(
     IReadOnlyList<string> Horario,
     string? Instagram,
     string? Tiktok,
+    bool Configurado,
+    DateTime? ActualizadoEn,
+    string? ActualizadoPor);
+
+// ---------------------------------------------------------------- datos de la empresa (P9, HU-085, RN-PA-005, D-63 B)
+
+public sealed record EmpresaPortalRequest(
+    string? RazonSocial,
+    string? Nit,
+    string? Direccion);
+
+/// <summary>CA-P9-33: los tres datos, nunca parciales. Nit normalizado (800197268-4); los puntos los pone el frontend.</summary>
+public sealed record EmpresaPortalPublica(
+    string RazonSocial,
+    string Nit,
+    string Direccion);
+
+/// <summary>CA-P9-25: sin datos guardados, los tres en null, completo y configurado en false (sin valores por defecto).</summary>
+public sealed record EmpresaPortalAdmin(
+    string? RazonSocial,
+    string? Nit,
+    string? Direccion,
+    bool Completo,
     bool Configurado,
     DateTime? ActualizadoEn,
     string? ActualizadoPor);

@@ -652,3 +652,36 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
 - La responsable creó la [PR #15](https://github.com/alex03ma-ux/CAMION/pull/15) y la unió a `main` (`a3d03d4`). `main` contiene P0 a P8: el plan original está completo.
 - Pidió preparar la publicación. Rama `feature/inf-publicacion`, desde `main`, con INF-1 (CI), INF-2 (seguridad del servidor), INF-3 (pruebas intermitentes) y el script de limpieza de datos de prueba, que no se ejecuta sin su aprobación y un respaldo.
 
+## 2026-11-16 — P9 Prepublicación (rama `feature/p9-prepublicacion`, comparada con `origin/main` en `c0660ae`)
+- Contexto: INF-1 a INF-3 se unieron a `main` con la [PR #16](https://github.com/alex03ma-ux/CAMION/pull/16) (BACKLOG). `main` contiene P0 a P8 e INF-1 a INF-3. La auditoría "Preparación para publicar" (`ESTADO-REAL.md`) respondió que se puede pagar el servidor, pero no abrir al público todavía. La responsable aprobó P9: lo que bloquea publicar y **no depende del abogado**.
+- HU-059, HU-062, HU-081, HU-085, HU-086; RN-SE-001, RN-SE-004 a 006, RN-PA-001, RN-PA-005, RN-PA-006; D-44, D-63, D-83 A, D-84 A, D-85 A.
+- Criterios en `docs/criterios/P9-criterios.md` (CA-P9-01 a 66), evidencia en `P9-evidencia.md`, revisión de seguridad en `REVISION-SEGURIDAD-P9.md`.
+- **Decisiones:**
+  - D-82 (favoritos, HU-056 a HU-058): **PENDIENTE** de la responsable. Recomendación: B, en una entrega aparte después de publicar. No bloquea P9.
+  - D-83 A (responsable): el pie muestra razón social, NIT y dirección de notificaciones cuando el administrador complete los tres. Reemplaza, para la dirección, lo dicho en D-42.
+  - D-84 A (responsable): por ahora el registro solo lleva la casilla de autorización de datos y un enlace a los términos; la casilla "Acepto los términos" se añade cuando el abogado apruebe el texto.
+  - D-85 A (responsable): las autorizaciones dadas con la versión borrador se conservan con su versión; se le pregunta al abogado si hace falta pedir una nueva.
+  - D-86 (coordinador, documental): el 017 lo usa `017_categorias_base_SUBIR.sql`; P8b y el conteo de visitas tomarán el siguiente número libre (018 en adelante).
+- **IMPLEMENTADO y PROBADO (pruebas automáticas; sin prueba manual ni contra la API real):**
+  - casilla de autorización de datos, sin marcar, en el registro de comprador y en la inscripción de asesor; la API la exige y guarda la prueba (`REGISTRO_COMPRADOR`, `INSCRIPCION_ASESOR`) en la misma transacción que la cuenta;
+  - páginas `#/terminos` y `#/privacidad` con la franja "En revisión legal", sin texto de los borradores, y enlaces a las dos en el pie;
+  - "Datos de la empresa" en "Parámetros" (`GET`/`PUT /api/admin/parametros/empresa`, solo administrador, auditado), con NIT validado con el dígito de verificación de la DIAN; el pie y las páginas legales los muestran solo si están los tres;
+  - límite por conexión: 5 registros cada 60 min y 20 al día (cupo común de comprador y asesor), y 20 inicios de sesión cada 15 min; 429 con `Retry-After` y mensaje propio; el 429 no cuenta como fallo de la cuenta;
+  - "Página no encontrada", meta description, favicon (SVG y PNG 32×32) y `robots.txt`; `noindex` en las rutas privadas;
+  - los mensajes de crédito, búsqueda, seguro y "Mis solicitudes" usan el WhatsApp vigente de "Parámetros";
+  - `PoliticaDatos:Version` con un único punto de lectura: una versión mal formada impide arrancar y una de borrador deja un aviso en el log fuera de Development.
+- **Sin migración** (`CK_Consent_Formulario` ya admite los formularios de registro). No se tocó `camion_ventas`.
+- **Commits** (tomados de los documentos de la fase y del registro reciente; el documentador no tuvo terminal para `git log origin/main..HEAD`): backend `10b26d5` a `2644bb0`; frontend `5ce1927` a `4cf5480`; `c655db6` revisión de seguridad; `92a6c34` y `31bbb0c` pruebas de QA; `5776b85` evidencia; `af13732` corrección de B-5 (el registro envía el estado real de la casilla, CA-P9-03).
+- **Pruebas ejecutadas por QA** (`P9-evidencia.md` §1):
+  - `dotnet test`: 1481/1481 en dos corridas (1448 previas + 33 de QA), 0 omitidas;
+  - `npx vitest run`: 875/875 (848 previas + 27 de QA), en dos corridas con el archivo final;
+  - `npx tsc -b`, `npx tsc -p tsconfig.test.json` y `npm run build`: correctos; el build incluye `favicon.svg`, `favicon-32.png` y `robots.txt`;
+  - sin intermitencias. Las pruebas de API usan SQLite en memoria.
+  - Estas cifras son anteriores a `af13732` (B-5); la evidencia no registra una corrida posterior.
+- **NO APLICABLE / NO EJECUTADO:** la prueba de humo contra la API local (seguía en marcha una compilación anterior a P9; hay que reiniciarla con la rama), E2E (Playwright no instalado), la prueba manual de la responsable y la revisión a 375 px.
+- **Revisión de seguridad:** APROBADO CON OBSERVACIONES, sin hallazgos altos. M-1 (proxy sin `KnownProxies` convierte el límite en uno común para todo el portal): comprobación obligatoria antes de abrir al público. M-2 (enumeración de correos y documentos con el 409): riesgo residual medio-bajo, por aceptar en `DECISIONES.md`. B-5 corregido (`af13732`). B-1 a B-4 y B-6: abiertos según la revisión.
+- **Observaciones de QA:** QA-P9-1 (la meta description aprobada tiene 172 caracteres y el criterio pide máx. 160): PENDIENTE de la responsable. QA-P9-2 (la guía de publicación y los criterios citaban D-85 como pendiente): en corrección por otro agente. O-1 coincide con M-1; O-2 coincide con B-4.
+- **DOCUMENTADO:** README; `ESTADO-REAL.md` (PP.7: qué puntos de "Preparación para publicar" resolvió P9); `backend/GUIA-AUTENTICACION.md` (`autorizacionDatos` en los registros, 429 y límite de intentos); esta entrada; guía `docs/manual/P9-prepublicacion.md`.
+- **Pendientes:** la prueba manual (pasos en `docs/manual/P9-prepublicacion.md`), reiniciar la API con la rama, QA-P9-1, D-82, abrir la PR y unir a `main`. Para publicar: D-81, D-44 (abogado y datos de la empresa) y la puesta en marcha del servidor según `docs/GUIA-PUBLICACION.md`.
+- PR: por abrir contra `main`, sin merge.
+

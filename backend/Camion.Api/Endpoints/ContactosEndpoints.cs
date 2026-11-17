@@ -60,8 +60,8 @@ public static class ContactosEndpoints
                 await db.PerfilesAsesor.AsNoTracking().AnyAsync(a => a.Id == pub.AsesorId && a.UsuarioId == usuarioId, ct))
                 return Results.Conflict(new ErrorResponse(ReglasLeads.MensajePropio));
 
-            var version = configuracion["PoliticaDatos:Version"];
-            if (string.IsNullOrWhiteSpace(version)) version = ReglasLeads.VersionPoliticaPorDefecto;
+            // CA-P9-63: un único ayudante para la versión de la política.
+            var version = PoliticaDatos.Version(configuracion);
 
             // CA-P5-21 (y B-1 de la revisión de seguridad): envíos aceptados del mismo teléfono en 24 h, contando los leads
             // nuevos y los contactos repetidos. Va antes de la rama de repetidos para que varias IP no inflen sin fin el

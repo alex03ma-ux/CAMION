@@ -51,9 +51,10 @@ describe('Formulario de contacto: estructura (CA-P5-12, CA-P5-13, CA-P5-22)', ()
 
   it('la casilla empieza sin marcar y enlaza a #/privacidad en una pestaña nueva', async () => {
     abrirFicha()
-    await formulario()
+    const form = await formulario()
     expect(casilla()).not.toBeChecked()
-    const enlace = screen.getByRole('link', { name: /Política de tratamiento de datos/ })
+    // P9: el pie también enlaza la política (CA-P9-22); aquí se mira la del formulario.
+    const enlace = within(form).getByRole('link', { name: /Política de tratamiento de datos/ })
     expect(enlace).toHaveAttribute('href', '#/privacidad')
     expect(enlace).toHaveAttribute('target', '_blank')
     expect(enlace).toHaveAttribute('rel', 'noopener noreferrer')
@@ -361,11 +362,11 @@ describe('Teléfono colombiano (CA-P5-04, CA-P5-05)', () => {
 })
 
 describe('#/privacidad (D-44, CA-P5-17)', () => {
-  it('muestra la franja de borrador, el aviso de revisión legal y el contacto, sin el borrador', async () => {
+  it('muestra la franja de revisión legal (P9), el aviso de revisión legal y el contacto, sin el borrador', async () => {
     simularFetch({})
     abrirApp('#/privacidad')
     expect(await screen.findByRole('heading', { level: 1, name: 'Política de tratamiento de datos personales' })).toBeInTheDocument()
-    expect(screen.getByText('BORRADOR — en revisión legal')).toBeInTheDocument()
+    expect(screen.getByText('En revisión legal')).toBeInTheDocument()
     expect(screen.getByText(/se publicará en esta página cuando termine su revisión legal/)).toBeInTheDocument()
     const main = screen.getByRole('main')
     expect(within(main).getByRole('link', { name: 'vc.automotores@gmail.com' })).toHaveAttribute('href', 'mailto:vc.automotores@gmail.com')

@@ -7,12 +7,11 @@ import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNod
 import { obtenerDetalle } from '../api/catalogo'
 import {
   CORREO_MAX,
-  MENSAJE_CONTACTO_FALLO,
+  mensajeErrorEnvio,
   MENSAJE_REVISA_DATOS,
   MENSAJE_VEHICULO_NO_DISPONIBLE,
   NOMBRE_MAX,
   TELEFONO_MAX,
-  WHATSAPP_PORTAL,
 } from '../api/contactos'
 import { ApiError } from '../api/http'
 import {
@@ -36,16 +35,20 @@ import type { SesionAviso } from './AvisoPublico'
 import { Campo, CampoAreaTexto } from './Campo'
 import { NotaObligatorio } from './NotaObligatorio'
 import { CampoTrampa, ConfirmacionSolicitud } from './SolicitudComun'
+import { useContactoPortal } from './useContactoPortal'
 
 export const TITULO_CREDITO = 'Solicita tu crédito'
 export const TITULO_CREDITO_VEHICULO = 'Solicita crédito para este vehículo'
 
-/** CA-P6-14: WhatsApp del portal (D-42) con un texto inicial; no crea ninguna solicitud. */
-export function enlaceWhatsappCredito(titulo: string | null): string {
+/**
+ * CA-P6-14: WhatsApp del portal con un texto inicial; no crea ninguna solicitud. P9 (CA-P9-60): `enlace` es el
+ * WhatsApp vigente de GET /api/portal/contacto (o el respaldo de D-42 si la lectura falla).
+ */
+export function enlaceWhatsappCredito(enlace: string, titulo: string | null): string {
   const texto = titulo
     ? `Hola, quiero información de crédito para el vehículo ${titulo} que vi en Financiamos Tu Camión.`
     : 'Hola, quiero información de crédito para un vehículo.'
-  return `${WHATSAPP_PORTAL}?text=${encodeURIComponent(texto)}`
+  return `${enlace}?text=${encodeURIComponent(texto)}`
 }
 
 function formularioInicial(sesion: SesionAviso | null): FormularioCredito {
@@ -143,6 +146,8 @@ type FormularioCreditoPublicoProps = {
 
 function FormularioCreditoPublico({ slug, tituloVehiculo, sesion }: FormularioCreditoPublicoProps) {
   const [form, setForm] = useState<FormularioCredito>(() => formularioInicial(sesion))
+  // P9 (CA-P9-57, 60): WhatsApp vigente del portal en el mensaje de fallo y en el enlace de la confirmación.
+  const contacto = useContactoPortal()
   const [sitioWeb, setSitioWeb] = useState('')
   const [errores, setErrores] = useState<ErroresCredito>({})
   const [enviando, setEnviando] = useState(false)
@@ -221,7 +226,7 @@ function FormularioCreditoPublico({ slug, tituloVehiculo, sesion }: FormularioCr
         return
       }
       if (error instanceof ApiError && error.status === 404) setNoDisponible(true)
-      setAviso({ tipo: 'error', texto: error instanceof ApiError ? error.mensaje : MENSAJE_CONTACTO_FALLO })
+      setAviso({ tipo: 'error', texto: mensajeErrorEnvio(error, contacto.whatsapp) })
       window.setTimeout(() => refAviso.current?.focus(), 0)
     } finally {
       enviandoRef.current = false
@@ -240,7 +245,7 @@ function FormularioCreditoPublico({ slug, tituloVehiculo, sesion }: FormularioCr
         ref={refConfirmacion}
         mensaje={enviado}
         onEnviarOtra={enviarOtra}
-        enlaceWhatsapp={enlaceWhatsappCredito(tituloVehiculo)}
+        enlaceWhatsapp={enlaceWhatsappCredito(contacto.whatsappEnlace, tituloVehiculo)}
       />
     )
   }

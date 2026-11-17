@@ -6,8 +6,9 @@
 // opciones públicas del catálogo como respaldo (sin DIVIPOLA) para no impedir el envío con la categoría.
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import type { OpcionesFiltros } from '../api/catalogo'
-import { CORREO_MAX, MENSAJE_CONTACTO_FALLO, MENSAJE_REVISA_DATOS, NOMBRE_MAX, TELEFONO_MAX } from '../api/contactos'
+import { CORREO_MAX, mensajeErrorEnvio, MENSAJE_REVISA_DATOS, NOMBRE_MAX, TELEFONO_MAX } from '../api/contactos'
 import { ApiError } from '../api/http'
+import { formatearCelular } from '../api/parametros'
 import {
   CAMPOS_BUSQUEDA,
   datosBusqueda,
@@ -32,6 +33,7 @@ import type { SesionAviso } from './AvisoPublico'
 import { Campo, CampoAreaTexto, CampoSelect } from './Campo'
 import { NotaObligatorio } from './NotaObligatorio'
 import { CampoTrampa, ConfirmacionSolicitud } from './SolicitudComun'
+import { useContactoPortal } from './useContactoPortal'
 
 export const TITULO_BUSQUEDA = 'Busco un vehículo'
 const INTRO_BUSQUEDA =
@@ -49,6 +51,7 @@ const cargarListas = (signal: AbortSignal) => obtenerListasBusqueda(signal)
 /** Pantalla #/busco-un-vehiculo: espera las listas y muestra el formulario. */
 export function BusquedaVehiculo({ opciones, onReintentarOpciones, sesion }: BusquedaVehiculoProps) {
   const [estadoListas, reintentarListas] = usePeticion(cargarListas, 'listas-busqueda')
+  const contacto = useContactoPortal()
   const respaldo = estadoListas.estado === 'error' && opciones.estado === 'ok'
   const listas = useMemo(() => {
     if (estadoListas.estado === 'ok') return estadoListas.datos
@@ -98,7 +101,8 @@ export function BusquedaVehiculo({ opciones, onReintentarOpciones, sesion }: Bus
         <Aviso
           aviso={{
             tipo: 'advertencia',
-            texto: 'Por ahora no podemos recibir búsquedas aquí. Escríbenos por WhatsApp al 316 615 2907.',
+            // P9 (CA-P9-58): WhatsApp vigente del portal.
+            texto: `Por ahora no podemos recibir búsquedas aquí. Escríbenos por WhatsApp al ${formatearCelular(contacto.whatsapp)}.`,
           }}
         />
       )}
@@ -139,6 +143,8 @@ type FormularioBusquedaProps = {
 /** Formulario de la búsqueda; recibe las listas ya cargadas. */
 export function FormularioBusqueda({ opciones, sesion }: FormularioBusquedaProps) {
   const [form, setForm] = useState<Formulario>(() => formularioInicial(sesion))
+  // P9 (CA-P9-57): WhatsApp vigente del portal en el mensaje de fallo.
+  const contacto = useContactoPortal()
   const [sitioWeb, setSitioWeb] = useState('')
   const [errores, setErrores] = useState<ErroresBusqueda>({})
   const [enviando, setEnviando] = useState(false)
@@ -217,7 +223,7 @@ export function FormularioBusqueda({ opciones, sesion }: FormularioBusquedaProps
         else window.setTimeout(() => refAviso.current?.focus(), 0)
         return
       }
-      setAviso({ tipo: 'error', texto: error instanceof ApiError ? error.mensaje : MENSAJE_CONTACTO_FALLO })
+      setAviso({ tipo: 'error', texto: mensajeErrorEnvio(error, contacto.whatsapp) })
       window.setTimeout(() => refAviso.current?.focus(), 0)
     } finally {
       enviandoRef.current = false

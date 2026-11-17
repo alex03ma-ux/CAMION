@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, type FormEvent, type RefObject } from 'react'
 import {
+  MENSAJE_AUTORIZACION_REGISTRO,
   MENSAJE_CORREO_DUPLICADO,
   registrarAsesor,
   registrarComprador,
   TIPOS_DOCUMENTO,
   type TipoDocumento,
 } from '../api/auth'
-import { ApiError, MENSAJE_INESPERADO } from '../api/http'
+import { ApiError, MENSAJE_INESPERADO, textoEspera, type ErroresPorCampo } from '../api/http'
 import { PASSWORD_MAX } from '../auth/passwordRules'
 import {
   CAMPOS_ASESOR,
@@ -24,6 +25,7 @@ import {
   type DatosRegistroAsesor,
   type ErroresRegistroAsesor,
 } from '../auth/validation'
+import { AutorizacionDatos } from './AutorizacionDatos'
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo, CampoSelect } from './Campo'
 import { ReglasPassword } from './ReglasPassword'
@@ -37,6 +39,17 @@ type RegistroFormProps = {
 
 /** Comprador: acceso inmediato. Asesor: queda PENDIENTE hasta que el administrador lo apruebe (D-3). */
 type TipoCuenta = 'comprador' | 'asesor'
+
+/** P9 (CA-P9-12): separa `errores.autorizacionDatos` de un 400 (sin distinguir mayúsculas) del resto de campos. */
+function separarAutorizacion(errores: ErroresPorCampo): { autorizacion: string[]; resto: ErroresPorCampo } {
+  const resto: ErroresPorCampo = {}
+  let autorizacion: string[] = []
+  for (const [clave, mensajes] of Object.entries(errores)) {
+    if (clave.toLowerCase() === 'autorizaciondatos') autorizacion = [...autorizacion, ...mensajes]
+    else resto[clave] = mensajes
+  }
+  return { autorizacion, resto }
+}
 
 const VACIO: DatosRegistroAsesor = {
   nombreCompleto: '',
@@ -55,6 +68,10 @@ export function RegistroForm({ onRegistrado, onIrALogin }: RegistroFormProps) {
   const [aviso, setAviso] = useState<DatosAviso | null>(null)
   const [enviando, setEnviando] = useState(false)
   const [intentado, setIntentado] = useState(false)
+  // P9 (CA-P9-01 a 05; D-44): casilla de autorización, sin marcar; se conserva al cambiar el tipo de cuenta.
+  const [autorizacion, setAutorizacion] = useState(false)
+  const [errorAutorizacion, setErrorAutorizacion] = useState<string[]>([])
+  const refAutorizacion = useRef<HTMLInputElement>(null)
 
   const esAsesor = tipoCuenta === 'asesor'
   const campos: readonly CampoAsesor[] = esAsesor ? CAMPOS_ASESOR : CAMPOS_REGISTRO
@@ -85,9 +102,17 @@ export function RegistroForm({ onRegistrado, onIrALogin }: RegistroFormProps) {
     return esAsesor ? validarRegistroAsesor(valores) : validarRegistro(valores)
   }
 
-  function enfocarPrimerError(e: ErroresRegistroAsesor) {
+  /** La casilla va después de todos los campos: solo recibe el foco si es el único error (CA-P9-03). */
+  function enfocarPrimerError(e: ErroresRegistroAsesor, faltaAutorizacion = false) {
     const campo = campos.find((c) => (e[c]?.length ?? 0) > 0)
     if (campo) refs[campo].current?.focus()
+    else if (faltaAutorizacion) refAutorizacion.current?.focus()
+  }
+
+  function cambiarAutorizacion(marcada: boolean) {
+    setAutorizacion(marcada)
+    // CA-P9-04: tras el primer intento, el mensaje desaparece al marcarla (y vuelve si se desmarca).
+    if (intentado) setErrorAutorizacion(marcada ? [] : [MENSAJE_AUTORIZACION_REGISTRO])
   }
 
   function cambiarTipoCuenta(tipo: TipoCuenta) {
@@ -95,6 +120,7 @@ export function RegistroForm({ onRegistrado, onIrALogin }: RegistroFormProps) {
     setTipoCuenta(tipo)
     // Los errores dependen del tipo de cuenta: se limpian y se vuelve a validar al enviar.
     setErrores({})
+    setErrorAutorizacion([])
     setAviso(null)
     setIntentado(false)
   }
@@ -120,11 +146,12 @@ export function RegistroForm({ onRegistrado, onIrALogin }: RegistroFormProps) {
         tipoDocumento: n.tipoDocumento as TipoDocumento,
         numeroDocumento: n.numeroDocumento,
         nombreComercial: n.nombreComercial === '' ? null : n.nombreComercial,
+        autorizacionDatos: autorizacion,
       })
       return { mensaje: respuesta.mensaje, email: n.email }
     }
     const n = normalizarRegistro(datos)
-    const respuesta = await registrarComprador(n)
+    const respuesta = await registrarComprador({ ...n, autorizacionDatos: autorizacion })
     return { mensaje: respuesta.mensaje, email: n.email }
   }
 
@@ -136,8 +163,11 @@ export function RegistroForm({ onRegistrado, onIrALogin }: RegistroFormProps) {
 
     const validacion = validar(datos)
     setErrores(validacion)
-    if (hayErroresEn(validacion, campos)) {
-      enfocarPrimerError(validacion)
+    const faltaAutorizacion = !autorizacion
+    setErrorAutorizacion(faltaAutorizacion ? [MENSAJE_AUTORIZACION_REGISTRO] : [])
+    if (hayErroresEn(validacion, campos) || faltaAutorizacion) {
+      // CA-P9-03: sin la casilla no se llama a la API.
+      enfocarPrimerError(validacion, faltaAutorizacion)
       return
     }
 
@@ -150,9 +180,10 @@ export function RegistroForm({ onRegistrado, onIrALogin }: RegistroFormProps) {
         setAviso({ tipo: 'error', texto: MENSAJE_INESPERADO })
         return
       }
+      const { autorizacion: erroresAutorizacion, resto } = separarAutorizacion(error.errores)
       const reparto: { porCampo: ErroresRegistroAsesor; otros: string[] } = esAsesor
-        ? repartirErroresAsesor(error.errores)
-        : repartirErroresServidor(error.errores)
+        ? repartirErroresAsesor(resto)
+        : repartirErroresServidor(resto)
       if (error.status === 409) {
         // 409 de documento (asesor) trae `errores.numeroDocumento`; el de correo, solo `error`.
         const e: ErroresRegistroAsesor = hayErroresEn(reparto.porCampo, campos)
@@ -164,8 +195,17 @@ export function RegistroForm({ onRegistrado, onIrALogin }: RegistroFormProps) {
       }
       if (error.status === 400) {
         setErrores(reparto.porCampo)
+        setErrorAutorizacion(erroresAutorizacion)
         setAviso({ tipo: 'error', texto: [error.mensaje, ...reparto.otros].join(' ') })
-        enfocarPrimerError(reparto.porCampo)
+        if (hayErroresEn(reparto.porCampo, campos)) enfocarPrimerError(reparto.porCampo)
+        // La casilla está deshabilitada mientras se envía: el foco se mueve cuando se reactiva.
+        else if (erroresAutorizacion.length > 0) window.setTimeout(() => refAutorizacion.current?.focus(), 0)
+        return
+      }
+      if (error.status === 429) {
+        // CA-P9-46: mensaje del servidor (o el de respaldo) y, si llegó Retry-After, cuánto esperar. Se conserva lo
+        // escrito y el botón se reactiva.
+        setAviso({ tipo: 'error', texto: [error.mensaje, textoEspera(error.reintentarEnSegundos)].filter(Boolean).join(' ') })
         return
       }
       setAviso({ tipo: 'error', texto: error.mensaje })
@@ -307,6 +347,16 @@ export function RegistroForm({ onRegistrado, onIrALogin }: RegistroFormProps) {
         describidoPor="password-reglas"
       />
       <ReglasPassword id="password-reglas" password={datos.password} />
+
+      {/* P9 (CA-P9-01, 02, 15; D-84 A): solo la autorización de datos y el enlace a los términos. */}
+      <AutorizacionDatos
+        ref={refAutorizacion}
+        id="registro-autorizacion"
+        marcada={autorizacion}
+        onCambio={cambiarAutorizacion}
+        errores={errorAutorizacion}
+        deshabilitado={enviando}
+      />
 
       <button type="submit" disabled={enviando}>
         {textoBoton}

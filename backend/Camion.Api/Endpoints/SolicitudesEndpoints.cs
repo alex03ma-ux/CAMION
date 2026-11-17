@@ -101,8 +101,8 @@ public static class SolicitudesEndpoints
         ReglasLeads.DatosAviso datos, long? publicacionId, LeadBusqueda? criterios, string textoRepetido, string? usuarioId,
         DateTime ahora, CancellationToken ct)
     {
-        var version = configuracion["PoliticaDatos:Version"];
-        if (string.IsNullOrWhiteSpace(version)) version = ReglasLeads.VersionPoliticaPorDefecto;
+        // CA-P9-63: un único ayudante para la versión de la política.
+        var version = PoliticaDatos.Version(configuracion);
 
         // CA-P6-30: límite por teléfono compartido con P5 y P5b, antes de la rama de repetidos.
         if (await ContactosEndpoints.EnviosTelefonoAsync(db, datos.Telefono, ahora, ct) >= limites.LimiteTelefonoDia)

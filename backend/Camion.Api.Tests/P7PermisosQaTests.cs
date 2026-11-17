@@ -202,8 +202,10 @@ public sealed class P7PermisosQaTests(P7Fixture fixture) : IClassFixture<P7Fixtu
             var texto = await r.Content.ReadAsStringAsync();
             Assert.Equal(HttpStatusCode.OK, r.StatusCode);
             var json = JsonDocument.Parse(texto).RootElement;
-            Assert.Equal(new[] { "correo", "horario", "instagram", "tiktok", "whatsapp", "whatsappEnlace" },
+            // P9 (CA-P9-33): se añade "empresa" (null mientras no estén los tres datos).
+            Assert.Equal(new[] { "correo", "empresa", "horario", "instagram", "tiktok", "whatsapp", "whatsappEnlace" },
                 json.EnumerateObject().Select(p => p.Name).Order(StringComparer.Ordinal).ToArray());
+            Assert.Equal(JsonValueKind.Null, json.GetProperty("empresa").ValueKind);
             foreach (var prohibido in new[] { api.Admin.Id, api.Admin.Email, nombreAdmin, "actualizado", "configurado", "clave", "portal.contacto" })
                 Assert.DoesNotContain(prohibido, texto, StringComparison.OrdinalIgnoreCase);
         }

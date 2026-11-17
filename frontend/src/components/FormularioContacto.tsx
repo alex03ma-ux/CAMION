@@ -11,7 +11,7 @@ import {
   enlaceWhatsapp,
   enviarContacto,
   erroresDeServidor,
-  MENSAJE_CONTACTO_FALLO,
+  mensajeErrorEnvio,
   MENSAJE_MAX,
   MENSAJE_REVISA_DATOS,
   NOMBRE_MAX,
@@ -27,6 +27,7 @@ import { AutorizacionDatos } from './AutorizacionDatos'
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo, CampoAreaTexto } from './Campo'
 import { NotaObligatorio } from './NotaObligatorio'
+import { useContactoPortal } from './useContactoPortal'
 
 /** Sesión del visitante, si la tiene (comprador, asesor o administrador). */
 export type SesionContacto = { token: string; perfil: PerfilUsuario }
@@ -51,6 +52,8 @@ function formularioInicial(perfil: PerfilUsuario | null): Formulario {
 export function FormularioContacto({ slug, titulo, whatsapp, sesion }: FormularioContactoProps) {
   const perfil = sesion?.perfil ?? null
   const [form, setForm] = useState<Formulario>(() => formularioInicial(perfil))
+  // P9 (CA-P9-57): WhatsApp vigente del portal en el mensaje de fallo y como respaldo del enlace.
+  const contacto = useContactoPortal()
   const [sitioWeb, setSitioWeb] = useState('')
   const [errores, setErrores] = useState<ErroresContacto>({})
   const [enviando, setEnviando] = useState(false)
@@ -130,7 +133,7 @@ export function FormularioContacto({ slug, titulo, whatsapp, sesion }: Formulari
         return
       }
       if (error instanceof ApiError && error.status === 404) setNoDisponible(true)
-      mostrarAviso({ tipo: 'error', texto: error instanceof ApiError ? error.mensaje : MENSAJE_CONTACTO_FALLO })
+      mostrarAviso({ tipo: 'error', texto: mensajeErrorEnvio(error, contacto.whatsapp) })
     } finally {
       setEnviando(false)
     }
@@ -144,7 +147,7 @@ export function FormularioContacto({ slug, titulo, whatsapp, sesion }: Formulari
       </p>
       <a
         className="boton-whatsapp"
-        href={enlaceWhatsapp(whatsapp, titulo)}
+        href={enlaceWhatsapp(whatsapp, titulo, contacto.whatsappEnlace)}
         target="_blank"
         rel="noopener noreferrer"
       >

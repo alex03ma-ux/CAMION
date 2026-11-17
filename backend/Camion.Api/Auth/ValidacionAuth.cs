@@ -20,6 +20,8 @@ public static partial class ValidacionAuth
     public const string MensajeNombreComercial = "El nombre comercial no puede tener más de 150 caracteres.";
     public const string MensajeMotivo = "Escribe el motivo (5 a 500 caracteres).";
     public const string MensajeMotivoLargo = "El motivo no puede tener más de 500 caracteres.";
+    // P9 (CA-P9-08, D-44).
+    public const string MensajeAutorizacionRegistro = "Debes autorizar el tratamiento de tus datos para crear tu cuenta.";
 
     // PROPUESTO en el contrato P2.
     public static readonly string[] TiposDocumento = ["CC", "CE", "NIT", "PAS"];
@@ -49,8 +51,18 @@ public static partial class ValidacionAuth
 
     public static string NormalizarEmail(string? email) => (email ?? "").Trim().ToLowerInvariant();
 
-    public static Dictionary<string, string[]> ValidarRegistro(RegistroCompradorRequest request) =>
-        ValidarDatosBasicos(request.NombreCompleto, request.Email, request.Telefono, request.Password);
+    public static Dictionary<string, string[]> ValidarRegistro(RegistroCompradorRequest request)
+    {
+        var errores = ValidarDatosBasicos(request.NombreCompleto, request.Email, request.Telefono, request.Password);
+        ValidarAutorizacion(request.AutorizacionDatos, errores);
+        return errores;
+    }
+
+    // P9 (CA-P9-08, D-44): la API vuelve a exigir la casilla; ausente, null o false -> error de campo.
+    private static void ValidarAutorizacion(bool? autorizacion, Dictionary<string, string[]> errores)
+    {
+        if (autorizacion != true) errores["autorizacionDatos"] = [MensajeAutorizacionRegistro];
+    }
 
     // P2: mismas reglas de P1 para los datos básicos, más el documento y el nombre comercial.
     public static Dictionary<string, string[]> ValidarRegistroAsesor(RegistroAsesorRequest request)
@@ -67,6 +79,7 @@ public static partial class ValidacionAuth
         if ((request.NombreComercial ?? "").Trim().Length > 150)
             errores["nombreComercial"] = [MensajeNombreComercial];
 
+        ValidarAutorizacion(request.AutorizacionDatos, errores);
         return errores;
     }
 

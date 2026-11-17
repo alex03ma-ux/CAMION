@@ -104,7 +104,7 @@ public sealed class RegistroAsesorTests(CamionApiFactory factory) : IClassFixtur
         var comprador = new Dictionary<string, object?>
         {
             ["nombreCompleto"] = asesor["nombreCompleto"], ["email"] = CorreoUnico(),
-            ["telefono"] = asesor["telefono"], ["password"] = asesor["password"]
+            ["telefono"] = asesor["telefono"], ["password"] = asesor["password"], ["autorizacionDatos"] = true
         };
         comprador[campo] = valor;
 
