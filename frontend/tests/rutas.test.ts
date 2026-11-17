@@ -180,6 +180,15 @@ describe('Compatibilidad con enlaces viejos (CA-P10-41, 42)', () => {
     expect(convertirHashViejo('#/buscar?tipoId=2&marcaId=5')).toBe('/camiones?marcaId=5')
   })
 
+  it('B-1: un camino que empieza por "//" o "/\\" (otro origen) lleva a la portada', () => {
+    expect(convertirHashViejo('#//evil.example')).toBe('/')
+    expect(convertirHashViejo('#//evil.example/x?y=1')).toBe('/')
+    expect(convertirHashViejo('#/\\evil.example')).toBe('/')
+    expect(convertirHashViejo('#/\\/evil.example')).toBe('/')
+    // Una barra doble en medio no es otro origen.
+    expect(convertirHashViejo('#/vehiculo//x')).toBe('/vehiculo//x')
+  })
+
   it('un hash que no empieza por "#/" no se toca', () => {
     expect(convertirHashViejo('')).toBeNull()
     expect(convertirHashViejo('#contenido')).toBeNull()

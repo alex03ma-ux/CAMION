@@ -162,6 +162,39 @@ describe('Enlaces viejos con "#/" (CA-P10-41)', () => {
   })
 })
 
+describe('O-1: barra final', () => {
+  it('/vehiculo/<slug>/ se reemplaza por /vehiculo/<slug> y muestra la ficha (sin entrada nueva en el historial)', async () => {
+    simularFetch(datosBase())
+    abrirApp(`/vehiculo/${V1.slug}/`)
+    const largo = window.history.length
+    expect(await screen.findByRole('heading', { level: 1, name: V1.titulo })).toBeInTheDocument()
+    expect(window.location.href).toBe(`${window.location.origin}/vehiculo/${V1.slug}`)
+    expect(window.history.length).toBe(largo)
+  })
+
+  it('conserva la consulta y el fragmento, y también vale con varias barras', async () => {
+    simularFetch({ ...datosBase(), [rutaPublicaciones('marcaId=10')]: pagina([V1]) })
+    abrirApp('/vehiculos//?marcaId=10')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Buscar vehículos' })).toBeInTheDocument()
+    expect(ubicacionActual()).toBe('/vehiculos?marcaId=10')
+  })
+
+  it('/restablecer-contrasena/#codigo=… quita la barra sin perder el código', async () => {
+    simularFetch({ '/api/auth/restablecer-contrasena': { status: 200, body: { mensaje: 'ok' } } })
+    irA('/restablecer-contrasena/#codigo=Barra_1')
+    render(<App />)
+    expect(await screen.findByLabelText('Contraseña nueva')).toBeInTheDocument()
+    await waitFor(() => expect(window.location.href).toBe(`${window.location.origin}/restablecer-contrasena`))
+  })
+
+  it('la portada "/" no cambia', async () => {
+    simularFetch(datosBase())
+    abrirApp('/')
+    await screen.findByRole('heading', { level: 1, name: 'Venta de camiones usados' })
+    expect(window.location.href).toBe(`${window.location.origin}/`)
+  })
+})
+
 describe('Recuperación de contraseña con las rutas nuevas (CA-P10-42 a 44)', () => {
   const RUTA = '/api/auth/restablecer-contrasena'
   const MENSAJE = 'Listo. Tu contraseña cambió; inicia sesión con la nueva.'

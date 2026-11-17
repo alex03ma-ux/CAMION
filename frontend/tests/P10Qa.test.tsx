@@ -157,13 +157,14 @@ describe('QA CA-P10-34, 72: slugs raros', () => {
 
   it('slugs "%2E" y "%2E%2E": el navegador normaliza los puntos antes de la app, así que nunca son una ficha ni piden fuera de /api/catalogo/publicaciones/', async () => {
     // leerRuta('/vehiculo/%2E%2E') a secas daría el slug "..", pero location.pathname nunca lo trae así (WHATWG URL
-    // trata %2E como punto): /vehiculo/%2E%2E → / y /vehiculo/%2E → /vehiculo/. Ver O-7 de la evidencia.
+    // trata %2E como punto): /vehiculo/%2E%2E → / y /vehiculo/%2E → /vehiculo/ (y, por O-1, /vehiculo). Ver O-7 de la evidencia.
     const api = simularFetch(datos())
     abrirApp('/vehiculo/%2E%2E')
     expect(ubicacionActual()).toBe('/')
     await screen.findByRole('link', { name: V1.titulo })
     irA('/vehiculo/%2E')
-    expect(ubicacionActual()).toBe('/vehiculo/')
+    // O-1: la barra final se quita (/vehiculo/ → /vehiculo), que sigue siendo "no encontrada".
+    expect(ubicacionActual()).toBe('/vehiculo')
     expect(await screen.findByRole('heading', { level: 1, name: 'Página no encontrada' })).toBeInTheDocument()
     expect(api.llamadas.filter((l) => l.url.startsWith('/api/catalogo/publicaciones/'))).toEqual([])
   })
@@ -453,23 +454,22 @@ describe('QA CA-P10-41: enlaces viejos con "#/"', () => {
     for (const hash of ['#contenido', '#codigo=ABC', '#', '', '#%2F', '#?x=1']) expect(convertirHashViejo(hash), hash).toBeNull()
   })
 
-  it.fails('QA-P10-1: un enlace viejo manipulado "/#//otro-dominio" no debe dejar la página en blanco', async () => {
-    // convertirHashViejo('#//ejemplo-externo.test/x') da '//ejemplo-externo.test/x' (dirección de otro origen);
-    // history.replaceState lanza SecurityError dentro de useState y React no pinta nada. No hay redirección a otro
-    // dominio (el navegador la bloquea), pero la página queda vacía. Ver la evidencia.
-    const consola = vi.spyOn(console, 'error').mockImplementation(() => {})
-    simularFetch(datos())
-    window.history.replaceState(null, '', '/#//ejemplo-externo.test/x')
-    let error: unknown = null
-    try {
-      render(<App />)
-    } catch (e) {
-      error = e
-    }
-    consola.mockRestore()
-    expect(error).toBeNull()
-    expect(await screen.findByRole('heading', { level: 1, name: 'Página no encontrada' })).toBeInTheDocument()
-  })
+  it.each(['/#//ejemplo-externo.test/x', '/#/\\ejemplo-externo.test/x'])(
+    'QA-P10-1 / B-1: un enlace viejo manipulado %s no deja la página en blanco: lleva a la portada',
+    async (direccion) => {
+      simularFetch(datos())
+      window.history.replaceState(null, '', direccion)
+      let error: unknown = null
+      try {
+        render(<App />)
+      } catch (e) {
+        error = e
+      }
+      expect(error).toBeNull()
+      expect(await screen.findByRole('heading', { level: 1, name: 'Venta de camiones usados' })).toBeInTheDocument()
+      expect(window.location.href).toBe(`${window.location.origin}/`)
+    },
+  )
 })
 
 // ---------------------------------------------------------------------------------------------------------------------

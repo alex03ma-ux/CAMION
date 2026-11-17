@@ -376,6 +376,9 @@ export function convertirHashViejo(hash: string): string | null {
     // `#/buscar?tipoId=N` lleva a la categoría si los tipos ya se conocen; si no, App lo redirige al conocerlos.
     return rutaBuscar(leerFiltros(consulta))
   }
+  // B-1 / QA-P10-1: `#//otro-dominio` o `#/\otro` darían una dirección de otro origen (el navegador trata `/\` como
+  // `//`); replaceState lanzaría SecurityError. Se lleva a la portada.
+  if (/^\/[/\\]/.test(camino)) return RUTA_INICIO
   return `${camino === '' ? '/' : camino}${consulta}`
 }
 
@@ -385,18 +388,48 @@ export function ubicacionActual(): string {
   return `${window.location.pathname}${window.location.search}`
 }
 
+/**
+ * Reemplaza la dirección sin recargar. Nunca lanza (B-1): si el navegador rechaza la dirección, intenta la portada y,
+ * si tampoco puede, deja la dirección como está; la página nunca queda en blanco.
+ */
+function reemplazarSeguro(direccion: string): void {
+  try {
+    window.history.replaceState(window.history.state, '', direccion)
+  } catch {
+    try {
+      window.history.replaceState(window.history.state, '', RUTA_INICIO)
+    } catch {
+      // Se deja la dirección actual.
+    }
+  }
+}
+
 /** Si la dirección trae un hash viejo `#/…`, la reemplaza por su equivalente sin `#` (sin recargar). */
 export function convertirEnlaceViejo(): void {
   if (typeof window === 'undefined') return
   const nueva = convertirHashViejo(window.location.hash)
   if (nueva === null) return
-  window.history.replaceState(window.history.state, '', nueva)
+  reemplazarSeguro(nueva)
+}
+
+/**
+ * O-1: una barra final (`/vehiculo/x/`, `/camiones/`) se quita con replaceState, para que la dirección visible sea la
+ * misma que la canónica, la del sitemap y la que responde la API. Se conservan la consulta y el fragmento.
+ */
+export function quitarBarraFinal(): void {
+  if (typeof window === 'undefined') return
+  const { pathname, search, hash } = window.location
+  if (pathname.length <= 1 || !pathname.endsWith('/')) return
+  const limpio = pathname.replace(/\/+$/, '')
+  // `//x/` sin barra final sería `//x`, dirección de otro origen: se deja la portada.
+  reemplazarSeguro(limpio === '' || limpio.startsWith('//') ? RUTA_INICIO : `${limpio}${search}${hash}`)
 }
 
 const EVENTO_NAVEGACION = 'camion:navegacion'
 
 function leerUbicacion(): string {
   convertirEnlaceViejo()
+  quitarBarraFinal()
   return ubicacionActual()
 }
 
