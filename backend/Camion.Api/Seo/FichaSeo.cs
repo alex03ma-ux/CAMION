@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Text.Unicode;
 
 namespace Camion.Api.Seo;
@@ -152,8 +153,17 @@ public static class FichaSeo
     public const string MetaNoIndex = "<meta name=\"robots\" content=\"noindex\" data-camion=\"" + DataRobots + "\" />";
 
     /// <summary>CA-P10-72: el bloque genérico del index.html más robots noindex.</summary>
+    /// Si el frontend se compiló con la indexación apagada, el bloque genérico ya trae su propio robots noindex: se quitan
+    /// todas las etiquetas robots del bloque y se pone una sola (nunca dos).
     public static string BloqueNoDisponible(string bloqueGenerico) =>
-        bloqueGenerico.TrimEnd() + "\n    " + MetaNoIndex + "\n    ";
+        SinRobots(bloqueGenerico).TrimEnd() + "\n    " + MetaNoIndex + "\n    ";
+
+    private static readonly Regex MetaRobots = new(
+        @"[ \t]*<meta\b[^>]*\bname\s*=\s*[""']?robots\b[^>]*>[ \t]*(\r?\n)?",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+    /// <summary>Quita las etiquetas &lt;meta name="robots"&gt; de un bloque (las del index.html compilado).</summary>
+    public static string SinRobots(string bloque) => MetaRobots.Replace(bloque, "");
 
     /// <summary>CA-P10-64 a 66: Product + Vehicle, sin placa, asesor, WhatsApp, seller ni itemCondition.</summary>
     public static string JsonLdVehiculo(string urlPublica, DatosFicha d)

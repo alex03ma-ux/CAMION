@@ -521,6 +521,42 @@ public sealed class P10VistaPreviaTests(P10Encendida encendida, P10Apagada apaga
         }
     }
 
+    [Theory(DisplayName = "CA-P10-53, 72: con un index.html compilado con la indexación apagada (ya trae robots noindex) nunca hay dos robots")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Robots_sin_duplicar(bool indexacion)
+    {
+        // Como el bloque que deja frontend/etiquetasHtml.ts sin VITE_PERMITIR_INDEXACION=true.
+        var bloque = PlantillaPrueba.BloqueGenerico.TrimEnd() +
+                     "\n    <meta name=\"robots\" content=\"noindex\" data-camion=\"noindex\" />" +
+                     "\n    <meta property=\"og:type\" content=\"website\" data-camion=\"og:type\" />\n    ";
+        var ruta = PlantillaPrueba.Crear(PlantillaPrueba.Antes + PlantillaPortal.MarcaInicio + bloque + PlantillaPortal.MarcaFin +
+                                         PlantillaPrueba.Despues);
+        try
+        {
+            using var api = await CatalogoApi.Crear(configurar: b =>
+            {
+                b.UseSetting(ConfiguracionPortal.ClaveRutaIndexHtml, ruta);
+                b.UseSetting(ConfiguracionPortal.ClavePermitirIndexacion, indexacion ? "true" : "false");
+            });
+            var ficha = await Html(await api.Get("/vehiculo/chevrolet-npr-2020"));
+            Assert.Equal(indexacion ? 0 : 1, Regex.Matches(ficha, "name=\"robots\"").Count);
+            foreach (var ruta404 in new[] { "/vehiculo/no-existe", "/vehiculo/n01-vendida" })
+            {
+                var html = await Html(await api.Get(ruta404), HttpStatusCode.NotFound);
+                Assert.Single(Regex.Matches(html, "name=\"robots\""));
+                Assert.Contains(FichaSeo.MetaNoIndex, html);
+                // El resto del bloque genérico se conserva.
+                Assert.Contains("<meta property=\"og:type\" content=\"website\" data-camion=\"og:type\" />", html);
+                Assert.Contains("<title>Venta de camiones usados y crédito | Financiamos tu Camión</title>", html);
+            }
+        }
+        finally
+        {
+            PlantillaPrueba.Borrar(ruta);
+        }
+    }
+
     [Fact(DisplayName = "CA-P10-70: sin Portal:RutaIndexHtml la API no atiende /vehiculo/ (404 vacío, no HTML)")]
     public async Task Sin_plantilla_no_hay_ruta()
     {
@@ -664,6 +700,27 @@ public sealed class P10ReglasTests
             FichaSeo.TituloPagina(Datos(titulo: "Volqueta doble troque", marca: null)));
         var largo = Datos(titulo: "Carrocería de estacas para camión sencillo", marca: null, municipio: "San José del Guaviare");
         Assert.Equal("Carrocería de estacas para camión sencillo en San José del Guaviare", FichaSeo.TituloPagina(largo));
+    }
+
+    [Fact(DisplayName = "CA-P10-72: SinRobots quita cualquier meta robots (comillas, mayúsculas, sin barra) y deja lo demás")]
+    public void Sin_robots()
+    {
+        const string bloque = "\n    <title>T</title>\n    <meta name=\"robots\" content=\"noindex\" data-camion=\"noindex\" />\n" +
+                              "    <META NAME='robots' content='noindex,follow'>\n    <meta name=\"robotsx\" content=\"x\" />\n" +
+                              "    <meta name=\"description\" content=\"robots\" />\n    ";
+        Assert.Equal("\n    <title>T</title>\n    <meta name=\"robotsx\" content=\"x\" />\n" +
+                     "    <meta name=\"description\" content=\"robots\" />\n    ", FichaSeo.SinRobots(bloque));
+    }
+
+    [Fact(DisplayName = "CA-P10-67, D-17: nombres de categoría de las migas iguales al frontend (CATEGORIAS.enlace) desde los tipos de la base")]
+    public void Categorias_migas()
+    {
+        // Nombres de tipos_vehiculo en camion_ventas (SELECT de solo lectura): Carro, Camión, Carrocería, Maquinaria.
+        Assert.Equal(new[] { "Carros", "Camiones", "Carrocerías", "Maquinaria" },
+            new[] { "Carro", "Camión", "Carrocería", "Maquinaria" }.Select(t => Categorias.Ruta(t)!.Nombre).ToArray());
+        Assert.Equal(new[] { "/carros", "/camiones", "/carrocerias", "/maquinaria" },
+            new[] { "CARRO", " camion ", "Carroceria", "maquinaria" }.Select(t => Categorias.Ruta(t)!.Ruta).ToArray());
+        Assert.Null(Categorias.Ruta("Remolque"));
     }
 
     [Fact(DisplayName = "CA-P10-23: descripción cortada en 160 caracteres por palabra completa con …; maquinaria en 0 km sin kilometraje")]
