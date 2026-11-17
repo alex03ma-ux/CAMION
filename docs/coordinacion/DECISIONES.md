@@ -1138,3 +1138,6 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
 - Recomendación del analista: **B**.
 - **Decisión de la responsable (2026-11-16): B con otro texto.** El h1 de la portada es **"Venta de camiones usados"**; la frase actual queda como subtítulo con el mismo aspecto.
 - Bloquea: CA-P10-20 (solo ese texto).
+
+## Nota del coordinador (2026-11-16) — texto de WhatsApp de la ficha (D-47, CA-P10-83)
+- Con P10 el mensaje prellenado de "Escribir por WhatsApp" de la ficha termina con ": <dirección pública del vehículo>", para que el administrador o el asesor sepan de qué vehículo se trata. Cambio menor de texto sobre D-47, sin datos personales; lo verá la responsable en la prueba manual de P10.
