@@ -9,6 +9,9 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['tests/**/*.test.{ts,tsx}'],
     setupFiles: ['./tests/setup.ts'],
+    // P10 (D-89 A): las pruebas ven el portal con la indexación encendida, para comprobar los robots de cada página;
+    // las de D-89 la apagan con vi.stubEnv (en producción, por defecto, está apagada).
+    env: { VITE_PERMITIR_INDEXACION: 'true' },
     restoreMocks: true,
     unstubGlobals: true,
     // QA P5: con los workers por defecto (núcleos - 1, 17 en un equipo de 18 hilos) cada worker levanta su propio

@@ -331,7 +331,7 @@ describe('Navegación por hash', () => {
       irA('/vehiculos')
     })
     expect(await screen.findByRole('heading', { level: 1, name: 'Buscar vehículos' })).toBeInTheDocument()
-    expect(document.title).toBe('Buscar vehículos | Financiamos tu Camión')
+    expect(document.title).toBe('Camiones y vehículos de trabajo en venta | Financiamos tu Camión')
 
     act(() => {
       irA('/vehiculo/chevrolet-npr-2020')

@@ -143,7 +143,7 @@ describe('Crédito desde la portada (CA-P6-01, 08, 11 a 14, 27, 35, 36)', () => 
     abrirAnonimo('/credito')
     const form = await formCredito()
     expect(screen.getByRole('heading', { level: 1, name: 'Solicita tu crédito' })).toBeInTheDocument()
-    expect(document.title).toBe('Solicita tu crédito | Financiamos tu Camión')
+    expect(document.title).toBe('Crédito para camión | Financiamos tu Camión')
     expect(screen.getByText(/Somos intermediarios: gestionamos tu crédito ante bancos/)).toBeInTheDocument()
     expect(within(form).getByText('Campo obligatorio')).toBeInTheDocument()
     expect(screen.getByLabelText('Nombre')).toHaveAttribute('aria-required', 'true')

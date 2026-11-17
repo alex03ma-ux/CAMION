@@ -12,6 +12,7 @@
     "strict": true
   },
   "include": [
-    "vite.config.ts"
+    "vite.config.ts",
+    "etiquetasHtml.ts"
   ]
 }

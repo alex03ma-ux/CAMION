@@ -44,6 +44,8 @@ beforeEach(() => {
   window.history.replaceState(null, '', '/')
   olvidarTiposCatalogo()
   olvidarCodigoRecuperacion()
+  // P10: las etiquetas de buscadores y redes viven en <head>, que cleanup() no limpia.
+  for (const etiqueta of Array.from(document.head.querySelectorAll('[data-camion]'))) etiqueta.remove()
   // P9: el contacto del portal se guarda en memoria; cada prueba vuelve a pedirlo con su propio fetch simulado.
   olvidarContactoPortal()
   const almacen = new AlmacenEnMemoria()

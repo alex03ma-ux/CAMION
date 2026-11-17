@@ -18,6 +18,8 @@ import {
   rutaCategoria,
   navegar,
 } from '../rutas'
+import { fijarJsonLd, JSONLD_ORGANIZACION, origenActual } from '../seo'
+import { jsonLdOrganizacion } from '../seoDatos'
 import { Aviso } from './Aviso'
 import {
   IconoCamion,
@@ -34,6 +36,7 @@ import {
   IlustracionCamion,
 } from './IconosPortal'
 import { RejillaVehiculos } from './TarjetaVehiculo'
+import { useContactoPortal } from './useContactoPortal'
 
 /** D-92 (decisión de la responsable, 2026-11-16): h1 de la portada. */
 export const TITULO_PORTADA = 'Venta de camiones usados'
@@ -69,6 +72,13 @@ export function Inicio({ tipos }: InicioProps) {
 
   const categorias = categoriasDisponibles(tipos)
   const fotoPortada = useFotoPortada()
+
+  // P10 (CA-P10-61 a 63, D-90 C): datos de la empresa para Google, solo en la portada, con el contacto vigente.
+  const contacto = useContactoPortal()
+  useEffect(() => {
+    fijarJsonLd(JSONLD_ORGANIZACION, jsonLdOrganizacion(contacto, origenActual()))
+  }, [contacto])
+  useEffect(() => () => fijarJsonLd(JSONLD_ORGANIZACION, null), [])
 
   return (
     <div className="cat-inicio">

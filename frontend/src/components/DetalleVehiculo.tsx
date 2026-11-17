@@ -12,9 +12,17 @@ import {
   formatoKm,
   textoUbicacion,
 } from '../catalogo/formato'
-import { SUFIJO_TITULO } from '../marca'
 import { usePeticion } from '../catalogo/usePeticion'
-import { RUTA_INICIO, rutaCreditoVehiculo, rutaVolverAResultados } from '../rutas'
+import { RUTA_INICIO, rutaCreditoVehiculo, rutaVehiculo, rutaVolverAResultados } from '../rutas'
+import { aplicarMetaPagina, fijarJsonLd, JSONLD_MIGAS, JSONLD_VEHICULO, origenActual } from '../seo'
+import {
+  descripcionVehiculo,
+  jsonLdMigas,
+  jsonLdVehiculo,
+  TITULO_VEHICULO_CARGANDO,
+  TITULO_VEHICULO_NO_DISPONIBLE,
+  tituloVehiculo,
+} from '../seoDatos'
 import { Aviso } from './Aviso'
 import { FormularioContacto, type SesionContacto } from './FormularioContacto'
 import { Galeria } from './Galeria'
@@ -61,9 +69,42 @@ export function DetalleVehiculo({ slug, sesion = null }: { slug: string; sesion?
   const noDisponible = estado.estado === 'error' && estado.error.status === 404
   const vehiculo = estado.estado === 'ok' ? estado.datos : null
 
+  // P10 (CA-P10-22 a 24, 64 a 67, 80): etiquetas de la ficha con la misma regla que la API (D-88 A). Si la página
+  // llegó con las etiquetas de la API, se reutilizan (mismas marcas data-camion); al salir se quitan los JSON-LD.
   useEffect(() => {
-    if (vehiculo) document.title = `${vehiculo.titulo} | ${SUFIJO_TITULO}`
-  }, [vehiculo])
+    if (vehiculo) {
+      const fotos = [...vehiculo.fotos].sort((a, b) => a.orden - b.orden)
+      const portada = vehiculo.fotoPortada ?? fotos.find((f) => f.esPortada)?.url ?? fotos[0]?.url ?? null
+      aplicarMetaPagina({
+        titulo: tituloVehiculo(vehiculo),
+        descripcion: descripcionVehiculo(vehiculo),
+        robots: null,
+        canonica: rutaVehiculo(vehiculo.slug),
+        imagen: portada,
+        imagenAlt: vehiculo.titulo,
+      })
+      fijarJsonLd(JSONLD_VEHICULO, jsonLdVehiculo(vehiculo, origenActual()))
+      fijarJsonLd(JSONLD_MIGAS, jsonLdMigas(vehiculo, origenActual()))
+    } else {
+      aplicarMetaPagina({
+        titulo: noDisponible ? TITULO_VEHICULO_NO_DISPONIBLE : TITULO_VEHICULO_CARGANDO,
+        descripcion: null,
+        robots: noDisponible ? 'noindex' : null,
+        canonica: null,
+      })
+      if (noDisponible) {
+        fijarJsonLd(JSONLD_VEHICULO, null)
+        fijarJsonLd(JSONLD_MIGAS, null)
+      }
+    }
+  }, [vehiculo, noDisponible])
+  useEffect(
+    () => () => {
+      fijarJsonLd(JSONLD_VEHICULO, null)
+      fijarJsonLd(JSONLD_MIGAS, null)
+    },
+    [],
+  )
 
   let titulo = 'Detalle del vehículo'
   if (vehiculo) titulo = vehiculo.titulo

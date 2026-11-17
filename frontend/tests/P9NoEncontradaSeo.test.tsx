@@ -8,12 +8,6 @@ import { simularFetch } from './helpers'
 import { abrirApp } from './p4pDatos'
 import { irA } from './helpers'
 
-declare global {
-  interface ImportMeta {
-    glob(patron: string, opciones: { query: string; import: string; eager: true }): Record<string, string>
-  }
-}
-
 const DESCRIPCION =
   'Camiones usados en venta en Colombia: NPR, volquetas, tractomulas y maquinaria. Solicita tu crédito para camión o tu seguro todo riesgo por WhatsApp.'
 
@@ -151,11 +145,11 @@ describe('noindex en pantallas privadas (CA-P9-55)', () => {
 })
 
 describe('SEO básico (CA-P9-52 a 54; CA-P10-14, 51)', () => {
-  const archivos = import.meta.glob('../{index.html,public/robots.txt}', {
+  const archivos = (import.meta.glob('../{index.html,public/robots.txt}', {
     query: '?raw',
     import: 'default',
     eager: true,
-  })
+  }) as Record<string, string>)
   const html = archivos['../index.html']
   const robots = archivos['../public/robots.txt']
 

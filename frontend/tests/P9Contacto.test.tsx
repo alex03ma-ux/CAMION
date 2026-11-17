@@ -14,12 +14,6 @@ import { detalle, rutaDetalle, V1 } from './catalogoDatos'
 import { abrirApp } from './p4pDatos'
 import { irA } from './helpers'
 
-declare global {
-  interface ImportMeta {
-    glob(patron: string, opciones: { query: string; import: string; eager: true }): Record<string, string>
-  }
-}
-
 const RUTA_CREDITOS = '/api/creditos'
 const RUTA_LISTAS = '/api/catalogo/listas-busqueda'
 const RUTA_MIS = '/api/mis-solicitudes?pagina=1&tamano=20'
@@ -207,7 +201,7 @@ describe('Caché en memoria del contacto del portal', () => {
 
 describe('Sin el número fijo en los textos visibles (CA-P9-61)', () => {
   it('solo los valores de respaldo y el ejemplo de formato contienen 316 615 2907', () => {
-    const fuentes = import.meta.glob('../src/**/*.{ts,tsx}', { query: '?raw', import: 'default', eager: true })
+    const fuentes = (import.meta.glob('../src/**/*.{ts,tsx}', { query: '?raw', import: 'default', eager: true }) as Record<string, string>)
     const permitidos = [
       '../src/api/parametros.ts',
       '../src/components/PiePortal.tsx',

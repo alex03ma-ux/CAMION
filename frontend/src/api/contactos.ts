@@ -168,9 +168,18 @@ export async function enviarContacto(datos: ContactoRequest, token?: string): Pr
 /**
  * Enlace "Escribir por WhatsApp" (D-47, CA-P5-61, 62): el `whatsapp` del detalle (o el del portal si no
  * llega uno válido) con un texto inicial que nombra el vehículo. P9: `respaldo` = enlace vigente del portal.
+ * P10 (CA-P10-83): con `direccion` (URL absoluta de la ficha), el texto la añade para que quien atiende sepa cuál es.
  */
-export function enlaceWhatsapp(whatsapp: string | null, titulo: string, respaldo: string = WHATSAPP_PORTAL): string {
+export function enlaceWhatsapp(
+  whatsapp: string | null,
+  titulo: string,
+  respaldo: string = WHATSAPP_PORTAL,
+  direccion: string | null = null,
+): string {
   const base = whatsapp !== null && /^https:\/\/wa\.me\/\d{8,15}$/.test(whatsapp) ? whatsapp : respaldo
-  const texto = `Hola, me interesa el vehículo ${titulo} que vi en ${LEMA}.`
+  const texto =
+    direccion === null
+      ? `Hola, me interesa el vehículo ${titulo} que vi en ${LEMA}.`
+      : `Hola, me interesa el vehículo ${titulo} que vi en ${LEMA}: ${direccion}`
   return `${base}?text=${encodeURIComponent(texto)}`
 }

@@ -153,11 +153,11 @@ describe('QA CA-P9-49, 50: ruta desconocida frente al ancla #contenido', () => {
 })
 
 describe('QA CA-P9-17, 55: términos con sesión de administrador y noindex en el registro', () => {
-  it('con sesión de administrador #/terminos se ve, sin noindex', async () => {
+  it('con sesión de administrador /terminos se ve; P10 (CA-P10-29): noindex mientras esté en revisión legal', async () => {
     abrirApp('/terminos', ['ADMINISTRADOR'])
     const main = await screen.findByRole('main')
     expect(await within(main).findByRole('heading', { level: 1, name: 'Términos y condiciones de uso' })).toBeInTheDocument()
-    expect(noIndex()).toBeNull()
+    expect(noIndex()).not.toBeNull()
   })
 
   it('/cuenta/registro pone noindex', async () => {
@@ -174,6 +174,7 @@ describe('QA CA-P9-21: foco en el h1 de #/privacidad al llegar desde otra ruta',
     const h1 = await screen.findByRole('heading', { level: 1, name: 'Política de tratamiento de datos personales' })
     await waitFor(() => expect(h1).toHaveFocus())
     expect(document.title).toBe('Política de tratamiento de datos | Financiamos tu Camión')
-    expect(noIndex()).toBeNull()
+    // P10 (CA-P10-29): en revisión legal, noindex.
+    expect(noIndex()).not.toBeNull()
   })
 })

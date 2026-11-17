@@ -80,7 +80,8 @@ describe('Detalle', () => {
     expect(main).not.toHaveTextContent(/null|undefined|NaN/)
     expect(screen.getByText('Tractocamión listo para trabajar.')).toBeInTheDocument()
     expect(screen.getByText('Motor revisado, llantas al 70 %.')).toBeInTheDocument()
-    expect(document.title).toBe(`${V2.titulo} | Financiamos tu Camión`)
+    // P10 (CA-P10-22): marca, línea, año y municipio.
+    expect(document.title).toBe(`Kenworth T800 2018 en ${V2.municipio} | Financiamos tu Camión`)
   })
 
   it('CA-D11-02 DISPONIBLE y no negociable: sin etiquetas Reservado ni Negociable', async () => {
