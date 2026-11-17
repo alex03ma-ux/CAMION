@@ -34,6 +34,21 @@ public sealed class P8RecuperacionTests(P7Fixture fixture) : IClassFixture<P7Fix
         return enlace[(enlace.IndexOf("codigo=", StringComparison.Ordinal) + "codigo=".Length)..];
     }
 
+    [Fact(DisplayName = "CA-P10-43, CA-P10-44: el enlace es <UrlPortal>/restablecer-contrasena#codigo=<código>, sin #/ ni ?codigo=")]
+    public async Task Formato_P10()
+    {
+        _api.Hora(T);
+        var asesor = await _api.CrearAsesor("Asesora Formato P10 Ficticia");
+        var json = await Esperar(await Generar(_api, asesor.UsuarioId, _api.Admin.Token), HttpStatusCode.OK);
+        var enlace = json.GetProperty("enlace").GetString()!;
+        Assert.Matches(@"^https://portal\.prueba\.test/restablecer-contrasena#codigo=[A-Za-z0-9_\-]+$", enlace);
+        Assert.DoesNotContain("?codigo=", enlace);
+        Assert.DoesNotContain("#/", enlace);
+        // La parte que el navegador envía al servidor (sin el fragmento) no lleva el código.
+        Assert.Equal("/restablecer-contrasena", new Uri(enlace).AbsolutePath);
+        Assert.Equal("", new Uri(enlace).Query);
+    }
+
     [Fact(DisplayName = "CA-P8-67: enlace de 60 minutos; al usarlo cambia la contraseña, cierra las sesiones y deja de valer")]
     public async Task Generar_y_usar()
     {

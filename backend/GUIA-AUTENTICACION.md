@@ -320,6 +320,8 @@ Hay dos lugares:
 
 El administrador genera desde el panel un enlace de un solo uso que vence en 60 minutos (`POST /api/admin/usuarios/{id}/enlace-recuperacion`) y lo envía por WhatsApp después de confirmar la identidad de la persona. Ella define la contraseña nueva en `POST /api/auth/restablecer-contrasena`, que no requiere sesión, tiene un límite de peticiones por IP y cierra todas sus sesiones. El código no se guarda en la base de datos ni aparece en los registros. Contrato: `docs/criterios/P8-contrato-api.md` §11.
 
+**Formato del enlace (P10, CA-P10-43 y CA-P10-44):** `<Recuperacion:UrlPortal>/restablecer-contrasena#codigo=<código>`. El código va en el fragmento (`#`), que el navegador no envía al servidor: en los registros del proxy y de la API solo aparece `/restablecer-contrasena`. Antes de P10 el formato era `<UrlPortal>/#/restablecer-contrasena?codigo=<código>`; el frontend sigue aceptando ese formato viejo (CA-P10-42) para los enlaces generados antes de publicar P10. La respuesta de `POST /api/admin/usuarios/{id}/enlace-recuperacion` y la salida de `recuperar-admin` no cambian salvo ese formato; `POST /api/auth/restablecer-contrasena` no cambia.
+
 El enlace deja de valer cuando se usa, cuando el administrador genera otro, cuando cambia el estado de la cuenta (aprobar, rechazar, bloquear, desbloquear o reconsiderar) y cuando cambian sus roles (`promover-admin`). Una cuenta que no está ACTIVA no puede usarlo, y un enlace generado desde el panel nunca sirve para una cuenta de administrador.
 
 **Administradores (D-79):** su enlace solo se genera en el equipo del servidor con el comando local `recuperar-admin`, igual que `promover-admin` (D-13):

@@ -58,6 +58,8 @@ public sealed class P8RecuperarAdminTests(P7Fixture fixture) : IClassFixture<P7F
         Assert.Contains("Vence en 60 minutos", r.Mensaje);
         Assert.Equal(T.AddMinutes(60), r.VenceEn);
         Assert.StartsWith(CamionApiFactory.UrlPortalPruebas + RecuperacionEndpoints.RutaFrontend, r.Enlace);
+        // P10 (CA-P10-43): mismo formato que el panel, con el código en el fragmento.
+        Assert.StartsWith(CamionApiFactory.UrlPortalPruebas + "/restablecer-contrasena#codigo=", r.Enlace);
         var codigo = CodigoDe(r.Enlace!);
         Assert.DoesNotContain(codigo, r.Mensaje);
 
