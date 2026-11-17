@@ -762,3 +762,26 @@ Estados: "IMPLEMENTADO y PROBADO" = el código está en la rama y sus pruebas au
 **Abierto tras P9:** M-2 (enumeración con el 409, por aceptar en `DECISIONES.md`) y B-1 a B-4 y B-6 de `REVISION-SEGURIDAD-P9.md`; D-82 (favoritos) PENDIENTE; la prueba manual (`docs/manual/P9-prepublicacion.md`), E2E y la revisión a 375 px, NO EJECUTADAS.
 
 **PP.5, ya corregido:** el README se actualizó (P0 a P8 e INF-1 a INF-3 en `main`, PR #16) y el BACKLOG muestra INF-1 a INF-3 como unidos. El comentario de `AutorizacionDatos.tsx:2` quedó cierto con P9 (CA-P9-15).
+
+### PP.8 Actualización P10 "Marca y visibilidad" (2026-11-17)
+
+Fuente: `docs/criterios/P10-criterios.md`, `docs/criterios/P10-evidencia.md` (con §6, correcciones posteriores), `docs/coordinacion/REVISION-SEGURIDAD-P10.md` y D-87 a D-92. Rama `feature/p10-marca-visibilidad`, creada desde `origin/main` en `2e23a8b` (que ya contiene P9), **pendiente de unir a `main`**. Sin migración. No es una auditoría nueva del código: el documentador resume lo que verificaron QA, la revisión de seguridad y el coordinador.
+
+Pruebas: frontend 1025/1025 (ninguna como fallo esperado); backend 1557 pasan y 5 omitidas en la corrida completa (las 5 de `P10QaIndexCompiladoTests`, que necesitan el `index.html` compilado), y las 52 pruebas P10 pasan con 0 omitidas en corridas aparte con el `index.html` real, apagado y encendido. **NO EJECUTADO:** prueba manual, prueba contra la API local, E2E y revisión a 375 px.
+
+| Tema | Qué hizo P10 | Estado |
+|---|---|---|
+| Marca (D-87, D-91 A) | Logo VCA Automotores horizontal en el encabezado y cuadrado en el pie; favicon, íconos, manifiesto e imagen para compartir; nombre "Venta de Camiones – Financiamos tu Camión"; textos en `frontend/src/marca.ts` | IMPLEMENTADO y PROBADO. Aspecto a 320–1280 px: sin revisar a mano. D-91 B (originales con transparencia): PENDIENTE de la responsable |
+| h1 de la portada (D-92) | "Venta de camiones usados"; la frase anterior queda como subtítulo | IMPLEMENTADO y PROBADO |
+| Direcciones sin `#` | History API, categorías `/carros`, `/camiones`, `/carrocerias`, `/maquinaria`; los enlaces viejos `#/…` se convierten; `/#//otro-dominio` lleva a la portada (B-1) | IMPLEMENTADO y PROBADO (jsdom; sin E2E en navegador real) |
+| Recuperación de contraseña | Enlace `<UrlPortal>/restablecer-contrasena#codigo=<código>`; el formato viejo sigue valiendo mientras no venza | IMPLEMENTADO y PROBADO. Registro del proxy sin el código: sin comprobar (no hay servidor) |
+| Títulos, descripción, `robots`, `canonical` | Por página; ficha con marca, línea, año y ciudad | IMPLEMENTADO y PROBADO |
+| `robots.txt` y `sitemap.xml` | Generados por la API; sitemap en caché y con cupo por IP (M-1) | IMPLEMENTADO y PROBADO |
+| Indexación (D-89 A) | Apagada por defecto: `Disallow: /`, sin sitemap y `noindex` en todas las páginas; se enciende con `Portal:PermitirIndexacion` y `VITE_PERMITIR_INDEXACION` juntas | IMPLEMENTADO y PROBADO. Encenderla: PENDIENTE hasta abrir al público (D-44, D-81) |
+| JSON-LD (D-90 C) | `Organization` sin dirección en la portada; `Product`/`Vehicle` y migas en la ficha | IMPLEMENTADO y PROBADO. Validadores de Google y schema.org: BLOQUEADO (D-81) |
+| Vista previa al compartir (D-88 A) | Genérica en todas las páginas; `/vehiculo/<slug>` desde la API con la foto y el título del vehículo (`Portal:RutaIndexHtml`); 301 sin barra final y ruta sensible a mayúsculas (O-1, O-2) | IMPLEMENTADO y PROBADO. Vista previa real en WhatsApp y Facebook: BLOQUEADO (D-81, necesita el portal publicado) |
+| Reglas del proxy (B-3, B-4) | `= /api`, `= /media`, `/marca/` con 404 y HSTS en las `location` del frontend, en la guía | DOCUMENTADO (PROPUESTO hasta probarlas en el servidor) |
+
+**Cambia en PP.4 (b) punto 4 (SEO básico):** la imagen para compartir y la limitación de las rutas con `#` quedan resueltas en la rama. **QA-P9-1** quedó resuelto con la meta description de 149 caracteres (D-87, `dcbd442`).
+
+**Abierto tras P10:** O-3 (40 KB del WebP), O-4 (cuerpo de HEAD con `curl -I` contra la API real), O-5 (corte del sitemap en 50.000 sin prueba automática), O-6 (E2E). La guía `docs/GUIA-ADMINISTRACION.md` y los manuales anteriores a P10 citan direcciones con `#/` (por ejemplo `#/cuenta`); siguen funcionando porque se convierten solas, pero conviene actualizarlas. La fila P10 de `BACKLOG.md` todavía dice "PENDIENTE (después de P9)".

@@ -195,3 +195,28 @@ No se encontraron defectos en el backend: con el `index.html` **real** compilado
 3. CA-P10-48, 49, 78: en el servidor con el proxy de la guía, recargar cualquier ruta (200), `/api/no-existe` (404 JSON), `/assets/no-existe.js` (404, no HTML), `/health`, encabezados `Cache-Control`; `view-source:` de una ficha con sus `og:*`; `curl -I` de una ficha (O-4).
 4. CA-P10-44: un enlace de recuperación nuevo; el registro del proxy solo muestra `/restablecer-contrasena`.
 5. CA-P10-69 y 81 (después de D-81): validadores de Google y schema.org; vista previa en WhatsApp y en el depurador de Facebook.
+
+## 6. Correcciones posteriores (2026-11-17)
+
+Hechos verificados por el coordinador **después** de esta evidencia de QA (no son corridas de QA). Commits de la rama: `4292ce8` (B-6), `76a7349` (B-1 = QA-P10-1, O-1 en el SPA), `0748c93` (M-1, B-2, O-1 en la API, O-2) y `3da7e38` (guía de publicación: B-2, B-3, B-4, M-1, O-1, O-2).
+
+| Hallazgo | Qué se corrigió | Estado |
+|---|---|---|
+| M-1 (revisión de seguridad) | El sitemap generado se guarda en memoria unos minutos (`LimitesSeo:SitemapCacheMinutos`, 10 por defecto) y `/sitemap.xml` y `/vehiculo/*` tienen un cupo de peticiones por IP (`LimitesSeo:LimiteVentana` en `LimitesSeo:VentanaMinutos`; 120 por minuto por defecto) | IMPLEMENTADO y PROBADO |
+| B-1 = QA-P10-1 | Un enlace viejo manipulado `/#//otro-dominio` lleva a la portada en lugar de dejar la página en blanco. La prueba `it.fails` de QA-P10-1 ya no está marcada como fallo esperado | IMPLEMENTADO y PROBADO |
+| B-2 | `Portal:RutaIndexHtml` solo acepta un archivo `.html` de tamaño razonable, y la plantilla debe traer las marcas `camion:meta` | IMPLEMENTADO y PROBADO |
+| B-3 | Reglas del proxy de la guía: `location = /api` y `location = /media` no caen en `index.html`; `/marca/` responde 404 si el archivo no existe | DOCUMENTADO (guía; el proxy real sigue sin probar, D-81) |
+| B-4 | HSTS repetido en las `location` del frontend del ejemplo nginx | DOCUMENTADO (guía; el proxy real sigue sin probar, D-81) |
+| B-6 | `etiquetasHtml` reemplaza con una función, así que `$&`, `$1` y `` $` `` de la URL pública no se interpretan | IMPLEMENTADO y PROBADO |
+| O-1 | `/vehiculo/<slug>/` responde 301 a `/vehiculo/<slug>` en la API, y el SPA quita la barra final | IMPLEMENTADO y PROBADO |
+| O-2 | La API distingue mayúsculas en `/vehiculo/`, como el SPA (`/Vehiculo/x` ya no da 200) | IMPLEMENTADO y PROBADO |
+
+Siguen abiertos: O-3 (40 KB del WebP de la portada), O-4 (cuerpo de HEAD, solo con `curl -I` contra la API real), O-5 (corte en 50.000 sin prueba automática) y O-6 (E2E sin Playwright). O-7 fue descartado como defecto.
+
+**Corridas después de las correcciones** (las ejecutó el coordinador):
+
+- Frontend: **1025/1025** pruebas pasan, **ninguna** marcada como fallo esperado.
+- Backend, corrida completa: **1557 pasan y 5 omitidas**. Las 5 omitidas son `P10QaIndexCompiladoTests`, que necesitan las variables `CAMION_QA_INDEX_APAGADA` y `CAMION_QA_INDEX_ENCENDIDA` (§1, #6).
+- Backend, corridas aparte con el `index.html` compilado real (indexación apagada y encendida): las **52** pruebas P10 pasan y **0** se omiten.
+
+No cambian: E2E y la prueba contra la API local siguen NO EJECUTADAS, y la prueba manual (§5) sigue pendiente. La guía para la responsable está en `docs/manual/P10-marca-visibilidad.md`.

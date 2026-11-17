@@ -1,6 +1,6 @@
-# CAMION — Financiamos Tu Camión
+# CAMION — Venta de Camiones – Financiamos tu Camión
 
-Portal **Red de Venta – Financiamos Tu Camión** (línea base funcional v3.0).
+Portal **Red de Venta – Financiamos Tu Camión** (línea base funcional v3.0). Con P10 (en su rama, pendiente de unir), el nombre visible pasa a ser **"Venta de Camiones – Financiamos tu Camión"**, con el logo de **VCA Automotores** (D-87).
 
 ## 1. Qué es
 
@@ -10,7 +10,7 @@ Estados que usa esta documentación: **IMPLEMENTADO** (el código existe), **PRO
 
 ## 2. Qué funciona hoy
 
-`main` contiene P0 a P8 e INF-1 a INF-3, unidos mediante las PR #2 a #16. Todo lo de esta sección está **IMPLEMENTADO y PROBADO** con pruebas automáticas. Además, la responsable hizo una prueba manual de cada fase hasta P8. Las de P6, P7 y P8 fueron **parciales**: lo que no se probó a mano lo cubren las pruebas automáticas. No hay pruebas E2E. P9 "Prepublicación" está en su rama, pendiente de unir (ver más abajo). Detalle por fase en [`docs/coordinacion/BITACORA.md`](docs/coordinacion/BITACORA.md) y [`docs/coordinacion/ESTADO-REAL.md`](docs/coordinacion/ESTADO-REAL.md).
+`main` contiene P0 a P8 e INF-1 a INF-3, unidos mediante las PR #2 a #16, y P9 (la rama de P10 se creó desde `origin/main` en `2e23a8b`, que ya incluye P9). Todo lo de esta sección está **IMPLEMENTADO y PROBADO** con pruebas automáticas. Además, la responsable hizo una prueba manual de cada fase hasta P8. Las de P6, P7 y P8 fueron **parciales**: lo que no se probó a mano lo cubren las pruebas automáticas. No hay pruebas E2E. P10 "Marca y visibilidad" está en su rama, pendiente de unir (ver más abajo). Detalle por fase en [`docs/coordinacion/BITACORA.md`](docs/coordinacion/BITACORA.md) y [`docs/coordinacion/ESTADO-REAL.md`](docs/coordinacion/ESTADO-REAL.md).
 
 **Visitante (sin cuenta)**
 - Ver el catálogo: inicio con destacados y recientes, búsqueda, filtros y ficha del vehículo (P3, P4b).
@@ -41,18 +41,33 @@ Estados que usa esta documentación: **IMPLEMENTADO** (el código existe), **PRO
 
 **Infraestructura** (INF-1 a INF-3, PR #16): CI en GitHub Actions, comprobaciones de arranque para el servidor (proxy, https, claves) y corrección de las pruebas intermitentes.
 
-**P9 "Prepublicación": en la rama `feature/p9-prepublicacion`, pendiente de unir** (todavía no está en `main`; sin migración)
-- Está **IMPLEMENTADO y PROBADO** con pruebas automáticas (ver §5). La prueba manual de la responsable, la prueba contra la API real, las pruebas E2E y la revisión a 375 px **no se han ejecutado**. Guía de prueba en [`docs/manual/P9-prepublicacion.md`](docs/manual/P9-prepublicacion.md).
+**P9 "Prepublicación"** (en `main`; sin migración)
+- Está **IMPLEMENTADO y PROBADO** con pruebas automáticas. La bitácora no registra la prueba manual de la responsable, la prueba contra la API real, las pruebas E2E ni la revisión a 375 px. Guía de prueba en [`docs/manual/P9-prepublicacion.md`](docs/manual/P9-prepublicacion.md).
 - Registro de comprador e inscripción de asesor con la **casilla de autorización de datos**, sin marcar; la API la vuelve a exigir y guarda la prueba con la versión de la política (HU-062, D-44). Junto a la casilla hay un enlace a los términos, pero no una casilla para aceptarlos (D-84 A).
-- Páginas `#/terminos` y `#/privacidad` con la franja "En revisión legal", **sin** el texto de los borradores, y enlaces a las dos en el pie (HU-086).
+- Páginas de términos y de privacidad con la franja "En revisión legal", **sin** el texto de los borradores, y enlaces a las dos en el pie (HU-086).
 - Administrador: en "Parámetros", la sección "Datos de la empresa" (razón social, NIT con dígito de verificación y dirección de notificaciones). Se ven en el pie y en las páginas legales solo cuando los tres están completos (HU-085, D-83 A).
 - Límite de intentos por conexión: 5 registros por hora y 20 al día, y 20 inicios de sesión cada 15 minutos; al pasarlo, mensaje de espera (HU-059, RN-SE-001).
-- Pantalla "Página no encontrada" para direcciones `#/...` que no existen; meta description, favicon y `robots.txt`.
+- Pantalla "Página no encontrada" para direcciones que no existen; meta description y favicon.
 - Los mensajes de crédito, búsqueda, seguro y "Mis solicitudes" muestran el WhatsApp vigente de "Parámetros", no un número fijo.
 - Revisión de seguridad: **APROBADO CON OBSERVACIONES**, sin hallazgos altos ([`REVISION-SEGURIDAD-P9.md`](docs/coordinacion/REVISION-SEGURIDAD-P9.md)). M-1 (configurar el proxy en el servidor) es obligatorio antes de abrir al público. B-5 se corrigió en la rama.
 
+**P10 "Marca y visibilidad": en la rama `feature/p10-marca-visibilidad`, pendiente de unir** (sin migración; D-87 a D-92)
+- Está **IMPLEMENTADO y PROBADO** con pruebas automáticas (ver §5). La prueba manual de la responsable, la prueba contra la API real, las pruebas E2E y la revisión a 375 px **no se han ejecutado**. Guía de prueba en [`docs/manual/P10-marca-visibilidad.md`](docs/manual/P10-marca-visibilidad.md).
+- **Lo que nota quien usa el portal:**
+  - las direcciones ya no llevan `#`: por ejemplo `/vehiculo/<slug>`, `/camiones`, `/cuenta`. Cada vehículo tiene su propia dirección, que se puede recargar (F5) y compartir. Los enlaces viejos con `#/` se convierten solos a la dirección nueva;
+  - categorías con dirección propia: `/carros`, `/camiones`, `/carrocerias` y `/maquinaria`;
+  - logo de **VCA Automotores**: el horizontal en el encabezado y el cuadrado en el pie; favicon con la cabeza del toro (D-91 A);
+  - nombre **"Venta de Camiones – Financiamos tu Camión"**; títulos de pestaña con el sufijo "| Financiamos tu Camión" ("tu" en minúscula); el pie dice "© <año> VCA Automotores";
+  - el título principal de la portada es **"Venta de camiones usados"** y la frase anterior queda como subtítulo (D-92);
+  - el mensaje de "Escribir por WhatsApp" de la ficha termina con la dirección del vehículo (nota sobre D-47);
+  - el enlace de recuperación de contraseña tiene la forma `<portal>/restablecer-contrasena#codigo=<código>`; los enlaces viejos siguen sirviendo mientras no venzan.
+- **Para Google y las redes:** título, descripción, `canonical` y `robots` por página; `robots.txt` y `sitemap.xml` generados por la API; datos estructurados (`Organization` en la portada, sin dirección, D-90 C; `Product`/`Vehicle` y migas en la ficha); vista previa genérica en todas las páginas y, en el servidor, la API entrega el HTML de `/vehiculo/<slug>` con la foto y el título del vehículo (D-88 A).
+- **La indexación está apagada** por configuración hasta abrir al público (D-89 A): `robots.txt` dice `Disallow: /`, no hay sitemap y todas las páginas llevan `noindex`. La vista previa con la foto del vehículo al pegar el enlace en WhatsApp **solo se puede probar con el portal publicado** en su dominio (D-81).
+- Revisión de seguridad: **APROBADO CON OBSERVACIONES**, sin hallazgos altos ([`REVISION-SEGURIDAD-P10.md`](docs/coordinacion/REVISION-SEGURIDAD-P10.md)). M-1, B-1, B-2 y B-6 corregidos en el código; B-3 y B-4 corregidos en la guía de publicación; B-5 cubierto por una prueba de QA.
+
 **Pendiente** (ver [`docs/coordinacion/BACKLOG.md`](docs/coordinacion/BACKLOG.md))
-- P9: la prueba manual de la responsable, la prueba con la API reiniciada en la rama, abrir la PR y unir a `main`. QA-P9-1: decidir si se acorta la meta description, que tiene 172 caracteres (PENDIENTE de la responsable).
+- P10: la prueba manual de la responsable (pasos en `docs/manual/P10-marca-visibilidad.md`), abrir la PR y unir a `main`. Con dominio (D-81): validadores de Google y schema.org y vista previa en WhatsApp y Facebook (CA-P10-69 y 81). Al abrir al público: encender la indexación con las dos claves juntas.
+- D-91 B: cambiar los archivos del logo cuando lleguen los originales con transparencia y la versión para fondo oscuro (no requiere programar).
 - **Antes de publicar en internet** (detalle en `docs/coordinacion/ESTADO-REAL.md`, "Preparación para publicar"):
   - D-81: hosting y dominio (PENDIENTE de la responsable);
   - D-44: revisión del abogado de la política y de los términos, y los **datos de la empresa** que debe entregar la responsable (razón social, NIT, dirección de notificaciones y dominio). Ningún formulario sale a internet sin esa revisión. Después hay que publicar los textos aprobados y cambiar `PoliticaDatos:Version`;
@@ -66,7 +81,7 @@ Estados que usa esta documentación: **IMPLEMENTADO** (el código existe), **PRO
 
 | Parte | Tecnología | Carpeta | Puerto |
 |---|---|---|---|
-| Frontend | React 19 + Vite 7 + TypeScript | `frontend/` | 5173 (proxy de `/api` y `/health`) |
+| Frontend | React 19 + Vite 7 + TypeScript | `frontend/` | 5173 (proxy de `/api`, `/media` y `/health`; con P10 también `/robots.txt` y `/sitemap.xml`) |
 | Backend | ASP.NET Core .NET 8 (minimal APIs) + Identity/JWT, EF Core con Pomelo | `backend/Camion.Api/` | 5080 |
 | Base de datos | MariaDB 10.4 (XAMPP), base `camion_ventas` | `database/` | 3306 |
 | Pruebas | xUnit (API, con SQLite en memoria) y Vitest | `backend/Camion.Api.Tests/`, `frontend/tests/` | — |
@@ -105,6 +120,12 @@ Tienen un valor por defecto que sirve en el equipo local. Se cambian en `appsett
 | `Recuperacion:UrlPortal` | Dirección del frontend con la que empieza el enlace de recuperación (P8) | `http://localhost:5173` | Fuera de `Development` debe empezar por `https://`; si no, la API no arranca. |
 | `PoliticaDatos:Version` | Versión de la política que se guarda con cada autorización de datos | `BORRADOR-2026-11-04` | Una versión mal formada impide arrancar. Fuera de `Development`, una versión de borrador deja un aviso en el log. Se cambia cuando el abogado apruebe la política (D-44, D-85 A). |
 | `LimitesAuth:*` (P9) | Límite de intentos por conexión en el registro y el inicio de sesión | 5 registros cada 60 min y 20 al día; 20 inicios de sesión cada 15 min | Detrás de un proxy, sin `Proxy:KnownProxies` el límite pasa a ser común para todo el portal (M-1 de P9). |
+| `Portal:UrlPublica` (P10) | Dirección pública del portal para `sitemap.xml`, `robots.txt`, `canonical` y la vista previa que entrega la API | vacía: se usa `Recuperacion:UrlPortal` | Absoluta, sin ruta, consulta ni fragmento; fuera de `Development`, `https://`. No usar `Portal:Origen`, que activa CORS. |
+| `Portal:PermitirIndexacion` (P10, D-89 A) | Deja que Google indexe el portal | `false` | Solo `true` o `false`; otro valor impide arrancar. Se enciende al abrir al público, **junto con** `VITE_PERMITIR_INDEXACION=true` al compilar el frontend. |
+| `Portal:RutaIndexHtml` (P10, D-88 A) | Ruta del `index.html` publicado del frontend; con ella la API atiende `/vehiculo/<slug>` con las etiquetas del vehículo | vacía: la API no atiende `/vehiculo/` | Debe ser un archivo `.html` de tamaño razonable y con las marcas `camion:meta`. Fuera de `Development`, si está puesta y el archivo no existe, la API no arranca. En el equipo local no hace falta. |
+| `LimitesSeo:*` (P10, M-1) | Cupo por conexión de `/sitemap.xml` y `/vehiculo/*`, y minutos que se reutiliza el sitemap generado | `LimiteVentana` 120, `VentanaMinutos` 1, `SitemapCacheMinutos` 10 | — |
+
+Al **compilar** el frontend (no en la API) hay dos variables nuevas de P10: `VITE_URL_PUBLICA` (la misma dirección `https://` que `Portal:UrlPublica`; sin ella no se escriben `og:url`, `og:image` ni `twitter:image`) y `VITE_PERMITIR_INDEXACION` (solo el texto exacto `true` la enciende; si no, todas las páginas llevan `noindex`). En el equipo local se dejan vacías.
 
 Para publicar en un servidor hay más claves (proxy, https, CORS y certificado de las claves). Fuera de `Development` las tres primeras de esta tabla son **obligatorias**: sin ellas la API no arranca. La lista completa, solo con nombres, está en [`.env.example`](.env.example), y el procedimiento en [`docs/GUIA-PUBLICACION.md`](docs/GUIA-PUBLICACION.md).
 
@@ -147,7 +168,7 @@ npm install
 npm run dev
 ```
 
-Abre http://localhost:5173. El inicio es el catálogo. "Mi cuenta" está en `#/cuenta`.
+Abre http://localhost:5173/. El inicio es el catálogo. Con P10 las direcciones van sin `#`: "Mi cuenta" está en http://localhost:5173/cuenta, el catálogo en http://localhost:5173/vehiculos y cada vehículo en http://localhost:5173/vehiculo/<slug>. Cualquiera de ellas se puede recargar (F5): Vite responde la aplicación. `/api`, `/media`, `/health`, `/robots.txt` y `/sitemap.xml` van a la API (http://localhost:5080); `/vehiculo/` **no** va a la API en desarrollo. Los enlaces viejos como http://localhost:5173/#/cuenta siguen funcionando: se convierten solos. En `main`, mientras no se una P10, las direcciones siguen con `#` (por ejemplo `#/cuenta`).
 
 ## 5. Pruebas
 
@@ -161,7 +182,11 @@ npx tsc -b
 npm run build
 ```
 
-Último resultado registrado, en la rama **`feature/p9-prepublicacion`** (QA, 2026-11-16, [`docs/criterios/P9-evidencia.md`](docs/criterios/P9-evidencia.md)): backend **1481/1481** en dos corridas y frontend **875/875**, sin omitidas ni intermitencias; `tsc -b`, `tsc -p tsconfig.test.json` y `npm run build`, correctos. En la revisión de seguridad de P9, `npm audit` y `dotnet list package --vulnerable`, sin avisos. Esas cifras son anteriores a la corrección B-5 de la rama, que no se volvió a medir en esa evidencia. En `main` (PR #16, INF-1 a INF-3) el último resultado registrado fue 1368/1368 y 751/751.
+Último resultado registrado, en la rama **`feature/p10-marca-visibilidad`** después de las correcciones de la revisión de seguridad (coordinador, 2026-11-17, [`docs/criterios/P10-evidencia.md`](docs/criterios/P10-evidencia.md) §6):
+- frontend **1025/1025**, sin ninguna prueba marcada como fallo esperado;
+- backend, corrida completa: **1557 pasan y 5 omitidas**. Las 5 son `P10QaIndexCompiladoTests`, que necesitan el `index.html` compilado (variables `CAMION_QA_INDEX_APAGADA` y `CAMION_QA_INDEX_ENCENDIDA`). En corridas aparte con el `index.html` compilado real, con la indexación apagada y encendida, las 52 pruebas P10 pasan y 0 se omiten.
+
+La evidencia de QA de P10 (2026-11-16, antes de las correcciones) registró backend 1554/1554 y frontend 1017 + 1 fallo esperado (QA-P10-1, hoy corregido); `tsc -b`, `tsc -p tsconfig.test.json` y `npm run build`, correctos. En la revisión de seguridad de P10, `npm audit` y `dotnet list package --vulnerable`, sin avisos. En P9 (QA, 2026-11-16) el último resultado registrado fue 1481/1481 y 875/875.
 
 **CI (INF-1):** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) ejecuta todo lo anterior en cada push y PR, más `dotnet list package --vulnerable` y `npm audit`, sin secretos. El backend se prueba en Windows (obligatorio) y en Linux (informativo hasta decidir el hosting, D-81). Las pruebas de la API usan SQLite en memoria y no tocan `camion_ventas`.
 
@@ -181,15 +206,16 @@ Las pruebas intermitentes de INF-3 quedaron corregidas en la PR #16 (detalle en 
 
 | Dónde | Qué contiene |
 |---|---|
-| `docs/coordinacion/ESTADO-REAL.md` | Estado verificado del código, con actualizaciones hasta P8 y la "Preparación para publicar" (con lo que resolvió P9) |
+| `docs/coordinacion/ESTADO-REAL.md` | Estado verificado del código, con actualizaciones hasta P8 y la "Preparación para publicar" (con lo que resolvieron P9 y P10) |
 | `docs/coordinacion/BACKLOG.md` | Orden de trabajo y estado de cada fase |
 | `docs/coordinacion/DECISIONES.md` | Decisiones D-1 en adelante |
 | `docs/coordinacion/BITACORA.md` | Qué se hizo en cada sesión, con migraciones, respaldos y pruebas |
-| `docs/coordinacion/REVISION-SEGURIDAD-P5*.md`, `-P6.md`, `-P7.md`, `-P8.md`, `-P9.md` | Revisiones de seguridad |
+| `docs/coordinacion/REVISION-SEGURIDAD-P5*.md`, `-P6.md`, `-P7.md`, `-P8.md`, `-P9.md`, `-P10.md` | Revisiones de seguridad |
 | `docs/requisitos/` | Requisitos funcionales v3.0 y minuta de transferencia |
 | `docs/criterios/` | Criterios, contratos de API y evidencia por fase |
-| `docs/manual/` | Guías de uso y de prueba manual: P5 contactos, P5b avisos, P6 créditos, P7 administración, P8 reportes y P9 prepublicación |
-| `docs/GUIA-PUBLICACION.md` | Lista de verificación para publicar: variables, base nueva, https, proxy, claves y respaldos |
+| `docs/manual/` | Guías de uso y de prueba manual: P5 contactos, P5b avisos, P6 créditos, P7 administración, P8 reportes, P9 prepublicación y P10 marca y visibilidad |
+| `docs/GUIA-PUBLICACION.md` | Lista de verificación para publicar: variables, base nueva, https, proxy (con las reglas de las direcciones sin `#` de P10), claves, respaldos y cómo encender la indexación |
+| `docs/marca/` | Originales del logo de VCA Automotores (sin seguimiento en Git; no se publican). Los derivados web están en `frontend/public/marca/` |
 | `.env.example` | Nombres de las variables de entorno del servidor (sin valores) |
 | `docs/GUIA-ADMINISTRACION.md`, `GUIA-CATALOGO.md`, `GUIA-CATALOGOS.md` | Guías de administración, catálogo público y marcas y modelos |
 | `docs/legal/` | Borradores de la política de datos y de los términos (D-44; falta la revisión legal). No se publican en el portal |
