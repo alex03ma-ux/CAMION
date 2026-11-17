@@ -80,3 +80,9 @@ Recomendación: `html.replace(marca, () => contenido)`.
 - `docs/marca/` (sin seguimiento) contiene los originales, entre ellos una imagen exportada de WhatsApp. Si algún día se versionan, quitarles antes los metadatos; los derivados de `public/marca` ya están limpios.
 - Tras publicar un frontend nuevo, las fichas cacheadas (`max-age=300`) pueden apuntar 5 minutos a los `assets` anteriores: conviene no borrar los `assets` viejos en el mismo momento del despliegue.
 - Las reglas del proxy siguen como PROPUESTO (`docs/GUIA-PUBLICACION.md:445`); comprobar con el portal real los puntos de B-3 y B-4 y las verificaciones de `:423-428`.
+
+## Anexo (2026-11-17) — Auditoría de dependencias del CI
+
+- **Hallazgo:** la PR #18 falló en "Auditoría de dependencias" por GHSA-fc5q-39xc-vjpf (alta, ReDoS en `picomatch` <= 4.0.7, sin versión con parche publicada). `picomatch` solo llega por Vite y Vitest (dependencias de desarrollo); `npm audit --omit=dev` da **0 vulnerabilidades**: no va en el portal publicado.
+- **Decisión de la responsable (2026-11-17):** el CI bloquea solo por vulnerabilidades altas en dependencias de producción (`npm audit --omit=dev --audit-level=high`); la auditoría completa sigue corriendo como aviso (`continue-on-error`).
+- **Pendiente:** actualizar Vite/Vitest o `picomatch` cuando salga el parche y valorar volver a bloquear con la auditoría completa.

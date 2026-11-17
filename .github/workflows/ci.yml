@@ -111,5 +111,13 @@ jobs:
       - name: Compilar
         run: npm run build
 
-      - name: Auditoría de dependencias
+      # Bloquea solo por vulnerabilidades en lo que se publica (dependencias de producción).
+      - name: Auditoría de dependencias (lo que se publica)
+        run: npm audit --omit=dev --audit-level=high
+
+      # Herramientas de compilación y pruebas (Vite, Vitest…): no van en el portal publicado.
+      # Se revisan como aviso para no frenar el trabajo por alertas sin arreglo publicado
+      # (p. ej. GHSA-fc5q-39xc-vjpf en picomatch <= 4.0.7, 2026-11-17). Ver REVISION-SEGURIDAD-P10.md.
+      - name: Auditoría de dependencias (herramientas, informativa)
+        continue-on-error: true
         run: npm audit --audit-level=high
