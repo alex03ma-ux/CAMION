@@ -1,16 +1,16 @@
 import { categoriasDisponibles, type OpcionCatalogo } from '../api/catalogo'
 import { enlaceRedSeguro, formatearCelular, formatearNit, HOSTS_INSTAGRAM, HOSTS_TIKTOK } from '../api/parametros'
 import {
-  HASH_BUSCAR,
-  HASH_BUSCO_VEHICULO,
-  HASH_CUENTA,
-  HASH_INICIO,
-  HASH_PRIVACIDAD,
-  HASH_REGISTRO,
-  HASH_SEGURO_TODO_RIESGO,
-  HASH_TERMINOS,
-  HASH_VENDE_TU_CAMION,
-  hashBuscar,
+  RUTA_BUSCAR,
+  RUTA_BUSCO_VEHICULO,
+  RUTA_CUENTA,
+  RUTA_INICIO,
+  RUTA_PRIVACIDAD,
+  RUTA_REGISTRO,
+  RUTA_SEGURO_TODO_RIESGO,
+  RUTA_TERMINOS,
+  RUTA_VENDE_TU_CAMION,
+  rutaCategoria,
 } from '../rutas'
 import { ALT_LOGO_CUADRADO, LOGO, MARCA } from '../marca'
 import { IconoInstagram, IconoTiktok } from './IconosPortal'
@@ -49,7 +49,7 @@ export function PiePortal({ tipos, conSesion }: PiePortalProps) {
       <div className="cat-pie-interior">
         <div className="cat-pie-marca">
           {/* P10 (CA-P10-05): logo cuadrado con transparencia; nunca el horizontal (texto negro) sobre el fondo oscuro. */}
-          <a className="cat-logo cat-pie-logo" href={HASH_INICIO}>
+          <a className="cat-logo cat-pie-logo" href={RUTA_INICIO}>
             <picture>
               <source srcSet={LOGO.cuadradoWebp} type="image/webp" />
               <img
@@ -67,13 +67,13 @@ export function PiePortal({ tipos, conSesion }: PiePortalProps) {
         <nav className="cat-pie-columna" aria-label="Categorías del pie de página">
           <h2>Explora</h2>
           <ul>
-            {categoriasDisponibles(tipos).map(({ tipo, enlace }) => (
+            {categoriasDisponibles(tipos).map(({ tipo, enlace, slug }) => (
               <li key={tipo.id}>
-                <a href={hashBuscar({ tipoId: String(tipo.id) })}>{enlace}</a>
+                <a href={rutaCategoria(slug)}>{enlace}</a>
               </li>
             ))}
             <li>
-              <a href={HASH_BUSCAR}>Todos los vehículos</a>
+              <a href={RUTA_BUSCAR}>Todos los vehículos</a>
             </li>
           </ul>
         </nav>
@@ -82,13 +82,13 @@ export function PiePortal({ tipos, conSesion }: PiePortalProps) {
           <h2>Servicios</h2>
           <ul>
             <li>
-              <a href={HASH_VENDE_TU_CAMION}>Vende tu camión</a>
+              <a href={RUTA_VENDE_TU_CAMION}>Vende tu camión</a>
             </li>
             <li>
-              <a href={HASH_SEGURO_TODO_RIESGO}>Compra tu seguro todo riesgo</a>
+              <a href={RUTA_SEGURO_TODO_RIESGO}>Compra tu seguro todo riesgo</a>
             </li>
             <li>
-              <a href={HASH_BUSCO_VEHICULO}>Busco un vehículo</a>
+              <a href={RUTA_BUSCO_VEHICULO}>Busco un vehículo</a>
             </li>
           </ul>
         </nav>
@@ -97,15 +97,15 @@ export function PiePortal({ tipos, conSesion }: PiePortalProps) {
           <ul>
             {conSesion ? (
               <li>
-                <a href={HASH_CUENTA}>Mi cuenta</a>
+                <a href={RUTA_CUENTA}>Mi cuenta</a>
               </li>
             ) : (
               <>
                 <li>
-                  <a href={HASH_CUENTA}>Ingresar</a>
+                  <a href={RUTA_CUENTA}>Ingresar</a>
                 </li>
                 <li>
-                  <a href={HASH_REGISTRO}>Crear cuenta o inscribirme como asesor</a>
+                  <a href={RUTA_REGISTRO}>Crear cuenta o inscribirme como asesor</a>
                 </li>
               </>
             )}
@@ -156,10 +156,10 @@ export function PiePortal({ tipos, conSesion }: PiePortalProps) {
         <nav aria-label="Información legal">
           <ul className="cat-pie-legal-enlaces">
             <li>
-              <a href={HASH_TERMINOS}>Términos y condiciones</a>
+              <a href={RUTA_TERMINOS}>Términos y condiciones</a>
             </li>
             <li>
-              <a href={HASH_PRIVACIDAD}>Política de tratamiento de datos</a>
+              <a href={RUTA_PRIVACIDAD}>Política de tratamiento de datos</a>
             </li>
           </ul>
         </nav>

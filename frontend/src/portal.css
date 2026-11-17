@@ -1088,7 +1088,7 @@ form.admin-portada-form {
   }
 }
 
-/* ---- P5b: pantallas públicas de los avisos (#/vende-tu-camion, #/seguro-todo-riesgo) ---- */
+/* ---- P5b: pantallas públicas de los avisos (/vende-tu-camion, /seguro-todo-riesgo) ---- */
 .aviso-publico-intro {
   max-width: 640px;
   margin: 0 0 8px;

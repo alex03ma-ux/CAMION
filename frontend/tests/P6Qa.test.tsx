@@ -9,7 +9,7 @@ const RUTA_MIS = '/api/mis-solicitudes?pagina=1&tamano=20'
 
 describe('"Mis solicitudes" no muestra nada interno (QA, CA-P6-68, 71, 72)', () => {
   it('campos internos de más en la respuesta (notas, responsable, resultado, teléfono, nota de la relación) no se pintan', async () => {
-    abrirApp('#/mis-solicitudes', ['COMPRADOR'], {
+    abrirApp('/mis-solicitudes', ['COMPRADOR'], {
       [RUTA_MIS]: {
         status: 200,
         body: {
@@ -64,7 +64,7 @@ describe('"Mis solicitudes" no muestra nada interno (QA, CA-P6-68, 71, 72)', () 
   })
 
   it('un vehículo con disponible=false no se enlaza aunque llegue un slug; los recomendados solo se muestran en búsquedas', async () => {
-    abrirApp('#/mis-solicitudes', ['COMPRADOR'], {
+    abrirApp('/mis-solicitudes', ['COMPRADOR'], {
       [RUTA_MIS]: {
         status: 200,
         body: {
@@ -89,6 +89,6 @@ describe('"Mis solicitudes" no muestra nada interno (QA, CA-P6-68, 71, 72)', () 
     expect(within(tarjeta).getByText('Este vehículo ya no está disponible')).toBeInTheDocument()
     expect(within(tarjeta).queryByRole('link')).not.toBeInTheDocument()
     expect(within(tarjeta).queryByRole('heading', { name: 'Te recomendamos estos vehículos' })).not.toBeInTheDocument()
-    expect(document.querySelector('a[href="#/vehiculo/chevrolet-npr-2020"]')).toBeNull()
+    expect(document.querySelector('a[href="/vehiculo/chevrolet-npr-2020"]')).toBeNull()
   })
 })

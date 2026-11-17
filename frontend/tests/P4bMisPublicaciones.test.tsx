@@ -15,7 +15,7 @@ const P_VENDIDA = pub(5, 15, { titulo: 'Tractomula vendida', estado: 'VENDIDA', 
 const TODAS = [P_PUBLICADA, P_DESTACADA, P_VENCIDA, P_OCULTA, P_VENDIDA]
 
 function abrirAsesor(rutas: Rutas = {}) {
-  return abrirApp('#/publicaciones', ['ASESOR'], {
+  return abrirApp('/publicaciones', ['ASESOR'], {
     [RUTA_LISTA_PUB]: paginaPub(TODAS),
     [RUTA_CUPO]: cupo(),
     ...rutas,
@@ -34,20 +34,20 @@ function acciones(t: HTMLElement): string[] {
 }
 
 describe('Ruta y acceso', () => {
-  it('#/publicaciones se reconoce', () => {
-    expect(leerRuta('#/publicaciones')).toEqual({ nombre: 'publicaciones' })
-    expect(leerRuta('#/publicaciones/')).toEqual({ nombre: 'publicaciones' })
+  it('/publicaciones se reconoce', () => {
+    expect(leerRuta('/publicaciones')).toEqual({ nombre: 'publicaciones' })
+    expect(leerRuta('/publicaciones/')).toEqual({ nombre: 'publicaciones' })
   })
 
   it('un comprador ve "No tienes permiso" y no se pide nada a /api/publicaciones', async () => {
-    const { api } = abrirApp('#/publicaciones', ['COMPRADOR'])
+    const { api } = abrirApp('/publicaciones', ['COMPRADOR'])
     expect(await screen.findByText('No tienes permiso para realizar esta acción.')).toBeInTheDocument()
     expect(api.llamadas.some((l) => l.url.startsWith('/api/publicaciones'))).toBe(false)
   })
 
   it('"Mi cuenta" del asesor enlaza a "Mis publicaciones"', async () => {
-    abrirApp('#/cuenta', ['ASESOR'], { '/api/asesor/suscripcion': { status: 200, body: { suscripcion: null, mensaje: 'x' } } })
-    expect(await screen.findByRole('link', { name: 'Mis publicaciones' })).toHaveAttribute('href', '#/publicaciones')
+    abrirApp('/cuenta', ['ASESOR'], { '/api/asesor/suscripcion': { status: 200, body: { suscripcion: null, mensaje: 'x' } } })
+    expect(await screen.findByRole('link', { name: 'Mis publicaciones' })).toHaveAttribute('href', '/publicaciones')
   })
 })
 
@@ -93,7 +93,7 @@ describe('Estados y acciones válidas', () => {
       'Destacar Camión NPR de trabajo',
       'Ver en el portal Camión NPR de trabajo',
     ])
-    expect(within(publicada).getByRole('link', { name: /Ver en el portal/ })).toHaveAttribute('href', '#/vehiculo/chevrolet-npr-2020-11')
+    expect(within(publicada).getByRole('link', { name: /Ver en el portal/ })).toHaveAttribute('href', '/vehiculo/chevrolet-npr-2020-11')
 
     const destacada = tarjeta('Volqueta lista')
     expect(within(destacada).getByText('Destacada')).toBeInTheDocument()
@@ -233,7 +233,7 @@ describe('Editar (HU-024)', () => {
 describe('Administrador', () => {
   it('ve todas, con el asesor y el filtro por asesor; no pide el cupo', async () => {
     const conAsesor = pub(9, 19, { titulo: 'Camión de Asesor Dos', asesor: { id: 8, nombre: 'Asesor Dos' } })
-    const { api, user } = abrirApp('#/publicaciones', ['ADMINISTRADOR'], {
+    const { api, user } = abrirApp('/publicaciones', ['ADMINISTRADOR'], {
       [RUTA_LISTA_PUB]: paginaPub([conAsesor]),
       [rutaListaPub('asesorId=8')]: paginaPub([conAsesor]),
       [RUTA_CATALOGOS_INV]: CATALOGOS_INVENTARIO,

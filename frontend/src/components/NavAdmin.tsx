@@ -4,11 +4,11 @@
 // Catálogos, Portada y Parámetros (los pagos viven dentro de Suscripciones), con aria-current en la actual.
 // P8: Reportes e Indicadores, después de Ventas.
 import {
-  hashSeccionAdmin,
-  HASH_CONTACTOS,
-  HASH_CUENTA,
-  HASH_INVENTARIO,
-  HASH_PUBLICACIONES,
+  rutaSeccionAdmin,
+  RUTA_CONTACTOS,
+  RUTA_CUENTA,
+  RUTA_INVENTARIO,
+  RUTA_PUBLICACIONES,
   type SeccionAdmin,
 } from '../rutas'
 
@@ -28,7 +28,7 @@ export const NOMBRES_SECCION_ADMIN: Record<SeccionAdmin, string> = {
 type Enlace = { clave: string; nombre: string; href: string; seccion?: SeccionAdmin }
 
 function seccion(s: SeccionAdmin): Enlace {
-  return { clave: s, nombre: NOMBRES_SECCION_ADMIN[s], href: hashSeccionAdmin(s), seccion: s }
+  return { clave: s, nombre: NOMBRES_SECCION_ADMIN[s], href: rutaSeccionAdmin(s), seccion: s }
 }
 
 const ENLACES: readonly Enlace[] = [
@@ -40,10 +40,10 @@ const ENLACES: readonly Enlace[] = [
   // P8 (D-68 A, D-69 A; CA-P8-73): reportes e indicadores.
   seccion('reportes'),
   seccion('indicadores'),
-  // Inventario, Publicaciones y Contactos viven fuera de #/cuenta (también los usa el asesor).
-  { clave: 'inventario', nombre: 'Inventario', href: HASH_INVENTARIO },
-  { clave: 'publicaciones', nombre: 'Publicaciones', href: HASH_PUBLICACIONES },
-  { clave: 'contactos', nombre: 'Contactos', href: HASH_CONTACTOS },
+  // Inventario, Publicaciones y Contactos viven fuera de /cuenta (también los usa el asesor).
+  { clave: 'inventario', nombre: 'Inventario', href: RUTA_INVENTARIO },
+  { clave: 'publicaciones', nombre: 'Publicaciones', href: RUTA_PUBLICACIONES },
+  { clave: 'contactos', nombre: 'Contactos', href: RUTA_CONTACTOS },
   seccion('catalogos'),
   seccion('portada'),
   seccion('parametros'),
@@ -61,7 +61,7 @@ export function NavAdmin({ actual }: { actual: SeccionAdmin }) {
           </li>
         ))}
         <li>
-          <a href={HASH_CUENTA}>Mi perfil</a>
+          <a href={RUTA_CUENTA}>Mi perfil</a>
         </li>
       </ul>
     </nav>

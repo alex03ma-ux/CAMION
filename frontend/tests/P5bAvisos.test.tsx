@@ -10,6 +10,7 @@ import { leerRuta } from '../src/rutas'
 import { cabecera, simularFetch, TOKEN_FICTICIO, type RespuestaSimulada } from './helpers'
 import { abrirApp, CATALOGOS_INVENTARIO, RUTA_CATALOGOS_INV, type Rutas } from './p4pDatos'
 import { cuerpo, detalleLead, lead, paginaLeads, retenerRuta, rutaLeads } from './p5Datos'
+import { irA } from './helpers'
 
 const RUTA_VENDE = '/api/avisos/vende-tu-camion'
 const RUTA_SEGURO = '/api/avisos/seguro-todo-riesgo'
@@ -23,7 +24,7 @@ const OK: RespuestaSimulada = { status: 201, body: { mensaje: MENSAJE_OK } }
 /** Abre un aviso sin sesión. */
 function abrirAnonimo(hash: string, rutas: Record<string, RespuestaSimulada | RespuestaSimulada[]> = {}) {
   const api = simularFetch(rutas)
-  window.location.hash = hash
+  irA(hash)
   render(<App />)
   return { api, user: userEvent.setup() }
 }
@@ -41,7 +42,7 @@ const enviar = () => screen.getByRole('button', { name: /^(Enviar|Enviando\.\.\.
 
 describe('"Vende tu camión": estructura (CA-P5b-08, 18, 31, 53, 55, 57, 58)', () => {
   it('sin sesión muestra h1, solo nombre, teléfono, correo opcional, descripción y la casilla sin marcar', async () => {
-    abrirAnonimo('#/vende-tu-camion')
+    abrirAnonimo('/vende-tu-camion')
     const form = await formVende()
     expect(screen.getByRole('heading', { level: 1, name: 'Vende tu camión' })).toBeInTheDocument()
     expect(document.title).toBe('Vende tu camión | Financiamos tu Camión')
@@ -60,13 +61,13 @@ describe('"Vende tu camión": estructura (CA-P5b-08, 18, 31, 53, 55, 57, 58)', (
     // D-50 (b): sin ciudad, marca ni año; sin tipo de vehículo.
     expect(screen.queryByLabelText(/Ciudad|Marca|Año|Tipo de vehículo/)).not.toBeInTheDocument()
     const politica = within(form).getByRole('link', { name: /Política de tratamiento de datos/ })
-    expect(politica).toHaveAttribute('href', '#/privacidad')
+    expect(politica).toHaveAttribute('href', '/privacidad')
     expect(politica).toHaveAttribute('target', '_blank')
     expect(politica).toHaveTextContent('(se abre en una pestaña nueva)')
   })
 
   it('el campo trampa está fuera del orden de tabulación y oculto a lectores de pantalla', async () => {
-    abrirAnonimo('#/vende-tu-camion')
+    abrirAnonimo('/vende-tu-camion')
     const form = await formVende()
     const trampa = form.querySelector<HTMLInputElement>('input[name="sitioWeb"]')
     expect(trampa).toHaveAttribute('tabindex', '-1')
@@ -74,7 +75,7 @@ describe('"Vende tu camión": estructura (CA-P5b-08, 18, 31, 53, 55, 57, 58)', (
   })
 
   it('CA-P5b-07 contador "N/500" en aria-live, tope de 500 y 500 caracteres exactos se aceptan', async () => {
-    const { api, user } = abrirAnonimo('#/vende-tu-camion', { [RUTA_VENDE]: OK })
+    const { api, user } = abrirAnonimo('/vende-tu-camion', { [RUTA_VENDE]: OK })
     await formVende()
     expect(descripcion()).toHaveAttribute('maxLength', '500')
     const contador = document.getElementById('vende-descripcion-contador')
@@ -96,7 +97,7 @@ describe('"Vende tu camión": estructura (CA-P5b-08, 18, 31, 53, 55, 57, 58)', (
 
 describe('"Vende tu camión": envío (CA-P5b-01, 02, 28, 29, 30, 56)', () => {
   it('anónimo: POST sin token con el cuerpo del contrato, éxito en role="status" con foco y formulario vacío', async () => {
-    const { api, user } = abrirAnonimo('#/vende-tu-camion', { [RUTA_VENDE]: OK })
+    const { api, user } = abrirAnonimo('/vende-tu-camion', { [RUTA_VENDE]: OK })
     await formVende()
     await user.type(nombre(), '  Ana Pérez ')
     await user.type(telefonoVende(), '300 123 4567')
@@ -127,7 +128,7 @@ describe('"Vende tu camión": envío (CA-P5b-01, 02, 28, 29, 30, 56)', () => {
   })
 
   it('validación en el navegador: errores por campo con aria-invalid y aria-describedby, foco al primero, sin llamar a la API', async () => {
-    const { api, user } = abrirAnonimo('#/vende-tu-camion')
+    const { api, user } = abrirAnonimo('/vende-tu-camion')
     await formVende()
     await user.type(descripcion(), '     ')
     await user.click(enviar())
@@ -146,7 +147,7 @@ describe('"Vende tu camión": envío (CA-P5b-01, 02, 28, 29, 30, 56)', () => {
   })
 
   it('501 caracteres (pegados sin respetar el tope) se rechazan en el navegador', async () => {
-    const { api, user } = abrirAnonimo('#/vende-tu-camion')
+    const { api, user } = abrirAnonimo('/vende-tu-camion')
     await formVende()
     await user.type(nombre(), 'Ana')
     await user.type(telefonoVende(), '3001234567')
@@ -159,7 +160,7 @@ describe('"Vende tu camión": envío (CA-P5b-01, 02, 28, 29, 30, 56)', () => {
   })
 
   it.each([['1234567'], ['+1 202 555 0123'], ['2001234567']])('CA-P5b-04 el teléfono %s se rechaza', async (valor) => {
-    const { api, user } = abrirAnonimo('#/vende-tu-camion')
+    const { api, user } = abrirAnonimo('/vende-tu-camion')
     await formVende()
     await user.type(nombre(), 'Ana')
     await user.type(telefonoVende(), valor)
@@ -172,7 +173,7 @@ describe('"Vende tu camión": envío (CA-P5b-01, 02, 28, 29, 30, 56)', () => {
   })
 
   it('CA-P5b-09 correo mal escrito se marca; un correo válido viaja tal cual', async () => {
-    const { api, user } = abrirAnonimo('#/vende-tu-camion', { [RUTA_VENDE]: OK })
+    const { api, user } = abrirAnonimo('/vende-tu-camion', { [RUTA_VENDE]: OK })
     await formVende()
     await user.type(nombre(), 'Ana')
     await user.type(telefonoVende(), '6011234567')
@@ -188,7 +189,7 @@ describe('"Vende tu camión": envío (CA-P5b-01, 02, 28, 29, 30, 56)', () => {
   })
 
   it('CA-P5b-29 un 400 del servidor marca cada campo, conserva lo escrito y enfoca el primero', async () => {
-    const { user } = abrirAnonimo('#/vende-tu-camion', {
+    const { user } = abrirAnonimo('/vende-tu-camion', {
       [RUTA_VENDE]: {
         status: 400,
         body: {
@@ -218,7 +219,7 @@ describe('"Vende tu camión": envío (CA-P5b-01, 02, 28, 29, 30, 56)', () => {
     ['500', { status: 500, body: { error: 'No se pudo completar la operación. Intenta de nuevo en unos minutos.' } }, MENSAJE_FALLO],
     ['sin conexión', { red: true }, MENSAJE_FALLO],
   ])('CA-P5b-30 %s muestra un mensaje comprensible y conserva los datos', async (_n, respuesta, texto) => {
-    const { user } = abrirAnonimo('#/vende-tu-camion', { [RUTA_VENDE]: respuesta })
+    const { user } = abrirAnonimo('/vende-tu-camion', { [RUTA_VENDE]: respuesta })
     await formVende()
     await user.type(nombre(), 'Ana')
     await user.type(telefonoVende(), '3001234567')
@@ -231,7 +232,7 @@ describe('"Vende tu camión": envío (CA-P5b-01, 02, 28, 29, 30, 56)', () => {
   })
 
   it('CA-P5b-31 no se envía dos veces: el botón se desactiva mientras se envía', async () => {
-    const { api, user } = abrirAnonimo('#/vende-tu-camion', { [RUTA_VENDE]: OK })
+    const { api, user } = abrirAnonimo('/vende-tu-camion', { [RUTA_VENDE]: OK })
     await formVende()
     await user.type(nombre(), 'Ana')
     await user.type(telefonoVende(), '3001234567')
@@ -249,7 +250,7 @@ describe('"Vende tu camión": envío (CA-P5b-01, 02, 28, 29, 30, 56)', () => {
   })
 
   it('CA-P5b-02 / 21 con sesión de comprador: prellena el perfil, envía el token y exige marcar la casilla', async () => {
-    const { api, user } = abrirApp('#/vende-tu-camion', ['COMPRADOR'], { [RUTA_VENDE]: OK })
+    const { api, user } = abrirApp('/vende-tu-camion', ['COMPRADOR'], { [RUTA_VENDE]: OK })
     await waitFor(() => expect(screen.getByLabelText('Nombre')).toHaveValue('Persona Ficticia'))
     expect(telefonoVende()).toHaveValue('+57 300 000 0009')
     expect(correo()).toHaveValue('persona.ficticia@ejemplo.test')
@@ -270,14 +271,14 @@ describe('"Vende tu camión": envío (CA-P5b-01, 02, 28, 29, 30, 56)', () => {
   })
 
   it('CA-P5b-53 un asesor con sesión también ve el formulario', async () => {
-    abrirApp('#/vende-tu-camion', ['ASESOR'])
+    abrirApp('/vende-tu-camion', ['ASESOR'])
     expect(await formVende()).toBeInTheDocument()
   })
 })
 
 describe('"Compra tu seguro todo riesgo" (CA-P5b-11, 12, 15, 16, 55)', () => {
   it('el tipo de vehículo es un select nativo obligatorio con Camión, Carro, Maquinaria y Otro', async () => {
-    abrirAnonimo('#/seguro-todo-riesgo')
+    abrirAnonimo('/seguro-todo-riesgo')
     await formSeguro()
     expect(screen.getByRole('heading', { level: 1, name: 'Compra tu seguro todo riesgo' })).toBeInTheDocument()
     const select = tipo()
@@ -296,7 +297,7 @@ describe('"Compra tu seguro todo riesgo" (CA-P5b-11, 12, 15, 16, 55)', () => {
   })
 
   it('sin tipo de vehículo: "Elige el tipo de vehículo." y no se llama a la API', async () => {
-    const { api, user } = abrirAnonimo('#/seguro-todo-riesgo')
+    const { api, user } = abrirAnonimo('/seguro-todo-riesgo')
     await formSeguro()
     await user.type(nombre(), 'Ana')
     await user.type(telefonoSeguro(), '3001234567')
@@ -309,7 +310,7 @@ describe('"Compra tu seguro todo riesgo" (CA-P5b-11, 12, 15, 16, 55)', () => {
   })
 
   it('CA-P5b-16 con "Otro" se envía sin pedir más datos; cuerpo del contrato sin token', async () => {
-    const { api, user } = abrirAnonimo('#/seguro-todo-riesgo', { [RUTA_SEGURO]: OK })
+    const { api, user } = abrirAnonimo('/seguro-todo-riesgo', { [RUTA_SEGURO]: OK })
     await formSeguro()
     await user.type(nombre(), 'Ana Pérez')
     await user.type(telefonoSeguro(), '+57 300 123 4567')
@@ -332,7 +333,7 @@ describe('"Compra tu seguro todo riesgo" (CA-P5b-11, 12, 15, 16, 55)', () => {
   })
 
   it('un 400 en tipoVehiculo del servidor se muestra junto al select', async () => {
-    const { user } = abrirAnonimo('#/seguro-todo-riesgo', {
+    const { user } = abrirAnonimo('/seguro-todo-riesgo', {
       [RUTA_SEGURO]: { status: 400, body: { error: 'Revisa los datos marcados.', errores: { tipoVehiculo: ['Elige el tipo de vehículo.'] } } },
     })
     await formSeguro()
@@ -346,7 +347,7 @@ describe('"Compra tu seguro todo riesgo" (CA-P5b-11, 12, 15, 16, 55)', () => {
   })
 
   it('CA-P5b-12 con sesión envía el token', async () => {
-    const { api, user } = abrirApp('#/seguro-todo-riesgo', ['COMPRADOR'], { [RUTA_SEGURO]: OK })
+    const { api, user } = abrirApp('/seguro-todo-riesgo', ['COMPRADOR'], { [RUTA_SEGURO]: OK })
     await waitFor(() => expect(screen.getByLabelText('Nombre')).toHaveValue('Persona Ficticia'))
     await user.selectOptions(tipo(), 'MAQUINARIA')
     await user.click(casilla())
@@ -359,32 +360,32 @@ describe('"Compra tu seguro todo riesgo" (CA-P5b-11, 12, 15, 16, 55)', () => {
 
 describe('Accesos en el portal (D-51 A, CA-P5b-54)', () => {
   it('rutas #/vende-tu-camion y #/seguro-todo-riesgo', () => {
-    expect(leerRuta('#/vende-tu-camion')).toEqual({ nombre: 'vendeTuCamion' })
-    expect(leerRuta('#/seguro-todo-riesgo/')).toEqual({ nombre: 'seguroTodoRiesgo' })
+    expect(leerRuta('/vende-tu-camion')).toEqual({ nombre: 'vendeTuCamion' })
+    expect(leerRuta('/seguro-todo-riesgo/')).toEqual({ nombre: 'seguroTodoRiesgo' })
   })
 
   it('la portada tiene los dos bloques y la franja "Nuestros servicios" sigue sin enlaces', async () => {
-    abrirAnonimo('#/', { [RUTA_INICIO]: { status: 200, body: { destacados: [], recientes: [] } } })
+    abrirAnonimo('/', { [RUTA_INICIO]: { status: 200, body: { destacados: [], recientes: [] } } })
     const vende = await screen.findByRole('region', { name: '¿Quieres vender tu camión?' })
-    expect(within(vende).getByRole('link', { name: /Vende tu camión/ })).toHaveAttribute('href', '#/vende-tu-camion')
+    expect(within(vende).getByRole('link', { name: /Vende tu camión/ })).toHaveAttribute('href', '/vende-tu-camion')
     const seguro = screen.getByRole('region', { name: 'Asegura tu vehículo todo riesgo' })
-    expect(within(seguro).getByRole('link', { name: /Compra tu seguro/ })).toHaveAttribute('href', '#/seguro-todo-riesgo')
+    expect(within(seguro).getByRole('link', { name: /Compra tu seguro/ })).toHaveAttribute('href', '/seguro-todo-riesgo')
     // D-56 (d) B (responsable, 2026-11-12): "Busco un vehículo" también visible en la portada.
     const busco = screen.getByRole('region', { name: '¿No encuentras el vehículo que buscas?' })
-    expect(within(busco).getByRole('link', { name: /Busco un vehículo/ })).toHaveAttribute('href', '#/busco-un-vehiculo')
+    expect(within(busco).getByRole('link', { name: /Busco un vehículo/ })).toHaveAttribute('href', '/busco-un-vehiculo')
     const servicios = screen.getByRole('region', { name: 'Nuestros servicios' })
     expect(within(servicios).queryAllByRole('link')).toHaveLength(0)
   })
 
   it('el pie tiene la columna "Servicios" con ambos enlaces y el menú principal no cambia', async () => {
-    abrirAnonimo('#/vende-tu-camion')
+    abrirAnonimo('/vende-tu-camion')
     await formVende()
     const pie = screen.getByRole('navigation', { name: 'Servicios en el pie de página' })
     expect(within(pie).getByRole('heading', { name: 'Servicios' })).toBeInTheDocument()
-    expect(within(pie).getByRole('link', { name: 'Vende tu camión' })).toHaveAttribute('href', '#/vende-tu-camion')
+    expect(within(pie).getByRole('link', { name: 'Vende tu camión' })).toHaveAttribute('href', '/vende-tu-camion')
     expect(within(pie).getByRole('link', { name: 'Compra tu seguro todo riesgo' })).toHaveAttribute(
       'href',
-      '#/seguro-todo-riesgo',
+      '/seguro-todo-riesgo',
     )
     const encabezado = screen.getByRole('banner')
     expect(within(encabezado).queryByRole('link', { name: /Vende tu camión|seguro/i })).not.toBeInTheDocument()
@@ -419,7 +420,7 @@ const avisoSeguro = (id: number, extra: Record<string, unknown> = {}) =>
 
 describe('Bandeja del administrador (CA-P5b-37, 38)', () => {
   it('cada solicitud muestra su origen; los avisos dicen "Sin vehículo asociado" y el seguro su tipo', async () => {
-    abrirApp('#/contactos', ['ADMINISTRADOR'], {
+    abrirApp('/contactos', ['ADMINISTRADOR'], {
       ...ADMIN_BASE,
       [rutaLeads()]: paginaLeads([lead(1, { origen: 'CONTACTO_VEHICULO' }), avisoVende(2), avisoSeguro(3)]),
     })
@@ -436,7 +437,7 @@ describe('Bandeja del administrador (CA-P5b-37, 38)', () => {
   })
 
   it('filtra por origen con el parámetro "origen" y "Limpiar" lo quita', async () => {
-    const { api, user } = abrirApp('#/contactos', ['ADMINISTRADOR'], {
+    const { api, user } = abrirApp('/contactos', ['ADMINISTRADOR'], {
       ...ADMIN_BASE,
       [rutaLeads()]: paginaLeads([lead(1)]),
       [rutaLeads('origen=VENDE_TU_CAMION')]: paginaLeads([avisoVende(2)]),
@@ -462,7 +463,7 @@ describe('Bandeja del administrador (CA-P5b-37, 38)', () => {
   })
 
   it('un 400 "Origen no válido." se muestra junto al filtro', async () => {
-    const { user } = abrirApp('#/contactos', ['ADMINISTRADOR'], {
+    const { user } = abrirApp('/contactos', ['ADMINISTRADOR'], {
       ...ADMIN_BASE,
       [rutaLeads()]: paginaLeads([lead(1)]),
       [rutaLeads('origen=SEGURO_TODO_RIESGO')]: {
@@ -479,7 +480,7 @@ describe('Bandeja del administrador (CA-P5b-37, 38)', () => {
 
 describe('Detalle de un aviso (CA-P5b-38, 41, 43)', () => {
   it('"Vende tu camión": origen, descripción, "Sin vehículo asociado", consentimiento y sin "Reasignar"', async () => {
-    abrirApp('#/contactos/2', ['ADMINISTRADOR'], {
+    abrirApp('/contactos/2', ['ADMINISTRADOR'], {
       ...ADMIN_BASE,
       '/api/leads/2': {
         status: 200,
@@ -502,7 +503,7 @@ describe('Detalle de un aviso (CA-P5b-38, 41, 43)', () => {
   })
 
   it('seguro: muestra el tipo de vehículo', async () => {
-    abrirApp('#/contactos/3', ['ADMINISTRADOR'], {
+    abrirApp('/contactos/3', ['ADMINISTRADOR'], {
       ...ADMIN_BASE,
       '/api/leads/3': { status: 200, body: detalleLead(3, avisoSeguro(3)) },
     })
@@ -513,7 +514,7 @@ describe('Detalle de un aviso (CA-P5b-38, 41, 43)', () => {
   })
 
   it('el cierre de un aviso ofrece "Solicitud atendida" y no los resultados de vehículo; envía ATENDIDA', async () => {
-    const { api, user } = abrirApp('#/contactos/2', ['ADMINISTRADOR'], {
+    const { api, user } = abrirApp('/contactos/2', ['ADMINISTRADOR'], {
       ...ADMIN_BASE,
       '/api/leads/2': { status: 200, body: detalleLead(2, avisoVende(2)) },
       '/api/leads/2/cerrar': {
@@ -544,7 +545,7 @@ describe('Detalle de un aviso (CA-P5b-38, 41, 43)', () => {
   })
 
   it('un 400 "Ese resultado no aplica a esta solicitud." se muestra en el resultado sin cerrar el diálogo', async () => {
-    const { user } = abrirApp('#/contactos/2', ['ADMINISTRADOR'], {
+    const { user } = abrirApp('/contactos/2', ['ADMINISTRADOR'], {
       ...ADMIN_BASE,
       '/api/leads/2': { status: 200, body: detalleLead(2, avisoVende(2)) },
       '/api/leads/2/cerrar': {
@@ -566,7 +567,7 @@ describe('Detalle de un aviso (CA-P5b-38, 41, 43)', () => {
   })
 
   it('un contacto de vehículo sigue ofreciendo "Reasignar" y no ofrece "Solicitud atendida" (CA-P5b-61)', async () => {
-    const { user } = abrirApp('#/contactos/1', ['ADMINISTRADOR'], {
+    const { user } = abrirApp('/contactos/1', ['ADMINISTRADOR'], {
       ...ADMIN_BASE,
       '/api/leads/1': { status: 200, body: detalleLead(1, { origen: 'CONTACTO_VEHICULO' }) },
     })
@@ -599,7 +600,7 @@ describe('Detalle de un aviso (CA-P5b-38, 41, 43)', () => {
 
 describe('Permisos: el asesor y el comprador no ven nada nuevo (CA-P5b-46, 48, 49)', () => {
   it('el asesor no tiene filtro ni etiqueta de origen y su consulta no lleva "origen"', async () => {
-    const { api } = abrirApp('#/contactos', ['ASESOR'], { [rutaLeads()]: paginaLeads([lead(1)]) })
+    const { api } = abrirApp('/contactos', ['ASESOR'], { [rutaLeads()]: paginaLeads([lead(1)]) })
     await screen.findByText('Visitante 1')
     expect(screen.queryByLabelText('Origen')).not.toBeInTheDocument()
     expect(screen.queryByText('Contacto de vehículo')).not.toBeInTheDocument()
@@ -607,7 +608,7 @@ describe('Permisos: el asesor y el comprador no ven nada nuevo (CA-P5b-46, 48, 4
   })
 
   it('el detalle del asesor no muestra el origen y conserva sus acciones de P5', async () => {
-    abrirApp('#/contactos/1', ['ASESOR'], { '/api/leads/1': { status: 200, body: detalleLead(1) } })
+    abrirApp('/contactos/1', ['ASESOR'], { '/api/leads/1': { status: 200, body: detalleLead(1) } })
     await screen.findByRole('heading', { level: 1, name: 'Contacto de Visitante 1' })
     expect(screen.queryByText('Origen')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Reasignar' })).not.toBeInTheDocument()
@@ -615,7 +616,7 @@ describe('Permisos: el asesor y el comprador no ven nada nuevo (CA-P5b-46, 48, 4
   })
 
   it('el comprador que envía un aviso no llama a /api/leads ni ve "Mis solicitudes" (D-53 A)', async () => {
-    const { api, user } = abrirApp('#/seguro-todo-riesgo', ['COMPRADOR'], { [RUTA_SEGURO]: OK })
+    const { api, user } = abrirApp('/seguro-todo-riesgo', ['COMPRADOR'], { [RUTA_SEGURO]: OK })
     await waitFor(() => expect(screen.getByLabelText('Nombre')).toHaveValue('Persona Ficticia'))
     await user.selectOptions(tipo(), 'CARRO')
     await user.click(casilla())
@@ -628,7 +629,7 @@ describe('Permisos: el asesor y el comprador no ven nada nuevo (CA-P5b-46, 48, 4
 
 describe('Confirmación tras enviar un aviso (pedido de la responsable, 2026-11-09)', () => {
   it('oculta el formulario y ofrece volver al inicio, ver vehículos o enviar otra solicitud', async () => {
-    const { user } = abrirAnonimo('#/vende-tu-camion', { [RUTA_VENDE]: OK })
+    const { user } = abrirAnonimo('/vende-tu-camion', { [RUTA_VENDE]: OK })
     await formVende()
     await user.type(nombre(), 'Ana')
     await user.type(telefonoVende(), '3001234567')
@@ -639,8 +640,8 @@ describe('Confirmación tras enviar un aviso (pedido de la responsable, 2026-11-
     const exito = await screen.findByText(MENSAJE_OK)
     await waitFor(() => expect(exito.parentElement).toHaveFocus())
     expect(screen.queryByRole('form', { name: 'Formulario Vende tu camión' })).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Volver al inicio' })).toHaveAttribute('href', '#/')
-    expect(screen.getByRole('link', { name: 'Ver vehículos' })).toHaveAttribute('href', '#/buscar')
+    expect(screen.getByRole('link', { name: 'Volver al inicio' })).toHaveAttribute('href', '/')
+    expect(screen.getByRole('link', { name: 'Ver vehículos' })).toHaveAttribute('href', '/vehiculos')
 
     await user.click(screen.getByRole('button', { name: 'Enviar otra solicitud' }))
     expect(await formVende()).toBeInTheDocument()

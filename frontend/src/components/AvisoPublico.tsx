@@ -1,4 +1,4 @@
-// P5b — Pantallas públicas de los avisos (D-6, D-51 A): #/vende-tu-camion (HU-N01) y #/seguro-todo-riesgo
+// P5b — Pantallas públicas de los avisos (D-6, D-51 A): /vende-tu-camion (HU-N01) y /seguro-todo-riesgo
 // (HU-N02). Funcionan sin cuenta y con cualquier sesión: con sesión se prellenan los datos del perfil y se envía
 // el token para ligar el aviso a la cuenta (CA-P5b-02, 12), pero la autorización se marca en cada envío
 // (CA-P5b-21). La solicitud la atiende siempre la administración (D-52); aquí no se muestra nada de eso.

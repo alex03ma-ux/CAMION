@@ -1,6 +1,6 @@
 import { useState, type FormEvent, type MouseEvent } from 'react'
 import { categoriasDisponibles, Q_MAX, type OpcionCatalogo } from '../api/catalogo'
-import { HASH_CUENTA, HASH_INICIO, HASH_REGISTRO, hashBuscar, navegar, type Ruta } from '../rutas'
+import { RUTA_CUENTA, RUTA_INICIO, RUTA_REGISTRO, navegar, rutaBuscar, rutaCategoria, type Ruta } from '../rutas'
 import { ALT_LOGO_HORIZONTAL, LOGO } from '../marca'
 import { IconoLupa, IconoUsuario } from './IconosPortal'
 
@@ -11,7 +11,7 @@ type EncabezadoProps = {
   /** true si hay una sesión guardada (se muestra "Mi cuenta"). */
   conSesion: boolean
 }
-
+/** Mueve el foco al contenido sin cambiar de pantalla ni añadir `#contenido` a la dirección (CA-P10-45). */
 /** Mueve el foco al contenido sin cambiar el hash (el hash es la ruta). */
 function saltarAlContenido(evento: MouseEvent<HTMLAnchorElement>) {
   evento.preventDefault()
@@ -26,7 +26,7 @@ function saltarAlContenido(evento: MouseEvent<HTMLAnchorElement>) {
  */
 export function LogoEncabezado() {
   return (
-    <a className="cat-logo cat-logo-imagen" href={HASH_INICIO}>
+    <a className="cat-logo cat-logo-imagen" href={RUTA_INICIO}>
       <picture>
         <source srcSet={LOGO.horizontalWebp} type="image/webp" />
         <img
@@ -59,14 +59,14 @@ export function Encabezado({ ruta, tipos, conSesion }: EncabezadoProps) {
         <nav className="cat-nav" aria-label="Principal">
           <ul>
             <li>
-              <a href={HASH_INICIO} aria-current={enInicio ? 'page' : undefined}>
+              <a href={RUTA_INICIO} aria-current={enInicio ? 'page' : undefined}>
                 Inicio
               </a>
             </li>
-            {categoriasDisponibles(tipos).map(({ tipo, enlace }) => (
+            {categoriasDisponibles(tipos).map(({ tipo, enlace, slug }) => (
               <li key={tipo.id}>
                 <a
-                  href={hashBuscar({ tipoId: String(tipo.id) })}
+                  href={rutaCategoria(slug)}
                   aria-current={tipoActual === String(tipo.id) ? 'page' : undefined}
                 >
                   {enlace}
@@ -77,7 +77,7 @@ export function Encabezado({ ruta, tipos, conSesion }: EncabezadoProps) {
               <li className="cat-nav-acceso">
                 <a
                   className="cat-nav-cuenta"
-                  href={HASH_CUENTA}
+                  href={RUTA_CUENTA}
                   aria-current={ruta.nombre === 'cuenta' ? 'page' : undefined}
                 >
                   <IconoUsuario />
@@ -88,7 +88,7 @@ export function Encabezado({ ruta, tipos, conSesion }: EncabezadoProps) {
               <>
                 <li className="cat-nav-acceso">
                   <a
-                    href={HASH_REGISTRO}
+                    href={RUTA_REGISTRO}
                     aria-current={ruta.nombre === 'cuenta' && ruta.registro ? 'page' : undefined}
                   >
                     Registrarme
@@ -97,7 +97,7 @@ export function Encabezado({ ruta, tipos, conSesion }: EncabezadoProps) {
                 <li>
                   <a
                     className="cat-nav-cuenta"
-                    href={HASH_CUENTA}
+                    href={RUTA_CUENTA}
                     aria-current={ruta.nombre === 'cuenta' && !ruta.registro ? 'page' : undefined}
                   >
                     <IconoUsuario />
@@ -118,7 +118,7 @@ function BusquedaEncabezado({ qInicial }: { qInicial: string }) {
   const [q, setQ] = useState(qInicial)
   function enviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault()
-    navegar(hashBuscar({ q: q.trim() }))
+    navegar(rutaBuscar({ q: q.trim() }))
   }
   return (
     <form className="cat-busqueda" role="search" onSubmit={enviar}>

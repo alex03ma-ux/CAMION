@@ -1,6 +1,6 @@
 import { mostrarKilometraje, type TarjetaVehiculo as DatosTarjeta } from '../api/catalogo'
 import { formatoCop, formatoKm, textoUbicacion } from '../catalogo/formato'
-import { hashVehiculo } from '../rutas'
+import { rutaVehiculo } from '../rutas'
 import { IconoEstrella } from './IconosPortal'
 import { ImagenVehiculo } from './ImagenVehiculo'
 
@@ -39,7 +39,7 @@ export function TarjetaVehiculo({ vehiculo }: { vehiculo: DatosTarjeta }) {
   return (
     <article className={vehiculo.destacado ? 'cat-tarjeta cat-tarjeta-destacada' : 'cat-tarjeta'}>
       <h3 className="cat-tarjeta-titulo">
-        <a className="cat-tarjeta-enlace" href={hashVehiculo(vehiculo.slug)}>
+        <a className="cat-tarjeta-enlace" href={rutaVehiculo(vehiculo.slug)}>
           {vehiculo.titulo}
         </a>
       </h3>

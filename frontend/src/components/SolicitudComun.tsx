@@ -3,7 +3,7 @@
 //   responsable, 2026-11-09, commit 12dea7e; CA-P6-14).
 // - CampoTrampa: campo `sitioWeb` fuera de la vista, del tabulado y de los lectores de pantalla (CA-P5b-57, CA-P6-36).
 import type { Ref } from 'react'
-import { HASH_BUSCAR, HASH_INICIO } from '../rutas'
+import { RUTA_BUSCAR, RUTA_INICIO } from '../rutas'
 import { Aviso } from './Aviso'
 
 type ConfirmacionSolicitudProps = {
@@ -28,10 +28,10 @@ export function ConfirmacionSolicitud({ mensaje, onEnviarOtra, ref, enlaceWhatsa
         </a>
       )}
       <div className="aviso-confirmacion-acciones">
-        <a className="inv-boton-enlace" href={HASH_INICIO}>
+        <a className="inv-boton-enlace" href={RUTA_INICIO}>
           Volver al inicio
         </a>
-        <a className="inv-boton-enlace inv-boton-secundario" href={HASH_BUSCAR}>
+        <a className="inv-boton-enlace inv-boton-secundario" href={RUTA_BUSCAR}>
           Ver vehículos
         </a>
         <button type="button" className="secondary-button aviso-confirmacion-otra" onClick={onEnviarOtra}>

@@ -29,9 +29,13 @@ export function enlaceCorreoOlvido(correoPortal: string): string | null {
 /** Texto prellenado del WhatsApp del inicio de sesión (CA-P8-68). */
 export const TEXTO_WHATSAPP_OLVIDO = `Hola, olvidé mi contraseña de ${LEMA}.`
 
-/** Solo se acepta un enlace a la propia pantalla de restablecimiento (nunca otro esquema ni otra ruta). */
+/**
+ * Solo se acepta un enlace a la propia pantalla de restablecimiento (nunca otro esquema ni otra ruta). P10 (CA-P10-43):
+ * formato `https://<dominio>/restablecer-contrasena#codigo=<código>`; el código va en el fragmento, que el navegador no
+ * envía al servidor (CA-P10-44).
+ */
 export function enlaceValido(enlace: string): boolean {
-  return /^https?:\/\/[^\s/?#]+\/?#\/restablecer-contrasena\?codigo=[A-Za-z0-9_\-%.~]+$/.test(enlace)
+  return /^https?:\/\/[^\s/?#]+\/restablecer-contrasena#codigo=[A-Za-z0-9_\-%.~]+$/.test(enlace)
 }
 
 /** Texto breve del WhatsApp que envía el administrador, con el enlace. */
@@ -86,15 +90,39 @@ export function enlaceWhatsappUsuario(telefono: string, enlace: string): string 
   return `https://wa.me/57${celular}?text=${encodeURIComponent(textoWhatsappEnlace(enlace))}`
 }
 
-/** Lee el código del fragmento `#/restablecer-contrasena?codigo=...`; '' si no hay. */
+/**
+ * Lee el código del fragmento: `#codigo=...` (P10, CA-P10-43) o el formato viejo `#/restablecer-contrasena?codigo=...`
+ * (CA-P10-42); '' si no hay.
+ */
 export function codigoDelHash(hash: string): string {
-  const coincidencia = /[?&]codigo=([^&]*)/.exec(hash)
+  const coincidencia = /(?:^#|[?&])codigo=([^&]*)/.exec(hash)
   if (!coincidencia) return ''
   try {
     return decodeURIComponent(coincidencia[1]).trim()
   } catch {
     return ''
   }
+}
+
+/**
+ * CA-P10-42: código de un enlace viejo (`/#/restablecer-contrasena?codigo=…`), leído al convertir la dirección. Vive
+ * solo en memoria (nunca en la URL, en el almacenamiento ni en la consola) hasta que la pantalla lo toma.
+ */
+let codigoPendiente = ''
+
+export function guardarCodigoRecuperacion(codigo: string): void {
+  codigoPendiente = codigo
+}
+
+/** Código del enlace abierto: el guardado en memoria o, si no hay, el del fragmento `#codigo=` de la dirección. */
+export function codigoRecuperacionActual(): string {
+  if (codigoPendiente !== '') return codigoPendiente
+  return typeof window === 'undefined' ? '' : codigoDelHash(window.location.hash)
+}
+
+/** Olvida el código en memoria (la pantalla ya lo tomó). */
+export function olvidarCodigoRecuperacion(): void {
+  codigoPendiente = ''
 }
 
 export async function generarEnlaceRecuperacion(token: string, usuarioId: string): Promise<EnlaceRecuperacion> {

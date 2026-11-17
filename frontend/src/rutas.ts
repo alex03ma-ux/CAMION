@@ -1,46 +1,42 @@
-// Navegación por el hash de la URL (P3), sin dependencias.
-//   #/                  Inicio
-//   #/buscar?…          Resultados (filtros en la URL: se comparten y funcionan con Atrás/Adelante)
-//   #/vehiculo/<slug>   Detalle
-//   #/cuenta            Login / registro / perfil / panel de administración
-//   #/cuenta/registro   Lo mismo, abriendo el formulario de registro
-//   #/cuenta/usuarios, #/cuenta/planes, #/cuenta/suscripciones, #/cuenta/catalogos
-//                       P4p: secciones del administrador (la API las protege igualmente)
-//   #/cuenta/portada    D-42: foto de portada del portal (administrador)
-//   #/inventario        P4a: inventario del asesor (propio) o del administrador (general)
-//   #/inventario/nuevo  P4a: registrar un vehículo
-//   #/inventario/<id>   P4a: editar un vehículo y sus fotos
-//   #/publicaciones     P4b: "Mis publicaciones" del asesor (el administrador ve todas)
-//   #/contactos         P5: contactos (leads) del asesor; el administrador ve todos
-//   #/contactos/<id>    P5: detalle de un contacto con su historial
-//   #/privacidad        P5 (D-44): política de tratamiento de datos (en revisión legal)
-//   #/terminos          P9 (D-44, HU-086): términos y condiciones de uso (en revisión legal)
-//   #/vende-tu-camion   P5b (HU-N01, D-51): aviso "Vende tu camión", sin cuenta
-//   #/seguro-todo-riesgo P5b (HU-N02, D-51): aviso "Compra tu seguro todo riesgo", sin cuenta
-//   #/credito           P6 (HU-039, D-42, D-54): solicitud de crédito desde la portada, sin cuenta
-//   #/credito/<slug>    P6 (HU-039): solicitud de crédito para un vehículo, desde su ficha
-//   #/busco-un-vehiculo P6 (HU-034, D-56): búsqueda "Busco un vehículo", sin cuenta
-//   #/mis-solicitudes   P6 (D-53, D-59): "Mis solicitudes" del comprador (la API la protege con SoloComprador)
-//   #/cuenta/inicio, #/cuenta/ventas, #/cuenta/parametros
-//                       P7 (D-62 A, D-63 A, D-64 A): panel, historial de ventas y datos de contacto (administrador)
-//   #/ventas            P7 (D-62 c A): "Mis ventas" del asesor (la API la protege con AsesorOAdministrador)
-//   P7 (CA-P7-46): las listas a las que enlaza el panel aceptan filtros en la consulta del hash, p. ej.
-//   #/cuenta/usuarios?rol=ASESOR&estado=PENDIENTE, #/contactos?origen=CREDITO, #/inventario?estado=ACTIVO.
-//   #/cuenta/reportes?tipo=…, #/cuenta/indicadores
-//                       P8 (D-68 A, D-69 A): reportes e indicadores del administrador (la API los protege con SoloAdministrador)
-//   #/mis-indicadores   P8 (D-70 A): "Mis indicadores" del asesor (la API la protege con SoloAsesor)
-//   #/restablecer-contrasena?codigo=…
-//                       P8 (D-73 D): pantalla pública del enlace de recuperación; el código se quita de la URL al leerlo
-// P9 (CA-P9-48, 49): cualquier otra ruta que empiece por `#/` muestra "Página no encontrada"; un hash que no empieza
-// por `/` (p. ej. el ancla `#contenido` de "Saltar al contenido") sigue mostrando el inicio. Por ser un enrutado con
-// `#`, el servidor responde 200 en todos los casos (no hay 404 HTTP para estas rutas, CA-P9-50).
-// Nunca se pone el token en la URL.
+// Navegación por la dirección (P10, CA-P10-33 a 46): rutas sin `#` con la History API, sin dependencias.
+// Hasta P9 las rutas vivían en el hash (`#/buscar?…`); los enlaces viejos se convierten al abrirlos (CA-P10-41).
+//   /                       Inicio
+//   /vehiculos?…            Resultados (filtros en la consulta: se comparten y funcionan con Atrás/Adelante)
+//   /carros, /camiones, /carrocerias, /maquinaria (con filtros opcionales en la consulta)
+//                           P10 (HU-005, HU-006, D-17): resultados de una categoría
+//   /vehiculo/<slug>        Detalle (con D-88 A, en producción el HTML lo entrega la API con sus etiquetas)
+//   /cuenta                 Login / registro / perfil / panel de administración
+//   /cuenta/registro        Lo mismo, abriendo el formulario de registro
+//   /cuenta/<seccion>?…     P4p, P7, P8: secciones del administrador (la API las protege igualmente)
+//   /inventario, /inventario/nuevo, /inventario/<id>     P4a
+//   /publicaciones          P4b
+//   /contactos, /contactos/<id>                          P5
+//   /privacidad, /terminos  P5, P9 (D-44): en revisión legal
+//   /vende-tu-camion, /seguro-todo-riesgo                P5b (D-6, D-51)
+//   /credito, /credito/<slug>, /busco-un-vehiculo        P6
+//   /mis-solicitudes, /ventas, /mis-indicadores          P6, P7, P8
+//   /restablecer-contrasena#codigo=…                     P8 (D-73 D), P10 (CA-P10-43): el código va en el fragmento,
+//                           que el navegador no envía al servidor; la pantalla lo lee una vez y lo quita de la URL.
+// Cualquier otra ruta muestra "Página no encontrada" (CA-P9-48). Nunca se pone el token en la URL.
 import { useEffect, useState } from 'react'
-import { CLAVES_FILTROS, FILTROS_VACIOS, type FiltrosCatalogo } from './api/catalogo'
+import {
+  categoriasDisponibles,
+  CATEGORIAS,
+  CLAVES_FILTROS,
+  FILTROS_VACIOS,
+  type FiltrosCatalogo,
+  type OpcionCatalogo,
+  type SlugCategoria,
+} from './api/catalogo'
+import { guardarCodigoRecuperacion } from './api/recuperacion'
 
 export type Ruta =
   | { nombre: 'inicio' }
-  | { nombre: 'buscar'; filtros: FiltrosCatalogo }
+  /**
+   * P10: `categoria` = ruta de categoría (`/camiones`) o null (`/vehiculos`). En una categoría, `filtros.tipoId` es el
+   * id del tipo según `/api/catalogo/filtros`, o '' mientras no se conoce o si la categoría no tiene vehículos.
+   */
+  | { nombre: 'buscar'; filtros: FiltrosCatalogo; categoria: SlugCategoria | null }
   | { nombre: 'vehiculo'; slug: string }
   /** P7: `consulta` = filtros iniciales de la sección (enlaces del panel), solo si no está vacía. */
   | { nombre: 'cuenta'; registro: boolean; seccion?: SeccionAdmin; consulta?: string }
@@ -63,9 +59,9 @@ export type Ruta =
   | { nombre: 'ventas'; consulta?: string }
   /** P8 (D-70 A): "Mis indicadores" del asesor. */
   | { nombre: 'misIndicadores' }
-  /** P8 (D-73 D): el código no viaja en la ruta; la pantalla lo lee una vez del hash y lo quita de la URL. */
+  /** P8 (D-73 D): el código no viaja en la ruta; la pantalla lo lee una vez del fragmento y lo quita de la URL. */
   | { nombre: 'restablecerContrasena' }
-  /** P9 (CA-P9-48): ruta desconocida que empieza por `#/`. */
+  /** P9 (CA-P9-48): ruta desconocida. */
   | { nombre: 'noEncontrada' }
 
 /** P4p: secciones del administrador dentro de "Mi cuenta". P7: inicio, ventas y parámetros. */
@@ -93,45 +89,69 @@ export const SECCIONES_ADMIN: readonly SeccionAdmin[] = [
   'indicadores',
 ]
 
-/** `#/cuenta/<seccion>`; P7: con filtros iniciales opcionales (`?clave=valor`). */
-export function hashSeccionAdmin(seccion: SeccionAdmin, filtros: Record<string, string> = {}): string {
-  return conConsulta(`#/cuenta/${seccion}`, filtros)
+/** `/cuenta/<seccion>`; P7: con filtros iniciales opcionales (`?clave=valor`). */
+export function rutaSeccionAdmin(seccion: SeccionAdmin, filtros: Record<string, string> = {}): string {
+  return conConsulta(`/cuenta/${seccion}`, filtros)
 }
 
 /** Añade `?clave=valor` con los valores no vacíos. */
-export function conConsulta(hash: string, filtros: Record<string, string>): string {
+export function conConsulta(ruta: string, filtros: Record<string, string>): string {
   const p = new URLSearchParams()
   for (const [clave, valor] of Object.entries(filtros)) if (valor !== '') p.set(clave, valor)
   const consulta = p.toString()
-  return consulta === '' ? hash : `${hash}?${consulta}`
+  return consulta === '' ? ruta : `${ruta}?${consulta}`
 }
 
-export const HASH_INICIO = '#/'
-export const HASH_BUSCAR = '#/buscar'
-export const HASH_CUENTA = '#/cuenta'
-export const HASH_REGISTRO = '#/cuenta/registro'
-export const HASH_INVENTARIO = '#/inventario'
-export const HASH_INVENTARIO_NUEVO = '#/inventario/nuevo'
-export const HASH_PUBLICACIONES = '#/publicaciones'
-export const HASH_CONTACTOS = '#/contactos'
-export const HASH_PRIVACIDAD = '#/privacidad'
-export const HASH_TERMINOS = '#/terminos'
-export const HASH_VENDE_TU_CAMION = '#/vende-tu-camion'
-export const HASH_SEGURO_TODO_RIESGO = '#/seguro-todo-riesgo'
-export const HASH_CREDITO = '#/credito'
-export const HASH_BUSCO_VEHICULO = '#/busco-un-vehiculo'
-export const HASH_MIS_SOLICITUDES = '#/mis-solicitudes'
-export const HASH_VENTAS = '#/ventas'
-export const HASH_MIS_INDICADORES = '#/mis-indicadores'
+export const RUTA_INICIO = '/'
+export const RUTA_BUSCAR = '/vehiculos'
+export const RUTA_CUENTA = '/cuenta'
+export const RUTA_REGISTRO = '/cuenta/registro'
+export const RUTA_INVENTARIO = '/inventario'
+export const RUTA_INVENTARIO_NUEVO = '/inventario/nuevo'
+export const RUTA_PUBLICACIONES = '/publicaciones'
+export const RUTA_CONTACTOS = '/contactos'
+export const RUTA_PRIVACIDAD = '/privacidad'
+export const RUTA_TERMINOS = '/terminos'
+export const RUTA_VENDE_TU_CAMION = '/vende-tu-camion'
+export const RUTA_SEGURO_TODO_RIESGO = '/seguro-todo-riesgo'
+export const RUTA_CREDITO = '/credito'
+export const RUTA_BUSCO_VEHICULO = '/busco-un-vehiculo'
+export const RUTA_MIS_SOLICITUDES = '/mis-solicitudes'
+export const RUTA_VENTAS = '/ventas'
+export const RUTA_MIS_INDICADORES = '/mis-indicadores'
+export const RUTA_RESTABLECER = '/restablecer-contrasena'
 
-/** `#/credito/<slug>`: crédito para un vehículo, desde su ficha (CA-P6-03). */
-export function hashCreditoVehiculo(slug: string): string {
-  return `${HASH_CREDITO}/${encodeURIComponent(slug)}`
+/**
+ * CA-P10-46: prefijos reservados para el servidor o para archivos estáticos. Ninguna ruta del portal empieza por
+ * ellos y los enlaces que los usan no se interceptan (los atiende el navegador).
+ */
+export const PREFIJOS_RESERVADOS = [
+  '/api',
+  '/media',
+  '/health',
+  '/assets',
+  '/marca',
+  '/sitemap.xml',
+  '/robots.txt',
+  '/favicon',
+  '/site.webmanifest',
+] as const
+
+/** true si la ruta (`/api/x`, `/health`) empieza por un prefijo reservado (segmento completo o archivo). */
+export function esRutaReservada(camino: string): boolean {
+  return PREFIJOS_RESERVADOS.some(
+    (p) => camino === p || camino.startsWith(`${p}/`) || (p === '/favicon' && camino.startsWith(p)),
+  )
 }
 
-/** `#/contactos/<id>`. */
-export function hashContacto(id: number): string {
-  return `${HASH_CONTACTOS}/${id}`
+/** `/credito/<slug>`: crédito para un vehículo, desde su ficha (CA-P6-03). */
+export function rutaCreditoVehiculo(slug: string): string {
+  return `${RUTA_CREDITO}/${encodeURIComponent(slug)}`
+}
+
+/** `/contactos/<id>`. */
+export function rutaContacto(id: number): string {
+  return `${RUTA_CONTACTOS}/${id}`
 }
 
 /** true si la ruta es la lista o el detalle de los contactos (exigen sesión). */
@@ -139,9 +159,9 @@ export function esRutaContactos(ruta: Ruta): boolean {
   return ruta.nombre === 'contactos' || ruta.nombre === 'contacto'
 }
 
-/** `#/inventario/<id>` (id entero positivo). */
-export function hashInventarioVehiculo(id: number): string {
-  return `${HASH_INVENTARIO}/${id}`
+/** `/inventario/<id>` (id entero positivo). */
+export function rutaInventarioVehiculo(id: number): string {
+  return `${RUTA_INVENTARIO}/${id}`
 }
 
 /** true si la ruta es una de las pantallas del inventario (exigen sesión). */
@@ -157,8 +177,9 @@ const INICIO: Ruta = { nombre: 'inicio' }
 const NO_ENCONTRADA: Ruta = { nombre: 'noEncontrada' }
 
 /**
- * P9 (CA-P9-50, 55): pantallas que piden `<meta name="robots" content="noindex">`: las privadas (cuenta, inventario,
- * publicaciones, contactos, ventas, mis solicitudes, mis indicadores), restablecer contraseña y la página no encontrada.
+ * P9 (CA-P9-50, 55), P10 (CA-P10-30): pantallas que piden `noindex` siempre: las privadas (cuenta, inventario,
+ * publicaciones, contactos, ventas, mis solicitudes, mis indicadores), restablecer contraseña, el crédito de un
+ * vehículo y la página no encontrada.
  */
 export function rutaSinIndexar(ruta: Ruta): boolean {
   switch (ruta.nombre) {
@@ -175,9 +196,45 @@ export function rutaSinIndexar(ruta: Ruta): boolean {
     case 'restablecerContrasena':
     case 'noEncontrada':
       return true
+    case 'credito':
+      return ruta.slug !== null
     default:
       return false
   }
+}
+
+// ---- Categorías (CA-P10-39) ----
+
+/**
+ * Tipos de `/api/catalogo/filtros` que conoce la aplicación: traducen `/camiones` ↔ `tipoId`. Los fija App al cargar
+ * las opciones; mientras no se conocen, una categoría se lee con `tipoId` vacío y los enlaces van a `/vehiculos`.
+ */
+let tiposConocidos: readonly OpcionCatalogo[] = []
+
+export function fijarTiposCatalogo(tipos: readonly OpcionCatalogo[]): void {
+  tiposConocidos = tipos
+}
+
+/** Solo para pruebas: olvida los tipos conocidos. */
+export function olvidarTiposCatalogo(): void {
+  tiposConocidos = []
+}
+
+/** Categoría (y su id) a la que corresponde un `tipoId`, si es una de las cuatro principales. */
+function categoriaDeTipo(tipoId: string): SlugCategoria | null {
+  if (tipoId === '') return null
+  return categoriasDisponibles(tiposConocidos).find((c) => String(c.tipo.id) === tipoId)?.slug ?? null
+}
+
+/** Id del tipo de una categoría; '' si aún no se conoce o si no tiene vehículos visibles. */
+export function tipoDeCategoria(slug: SlugCategoria): string {
+  const encontrada = categoriasDisponibles(tiposConocidos).find((c) => c.slug === slug)
+  return encontrada ? String(encontrada.tipo.id) : ''
+}
+
+/** `/camiones` (con filtros opcionales, sin `tipoId`). */
+export function rutaCategoria(slug: SlugCategoria, filtros: Partial<FiltrosCatalogo> = {}): string {
+  return `/${slug}${consultaFiltros({ ...filtros, tipoId: '' })}`
 }
 
 /** Lee los filtros conocidos de la cadena de consulta; ignora los demás. */
@@ -190,8 +247,8 @@ export function leerFiltros(consulta: string): FiltrosCatalogo {
   return filtros
 }
 
-/** `#/buscar?…` con los filtros no vacíos (sin `pagina=1`, que es la de defecto). */
-export function hashBuscar(filtros: Partial<FiltrosCatalogo> = {}): string {
+/** `?…` con los filtros no vacíos (sin `pagina=1`, que es la de defecto); '' si no hay. */
+function consultaFiltros(filtros: Partial<FiltrosCatalogo>): string {
   const params = new URLSearchParams()
   for (const clave of CLAVES_FILTROS) {
     const valor = (filtros[clave] ?? '').trim()
@@ -199,25 +256,44 @@ export function hashBuscar(filtros: Partial<FiltrosCatalogo> = {}): string {
     params.set(clave, valor)
   }
   const consulta = params.toString()
-  return consulta === '' ? HASH_BUSCAR : `${HASH_BUSCAR}?${consulta}`
+  return consulta === '' ? '' : `?${consulta}`
 }
 
-export function hashVehiculo(slug: string): string {
-  return `#/vehiculo/${encodeURIComponent(slug)}`
+/**
+ * Dirección de una búsqueda. Si el tipo es una de las categorías principales, la de la categoría (`/camiones?…`,
+ * CA-P10-39); si no, `/vehiculos?…`.
+ */
+export function rutaBuscar(filtros: Partial<FiltrosCatalogo> = {}): string {
+  const categoria = categoriaDeTipo((filtros.tipoId ?? '').trim())
+  if (categoria !== null) return rutaCategoria(categoria, filtros)
+  return `${RUTA_BUSCAR}${consultaFiltros(filtros)}`
 }
 
-/** Convierte un hash (`#/buscar?marcaId=3`) en una ruta. */
-export function leerRuta(hash: string): Ruta {
-  const sinAlmohadilla = hash.startsWith('#') ? hash.slice(1) : hash
-  const corte = sinAlmohadilla.indexOf('?')
-  const camino = (corte === -1 ? sinAlmohadilla : sinAlmohadilla.slice(0, corte)).replace(
-    /\/+$/,
-    '',
-  )
-  const consulta = corte === -1 ? '' : sinAlmohadilla.slice(corte + 1)
+export function rutaVehiculo(slug: string): string {
+  return `/vehiculo/${encodeURIComponent(slug)}`
+}
+
+/**
+ * Convierte una dirección (`/vehiculos?marcaId=3`, `pathname + search`) en una ruta (CA-P10-34). Acepta barra final;
+ * distingue mayúsculas; un fragmento (`#…`) se ignora.
+ */
+export function leerRuta(direccion: string): Ruta {
+  const sinFragmento = direccion.split('#', 1)[0]
+  const corte = sinFragmento.indexOf('?')
+  const crudo = corte === -1 ? sinFragmento : sinFragmento.slice(0, corte)
+  const camino = crudo.replace(/\/+$/, '')
+  const consulta = corte === -1 ? '' : sinFragmento.slice(corte + 1)
 
   if (camino === '') return INICIO
-  if (camino === '/buscar') return { nombre: 'buscar', filtros: leerFiltros(consulta) }
+  if (camino === RUTA_BUSCAR) return { nombre: 'buscar', filtros: leerFiltros(consulta), categoria: null }
+  const categoria = CATEGORIAS.find((c) => camino === `/${c.slug}`)
+  if (categoria) {
+    return {
+      nombre: 'buscar',
+      filtros: { ...leerFiltros(consulta), tipoId: tipoDeCategoria(categoria.slug) },
+      categoria: categoria.slug,
+    }
+  }
   if (camino === '/cuenta') return { nombre: 'cuenta', registro: false }
   if (camino === '/cuenta/registro') return { nombre: 'cuenta', registro: true }
   const seccion = SECCIONES_ADMIN.find((s) => camino === `/cuenta/${s}`)
@@ -235,7 +311,7 @@ export function leerRuta(hash: string): Ruta {
   if (camino === '/busco-un-vehiculo') return { nombre: 'buscoVehiculo' }
   if (camino === '/mis-solicitudes') return { nombre: 'misSolicitudes' }
   if (camino === '/mis-indicadores') return { nombre: 'misIndicadores' }
-  if (camino === '/restablecer-contrasena') return { nombre: 'restablecerContrasena' }
+  if (camino === RUTA_RESTABLECER) return { nombre: 'restablecerContrasena' }
   const contacto = /^\/contactos\/(\d{1,15})$/.exec(camino)
   if (contacto) {
     const id = Number(contacto[1])
@@ -256,7 +332,7 @@ export function leerRuta(hash: string): Ruta {
     const slug = decodificar(credito[1])
     if (slug !== null) return { nombre: 'credito', slug }
   }
-  return camino.startsWith('/') ? NO_ENCONTRADA : INICIO
+  return NO_ENCONTRADA
 }
 
 /** P7: `{ consulta }` solo si hay filtros (las rutas sin consulta no cambian). */
@@ -274,45 +350,136 @@ function decodificar(valor: string): string | null {
   }
 }
 
-function hashActual(): string {
-  return typeof window === 'undefined' ? '' : window.location.hash
+// ---- Compatibilidad con los enlaces de antes de P10 (CA-P10-41, 42) ----
+
+/**
+ * Dirección sin `#` equivalente a un hash viejo (`#/buscar?marcaId=3` → `/vehiculos?marcaId=3`); null si el hash no
+ * empieza por `#/` (p. ej. `#contenido` o `#codigo=…`, que no se tocan). Un `#/…` desconocido da su ruta tal cual, que
+ * se mostrará como "no encontrada".
+ *
+ * El enlace viejo de recuperación (`#/restablecer-contrasena?codigo=…`) da `/restablecer-contrasena` sin el código:
+ * el código se guarda en memoria (nunca pasa a la ruta ni a la consulta, ni siquiera de forma transitoria).
+ */
+export function convertirHashViejo(hash: string): string | null {
+  if (!hash.startsWith('#/')) return null
+  const resto = hash.slice(1)
+  const corte = resto.indexOf('?')
+  const camino = corte === -1 ? resto : resto.slice(0, corte)
+  const consulta = corte === -1 ? '' : resto.slice(corte)
+  const caminoSinBarra = camino.replace(/\/+$/, '')
+  if (caminoSinBarra === RUTA_RESTABLECER) {
+    const codigo = new URLSearchParams(consulta).get('codigo')
+    if (codigo !== null && codigo.trim() !== '') guardarCodigoRecuperacion(codigo.trim())
+    return RUTA_RESTABLECER
+  }
+  if (caminoSinBarra === '/buscar') {
+    // `#/buscar?tipoId=N` lleva a la categoría si los tipos ya se conocen; si no, App lo redirige al conocerlos.
+    return rutaBuscar(leerFiltros(consulta))
+  }
+  return `${camino === '' ? '/' : camino}${consulta}`
 }
 
-/** Hash actual de la URL; se actualiza con `hashchange` (enlaces, Atrás/Adelante). */
-export function useHash(): string {
-  const [hash, setHash] = useState(hashActual)
+/** Dirección actual (`pathname + search`), sin el fragmento. */
+export function ubicacionActual(): string {
+  if (typeof window === 'undefined') return RUTA_INICIO
+  return `${window.location.pathname}${window.location.search}`
+}
+
+/** Si la dirección trae un hash viejo `#/…`, la reemplaza por su equivalente sin `#` (sin recargar). */
+export function convertirEnlaceViejo(): void {
+  if (typeof window === 'undefined') return
+  const nueva = convertirHashViejo(window.location.hash)
+  if (nueva === null) return
+  window.history.replaceState(window.history.state, '', nueva)
+}
+
+const EVENTO_NAVEGACION = 'camion:navegacion'
+
+function leerUbicacion(): string {
+  convertirEnlaceViejo()
+  return ubicacionActual()
+}
+
+/**
+ * Dirección actual; se actualiza con `navegar`, con los enlaces internos y con Atrás/Adelante (`popstate`). Un hash
+ * viejo que llegue después (pegado en la barra de direcciones) también se convierte (`hashchange`).
+ */
+export function useUbicacion(): string {
+  const [ubicacion, setUbicacion] = useState(leerUbicacion)
   useEffect(() => {
-    const alCambiar = () => setHash(hashActual())
+    const alCambiar = () => setUbicacion(leerUbicacion())
+    window.addEventListener('popstate', alCambiar)
     window.addEventListener('hashchange', alCambiar)
+    window.addEventListener(EVENTO_NAVEGACION, alCambiar)
     // Por si cambió entre el primer render y la suscripción.
     alCambiar()
-    return () => window.removeEventListener('hashchange', alCambiar)
+    return () => {
+      window.removeEventListener('popstate', alCambiar)
+      window.removeEventListener('hashchange', alCambiar)
+      window.removeEventListener(EVENTO_NAVEGACION, alCambiar)
+    }
   }, [])
-  return hash
+  return ubicacion
 }
 
-/** Ruta actual a partir del hash. */
+/** Ruta actual. */
 export function useRuta(): Ruta {
-  return leerRuta(useHash())
+  return leerRuta(useUbicacion())
 }
 
-/** Navega a un hash (equivale a seguir un enlace). */
-export function navegar(hash: string): void {
-  if (window.location.hash === hash) return
-  window.location.hash = hash
+/**
+ * Navega a una dirección del portal sin recargar (CA-P10-36): `pushState` (o `replaceState` con `reemplazar`) y aviso
+ * a `useUbicacion`. Si ya se está en esa dirección, no hace nada.
+ */
+export function navegar(direccion: string, { reemplazar = false }: { reemplazar?: boolean } = {}): void {
+  if (`${window.location.pathname}${window.location.search}${window.location.hash}` === direccion) return
+  if (reemplazar) window.history.replaceState(null, '', direccion)
+  else window.history.pushState(null, '', direccion)
+  window.dispatchEvent(new Event(EVENTO_NAVEGACION))
+}
+
+/**
+ * CA-P10-36: un clic normal en un enlace interno cambia de pantalla sin recargar. Con Ctrl, Cmd, Mayús, Alt, clic
+ * central, `target` o `download`, el navegador hace lo de siempre. No se interceptan otros orígenes, otros esquemas
+ * (`mailto:`, `tel:`), los prefijos reservados (`/api`, `/media`, `/health`…) ni los enlaces a un ancla de la misma
+ * página (`#contenido`). Devuelve la función que quita el oyente.
+ */
+export function instalarNavegacionEnlaces(): () => void {
+  const alHacerClic = (evento: MouseEvent) => {
+    if (evento.defaultPrevented || evento.button !== 0) return
+    if (evento.metaKey || evento.ctrlKey || evento.shiftKey || evento.altKey) return
+    const destino = evento.target instanceof Element ? evento.target.closest('a') : null
+    if (!destino || !destino.hasAttribute('href') || destino.hasAttribute('download')) return
+    const target = destino.getAttribute('target')
+    if (target !== null && target !== '' && target !== '_self') return
+    const href = destino.getAttribute('href') ?? ''
+    if (href.startsWith('#')) return
+    let url: URL
+    try {
+      url = new URL(destino.href, window.location.href)
+    } catch {
+      return
+    }
+    if (url.origin !== window.location.origin) return
+    if (esRutaReservada(url.pathname)) return
+    evento.preventDefault()
+    navegar(`${url.pathname}${url.search}${url.hash}`)
+  }
+  document.addEventListener('click', alHacerClic)
+  return () => document.removeEventListener('click', alHacerClic)
 }
 
 // ---- Última búsqueda, para "Volver a resultados" ----
 
 let ultimaBusqueda: string | null = null
 
-export function recordarBusqueda(hash: string): void {
-  ultimaBusqueda = hash
+export function recordarBusqueda(direccion: string): void {
+  ultimaBusqueda = direccion
 }
 
-/** Hash de la última búsqueda vista o, si no hubo, el del inicio. */
-export function hashVolverAResultados(): string {
-  return ultimaBusqueda ?? HASH_INICIO
+/** Dirección de la última búsqueda vista o, si no hubo, la del inicio. */
+export function rutaVolverAResultados(): string {
+  return ultimaBusqueda ?? RUTA_INICIO
 }
 
 /** Solo para pruebas: olvida la última búsqueda. */

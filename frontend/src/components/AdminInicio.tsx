@@ -7,7 +7,7 @@ import { NOMBRES_ORIGEN, RESPONSABLE_ADMINISTRACION } from '../api/leads'
 import { ESTADOS_VEHICULO_PANEL, obtenerPanel, type PanelAdmin } from '../api/panel'
 import { formatoMiles } from '../catalogo/formato'
 import { nombreEstado } from '../inventario/estados'
-import { conConsulta, hashSeccionAdmin, HASH_BUSCAR, HASH_CONTACTOS, HASH_INVENTARIO } from '../rutas'
+import { conConsulta, rutaSeccionAdmin, RUTA_BUSCAR, RUTA_CONTACTOS, RUTA_INVENTARIO } from '../rutas'
 import { Aviso } from './Aviso'
 
 type Props = { token: string; onSesionTerminada: () => void }
@@ -52,7 +52,7 @@ function contadores(d: PanelAdmin): { titulo: string; items: Contador[] }[] {
     valor: s.abiertas,
     textoCero: 'Sin solicitudes abiertas',
     detalle: s.nuevas === 1 ? '1 nueva' : `${formatoMiles(s.nuevas)} nuevas`,
-    href: conConsulta(HASH_CONTACTOS, { estado: 'ABIERTO', responsable: RESPONSABLE_ADMINISTRACION, origen: s.origen }),
+    href: conConsulta(RUTA_CONTACTOS, { estado: 'ABIERTO', responsable: RESPONSABLE_ADMINISTRACION, origen: s.origen }),
   }))
   return [
     {
@@ -63,7 +63,7 @@ function contadores(d: PanelAdmin): { titulo: string; items: Contador[] }[] {
           titulo: 'Asesores pendientes de aprobación',
           valor: d.asesoresPendientes,
           textoCero: 'Sin asesores pendientes',
-          href: hashSeccionAdmin('usuarios', { rol: 'ASESOR', estado: 'PENDIENTE' }),
+          href: rutaSeccionAdmin('usuarios', { rol: 'ASESOR', estado: 'PENDIENTE' }),
         },
       ],
     },
@@ -77,14 +77,14 @@ function contadores(d: PanelAdmin): { titulo: string; items: Contador[] }[] {
           valor: d.suscripcionesPorVencer,
           textoCero: 'Ninguna vence esta semana',
           // P7 (O-5): misma consulta que el contador.
-          href: hashSeccionAdmin('suscripciones', { vista: 'porVencer' }),
+          href: rutaSeccionAdmin('suscripciones', { vista: 'porVencer' }),
         },
         {
           clave: 'vencidas',
           titulo: 'Suscripciones vencidas sin renovar',
           valor: d.suscripcionesVencidas,
           textoCero: 'Sin suscripciones vencidas',
-          href: hashSeccionAdmin('suscripciones', { vista: 'vencidasSinRenovar' }),
+          href: rutaSeccionAdmin('suscripciones', { vista: 'vencidasSinRenovar' }),
         },
       ],
     },
@@ -96,14 +96,14 @@ function contadores(d: PanelAdmin): { titulo: string; items: Contador[] }[] {
           titulo: 'Publicaciones visibles en el portal',
           valor: d.publicacionesVisibles,
           textoCero: 'Ninguna publicación visible',
-          href: HASH_BUSCAR,
+          href: RUTA_BUSCAR,
         },
         ...ESTADOS_VEHICULO_PANEL.map((e) => ({
           clave: e,
           titulo: `Vehículos en estado ${nombreEstado(e)}`,
           valor: d.vehiculosPorEstado[e],
           textoCero: `Sin vehículos en estado ${nombreEstado(e).toLowerCase()}`,
-          href: conConsulta(HASH_INVENTARIO, { estado: e }),
+          href: conConsulta(RUTA_INVENTARIO, { estado: e }),
         })),
       ],
     },
@@ -115,7 +115,7 @@ function contadores(d: PanelAdmin): { titulo: string; items: Contador[] }[] {
           titulo: 'Ventas vigentes de los últimos 30 días',
           valor: d.ventasUltimos30Dias,
           textoCero: 'Sin ventas en los últimos 30 días',
-          href: hashSeccionAdmin('ventas', { estado: 'VIGENTE', desde: d.ventasDesde ?? '' }),
+          href: rutaSeccionAdmin('ventas', { estado: 'VIGENTE', desde: d.ventasDesde ?? '' }),
         },
       ],
     },
@@ -162,7 +162,7 @@ export function AdminInicio({ token, onSesionTerminada }: Props) {
       <p className="form-ayuda">Resumen de lo que requiere atención. Abre cada contador para ver la lista.</p>
       {/* P8 (CA-P8-39): las cifras comerciales y en pesos están aparte, en Indicadores. */}
       <p>
-        <a href={hashSeccionAdmin('indicadores')}>Ver indicadores</a>
+        <a href={rutaSeccionAdmin('indicadores')}>Ver indicadores</a>
       </p>
       {carga.estado === 'cargando' && <p role="status">Cargando el resumen...</p>}
       {carga.estado === 'error' && (

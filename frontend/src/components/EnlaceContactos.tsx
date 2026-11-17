@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { ApiError } from '../api/http'
 import { obtenerResumenLeads, textoMenuContactos } from '../api/leads'
-import { HASH_CONTACTOS } from '../rutas'
+import { RUTA_CONTACTOS } from '../rutas'
 
 type EnlaceContactosProps = {
   token: string
@@ -26,7 +26,7 @@ export function EnlaceContactos({ token, className, onSesionTerminada }: EnlaceC
   }, [token, onSesionTerminada])
 
   return (
-    <a className={className} href={HASH_CONTACTOS}>
+    <a className={className} href={RUTA_CONTACTOS}>
       {textoMenuContactos(nuevos)}
     </a>
   )

@@ -1,4 +1,4 @@
-// P5 — Contactos (leads) en el panel: #/contactos y #/contactos/<id> (HU-031 a HU-033, RN-CL-003, RN-CL-004,
+// P5 — Contactos (leads) en el panel: /contactos y /contactos/<id> (HU-031 a HU-033, RN-CL-003, RN-CL-004,
 // D-7, D-46 B, D-48). El asesor ve solo los suyos ("Mis contactos"); el administrador ve todos ("Contactos").
 // Un comprador ve "No tienes permiso" sin llamar a /api/leads. La interfaz solo oculta: la API protege cada
 // acción (401, 403, 404 si el contacto no es suyo, 409 si el estado cambió).
@@ -33,7 +33,7 @@ import {
   type OrigenLead,
 } from '../api/leads'
 import { formatoMiles } from '../catalogo/formato'
-import { HASH_CUENTA, hashContacto } from '../rutas'
+import { RUTA_CUENTA, rutaContacto } from '../rutas'
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo, CampoSelect } from './Campo'
 import { DetalleContacto, type VehiculoFiltro } from './DetalleContacto'
@@ -42,7 +42,7 @@ import { modoInventario } from './InventarioPagina'
 type ContactosProps = {
   token: string
   perfil: PerfilUsuario
-  /** Id del contacto abierto (#/contactos/<id>); sin id, la lista. */
+  /** Id del contacto abierto (/contactos/<id>); sin id, la lista. */
   id?: number
   onSesionTerminada: () => void
   /** P7 (CA-P7-46): filtros iniciales desde el panel (estado, responsable, origen). */
@@ -64,7 +64,7 @@ export function Contactos({ token, perfil, id, onSesionTerminada, consulta }: Co
         </h1>
         <Aviso aviso={{ tipo: 'error', texto: MENSAJE_SIN_PERMISO }} />
         <p>
-          <a href={HASH_CUENTA}>Volver a mi cuenta</a>
+          <a href={RUTA_CUENTA}>Volver a mi cuenta</a>
         </p>
       </div>
     )
@@ -537,7 +537,7 @@ function TarjetaContacto({ lead, esAdmin }: { lead: LeadItem; esAdmin: boolean }
         </dl>
         {lead.mensaje && <p className="lead-mensaje inv-texto-largo">{lead.mensaje}</p>}
         <div className="acciones-fila inv-acciones">
-          <a className="inv-boton-enlace inv-boton-pequeno" href={hashContacto(lead.id)}>
+          <a className="inv-boton-enlace inv-boton-pequeno" href={rutaContacto(lead.id)}>
             Ver detalle <span className="sr-only">del contacto de {lead.nombre}</span>
           </a>
         </div>

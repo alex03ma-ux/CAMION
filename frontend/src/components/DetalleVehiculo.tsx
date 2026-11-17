@@ -14,7 +14,7 @@ import {
 } from '../catalogo/formato'
 import { SUFIJO_TITULO } from '../marca'
 import { usePeticion } from '../catalogo/usePeticion'
-import { HASH_INICIO, hashCreditoVehiculo, hashVolverAResultados } from '../rutas'
+import { RUTA_INICIO, rutaCreditoVehiculo, rutaVolverAResultados } from '../rutas'
 import { Aviso } from './Aviso'
 import { FormularioContacto, type SesionContacto } from './FormularioContacto'
 import { Galeria } from './Galeria'
@@ -74,7 +74,7 @@ export function DetalleVehiculo({ slug, sesion = null }: { slug: string; sesion?
   return (
     <div className="cat-pagina cat-detalle">
       <p className="cat-volver">
-        <a href={hashVolverAResultados()}>Volver a resultados</a>
+        <a href={rutaVolverAResultados()}>Volver a resultados</a>
       </p>
 
       {/* El h1 se mantiene en el mismo sitio para no perder el foco al cargar. */}
@@ -91,7 +91,7 @@ export function DetalleVehiculo({ slug, sesion = null }: { slug: string; sesion?
       {noDisponible && (
         <div className="cat-vacio">
           <p>
-            <a className="cat-acceso" href={HASH_INICIO}>
+            <a className="cat-acceso" href={RUTA_INICIO}>
               Ir al inicio
             </a>
           </p>
@@ -138,7 +138,7 @@ export function DetalleVehiculo({ slug, sesion = null }: { slug: string; sesion?
                 <section className="credito-ficha" aria-labelledby="credito-ficha-titulo">
                   <h2 id="credito-ficha-titulo">¿Necesitas crédito?</h2>
                   <p>Te ayudamos a financiar este vehículo con bancos y entidades financieras.</p>
-                  <a className="inv-boton-enlace credito-ficha-boton" href={hashCreditoVehiculo(vehiculo.slug)}>
+                  <a className="inv-boton-enlace credito-ficha-boton" href={rutaCreditoVehiculo(vehiculo.slug)}>
                     Solicitar crédito para este vehículo
                   </a>
                 </section>

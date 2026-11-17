@@ -1,7 +1,0 @@
-# P9 (CA-P9-54). El panel (#/cuenta..., #/inventario...) vive tras "#", que no llega al servidor: no tiene URL propia
-# para los buscadores y no hace falta bloquearlo aquí (las pantallas privadas ponen noindex). Se bloquea la API.
-# Sin Sitemap mientras no haya dominio (D-81).
-User-agent: *
-Disallow: /api/
-Disallow: /health
-Allow: /

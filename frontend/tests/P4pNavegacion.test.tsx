@@ -6,49 +6,50 @@ import App from '../src/App'
 import { simularFetch } from './helpers'
 import { leerRuta } from '../src/rutas'
 import { abrirApp, CATALOGOS_INVENTARIO, PLAN_BASICO, paginaDe, RUTA_CATALOGOS_INV, RUTA_PLANES, RUTA_PLANES_ACTIVOS, RUTA_SUSCRIPCIONES } from './p4pDatos'
+import { irA } from './helpers'
 
 const LISTA_USUARIOS = '/api/admin/usuarios?estado=PENDIENTE&pagina=1&tamano=20'
 
 describe('Rutas de las secciones del administrador', () => {
-  it('#/cuenta/<seccion> se reconoce; lo desconocido es "no encontrada" (P9, CA-P9-48)', () => {
-    expect(leerRuta('#/cuenta/planes')).toEqual({ nombre: 'cuenta', registro: false, seccion: 'planes' })
-    expect(leerRuta('#/cuenta/suscripciones')).toEqual({ nombre: 'cuenta', registro: false, seccion: 'suscripciones' })
-    expect(leerRuta('#/cuenta/catalogos/')).toEqual({ nombre: 'cuenta', registro: false, seccion: 'catalogos' })
-    expect(leerRuta('#/cuenta/usuarios')).toEqual({ nombre: 'cuenta', registro: false, seccion: 'usuarios' })
-    expect(leerRuta('#/cuenta')).toEqual({ nombre: 'cuenta', registro: false })
-    expect(leerRuta('#/cuenta/otra')).toEqual({ nombre: 'noEncontrada' })
+  it('/cuenta/<seccion> se reconoce; lo desconocido es "no encontrada" (P9, CA-P9-48)', () => {
+    expect(leerRuta('/cuenta/planes')).toEqual({ nombre: 'cuenta', registro: false, seccion: 'planes' })
+    expect(leerRuta('/cuenta/suscripciones')).toEqual({ nombre: 'cuenta', registro: false, seccion: 'suscripciones' })
+    expect(leerRuta('/cuenta/catalogos/')).toEqual({ nombre: 'cuenta', registro: false, seccion: 'catalogos' })
+    expect(leerRuta('/cuenta/usuarios')).toEqual({ nombre: 'cuenta', registro: false, seccion: 'usuarios' })
+    expect(leerRuta('/cuenta')).toEqual({ nombre: 'cuenta', registro: false })
+    expect(leerRuta('/cuenta/otra')).toEqual({ nombre: 'noEncontrada' })
   })
 })
 
 describe('Acceso por rol según /api/auth/me', () => {
   it('el administrador ve en su perfil los enlaces a Planes, Suscripciones y Catálogos', async () => {
-    abrirApp('#/cuenta', ['ADMINISTRADOR'])
+    abrirApp('/cuenta', ['ADMINISTRADOR'])
     const nav = await screen.findByRole('navigation', { name: 'Más administración' })
-    expect(within(nav).getByRole('link', { name: 'Planes' })).toHaveAttribute('href', '#/cuenta/planes')
-    expect(within(nav).getByRole('link', { name: 'Suscripciones' })).toHaveAttribute('href', '#/cuenta/suscripciones')
-    expect(within(nav).getByRole('link', { name: 'Catálogos' })).toHaveAttribute('href', '#/cuenta/catalogos')
+    expect(within(nav).getByRole('link', { name: 'Planes' })).toHaveAttribute('href', '/cuenta/planes')
+    expect(within(nav).getByRole('link', { name: 'Suscripciones' })).toHaveAttribute('href', '/cuenta/suscripciones')
+    expect(within(nav).getByRole('link', { name: 'Catálogos' })).toHaveAttribute('href', '/cuenta/catalogos')
     expect(screen.getByRole('button', { name: 'Administrar usuarios' })).toBeInTheDocument()
   })
 
   it.each([['COMPRADOR'], ['ASESOR']])('%s no ve los enlaces de administración', async (rol) => {
-    abrirApp('#/cuenta', [rol], { '/api/asesor/suscripcion': { status: 200, body: { suscripcion: null, mensaje: 'x' } } })
+    abrirApp('/cuenta', [rol], { '/api/asesor/suscripcion': { status: 200, body: { suscripcion: null, mensaje: 'x' } } })
     expect(await screen.findByRole('heading', { name: /Bienvenido/ })).toBeInTheDocument()
     expect(screen.queryByRole('navigation', { name: 'Más administración' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Planes' })).not.toBeInTheDocument()
   })
 
-  it.each([['#/cuenta/planes'], ['#/cuenta/suscripciones'], ['#/cuenta/catalogos'], ['#/cuenta/usuarios']])(
+  it.each([['/cuenta/planes'], ['/cuenta/suscripciones'], ['/cuenta/catalogos'], ['/cuenta/usuarios']])(
     'un asesor que entra en %s ve "No tienes permiso" y no se pide nada a /api/admin',
     async (hash) => {
       const { api } = abrirApp(hash, ['ASESOR'])
       expect(await screen.findByText('No tienes permiso para realizar esta acción.')).toBeInTheDocument()
-      expect(screen.getByRole('link', { name: 'Volver a mi cuenta' })).toHaveAttribute('href', '#/cuenta')
+      expect(screen.getByRole('link', { name: 'Volver a mi cuenta' })).toHaveAttribute('href', '/cuenta')
       expect(api.llamadas.some((l) => l.url.startsWith('/api/admin/'))).toBe(false)
     },
   )
 
   it('el administrador navega entre las secciones con la barra "Administración"', async () => {
-    const { user, api } = abrirApp('#/cuenta/planes', ['ADMINISTRADOR'], {
+    const { user, api } = abrirApp('/cuenta/planes', ['ADMINISTRADOR'], {
       [RUTA_PLANES]: { status: 200, body: { items: [PLAN_BASICO] } },
       [RUTA_PLANES_ACTIVOS]: { status: 200, body: { items: [PLAN_BASICO] } },
       [RUTA_CATALOGOS_INV]: CATALOGOS_INVENTARIO,
@@ -75,7 +76,7 @@ describe('Acceso por rol según /api/auth/me', () => {
   })
 
   it('desde "Administrar usuarios" también se llega a Planes y "Mi perfil" vuelve al perfil', async () => {
-    const { user } = abrirApp('#/cuenta', ['ADMINISTRADOR'], {
+    const { user } = abrirApp('/cuenta', ['ADMINISTRADOR'], {
       [LISTA_USUARIOS]: paginaDe([]),
       [RUTA_PLANES]: { status: 200, body: { items: [] } },
     })
@@ -89,7 +90,7 @@ describe('Acceso por rol según /api/auth/me', () => {
   })
 
   it('sin sesión, #/cuenta/planes muestra el inicio de sesión y no llama a /api/admin', async () => {
-    window.location.hash = '#/cuenta/planes'
+    irA('/cuenta/planes')
     const api = simularFetch({})
     render(<App />)
     expect(await screen.findByRole('button', { name: 'Iniciar sesión' })).toBeInTheDocument()

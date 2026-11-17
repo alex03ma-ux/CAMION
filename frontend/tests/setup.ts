@@ -2,7 +2,9 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup, configure } from '@testing-library/react'
 import { afterEach, beforeEach, vi } from 'vitest'
+import { olvidarCodigoRecuperacion } from '../src/api/recuperacion'
 import { olvidarContactoPortal } from '../src/components/useContactoPortal'
+import { olvidarTiposCatalogo } from '../src/rutas'
 
 // INF-3 (O-8): con carga (CI en máquinas lentas, varias suites a la vez) la espera por defecto de 1 s de
 // findBy*/waitFor no basta y fallaban de 1 a 4 pruebas distintas. 5 s solo da margen: una prueba que deba
@@ -37,8 +39,11 @@ class AlmacenEnMemoria implements Storage {
 }
 
 beforeEach(() => {
-  // P3: cada prueba empieza sin hash (la ruta vive en location.hash).
+  // P10: cada prueba empieza en la portada (la ruta vive en location.pathname), sin tipos de catálogo conocidos
+  // (traducen /camiones ↔ tipoId) ni código de recuperación en memoria.
   window.history.replaceState(null, '', '/')
+  olvidarTiposCatalogo()
+  olvidarCodigoRecuperacion()
   // P9: el contacto del portal se guarda en memoria; cada prueba vuelve a pedirlo con su propio fetch simulado.
   olvidarContactoPortal()
   const almacen = new AlmacenEnMemoria()

@@ -1,4 +1,4 @@
-// P8 — Indicadores del administrador en #/cuenta/indicadores (HU-075, HU-080, RN-RE-001, RN-RE-006; D-69 A/A, D-76 A;
+// P8 — Indicadores del administrador en /cuenta/indicadores (HU-075, HU-080, RN-RE-001, RN-RE-006; D-69 A/A, D-76 A;
 // CA-P8-34 a 41). Cifras del período con valores en pesos, comparadas con el período anterior de igual duración, y hasta
 // cuatro gráficos de barras hechos con HTML y CSS, cada uno con su tabla equivalente. Sin visitas ni datos de navegación.
 // El panel "Inicio" de P7 no cambia (D-64 a A).

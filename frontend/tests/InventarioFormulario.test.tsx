@@ -19,6 +19,7 @@ import {
   png,
   VEHICULOS,
 } from './inventarioDatos'
+import { ubicacionActual } from './helpers'
 
 const DETALLE_9 = '/api/inventario/vehiculos/9'
 type U = ReturnType<typeof userEvent.setup>
@@ -29,7 +30,7 @@ function abrirNuevo(roles: string[], rutas: Parameters<typeof simularFetch>[0] =
     [CATALOGOS]: { status: 200, body: roles.includes('ADMINISTRADOR') ? CAT_ADMIN : CAT },
     ...rutas,
   })
-  abrirConSesion('#/inventario/nuevo')
+  abrirConSesion('/inventario/nuevo')
   return api
 }
 
@@ -439,7 +440,7 @@ describe('Tras crear (HU-013)', () => {
     await agregarFotos(u)
     await llenarCamion(u)
     await u.click(screen.getByRole('button', { name: 'Registrar vehículo' }))
-    await waitFor(() => expect(window.location.hash).toBe('#/inventario/31'))
+    await waitFor(() => expect(ubicacionActual()).toBe('/inventario/31'))
     expect(
       await screen.findByText(
         'Vehículo guardado con 1 foto. Placa: ABC123. Puedes agregar más o pulsar «Listo, volver a mi inventario».',
@@ -451,7 +452,7 @@ describe('Tras crear (HU-013)', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Editar vehículo' })).toBeInTheDocument()
     // Mejora de la prueba manual: al final, debajo de las fotos, un botón claro para terminar.
     const listo = screen.getByRole('link', { name: 'Listo, volver a mi inventario' })
-    expect(listo).toHaveAttribute('href', '#/inventario')
+    expect(listo).toHaveAttribute('href', '/inventario')
     expect(screen.getByText('Los datos y las fotos ya están guardados.')).toBeInTheDocument()
   })
 })
@@ -468,7 +469,7 @@ describe('Edición (CA-UI-10, HU-019, RN-VE-003)', () => {
       ],
     })
     const u = userEvent.setup()
-    abrirConSesion('#/inventario/9')
+    abrirConSesion('/inventario/9')
     expect(await screen.findByText(/Precio anterior: \$ 120\.000\.000/)).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1, name: 'Editar vehículo' })).toBeInTheDocument()
     // D-33: la categoría se puede cambiar también al editar.
@@ -485,7 +486,7 @@ describe('Edición (CA-UI-10, HU-019, RN-VE-003)', () => {
     await u.click(screen.getByRole('button', { name: 'Guardar cambios' }))
     expect(await screen.findByText(/^Cambios guardados\. Placa: ABC123\. Puedes agregar o reordenar fotos abajo; cuando termines, pulsa «Listo, volver al inventario»\./)).toBeInTheDocument()
     // Mejora de la prueba manual: botón final visible para el administrador.
-    expect(screen.getByRole('link', { name: 'Listo, volver al inventario' })).toHaveAttribute('href', '#/inventario')
+    expect(screen.getByRole('link', { name: 'Listo, volver al inventario' })).toHaveAttribute('href', '/inventario')
     const put = api.llamadasA(DETALLE_9)[1]
     expect(put.init?.method).toBe('PUT')
     const cuerpo = cuerpoJson(put.init) as Record<string, unknown>
@@ -503,7 +504,7 @@ describe('Edición (CA-UI-10, HU-019, RN-VE-003)', () => {
       ],
     })
     const u = userEvent.setup()
-    abrirConSesion('#/inventario/9')
+    abrirConSesion('/inventario/9')
     await u.click(await screen.findByRole('button', { name: 'Guardar cambios' }))
     const msg = await screen.findByText('Esta placa ya está registrada en otro vehículo.')
     expect(screen.getByLabelText('Placa (opcional)').getAttribute('aria-describedby')).toContain(msg.closest('ul')?.id)
@@ -518,7 +519,7 @@ describe('Edición (CA-UI-10, HU-019, RN-VE-003)', () => {
         body: detalleCamion({ estado: 'VENDIDO', fotos: [{ id: 1, url: '/media/a.jpg', orden: 1, esPortada: true }] }),
       },
     })
-    abrirConSesion('#/inventario/9')
+    abrirConSesion('/inventario/9')
     expect(await screen.findByText('Este vehículo está vendido y no se puede modificar.')).toBeInTheDocument()
     expect(screen.getByLabelText('Kilometraje (km)')).toBeDisabled()
     expect(screen.queryByRole('button', { name: 'Guardar cambios' })).toBeNull()
@@ -532,7 +533,7 @@ describe('Edición (CA-UI-10, HU-019, RN-VE-003)', () => {
       [CATALOGOS]: { status: 200, body: CAT },
       [DETALLE_9]: { status: 200, body: detalleCamion({ estado: 'INACTIVO', motivoInactivacion: 'En reparación' }) },
     })
-    abrirConSesion('#/inventario/9')
+    abrirConSesion('/inventario/9')
     expect(await screen.findByText('En reparación')).toBeInTheDocument()
     expect(screen.getByText('Inactivo')).toBeInTheDocument()
   })
@@ -544,7 +545,7 @@ describe('Edición (CA-UI-10, HU-019, RN-VE-003)', () => {
       [CATALOGOS]: { status: 200, body: CAT },
       [DETALLE_9]: { status: 200, body: detalleCamion({ descripcionTecnica: xss, motivoInactivacion: xss, estado: 'INACTIVO' }) },
     })
-    abrirConSesion('#/inventario/9')
+    abrirConSesion('/inventario/9')
     expect(await screen.findByLabelText('Descripción técnica (opcional)')).toHaveValue(xss)
     expect(document.querySelector('script')).toBeNull()
     expect(document.querySelector('img[src="x"]')).toBeNull()
@@ -658,7 +659,7 @@ describe('D-30: registrar con al menos una foto', () => {
     await agregarFotos(u)
     await llenarCamion(u)
     await u.click(screen.getByRole('button', { name: 'Registrar vehículo' }))
-    await waitFor(() => expect(window.location.hash).toBe('#/inventario/32'))
+    await waitFor(() => expect(ubicacionActual()).toBe('/inventario/32'))
     const aviso = await screen.findByText(
       'Vehículo guardado con 1 foto. La placa no se guardó. Revísala y vuelve a guardar.',
     )
@@ -703,7 +704,7 @@ describe('D-30: edición y placa', () => {
       [`${DETALLE_9}/fotos`]: { status: 201, body: fotoDetalle(1, 1) },
     })
     const u = userEvent.setup()
-    abrirConSesion('#/inventario/9')
+    abrirConSesion('/inventario/9')
     const aviso = await screen.findByText(
       'Este vehículo no tiene fotos. Agrega al menos una para poder guardar cambios.',
     )
@@ -739,7 +740,7 @@ describe('D-30: edición y placa', () => {
       ],
     })
     const u = userEvent.setup()
-    abrirConSesion('#/inventario/9')
+    abrirConSesion('/inventario/9')
     await u.click(await screen.findByRole('button', { name: 'Guardar cambios' }))
     expect(await screen.findByText(/^Agrega al menos una foto antes de guardar los cambios\./)).toBeInTheDocument()
   })
@@ -751,7 +752,7 @@ describe('D-30: edición y placa', () => {
       [DETALLE_9]: [{ status: 200, body: detalleCamion() }, { status: 200, body: detalleCamion({ placa: null }) }],
     })
     const u = userEvent.setup()
-    abrirConSesion('#/inventario/9')
+    abrirConSesion('/inventario/9')
     await u.click(await screen.findByRole('button', { name: 'Guardar cambios' }))
     const aviso = await screen.findByText('Cambios guardados. La placa no se guardó. Revísala y vuelve a guardar.')
     expect(aviso).toHaveAttribute('role', 'alert')
@@ -765,7 +766,7 @@ describe('D-30: edición y placa', () => {
       [DETALLE_9]: [{ status: 200, body: detalleCamion() }, { status: 200, body: detalleCamion({ placa: null }) }],
     })
     const u = userEvent.setup()
-    abrirConSesion('#/inventario/9')
+    abrirConSesion('/inventario/9')
     await u.clear(await screen.findByLabelText('Placa (opcional)'))
     await u.click(screen.getByRole('button', { name: 'Guardar cambios' }))
     expect(await screen.findByText(/^Cambios guardados\. Sin placa\. Puedes agregar/)).toBeInTheDocument()
@@ -818,7 +819,7 @@ describe('Defecto de la prueba manual: la placa del camión no se guardaba', () 
       ],
     })
     const u = userEvent.setup()
-    abrirConSesion('#/inventario/9')
+    abrirConSesion('/inventario/9')
     await screen.findByLabelText('Placa (opcional)')
     escribirSinEvento('Placa (opcional)', 'nue123')
     await u.click(screen.getByRole('button', { name: 'Guardar cambios' }))
@@ -874,7 +875,7 @@ describe('D-32: los modelos se filtran por la categoría elegida', () => {
 
   it('Camión solo ofrece modelos de camión (y los sin clasificar); Carro solo los de carro', async () => {
     simularFetch({ [ME]: me(['ASESOR']), [CATALOGOS]: { status: 200, body: CAT_D32 } })
-    abrirConSesion('#/inventario/nuevo')
+    abrirConSesion('/inventario/nuevo')
     const u = userEvent.setup()
     await u.selectOptions(await screen.findByLabelText('Categoría'), '2')
     await u.selectOptions(screen.getByLabelText('Marca'), '10')
@@ -895,7 +896,7 @@ describe('D-32: los modelos se filtran por la categoría elegida', () => {
         body: { error: 'Revisa los datos marcados.', errores: { lineaId: ['Este modelo no corresponde a la categoría elegida.'] } },
       },
     })
-    abrirConSesion('#/inventario/nuevo')
+    abrirConSesion('/inventario/nuevo')
     const u = userEvent.setup()
     await u.selectOptions(await screen.findByLabelText('Categoría'), '2')
     await agregarFotos(u)
@@ -916,7 +917,7 @@ describe('D-33: el dueño puede cambiar la categoría al editar', () => {
       ],
     })
     const u = userEvent.setup()
-    abrirConSesion('#/inventario/9')
+    abrirConSesion('/inventario/9')
     const categoria = await screen.findByLabelText('Categoría')
     expect(screen.getByLabelText('Placa (opcional)')).toHaveValue('ABC123')
     await u.selectOptions(categoria, '3')
@@ -937,7 +938,7 @@ describe('D-33: el dueño puede cambiar la categoría al editar', () => {
       marcas: [{ id: 30, nombre: 'Kia', lineas: [{ id: 300, nombre: 'Picanto', tipoIds: [1] }] }],
     }
     simularFetch({ [ME]: me(['ASESOR']), [CATALOGOS]: { status: 200, body: cat } })
-    abrirConSesion('#/inventario/nuevo')
+    abrirConSesion('/inventario/nuevo')
     const u = userEvent.setup()
     await u.selectOptions(await screen.findByLabelText('Categoría'), '2')
     await u.selectOptions(screen.getByLabelText('Marca'), '30')
@@ -957,7 +958,7 @@ describe('D-37: el vehículo conserva una marca o modelo desactivados', () => {
       ],
     })
     const u = userEvent.setup()
-    abrirConSesion('#/inventario/9')
+    abrirConSesion('/inventario/9')
     const marca = await screen.findByLabelText('Marca')
     expect(marca).toHaveValue('10')
     expect(within(marca).getByRole('option', { name: /\(desactivado\)/ })).toBeInTheDocument()

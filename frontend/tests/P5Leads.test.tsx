@@ -15,6 +15,7 @@ import {
   RUTA_RESUMEN,
   rutaLeads,
 } from './p5Datos'
+import { irA, ubicacionActual } from './helpers'
 
 const resumen = (nuevos: number) => ({ status: 200, body: { nuevos, abiertos: nuevos + 2 } })
 
@@ -24,31 +25,31 @@ function llamadasLeads(api: ReturnType<typeof abrirApp>['api']) {
 
 describe('Permisos de interfaz', () => {
   it('CA-P5-32 un comprador en #/contactos ve "No tienes permiso" y no se llama a /api/leads', async () => {
-    const { api } = abrirApp('#/contactos', ['COMPRADOR'])
+    const { api } = abrirApp('/contactos', ['COMPRADOR'])
     expect(await screen.findByText('No tienes permiso para realizar esta acción.')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Volver a mi cuenta' })).toHaveAttribute('href', '#/cuenta')
+    expect(screen.getByRole('link', { name: 'Volver a mi cuenta' })).toHaveAttribute('href', '/cuenta')
     expect(llamadasLeads(api)).toHaveLength(0)
   })
 
   it('un comprador en #/contactos/5 tampoco llama a /api/leads', async () => {
-    const { api } = abrirApp('#/contactos/5', ['COMPRADOR'])
+    const { api } = abrirApp('/contactos/5', ['COMPRADOR'])
     expect(await screen.findByText('No tienes permiso para realizar esta acción.')).toBeInTheDocument()
     expect(llamadasLeads(api)).toHaveLength(0)
   })
 
   it('el perfil del comprador no ofrece "Contactos" ni pide el resumen', async () => {
-    const { api } = abrirApp('#/cuenta', ['COMPRADOR'])
+    const { api } = abrirApp('/cuenta', ['COMPRADOR'])
     expect(await screen.findByRole('heading', { name: /Bienvenido/ })).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /^Contactos/ })).not.toBeInTheDocument()
     expect(llamadasLeads(api)).toHaveLength(0)
   })
 
   it('sin sesión, #/contactos lleva al inicio de sesión y no llama a /api/leads', async () => {
-    window.location.hash = '#/contactos'
+    irA('/contactos')
     const api = simularFetch({})
     render(<App />)
     expect(await screen.findByRole('button', { name: 'Iniciar sesión' })).toBeInTheDocument()
-    expect(window.location.hash).toBe('#/cuenta')
+    expect(ubicacionActual()).toBe('/cuenta')
     expect(api.llamadas.some((l) => l.url.startsWith('/api/leads'))).toBe(false)
   })
 })
@@ -59,37 +60,37 @@ describe('"Contactos (N nuevos)" (D-48, CA-P5-58)', () => {
     [1, 'Contactos (1 nuevo)'],
     [0, 'Contactos'],
   ])('asesor con %i nuevos ve "%s" en su perfil', async (n, texto) => {
-    const { api } = abrirApp('#/cuenta', ['ASESOR'], { [RUTA_RESUMEN]: resumen(n) })
+    const { api } = abrirApp('/cuenta', ['ASESOR'], { [RUTA_RESUMEN]: resumen(n) })
     const enlace = await screen.findByRole('link', { name: texto })
-    expect(enlace).toHaveAttribute('href', '#/contactos')
+    expect(enlace).toHaveAttribute('href', '/contactos')
     expect(cabecera(api.llamadasA(RUTA_RESUMEN)[0].init, 'Authorization')).toBe(`Bearer ${TOKEN_FICTICIO}`)
   })
 
   it('el administrador también lo ve, y la barra de administración enlaza a Contactos', async () => {
-    const { user } = abrirApp('#/cuenta', ['ADMINISTRADOR'], {
+    const { user } = abrirApp('/cuenta', ['ADMINISTRADOR'], {
       [RUTA_RESUMEN]: resumen(2),
       '/api/admin/usuarios?estado=PENDIENTE&pagina=1&tamano=20': paginaLeads([]),
     })
-    expect(await screen.findByRole('link', { name: 'Contactos (2 nuevos)' })).toHaveAttribute('href', '#/contactos')
+    expect(await screen.findByRole('link', { name: 'Contactos (2 nuevos)' })).toHaveAttribute('href', '/contactos')
     await user.click(screen.getByRole('button', { name: 'Administrar usuarios' }))
     const nav = await screen.findByRole('navigation', { name: 'Administración' })
-    expect(within(nav).getByRole('link', { name: 'Contactos' })).toHaveAttribute('href', '#/contactos')
+    expect(within(nav).getByRole('link', { name: 'Contactos' })).toHaveAttribute('href', '/contactos')
   })
 
   it('si el resumen falla, el enlace sigue sin número', async () => {
-    abrirApp('#/cuenta', ['ASESOR'], { [RUTA_RESUMEN]: { status: 500 } })
-    expect(await screen.findByRole('link', { name: 'Contactos' })).toHaveAttribute('href', '#/contactos')
+    abrirApp('/cuenta', ['ASESOR'], { [RUTA_RESUMEN]: { status: 500 } })
+    expect(await screen.findByRole('link', { name: 'Contactos' })).toHaveAttribute('href', '/contactos')
   })
 
   it('un 401 del resumen termina la sesión', async () => {
-    abrirApp('#/cuenta', ['ASESOR'], { [RUTA_RESUMEN]: { status: 401 } })
+    abrirApp('/cuenta', ['ASESOR'], { [RUTA_RESUMEN]: { status: 401 } })
     expect(await screen.findByText('Tu sesión terminó. Inicia sesión de nuevo.')).toBeInTheDocument()
   })
 })
 
 describe('Lista del asesor (CA-P5-29, CA-P5-36)', () => {
   it('"Mis contactos": pide /api/leads con token, muestra estado en texto, Nuevo y sin filtro de responsable', async () => {
-    const { api } = abrirApp('#/contactos', ['ASESOR'], {
+    const { api } = abrirApp('/contactos', ['ASESOR'], {
       [rutaLeads()]: paginaLeads([
         lead(2, { nuevo: true, nombre: 'Ana Nueva', correo: 'ana@ejemplo.test' }),
         lead(1, { estado: 'CERRADO', nombre: 'Beto Cerrado', resultadoCierre: 'NO_RESPONDIO', cerradoEn: '2026-11-05T10:00:00Z' }),
@@ -105,7 +106,7 @@ describe('Lista del asesor (CA-P5-29, CA-P5-36)', () => {
     expect(within(ana).getByText('Nuevo')).toBeInTheDocument()
     expect(within(ana).getByText('ana@ejemplo.test')).toBeInTheDocument()
     expect(within(ana).getByText('Chevrolet NPR 2020')).toBeInTheDocument()
-    expect(within(ana).getByRole('link', { name: /Ver detalle/ })).toHaveAttribute('href', '#/contactos/2')
+    expect(within(ana).getByRole('link', { name: /Ver detalle/ })).toHaveAttribute('href', '/contactos/2')
     expect(within(beto).getByText('Finalizado')).toBeInTheDocument()
     expect(within(beto).getByText('No respondió')).toBeInTheDocument()
     expect(within(beto).queryByText('Nuevo')).not.toBeInTheDocument()
@@ -116,7 +117,7 @@ describe('Lista del asesor (CA-P5-29, CA-P5-36)', () => {
   })
 
   it('filtrar por estado pide ?estado=ABIERTO', async () => {
-    const { api, user } = abrirApp('#/contactos', ['ASESOR'], {
+    const { api, user } = abrirApp('/contactos', ['ASESOR'], {
       [rutaLeads()]: paginaLeads([lead(1)]),
       [rutaLeads('estado=ABIERTO')]: paginaLeads([]),
     })
@@ -128,12 +129,12 @@ describe('Lista del asesor (CA-P5-29, CA-P5-36)', () => {
   })
 
   it('sin contactos: mensaje para el asesor', async () => {
-    abrirApp('#/contactos', ['ASESOR'], { [rutaLeads()]: paginaLeads([]) })
+    abrirApp('/contactos', ['ASESOR'], { [rutaLeads()]: paginaLeads([]) })
     expect(await screen.findByText(/Aún no tienes contactos/)).toBeInTheDocument()
   })
 
   it('paginación: 45 contactos en 3 páginas', async () => {
-    const { api, user } = abrirApp('#/contactos', ['ASESOR'], {
+    const { api, user } = abrirApp('/contactos', ['ASESOR'], {
       [rutaLeads()]: paginaLeads([lead(1)], 45),
       '/api/leads?pagina=2&tamano=20': paginaLeads([lead(21)], 45, 2),
     })
@@ -144,12 +145,12 @@ describe('Lista del asesor (CA-P5-29, CA-P5-36)', () => {
   })
 
   it('un 401 de la lista termina la sesión', async () => {
-    abrirApp('#/contactos', ['ASESOR'], { [rutaLeads()]: { status: 401 } })
+    abrirApp('/contactos', ['ASESOR'], { [rutaLeads()]: { status: 401 } })
     expect(await screen.findByText('Tu sesión terminó. Inicia sesión de nuevo.')).toBeInTheDocument()
   })
 
   it('un 403 (asesor sin perfil) muestra el mensaje de permiso', async () => {
-    abrirApp('#/contactos', ['ASESOR'], {
+    abrirApp('/contactos', ['ASESOR'], {
       [rutaLeads()]: { status: 403, body: { error: 'No tienes permiso para realizar esta acción.' } },
     })
     expect(await screen.findByText('No tienes permiso para realizar esta acción.')).toBeInTheDocument()
@@ -161,7 +162,7 @@ const RUTAS_ADMIN: Rutas = { [RUTA_CATALOGOS_INV]: CATALOGOS_INVENTARIO }
 describe('Lista del administrador (CA-P5-31)', () => {
   it('"Contactos" con responsable en cada tarjeta y filtros por estado, responsable y fechas', async () => {
     const filtrada = '/api/leads?estado=ABIERTO&responsable=ADMINISTRACION&desde=2026-11-01&hasta=2026-11-04&pagina=1&tamano=20'
-    const { api, user } = abrirApp('#/contactos', ['ADMINISTRADOR'], {
+    const { api, user } = abrirApp('/contactos', ['ADMINISTRADOR'], {
       ...RUTAS_ADMIN,
       [rutaLeads()]: paginaLeads([lead(3, { responsable: { tipo: 'ADMINISTRACION', asesorId: null, nombre: null } })]),
       [filtrada]: paginaLeads([]),
@@ -183,7 +184,7 @@ describe('Lista del administrador (CA-P5-31)', () => {
   })
 
   it('"Hasta" anterior a "Desde": error junto al campo, foco y sin llamar a la API', async () => {
-    const { api, user } = abrirApp('#/contactos', ['ADMINISTRADOR'], { ...RUTAS_ADMIN, [rutaLeads()]: paginaLeads([]) })
+    const { api, user } = abrirApp('/contactos', ['ADMINISTRADOR'], { ...RUTAS_ADMIN, [rutaLeads()]: paginaLeads([]) })
     await screen.findByText('Aún no hay contactos.')
     await user.type(screen.getByLabelText('Desde'), '2026-11-04')
     await user.type(screen.getByLabelText('Hasta'), '2026-11-01')
@@ -199,7 +200,7 @@ const RUTA_DETALLE = '/api/leads/5'
 
 describe('Detalle (asesor): historial, notas y cierre', () => {
   it('CA-P5-42 historial en orden con actor y automático; sin autorizaciones ni acciones de administrador', async () => {
-    abrirApp('#/contactos/5', ['ASESOR'], { [RUTA_DETALLE]: { status: 200, body: detalleLead(5) } })
+    abrirApp('/contactos/5', ['ASESOR'], { [RUTA_DETALLE]: { status: 200, body: detalleLead(5) } })
     expect(await screen.findByRole('heading', { level: 1, name: 'Contacto de Visitante 5' })).toBeInTheDocument()
     const historial = screen.getByRole('heading', { name: 'Historial' }).parentElement as HTMLElement
     const eventos = within(historial).getAllByRole('listitem')
@@ -221,7 +222,7 @@ describe('Detalle (asesor): historial, notas y cierre', () => {
     expect(screen.queryByRole('heading', { name: 'Autorización de tratamiento de datos' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Reasignar' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Reabrir' })).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Volver a la lista de contactos' })).toHaveAttribute('href', '#/contactos')
+    expect(screen.getByRole('link', { name: 'Volver a la lista de contactos' })).toHaveAttribute('href', '/contactos')
     // CA-P5-43: los datos del visitante no se editan.
     expect(screen.queryByRole('textbox', { name: /Nombre|Teléfono|Correo/ })).not.toBeInTheDocument()
   })
@@ -233,7 +234,7 @@ describe('Detalle (asesor): historial, notas y cierre', () => {
         { tipo: 'NOTA', fecha: '2026-11-06T09:00:00Z', actor: { tipo: 'USUARIO', nombre: 'Persona Ficticia' }, automatico: false, texto: 'Quedó de llamar el lunes.', resultado: null, responsableAnterior: null, responsableNuevo: null },
       ],
     })
-    const { api, user } = abrirApp('#/contactos/5', ['ASESOR'], {
+    const { api, user } = abrirApp('/contactos/5', ['ASESOR'], {
       [RUTA_DETALLE]: { status: 200, body: detalleLead(5) },
       '/api/leads/5/notas': { status: 201, body: conNota },
     })
@@ -247,7 +248,7 @@ describe('Detalle (asesor): historial, notas y cierre', () => {
   })
 
   it('nota corta: error en el campo y sin llamar a la API', async () => {
-    const { api, user } = abrirApp('#/contactos/5', ['ASESOR'], { [RUTA_DETALLE]: { status: 200, body: detalleLead(5) } })
+    const { api, user } = abrirApp('/contactos/5', ['ASESOR'], { [RUTA_DETALLE]: { status: 200, body: detalleLead(5) } })
     await screen.findByRole('heading', { level: 1, name: 'Contacto de Visitante 5' })
     await user.type(screen.getByLabelText('Nueva nota'), 'ok')
     await user.click(screen.getByRole('button', { name: 'Guardar nota' }))
@@ -257,7 +258,7 @@ describe('Detalle (asesor): historial, notas y cierre', () => {
   })
 
   it('CA-P5-57 un 409 al anotar muestra el mensaje de la API y vuelve a leer el contacto', async () => {
-    const { api, user } = abrirApp('#/contactos/5', ['ASESOR'], {
+    const { api, user } = abrirApp('/contactos/5', ['ASESOR'], {
       [RUTA_DETALLE]: [
         { status: 200, body: detalleLead(5) },
         { status: 200, body: detalleLead(5, { estado: 'CERRADO', resultadoCierre: 'NO_INTERESADO' }) },
@@ -281,7 +282,7 @@ describe('Detalle (asesor): historial, notas y cierre', () => {
       cerradoPor: 'Persona Ficticia',
       cerradoEn: '2026-11-06T09:00:00Z',
     })
-    const { api, user } = abrirApp('#/contactos/5', ['ASESOR'], {
+    const { api, user } = abrirApp('/contactos/5', ['ASESOR'], {
       [RUTA_DETALLE]: { status: 200, body: detalleLead(5) },
       '/api/leads/5/cerrar': { status: 200, body: cerrado },
     })
@@ -309,7 +310,7 @@ describe('Detalle (asesor): historial, notas y cierre', () => {
   })
 
   it('cerrar con un resultado distinto de "Otro" no exige observación (va como null)', async () => {
-    const { api, user } = abrirApp('#/contactos/5', ['ASESOR'], {
+    const { api, user } = abrirApp('/contactos/5', ['ASESOR'], {
       [RUTA_DETALLE]: { status: 200, body: detalleLead(5) },
       '/api/leads/5/cerrar': { status: 200, body: detalleLead(5, { estado: 'CERRADO', resultadoCierre: 'VENTA_CONCRETADA' }) },
     })
@@ -324,7 +325,7 @@ describe('Detalle (asesor): historial, notas y cierre', () => {
   })
 
   it('Escape cierra el diálogo y el foco vuelve al botón', async () => {
-    const { user } = abrirApp('#/contactos/5', ['ASESOR'], { [RUTA_DETALLE]: { status: 200, body: detalleLead(5) } })
+    const { user } = abrirApp('/contactos/5', ['ASESOR'], { [RUTA_DETALLE]: { status: 200, body: detalleLead(5) } })
     await screen.findByRole('heading', { level: 1, name: 'Contacto de Visitante 5' })
     const boton = screen.getByRole('button', { name: 'Cerrar contacto' })
     await user.click(boton)
@@ -335,13 +336,13 @@ describe('Detalle (asesor): historial, notas y cierre', () => {
   })
 
   it('un 404 (contacto ajeno o reasignado) muestra "Contacto no encontrado."', async () => {
-    abrirApp('#/contactos/5', ['ASESOR'], { [RUTA_DETALLE]: { status: 404, body: { error: 'Contacto no encontrado.' } } })
+    abrirApp('/contactos/5', ['ASESOR'], { [RUTA_DETALLE]: { status: 404, body: { error: 'Contacto no encontrado.' } } })
     expect(await screen.findByText('Contacto no encontrado.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument()
   })
 
   it('"Ver todos los contactos de este vehículo" filtra la lista por vehiculoId', async () => {
-    const { api, user } = abrirApp('#/contactos/5', ['ASESOR'], {
+    const { api, user } = abrirApp('/contactos/5', ['ASESOR'], {
       [RUTA_DETALLE]: { status: 200, body: detalleLead(5) },
       '/api/leads?vehiculoId=40&pagina=1&tamano=20': paginaLeads([lead(5)]),
       [rutaLeads()]: paginaLeads([lead(5), lead(6)]),
@@ -357,7 +358,7 @@ describe('Detalle (asesor): historial, notas y cierre', () => {
 
 describe('Detalle (administrador): autorizaciones, reasignar y reabrir', () => {
   it('CA-P5-16 el administrador ve la prueba de autorización', async () => {
-    abrirApp('#/contactos/5', ['ADMINISTRADOR'], {
+    abrirApp('/contactos/5', ['ADMINISTRADOR'], {
       ...RUTAS_ADMIN,
       [RUTA_DETALLE]: { status: 200, body: detalleLead(5, { consentimientos: CONSENTIMIENTOS }) },
     })
@@ -369,7 +370,7 @@ describe('Detalle (administrador): autorizaciones, reasignar y reabrir', () => {
 
   it('CA-P5-44 reasignar a otro asesor: destino obligatorio, motivo obligatorio, POST con asesorId', async () => {
     const reasignado = detalleLead(5, { responsable: { tipo: 'ASESOR', asesorId: 8, nombre: 'Asesor Dos' } })
-    const { api, user } = abrirApp('#/contactos/5', ['ADMINISTRADOR'], {
+    const { api, user } = abrirApp('/contactos/5', ['ADMINISTRADOR'], {
       ...RUTAS_ADMIN,
       [RUTA_DETALLE]: { status: 200, body: detalleLead(5) },
       '/api/leads/5/reasignar': { status: 200, body: reasignado },
@@ -397,7 +398,7 @@ describe('Detalle (administrador): autorizaciones, reasignar y reabrir', () => {
   })
 
   it('reasignar a Administración envía administracion: true; un 409 se muestra con el texto de la API', async () => {
-    const { api, user } = abrirApp('#/contactos/5', ['ADMINISTRADOR'], {
+    const { api, user } = abrirApp('/contactos/5', ['ADMINISTRADOR'], {
       ...RUTAS_ADMIN,
       [RUTA_DETALLE]: { status: 200, body: detalleLead(5) },
       '/api/leads/5/reasignar': { status: 409, body: { error: 'El contacto ya está asignado a ese responsable.' } },
@@ -414,7 +415,7 @@ describe('Detalle (administrador): autorizaciones, reasignar y reabrir', () => {
   })
 
   it('un 400 del servidor en asesorId se muestra en el diálogo sin cerrarlo', async () => {
-    const { user } = abrirApp('#/contactos/5', ['ADMINISTRADOR'], {
+    const { user } = abrirApp('/contactos/5', ['ADMINISTRADOR'], {
       ...RUTAS_ADMIN,
       [RUTA_DETALLE]: { status: 200, body: detalleLead(5) },
       '/api/leads/5/reasignar': {
@@ -434,7 +435,7 @@ describe('Detalle (administrador): autorizaciones, reasignar y reabrir', () => {
 
   it('CA-P5-41 reabrir un contacto cerrado con motivo', async () => {
     const cerrado = detalleLead(5, { estado: 'CERRADO', resultadoCierre: 'NO_RESPONDIO', cerradoEn: '2026-11-06T09:00:00Z' })
-    const { api, user } = abrirApp('#/contactos/5', ['ADMINISTRADOR'], {
+    const { api, user } = abrirApp('/contactos/5', ['ADMINISTRADOR'], {
       ...RUTAS_ADMIN,
       [RUTA_DETALLE]: { status: 200, body: cerrado },
       '/api/leads/5/reabrir': { status: 200, body: detalleLead(5) },
@@ -452,7 +453,7 @@ describe('Detalle (administrador): autorizaciones, reasignar y reabrir', () => {
   })
 
   it('un asesor con un contacto cerrado no ve "Reabrir"', async () => {
-    abrirApp('#/contactos/5', ['ASESOR'], {
+    abrirApp('/contactos/5', ['ASESOR'], {
       [RUTA_DETALLE]: { status: 200, body: detalleLead(5, { estado: 'CERRADO', resultadoCierre: 'NO_RESPONDIO' }) },
     })
     await screen.findByText('Finalizado')

@@ -1,6 +1,6 @@
 import type { FiltrosCatalogo } from '../api/catalogo'
 import { formatoMiles } from '../catalogo/formato'
-import { hashBuscar } from '../rutas'
+import { rutaBuscar } from '../rutas'
 
 type PaginacionProps = {
   filtros: FiltrosCatalogo
@@ -11,7 +11,7 @@ type PaginacionProps = {
 /** Paginación del catálogo con enlaces (la página viaja en la URL). */
 export function Paginacion({ filtros, pagina, totalPaginas }: PaginacionProps) {
   if (totalPaginas <= 1) return null
-  const enlace = (n: number) => hashBuscar({ ...filtros, pagina: String(n) })
+  const enlace = (n: number) => rutaBuscar({ ...filtros, pagina: String(n) })
   return (
     <nav className="cat-paginacion" aria-label="Paginación">
       {pagina > 1 ? (

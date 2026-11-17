@@ -12,7 +12,6 @@ import {
   TITULO_POR_DEFECTO,
 } from '../src/marca'
 import { abrirApp, respuestaFiltros, RUTA_FILTROS, RUTA_INICIO } from './catalogoDatos'
-import { HASH_INICIO } from '../src/rutas'
 import { simularFetch } from './helpers'
 
 const INICIO_VACIO = { status: 200, body: { destacados: [], recientes: [] } }
@@ -35,7 +34,7 @@ describe('Logos en el encabezado y el pie (CA-P10-02 a 06)', () => {
     abrirApp('/')
     const banner = screen.getByRole('banner')
     const enlace = within(banner).getByRole('link', { name: ALT_LOGO_HORIZONTAL })
-    expect(enlace).toHaveAttribute('href', HASH_INICIO)
+    expect(enlace).toHaveAttribute('href', '/')
     expect(ALT_LOGO_HORIZONTAL).toBe('VCA Automotores, Venta de Camiones. Financiamos tu Camión')
     const img = within(enlace).getByRole('img')
     expect(img).toHaveAttribute('src', '/marca/logo-horizontal.png')

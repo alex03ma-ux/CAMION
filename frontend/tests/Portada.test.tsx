@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../src/App'
 import { RUTA_PORTADA, simularFetch } from './helpers'
 import { abrirApp } from './p4pDatos'
+import { irA } from './helpers'
 
 const RUTA_ADMIN = '/api/admin/portal/portada'
 const RUTA_INICIO = '/api/catalogo/inicio'
@@ -28,7 +29,7 @@ beforeEach(() => {
 describe('Portada en el inicio', () => {
   it('sin foto del administrador se ve la ilustración (no hay <img> en la portada)', async () => {
     const api = simularFetch({ [RUTA_INICIO]: INICIO_VACIO })
-    window.location.hash = '#/'
+    irA('/')
     const { container } = render(<App />)
     await waitFor(() => expect(api.llamadasA(RUTA_PORTADA)).toHaveLength(1))
     expect(container.querySelector('.cat-portada svg.cat-portada-imagen')).not.toBeNull()
@@ -37,7 +38,7 @@ describe('Portada en el inicio', () => {
 
   it('con foto del administrador, la portada la muestra como fondo decorativo (alt vacío)', async () => {
     simularFetch({ [RUTA_INICIO]: INICIO_VACIO, [RUTA_PORTADA]: { status: 200, body: { url: URL_FOTO } } })
-    window.location.hash = '#/'
+    irA('/')
     const { container } = render(<App />)
     await waitFor(() => expect(container.querySelector('.cat-portada img')).not.toBeNull())
     const img = container.querySelector('.cat-portada img') as HTMLImageElement
@@ -47,7 +48,7 @@ describe('Portada en el inicio', () => {
 
   it('si la consulta de la portada falla, se queda la ilustración y el inicio sigue funcionando', async () => {
     simularFetch({ [RUTA_INICIO]: INICIO_VACIO, [RUTA_PORTADA]: { red: true } })
-    window.location.hash = '#/'
+    irA('/')
     const { container } = render(<App />)
     expect(await screen.findByText('Pronto tendremos vehículos publicados.')).toBeInTheDocument()
     expect(container.querySelector('.cat-portada svg.cat-portada-imagen')).not.toBeNull()
@@ -56,19 +57,19 @@ describe('Portada en el inicio', () => {
 
 describe('Administración › Portada', () => {
   it('el perfil del administrador enlaza a Portada', async () => {
-    abrirApp('#/cuenta', ['ADMINISTRADOR'])
+    abrirApp('/cuenta', ['ADMINISTRADOR'])
     const nav = await screen.findByRole('navigation', { name: 'Más administración' })
-    expect(within(nav).getByRole('link', { name: 'Portada' })).toHaveAttribute('href', '#/cuenta/portada')
+    expect(within(nav).getByRole('link', { name: 'Portada' })).toHaveAttribute('href', '/cuenta/portada')
   })
 
   it('un asesor que entra en #/cuenta/portada ve "No tienes permiso" y no llama a /api/admin', async () => {
-    const { api } = abrirApp('#/cuenta/portada', ['ASESOR'])
+    const { api } = abrirApp('/cuenta/portada', ['ASESOR'])
     expect(await screen.findByText('No tienes permiso para realizar esta acción.')).toBeInTheDocument()
     expect(api.llamadas.some((l) => l.url.startsWith('/api/admin/'))).toBe(false)
   })
 
   it('sube una foto: vista previa, POST multipart con el campo "archivo" y aviso de éxito', async () => {
-    const { api, user } = abrirApp('#/cuenta/portada', ['ADMINISTRADOR'], {
+    const { api, user } = abrirApp('/cuenta/portada', ['ADMINISTRADOR'], {
       [RUTA_ADMIN]: { status: 200, body: { url: URL_FOTO } },
     })
     expect(await screen.findByRole('heading', { level: 2, name: 'Portada' })).toBeInTheDocument()
@@ -84,7 +85,7 @@ describe('Administración › Portada', () => {
   })
 
   it('rechaza en el navegador un archivo que no es imagen o pasa de 5 MB, sin llamar a la API', async () => {
-    const { api } = abrirApp('#/cuenta/portada', ['ADMINISTRADOR'])
+    const { api } = abrirApp('/cuenta/portada', ['ADMINISTRADOR'])
     const user = userEvent.setup({ applyAccept: false })
     const campo = await screen.findByLabelText('Foto nueva')
     await user.upload(campo, foto('nota.txt', 'text/plain'))
@@ -96,7 +97,7 @@ describe('Administración › Portada', () => {
   })
 
   it('muestra el mensaje de la API si rechaza la foto (400)', async () => {
-    const { user } = abrirApp('#/cuenta/portada', ['ADMINISTRADOR'], {
+    const { user } = abrirApp('/cuenta/portada', ['ADMINISTRADOR'], {
       [RUTA_ADMIN]: { status: 400, body: { error: MENSAJE_FORMATO } },
     })
     await user.upload(await screen.findByLabelText('Foto nueva'), foto())
@@ -105,7 +106,7 @@ describe('Administración › Portada', () => {
   })
 
   it('quitar la foto pide confirmación, hace POST …/quitar y vuelve a la ilustración', async () => {
-    const { api, user } = abrirApp('#/cuenta/portada', ['ADMINISTRADOR'], {
+    const { api, user } = abrirApp('/cuenta/portada', ['ADMINISTRADOR'], {
       [RUTA_PORTADA]: { status: 200, body: { url: URL_FOTO } },
       [`${RUTA_ADMIN}/quitar`]: { status: 204 },
     })

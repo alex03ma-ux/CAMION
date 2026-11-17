@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { obtenerFiltros } from './api/catalogo'
+import { obtenerFiltros, type OpcionCatalogo } from './api/catalogo'
 import {
   cerrarSesionServidor,
   esSesionTerminada,
@@ -37,6 +37,7 @@ import type { DatosAviso } from './components/Aviso'
 import { Aviso } from './components/Aviso'
 import { AvisoPublico } from './components/AvisoPublico'
 import { BusquedaVehiculo, TITULO_BUSQUEDA } from './components/BusquedaVehiculo'
+import { CategoriaSinTipo } from './components/CategoriaSinTipo'
 import { DetalleVehiculo } from './components/DetalleVehiculo'
 import { PiePortal } from './components/PiePortal'
 import { Encabezado } from './components/Encabezado'
@@ -61,12 +62,15 @@ import { MARCA, NOMBRE_PORTAL, SUFIJO_TITULO, TITULO_POR_DEFECTO } from './marca
 import {
   esRutaContactos,
   esRutaInventario,
-  HASH_CUENTA,
-  HASH_REGISTRO,
+  fijarTiposCatalogo,
+  instalarNavegacionEnlaces,
+  RUTA_CUENTA,
+  RUTA_REGISTRO,
   leerRuta,
   navegar,
+  rutaBuscar,
   rutaSinIndexar,
-  useHash,
+  useUbicacion,
   type Ruta,
   type SeccionAdmin,
 } from './rutas'
@@ -128,6 +132,7 @@ function tituloDocumento(ruta: Ruta): string {
 }
 
 const cargarFiltros = (signal: AbortSignal) => obtenerFiltros(signal)
+const SIN_TIPOS: OpcionCatalogo[] = []
 
 export default function App() {
   const [vista, setVista] = useState<Vista>(vistaInicial)
@@ -136,15 +141,27 @@ export default function App() {
   const [claveLogin, setClaveLogin] = useState(0)
   const cerrandoRef = useRef(false)
 
-  // P3: navegación por hash. La lógica de sesión (verificación, caducidad,
-  // inactividad, otras pestañas) sigue montada en todas las rutas.
-  const hash = useHash()
-  const ruta = leerRuta(hash)
-  const principal = useRef<HTMLElement>(null)
-  const primeraRuta = useRef(true)
+  // P10 (CA-P10-33 a 41): navegación por la dirección sin `#` (los enlaces viejos `#/…` se convierten al leerla).
+  // La lógica de sesión (verificación, caducidad, inactividad, otras pestañas) sigue montada en todas las rutas.
+  const ubicacion = useUbicacion()
   // Opciones de filtros (tipos para Carros/Camiones, marcas, modelos): una sola carga.
   const [opcionesFiltros, reintentarOpcionesFiltros] = usePeticion(cargarFiltros, 'filtros')
-  const tipos = opcionesFiltros.estado === 'ok' ? opcionesFiltros.datos.tipos : []
+  const tipos = opcionesFiltros.estado === 'ok' ? opcionesFiltros.datos.tipos : SIN_TIPOS
+  // CA-P10-39: con los tipos se traducen /camiones… ↔ tipoId (antes de leer la ruta).
+  fijarTiposCatalogo(tipos)
+  const ruta = leerRuta(ubicacion)
+  const principal = useRef<HTMLElement>(null)
+  const primeraRuta = useRef(true)
+
+  // CA-P10-36: los clics en enlaces internos cambian de pantalla sin recargar.
+  useEffect(() => instalarNavegacionEnlaces(), [])
+
+  // CA-P10-39: /vehiculos?tipoId=<id de una categoría> (o un enlace viejo #/buscar?tipoId=N) pasa a /camiones….
+  const direccionCanonicaBusqueda = ruta.nombre === 'buscar' && ruta.categoria === null ? rutaBuscar(ruta.filtros) : null
+  useEffect(() => {
+    if (direccionCanonicaBusqueda === null || direccionCanonicaBusqueda.startsWith('/vehiculos')) return
+    navegar(direccionCanonicaBusqueda, { reemplazar: true })
+  }, [direccionCanonicaBusqueda])
 
   const irALogin = useCallback((aviso: DatosAviso | null, email = '') => {
     setClaveLogin((k) => k + 1)
@@ -263,7 +280,7 @@ export default function App() {
     }
   }, [])
 
-  // #/cuenta/registro abre el registro; #/cuenta vuelve al login desde el registro.
+  // /cuenta/registro abre el registro; /cuenta vuelve al login desde el registro.
   const enCuenta = ruta.nombre === 'cuenta'
   const enRegistro = ruta.nombre === 'cuenta' && ruta.registro
   useEffect(() => {
@@ -272,12 +289,12 @@ export default function App() {
     else setVista((v) => (v.tipo === 'registro' ? loginCon(null) : v))
   }, [enCuenta, enRegistro])
 
-  // Al cambiar de ruta: título del documento y foco al título de la página.
+  // Al cambiar de ruta: título del documento y foco al título de la página (CA-P10-38).
   // En la cuenta, los formularios ya mueven el foco a su propio título.
   useEffect(() => {
-    document.title = tituloDocumento(leerRuta(hash))
+    document.title = tituloDocumento(leerRuta(ubicacion))
     // P9 (CA-P9-50, 55): noindex solo en pantallas privadas y en la página no encontrada.
-    fijarNoIndex(rutaSinIndexar(leerRuta(hash)))
+    fijarNoIndex(rutaSinIndexar(leerRuta(ubicacion)))
     if (primeraRuta.current) {
       primeraRuta.current = false
       return
@@ -286,18 +303,18 @@ export default function App() {
     if (!contenedor) return
     const activo = document.activeElement
     const focoEnCuenta =
-      leerRuta(hash).nombre === 'cuenta' &&
+      leerRuta(ubicacion).nombre === 'cuenta' &&
       activo !== null &&
       activo !== contenedor &&
       contenedor.contains(activo)
     if (focoEnCuenta) return
     contenedor.querySelector<HTMLHeadingElement>('h1')?.focus()
-  }, [hash])
+  }, [ubicacion])
 
   const conSesion = vista.tipo !== 'login' && vista.tipo !== 'registro'
 
-  // P4p: al entrar en una sección del administrador (#/cuenta/planes…) se deja la vista "admin"
-  // del botón "Administrar usuarios", para que "Mi perfil" (#/cuenta) vuelva al perfil.
+  // P4p: al entrar en una sección del administrador (/cuenta/planes…) se deja la vista "admin"
+  // del botón "Administrar usuarios", para que "Mi perfil" (/cuenta) vuelva al perfil.
   const seccionAdmin: SeccionAdmin | undefined = ruta.nombre === 'cuenta' ? ruta.seccion : undefined
   const consultaSeccion: string | undefined = ruta.nombre === 'cuenta' ? ruta.consulta : undefined
   useEffect(() => {
@@ -305,7 +322,7 @@ export default function App() {
     setVista((v) => (v.tipo === 'admin' ? { tipo: 'perfil', sesion: v.sesion, perfil: v.perfil } : v))
   }, [seccionAdmin])
 
-  // P4a: el inventario exige sesión; sin ella se va al login de #/cuenta
+  // P4a: el inventario exige sesión; sin ella se va al login de /cuenta
   // (si la sesión terminó, allí se ve el aviso "Tu sesión terminó...").
   // P4b: "Mis publicaciones" también exige sesión.
   // P5: los contactos también. P6: "Mis solicitudes" también.
@@ -317,7 +334,7 @@ export default function App() {
     ruta.nombre === 'ventas' ||
     ruta.nombre === 'misIndicadores'
   useEffect(() => {
-    if (enInventario && !conSesion) navegar(HASH_CUENTA)
+    if (enInventario && !conSesion) navegar(RUTA_CUENTA)
   }, [enInventario, conSesion])
 
   return (
@@ -331,13 +348,17 @@ export default function App() {
           </div>
         )}
         {ruta.nombre === 'inicio' && <Inicio tipos={tipos} />}
-        {ruta.nombre === 'buscar' && (
+        {ruta.nombre === 'buscar' && (ruta.categoria === null || ruta.filtros.tipoId !== '') && (
           <Resultados
             filtros={ruta.filtros}
-            hash={hash}
+            ubicacion={ubicacion}
             opciones={opcionesFiltros}
             onReintentarOpciones={reintentarOpcionesFiltros}
           />
+        )}
+        {/* CA-P10-25, 40: categoría cuyo tipo aún no se conoce o que no tiene vehículos visibles. */}
+        {ruta.nombre === 'buscar' && ruta.categoria !== null && ruta.filtros.tipoId === '' && (
+          <CategoriaSinTipo categoria={ruta.categoria} opciones={opcionesFiltros} onReintentar={reintentarOpcionesFiltros} />
         )}
         {ruta.nombre === 'vehiculo' && (
           <DetalleVehiculo
@@ -384,7 +405,7 @@ export default function App() {
         {ruta.nombre === 'misIndicadores' && renderMisIndicadores()}
         {/* P8 (D-73 D): pública; sin cuenta o con cualquier sesión. */}
         {ruta.nombre === 'restablecerContrasena' && <RestablecerContrasena />}
-        {/* P9 (CA-P9-48): rutas `#/...` desconocidas. */}
+        {/* P9 (CA-P9-48): rutas `/...` desconocidas. */}
         {ruta.nombre === 'noEncontrada' && <NoEncontrada />}
       </main>
       <PiePortal tipos={tipos} conSesion={conSesion} />
@@ -413,7 +434,7 @@ export default function App() {
           <>
             <Aviso aviso={{ tipo: 'error', texto: vista.mensaje }} />
             <p>
-              <a href={HASH_CUENTA}>Ir a mi cuenta</a>
+              <a href={RUTA_CUENTA}>Ir a mi cuenta</a>
             </p>
           </>
         )}
@@ -445,7 +466,7 @@ export default function App() {
           <>
             <Aviso aviso={{ tipo: 'error', texto: vista.mensaje }} />
             <p>
-              <a href={HASH_CUENTA}>Ir a mi cuenta</a>
+              <a href={RUTA_CUENTA}>Ir a mi cuenta</a>
             </p>
           </>
         )}
@@ -477,7 +498,7 @@ export default function App() {
           <>
             <Aviso aviso={{ tipo: 'error', texto: vista.mensaje }} />
             <p>
-              <a href={HASH_CUENTA}>Ir a mi cuenta</a>
+              <a href={RUTA_CUENTA}>Ir a mi cuenta</a>
             </p>
           </>
         )}
@@ -488,7 +509,7 @@ export default function App() {
     )
   }
 
-  /** P7 (D-62 c A): "Mis ventas" del asesor en #/ventas (el administrador ve todas). */
+  /** P7 (D-62 c A): "Mis ventas" del asesor en /ventas (el administrador ve todas). */
   function renderVentas(consulta: string | undefined) {
     if (vista.tipo === 'perfil' || vista.tipo === 'admin') {
       return (
@@ -512,7 +533,7 @@ export default function App() {
           <>
             <Aviso aviso={{ tipo: 'error', texto: vista.mensaje }} />
             <p>
-              <a href={HASH_CUENTA}>Ir a mi cuenta</a>
+              <a href={RUTA_CUENTA}>Ir a mi cuenta</a>
             </p>
           </>
         )}
@@ -523,7 +544,7 @@ export default function App() {
     )
   }
 
-  /** P8 (D-70 A): "Mis indicadores" del asesor en #/mis-indicadores. */
+  /** P8 (D-70 A): "Mis indicadores" del asesor en /mis-indicadores. */
   function renderMisIndicadores() {
     if (vista.tipo === 'perfil' || vista.tipo === 'admin') {
       return (
@@ -545,7 +566,7 @@ export default function App() {
           <>
             <Aviso aviso={{ tipo: 'error', texto: vista.mensaje }} />
             <p>
-              <a href={HASH_CUENTA}>Ir a mi cuenta</a>
+              <a href={RUTA_CUENTA}>Ir a mi cuenta</a>
             </p>
           </>
         )}
@@ -579,7 +600,7 @@ export default function App() {
           <>
             <Aviso aviso={{ tipo: 'error', texto: vista.mensaje }} />
             <p>
-              <a href={HASH_CUENTA}>Ir a mi cuenta</a>
+              <a href={RUTA_CUENTA}>Ir a mi cuenta</a>
             </p>
           </>
         )}
@@ -630,7 +651,7 @@ export default function App() {
           onSesionIniciada={alIniciarSesion}
           onIrARegistro={() => {
             setVista({ tipo: 'registro' })
-            navegar(HASH_REGISTRO)
+            navegar(RUTA_REGISTRO)
           }}
         />
       )}
@@ -639,11 +660,11 @@ export default function App() {
         <RegistroForm
           onRegistrado={(mensaje, email) => {
             irALogin({ tipo: 'exito', texto: mensaje }, email)
-            navegar(HASH_CUENTA)
+            navegar(RUTA_CUENTA)
           }}
           onIrALogin={() => {
             irALogin(null)
-            navegar(HASH_CUENTA)
+            navegar(RUTA_CUENTA)
           }}
         />
       )}
@@ -689,7 +710,7 @@ export default function App() {
           <h2 id="sin-permiso-titulo">Administración</h2>
           <Aviso aviso={{ tipo: 'error', texto: MENSAJE_SIN_PERMISO }} />
           <p>
-            <a href={HASH_CUENTA}>Volver a mi cuenta</a>
+            <a href={RUTA_CUENTA}>Volver a mi cuenta</a>
           </p>
         </section>
       )
@@ -707,7 +728,7 @@ export default function App() {
             token={token}
             usuarioIdPropio={vista.perfil.usuarioId}
             onSesionTerminada={alTerminarSesionAdmin}
-            onVolver={() => navegar(HASH_CUENTA)}
+            onVolver={() => navegar(RUTA_CUENTA)}
           />
         )}
         {seccion === 'planes' && <AdminPlanes token={token} onSesionTerminada={alTerminarSesionAdmin} />}

@@ -20,6 +20,7 @@ import { AdminUsuarios } from '../src/components/AdminUsuarios'
 import { leerRuta } from '../src/rutas'
 import { cabecera, simularFetch, TOKEN_FICTICIO, type RespuestaSimulada } from './helpers'
 import { abrirApp, CATALOGOS_INVENTARIO, cuerpoDe, RUTA_CATALOGOS_INV, type Rutas } from './p4pDatos'
+import { irA, ubicacionActual } from './helpers'
 
 const MES = mesEnCurso()
 const PERIODO = `desde=${MES.desde}&hasta=${MES.hasta}`
@@ -69,10 +70,10 @@ function renderReportes(rutas: Rutas, consulta?: string) {
 
 describe('Rutas y filtros de P8 (CA-P8-02, 04)', () => {
   it('lee las rutas nuevas; el código de recuperación no viaja en la ruta', () => {
-    expect(leerRuta('#/cuenta/reportes?tipo=ventas')).toEqual({ nombre: 'cuenta', registro: false, seccion: 'reportes', consulta: 'tipo=ventas' })
-    expect(leerRuta('#/cuenta/indicadores')).toEqual({ nombre: 'cuenta', registro: false, seccion: 'indicadores' })
-    expect(leerRuta('#/mis-indicadores')).toEqual({ nombre: 'misIndicadores' })
-    expect(leerRuta('#/restablecer-contrasena?codigo=abc')).toEqual({ nombre: 'restablecerContrasena' })
+    expect(leerRuta('/cuenta/reportes?tipo=ventas')).toEqual({ nombre: 'cuenta', registro: false, seccion: 'reportes', consulta: 'tipo=ventas' })
+    expect(leerRuta('/cuenta/indicadores')).toEqual({ nombre: 'cuenta', registro: false, seccion: 'indicadores' })
+    expect(leerRuta('/mis-indicadores')).toEqual({ nombre: 'misIndicadores' })
+    expect(leerRuta('/restablecer-contrasena?codigo=abc')).toEqual({ nombre: 'restablecerContrasena' })
   })
 
   it('el período por defecto es el mes en curso, también en febrero bisiesto', () => {
@@ -111,7 +112,7 @@ describe('Rutas y filtros de P8 (CA-P8-02, 04)', () => {
 
 describe('Reportes del administrador', () => {
   it('abre en "Reportes" con el mes en curso, cifras y filas, y Reportes marcado en la navegación', async () => {
-    const { api } = abrirApp('#/cuenta/reportes', ['ADMINISTRADOR'], {
+    const { api } = abrirApp('/cuenta/reportes', ['ADMINISTRADOR'], {
       [RUTA_CATALOGOS_INV]: CATALOGOS_INVENTARIO,
       [rutaReporte('vehiculos')]: { status: 200, body: VEHICULOS },
     })
@@ -121,7 +122,7 @@ describe('Reportes del administrador', () => {
     expect(within(screen.getByRole('navigation', { name: 'Tipos de reporte' })).getAllByRole('link')).toHaveLength(5)
     const estado = screen.getByRole('table', { name: 'Inventario actual por estado' })
     expect(within(estado).getByRole('row', { name: /Reservado 1/ })).toBeInTheDocument()
-    expect(screen.getAllByRole('link', { name: 'Chevrolet NPR 2020' })[0]).toHaveAttribute('href', '#/inventario/15')
+    expect(screen.getAllByRole('link', { name: 'Chevrolet NPR 2020' })[0]).toHaveAttribute('href', '/inventario/15')
     expect(api.llamadasA(rutaReporte('vehiculos'))).toHaveLength(1)
     expect(cabecera(api.llamadasA(rutaReporte('vehiculos'))[0].init, 'Authorization')).toBe(`Bearer ${TOKEN_FICTICIO}`)
   })
@@ -255,7 +256,7 @@ describe('Reportes del administrador', () => {
   })
 
   it.each([['COMPRADOR'], ['ASESOR']])('%s no ve Reportes ni Indicadores y no se llama a la API (CA-P8-06)', async (rol) => {
-    const { api } = abrirApp('#/cuenta/reportes', [rol], {
+    const { api } = abrirApp('/cuenta/reportes', [rol], {
       '/api/asesor/suscripcion': { status: 200, body: { suscripcion: null, mensaje: 'x' } },
     })
     expect(await screen.findByText('No tienes permiso para realizar esta acción.')).toBeInTheDocument()
@@ -305,10 +306,10 @@ describe('Indicadores del administrador', () => {
   })
 
   it('el panel Inicio ofrece "Ver indicadores" (CA-P8-39)', async () => {
-    abrirApp('#/cuenta/inicio', ['ADMINISTRADOR'], {
+    abrirApp('/cuenta/inicio', ['ADMINISTRADOR'], {
       '/api/admin/panel': { status: 200, body: { solicitudes: [], vehiculosPorEstado: {} } },
     })
-    expect(await screen.findByRole('link', { name: 'Ver indicadores' })).toHaveAttribute('href', '#/cuenta/indicadores')
+    expect(await screen.findByRole('link', { name: 'Ver indicadores' })).toHaveAttribute('href', '/cuenta/indicadores')
   })
 })
 
@@ -317,7 +318,7 @@ describe('Indicadores del administrador', () => {
 describe('Mis indicadores del asesor', () => {
   const ruta = `/api/asesor/indicadores?${PERIODO}`
   it('muestra solo lo suyo, sin exportar', async () => {
-    const { api } = abrirApp('#/mis-indicadores', ['ASESOR'], {
+    const { api } = abrirApp('/mis-indicadores', ['ASESOR'], {
       [ruta]: {
         status: 200,
         body: {
@@ -338,18 +339,18 @@ describe('Mis indicadores del asesor', () => {
   })
 
   it('un comprador ve "No tienes permiso" sin llamar a la API', async () => {
-    const { api } = abrirApp('#/mis-indicadores', ['COMPRADOR'])
+    const { api } = abrirApp('/mis-indicadores', ['COMPRADOR'])
     expect(await screen.findByText('No tienes permiso para realizar esta acción.')).toBeInTheDocument()
     expect(api.llamadasA(ruta)).toHaveLength(0)
   })
 
   it('el perfil del asesor ofrece "Mis indicadores"; el del comprador no', async () => {
-    abrirApp('#/cuenta', ['ASESOR'], { '/api/asesor/suscripcion': { status: 200, body: { suscripcion: null, mensaje: 'x' } } })
-    expect(await screen.findByRole('link', { name: 'Mis indicadores' })).toHaveAttribute('href', '#/mis-indicadores')
+    abrirApp('/cuenta', ['ASESOR'], { '/api/asesor/suscripcion': { status: 200, body: { suscripcion: null, mensaje: 'x' } } })
+    expect(await screen.findByRole('link', { name: 'Mis indicadores' })).toHaveAttribute('href', '/mis-indicadores')
   })
 
   it('el perfil del comprador no ofrece "Mis indicadores"', async () => {
-    abrirApp('#/cuenta', ['COMPRADOR'])
+    abrirApp('/cuenta', ['COMPRADOR'])
     expect(await screen.findByRole('heading', { name: /Bienvenido/ })).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Mis indicadores' })).not.toBeInTheDocument()
   })
@@ -426,7 +427,7 @@ describe('Actividad de solo lectura', () => {
 // ---------------------------------------------------------------- Recuperación asistida (CA-P8-67, 68)
 
 const LISTA_USUARIOS = '/api/admin/usuarios?estado=PENDIENTE&pagina=1&tamano=20'
-const ENLACE = 'http://localhost:5173/#/restablecer-contrasena?codigo=Q2ZESjhB_x-1'
+const ENLACE = 'http://localhost:5173/restablecer-contrasena#codigo=Q2ZESjhB_x-1'
 
 function usuario(id: string, nombre: string, telefono: string) {
   return {
@@ -504,34 +505,34 @@ describe('Enlace de recuperación en la administración de usuarios', () => {
   })
 })
 
-describe('Pantalla pública #/restablecer-contrasena', () => {
+describe('Pantalla pública /restablecer-contrasena#codigo=…', () => {
   const RUTA = '/api/auth/restablecer-contrasena'
 
   function abrir(hash: string, rutas: Rutas = {}) {
-    window.location.hash = hash
+    irA(hash)
     const api = simularFetch(rutas)
     render(<App />)
     return { api, user: userEvent.setup() }
   }
 
   it('lee el código, lo quita de la URL y cambia la contraseña', async () => {
-    const { api, user } = abrir('#/restablecer-contrasena?codigo=ABC_123-x', {
+    const { api, user } = abrir('/restablecer-contrasena#codigo=ABC_123-x', {
       [RUTA]: { status: 200, body: { mensaje: 'Listo. Tu contraseña cambió; inicia sesión con la nueva.' } },
     })
     expect(await screen.findByRole('heading', { level: 1, name: 'Crear una contraseña nueva' })).toBeInTheDocument()
-    await waitFor(() => expect(window.location.hash).toBe('#/restablecer-contrasena'))
+    await waitFor(() => expect(ubicacionActual()).toBe('/restablecer-contrasena'))
     expect(window.location.href).not.toContain('ABC_123')
     expect(screen.getByText('Al menos una letra mayúscula (A-Z)')).toBeInTheDocument()
     await user.type(screen.getByLabelText('Contraseña nueva'), 'Nueva1234')
     await user.type(screen.getByLabelText('Confirma la contraseña nueva'), 'Nueva1234')
     await user.click(screen.getByRole('button', { name: 'Guardar contraseña nueva' }))
     expect(await screen.findByText('Listo. Tu contraseña cambió; inicia sesión con la nueva.')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Iniciar sesión' })).toHaveAttribute('href', '#/cuenta')
+    expect(screen.getByRole('link', { name: 'Iniciar sesión' })).toHaveAttribute('href', '/cuenta')
     expect(cuerpoDe(api, RUTA)).toEqual({ codigo: 'ABC_123-x', password: 'Nueva1234' })
   })
 
   it('confirmación distinta o contraseña débil: error en cliente sin llamar a la API', async () => {
-    const { api, user } = abrir('#/restablecer-contrasena?codigo=ABC')
+    const { api, user } = abrir('/restablecer-contrasena#codigo=ABC')
     await user.type(await screen.findByLabelText('Contraseña nueva'), 'Nueva1234')
     await user.type(screen.getByLabelText('Confirma la contraseña nueva'), 'Otra1234')
     await user.click(screen.getByRole('button', { name: 'Guardar contraseña nueva' }))
@@ -544,7 +545,7 @@ describe('Pantalla pública #/restablecer-contrasena', () => {
   })
 
   it('enlace vencido o usado: error claro y enlace a iniciar sesión', async () => {
-    const { user } = abrir('#/restablecer-contrasena?codigo=VIEJO', {
+    const { user } = abrir('/restablecer-contrasena#codigo=VIEJO', {
       [RUTA]: {
         status: 400,
         body: {
@@ -563,7 +564,7 @@ describe('Pantalla pública #/restablecer-contrasena', () => {
 
   it('429: muestra el mensaje de demasiados intentos', async () => {
     const mensaje = 'Demasiados intentos. Espera unos minutos e intenta de nuevo.'
-    const { user } = abrir('#/restablecer-contrasena?codigo=ABC', { [RUTA]: { status: 429, body: { error: mensaje } } })
+    const { user } = abrir('/restablecer-contrasena#codigo=ABC', { [RUTA]: { status: 429, body: { error: mensaje } } })
     await user.type(await screen.findByLabelText('Contraseña nueva'), 'Nueva1234')
     await user.type(screen.getByLabelText('Confirma la contraseña nueva'), 'Nueva1234')
     await user.click(screen.getByRole('button', { name: 'Guardar contraseña nueva' }))
@@ -571,14 +572,14 @@ describe('Pantalla pública #/restablecer-contrasena', () => {
   })
 
   it('sin código: error sin formulario', async () => {
-    abrir('#/restablecer-contrasena')
+    abrir('/restablecer-contrasena')
     expect(await screen.findByText('El enlace no es válido o ya venció. Pide uno nuevo al administrador.')).toBeInTheDocument()
     expect(screen.queryByLabelText('Contraseña nueva')).not.toBeInTheDocument()
-    expect(codigoDelHash('#/restablecer-contrasena?codigo=a%2Bb')).toBe('a+b')
+    expect(codigoDelHash('/restablecer-contrasena?codigo=a%2Bb')).toBe('a+b')
   })
 
   it('el inicio de sesión remite al WhatsApp del portal (CA-P8-68)', async () => {
-    abrir('#/cuenta')
+    abrir('/cuenta')
     const enlace = await screen.findByRole('link', { name: /Escríbenos por WhatsApp/ })
     expect(enlace.getAttribute('href')).toMatch(/^https:\/\/wa\.me\/573166152907\?text=/)
     expect(screen.getByText(/¿Olvidaste tu contraseña\?/)).toBeInTheDocument()

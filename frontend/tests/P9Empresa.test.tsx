@@ -96,7 +96,7 @@ describe('Validación de los campos (CA-P9-27, 28, 30)', () => {
 
 describe('Pantalla "Datos de la empresa" (CA-P9-24, 36)', () => {
   it('sin datos: sección, aviso y estado; guarda con PUT, anuncia el éxito y el pie los muestra', async () => {
-    const { user, api } = abrirApp('#/cuenta/parametros', ['ADMINISTRADOR'], {
+    const { user, api } = abrirApp('/cuenta/parametros', ['ADMINISTRADOR'], {
       [RUTA_EMPRESA_ADMIN]: [EMPRESA_ADMIN_VACIA, { status: 200, body: GUARDADA }],
       [RUTA_CONTACTO_PORTAL]: [CONTACTO_PORTAL_POR_DEFECTO, { status: 200, body: { ...base, empresa: GUARDADA } }],
     })
@@ -135,7 +135,7 @@ describe('Pantalla "Datos de la empresa" (CA-P9-24, 36)', () => {
   })
 
   it('con datos guardados los muestra con el NIT formateado y el autor del cambio', async () => {
-    abrirApp('#/cuenta/parametros', ['ADMINISTRADOR'], { [RUTA_EMPRESA_ADMIN]: { status: 200, body: GUARDADA } })
+    abrirApp('/cuenta/parametros', ['ADMINISTRADOR'], { [RUTA_EMPRESA_ADMIN]: { status: 200, body: GUARDADA } })
     const seccion = await screen.findByRole('region', { name: 'Datos de la empresa' })
     expect(await within(seccion).findByLabelText('NIT')).toHaveValue('800.197.268-4')
     expect(within(seccion).getByLabelText('Razón social')).toHaveValue('Financiamos Tu Camión S.A.S.')
@@ -143,7 +143,7 @@ describe('Pantalla "Datos de la empresa" (CA-P9-24, 36)', () => {
   })
 
   it('validación en el navegador: NIT no válido, foco en él y sin PUT', async () => {
-    const { user, api } = abrirApp('#/cuenta/parametros', ['ADMINISTRADOR'])
+    const { user, api } = abrirApp('/cuenta/parametros', ['ADMINISTRADOR'])
     const seccion = await screen.findByRole('region', { name: 'Datos de la empresa' })
     const nit = await within(seccion).findByLabelText('NIT')
     await user.type(nit, '800197268-5')
@@ -158,7 +158,7 @@ describe('Pantalla "Datos de la empresa" (CA-P9-24, 36)', () => {
   })
 
   it('400 del servidor: errores por campo y se conserva lo escrito', async () => {
-    const { user } = abrirApp('#/cuenta/parametros', ['ADMINISTRADOR'], {
+    const { user } = abrirApp('/cuenta/parametros', ['ADMINISTRADOR'], {
       [RUTA_EMPRESA_ADMIN]: [
         EMPRESA_ADMIN_VACIA,
         {
@@ -179,7 +179,7 @@ describe('Pantalla "Datos de la empresa" (CA-P9-24, 36)', () => {
   })
 
   it('un 401 al guardar lleva a la pantalla de sesión terminada', async () => {
-    const { user } = abrirApp('#/cuenta/parametros', ['ADMINISTRADOR'], {
+    const { user } = abrirApp('/cuenta/parametros', ['ADMINISTRADOR'], {
       [RUTA_EMPRESA_ADMIN]: [EMPRESA_ADMIN_VACIA, { status: 401 }],
     })
     const seccion = await screen.findByRole('region', { name: 'Datos de la empresa' })
@@ -190,14 +190,14 @@ describe('Pantalla "Datos de la empresa" (CA-P9-24, 36)', () => {
 
   it('si la lectura falla ofrece reintentar', async () => {
     const respuestas: RespuestaSimulada[] = [{ status: 500 }, { status: 200, body: VACIA }]
-    const { user } = abrirApp('#/cuenta/parametros', ['ADMINISTRADOR'], { [RUTA_EMPRESA_ADMIN]: respuestas })
+    const { user } = abrirApp('/cuenta/parametros', ['ADMINISTRADOR'], { [RUTA_EMPRESA_ADMIN]: respuestas })
     const seccion = await screen.findByRole('region', { name: 'Datos de la empresa' })
     await user.click(await within(seccion).findByRole('button', { name: 'Reintentar' }))
     expect(await within(seccion).findByLabelText('NIT')).toBeInTheDocument()
   })
 
   it('un comprador en #/cuenta/parametros no ve la sección ni llama a la API de la empresa', async () => {
-    const { api } = abrirApp('#/cuenta/parametros', ['COMPRADOR'])
+    const { api } = abrirApp('/cuenta/parametros', ['COMPRADOR'])
     expect(await screen.findByText('No tienes permiso para realizar esta acción.')).toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Datos de la empresa' })).not.toBeInTheDocument()
     expect(api.llamadasA(RUTA_EMPRESA_ADMIN)).toHaveLength(0)

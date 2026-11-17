@@ -10,6 +10,7 @@ import { PiePortal } from '../src/components/PiePortal'
 import { olvidarContactoPortal } from '../src/components/useContactoPortal'
 import { CONTACTO_PORTAL_POR_DEFECTO, RUTA_CONTACTO_PORTAL, simularFetch, type RespuestaSimulada } from './helpers'
 import { abrirApp } from './p4pDatos'
+import { irA, ubicacionActual } from './helpers'
 
 const base = (CONTACTO_PORTAL_POR_DEFECTO as { body: Record<string, unknown> }).body
 const CONTACTO_300: RespuestaSimulada = {
@@ -33,7 +34,7 @@ const casilla = () => screen.getByRole('checkbox', { name: /Autorizo el tratamie
 
 function abrir(hash: string, rutas: Record<string, RespuestaSimulada | RespuestaSimulada[]>) {
   const api = simularFetch(rutas)
-  window.location.hash = hash
+  irA(hash)
   render(<App />)
   return { api, user: userEvent.setup() }
 }
@@ -88,7 +89,7 @@ describe('QA CA-P9-34: el pie no publica una empresa con NIT no válido en el bo
 
 describe('QA CA-P9-57: fallo de envío con el WhatsApp vigente en los formularios que faltaban', () => {
   it('"Compra tu seguro todo riesgo": un 503 muestra el número guardado por el administrador', async () => {
-    const { user } = abrir('#/seguro-todo-riesgo', {
+    const { user } = abrir('/seguro-todo-riesgo', {
       [RUTA_CONTACTO_PORTAL]: CONTACTO_300,
       '/api/avisos/seguro-todo-riesgo': { status: 503 },
     })
@@ -103,7 +104,7 @@ describe('QA CA-P9-57: fallo de envío con el WhatsApp vigente en los formulario
   })
 
   it('"Busco un vehículo": un 500 muestra el número vigente', async () => {
-    const { user } = abrir('#/busco-un-vehiculo', {
+    const { user } = abrir('/busco-un-vehiculo', {
       [RUTA_CONTACTO_PORTAL]: CONTACTO_300,
       '/api/catalogo/listas-busqueda': LISTAS,
       '/api/busquedas': { status: 500 },
@@ -119,7 +120,7 @@ describe('QA CA-P9-57: fallo de envío con el WhatsApp vigente en los formulario
   })
 
   it('"Busco un vehículo": sin conexión y con la lectura del contacto fallida usa el respaldo de D-42', async () => {
-    const { user } = abrir('#/busco-un-vehiculo', {
+    const { user } = abrir('/busco-un-vehiculo', {
       [RUTA_CONTACTO_PORTAL]: { red: true },
       '/api/catalogo/listas-busqueda': LISTAS,
       '/api/busquedas': { red: true },
@@ -136,31 +137,31 @@ describe('QA CA-P9-57: fallo de envío con el WhatsApp vigente en los formulario
 
 describe('QA CA-P9-49, 50: ruta desconocida frente al ancla #contenido', () => {
   it('en "Página no encontrada", "Saltar al contenido" mueve el foco al contenido sin cambiar de pantalla', async () => {
-    const { user } = abrir('#/no-existe', {})
+    const { user } = abrir('/no-existe', {})
     const h1 = await screen.findByRole('heading', { level: 1, name: 'Página no encontrada' })
     await user.click(screen.getByRole('link', { name: 'Saltar al contenido' }))
     expect(screen.getByRole('main')).toHaveFocus()
-    expect(window.location.hash).toBe('#/no-existe')
+    expect(ubicacionActual()).toBe('/no-existe')
     expect(h1).toBeInTheDocument()
     expect(noIndex()).not.toBeNull()
   })
 
-  it('#/ con mayúsculas o con espacios no coincide con ninguna ruta: "no encontrada", no la portada', async () => {
-    abrir('#/TERMINOS', {})
+  it('/ con mayúsculas o con espacios no coincide con ninguna ruta: "no encontrada", no la portada', async () => {
+    abrir('/TERMINOS', {})
     expect(await screen.findByRole('heading', { level: 1, name: 'Página no encontrada' })).toBeInTheDocument()
   })
 })
 
 describe('QA CA-P9-17, 55: términos con sesión de administrador y noindex en el registro', () => {
   it('con sesión de administrador #/terminos se ve, sin noindex', async () => {
-    abrirApp('#/terminos', ['ADMINISTRADOR'])
+    abrirApp('/terminos', ['ADMINISTRADOR'])
     const main = await screen.findByRole('main')
     expect(await within(main).findByRole('heading', { level: 1, name: 'Términos y condiciones de uso' })).toBeInTheDocument()
     expect(noIndex()).toBeNull()
   })
 
-  it('#/cuenta/registro pone noindex', async () => {
-    abrir('#/cuenta/registro', {})
+  it('/cuenta/registro pone noindex', async () => {
+    abrir('/cuenta/registro', {})
     await screen.findByRole('checkbox', { name: /Autorizo el tratamiento de mis datos personales/ })
     expect(noIndex()).not.toBeNull()
   })
@@ -168,9 +169,8 @@ describe('QA CA-P9-17, 55: términos con sesión de administrador y noindex en e
 
 describe('QA CA-P9-21: foco en el h1 de #/privacidad al llegar desde otra ruta', () => {
   it('desde la portada, el foco va al h1 de la política y el título del documento cambia', async () => {
-    abrir('#/', {})
-    window.location.hash = '#/privacidad'
-    window.dispatchEvent(new HashChangeEvent('hashchange'))
+    abrir('/', {})
+    irA('/privacidad')
     const h1 = await screen.findByRole('heading', { level: 1, name: 'Política de tratamiento de datos personales' })
     await waitFor(() => expect(h1).toHaveFocus())
     expect(document.title).toBe('Política de tratamiento de datos | Financiamos tu Camión')

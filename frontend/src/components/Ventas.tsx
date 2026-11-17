@@ -1,5 +1,5 @@
 // P7 — Historial de ventas (HU-064, minuta §6; D-39, D-62 A; CA-P7-01 a 14).
-// Administrador: #/cuenta/ventas, todas las ventas, con filtro por asesor. Asesor: #/ventas ("Mis ventas"), las de
+// Administrador: /cuenta/ventas, todas las ventas, con filtro por asesor. Asesor: /ventas ("Mis ventas"), las de
 // los vehículos que hoy son suyos, también las revertidas. Un comprador ve "No tienes permiso" sin llamar a la API;
 // quien protege es la API (AsesorOAdministrador: 403 / 401). Cada venta enlaza al detalle del vehículo en el
 // inventario, donde está su "Historial de ventas". Vender y revertir no cambian (P4b).
@@ -26,7 +26,7 @@ import {
 } from '../api/ventas'
 import { formatoCop, formatoMiles } from '../catalogo/formato'
 import { nombreEstado } from '../inventario/estados'
-import { HASH_CUENTA, hashInventarioVehiculo } from '../rutas'
+import { RUTA_CUENTA, rutaInventarioVehiculo } from '../rutas'
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo, CampoSelect } from './Campo'
 import { modoInventario } from './InventarioPagina'
@@ -117,7 +117,7 @@ export function TarjetaVenta({
         </dl>
         {conEnlace && venta.vehiculo.id > 0 && (
           <div className="acciones-fila inv-acciones">
-            <a className="inv-boton-enlace inv-boton-pequeno" href={hashInventarioVehiculo(venta.vehiculo.id)}>
+            <a className="inv-boton-enlace inv-boton-pequeno" href={rutaInventarioVehiculo(venta.vehiculo.id)}>
               Ver vehículo <span className="sr-only">{titulo}</span>
             </a>
           </div>
@@ -132,7 +132,7 @@ type VentasProps = {
   perfil: PerfilUsuario
   /** Filtros iniciales desde la consulta del hash (enlaces del panel). */
   consulta?: string
-  /** "seccion" dentro de "Mi cuenta" (administrador, título h2); "pagina" en #/ventas (título h1). */
+  /** "seccion" dentro de "Mi cuenta" (administrador, título h2); "pagina" en /ventas (título h1). */
   nivel: 'pagina' | 'seccion'
   onSesionTerminada: () => void
 }
@@ -152,7 +152,7 @@ export function Ventas({ token, perfil, consulta, nivel, onSesionTerminada }: Ve
         </Titulo>
         <Aviso aviso={{ tipo: 'error', texto: MENSAJE_SIN_PERMISO }} />
         <p>
-          <a href={HASH_CUENTA}>Volver a mi cuenta</a>
+          <a href={RUTA_CUENTA}>Volver a mi cuenta</a>
         </p>
       </div>
     )

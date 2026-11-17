@@ -22,7 +22,7 @@ import {
   type FormularioContacto as Formulario,
 } from '../api/contactos'
 import { ApiError } from '../api/http'
-import { HASH_BUSCAR } from '../rutas'
+import { RUTA_BUSCAR } from '../rutas'
 import { AutorizacionDatos } from './AutorizacionDatos'
 import { Aviso, type DatosAviso } from './Aviso'
 import { Campo, CampoAreaTexto } from './Campo'
@@ -238,7 +238,7 @@ export function FormularioContacto({ slug, titulo, whatsapp, sesion }: Formulari
           <Aviso aviso={aviso} />
           {noDisponible && (
             <p>
-              <a href={HASH_BUSCAR}>Ver el catálogo</a>
+              <a href={RUTA_BUSCAR}>Ver el catálogo</a>
             </p>
           )}
         </div>

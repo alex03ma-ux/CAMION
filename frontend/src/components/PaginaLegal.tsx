@@ -1,11 +1,11 @@
-// P9 (D-44, D-83 A, HU-085, HU-086; CA-P9-17 a CA-P9-21, CA-P9-35): estructura común de #/privacidad y #/terminos.
+// P9 (D-44, D-83 A, HU-085, HU-086; CA-P9-17 a CA-P9-21, CA-P9-35): estructura común de /privacidad y /terminos.
 // Mientras los textos estén en revisión legal (TEXTOS_LEGALES_EN_REVISION) se muestra la franja, un aviso breve y el
 // contacto vigente del portal. Nunca se copia texto de docs/legal/. Si el administrador completó razón social, NIT y
 // dirección de notificaciones, se muestran como "Responsable" (como texto, nunca HTML).
 import type { ReactNode } from 'react'
 import { formatearCelular, formatearNit, type EmpresaPortal } from '../api/parametros'
 import { TEXTO_FRANJA_REVISION, TEXTOS_LEGALES_EN_REVISION } from '../legal'
-import { HASH_INICIO } from '../rutas'
+import { RUTA_INICIO } from '../rutas'
 import { useContactoPortal } from './useContactoPortal'
 
 type PaginaLegalProps = {
@@ -41,7 +41,7 @@ export function PaginaLegal({ titulo, clase, children }: PaginaLegalProps) {
         </p>
         {contacto.empresa && <ResponsableEmpresa empresa={contacto.empresa} />}
         <p>
-          <a href={HASH_INICIO}>Ir al inicio</a>
+          <a href={RUTA_INICIO}>Ir al inicio</a>
         </p>
       </div>
     </div>

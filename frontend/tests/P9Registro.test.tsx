@@ -62,11 +62,11 @@ describe('Casilla de autorización en el registro (CA-P9-01, 02, 15, 16)', () =>
       'Autorizo el tratamiento de mis datos personales según la Política de tratamiento de datos',
     )
     const politica = within(label as HTMLElement).getByRole('link', { name: /Política de tratamiento de datos/ })
-    expect(politica).toHaveAttribute('href', '#/privacidad')
+    expect(politica).toHaveAttribute('href', '/privacidad')
     expect(politica).toHaveAttribute('target', '_blank')
     // CA-P9-15: el enlace a los términos está fuera de la etiqueta y no cambia el nombre de la casilla.
     const terminos = screen.getByRole('link', { name: /Términos y condiciones/ })
-    expect(terminos).toHaveAttribute('href', '#/terminos')
+    expect(terminos).toHaveAttribute('href', '/terminos')
     expect(terminos).toHaveAttribute('target', '_blank')
     expect(terminos).toHaveAttribute('rel', 'noopener noreferrer')
     expect(label?.contains(terminos)).toBe(false)
@@ -82,7 +82,7 @@ describe('Casilla de autorización en el registro (CA-P9-01, 02, 15, 16)', () =>
     await user.click(screen.getByLabelText('Soy asesor'))
     expect(casilla()).not.toBeChecked()
     expect(antesDe(casilla(), screen.getByRole('button', { name: 'Enviar solicitud' }))).toBe(true)
-    expect(screen.getByRole('link', { name: /Términos y condiciones/ })).toHaveAttribute('href', '#/terminos')
+    expect(screen.getByRole('link', { name: /Términos y condiciones/ })).toHaveAttribute('href', '/terminos')
     expect(screen.getAllByRole('checkbox')).toHaveLength(1)
   })
 
@@ -91,7 +91,7 @@ describe('Casilla de autorización en el registro (CA-P9-01, 02, 15, 16)', () =>
     const c = screen.getByRole('checkbox')
     expect(c).toHaveAccessibleName(/^Autorizo el tratamiento de mis datos personales según la Política de tratamiento de datos/)
     expect(c).not.toHaveAccessibleName(/Términos/)
-    expect(screen.getByRole('link', { name: /Términos y condiciones/ })).toHaveAttribute('href', '#/terminos')
+    expect(screen.getByRole('link', { name: /Términos y condiciones/ })).toHaveAttribute('href', '/terminos')
   })
 })
 

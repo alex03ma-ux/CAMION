@@ -1,4 +1,4 @@
-// P5 — Detalle de un contacto (#/contactos/<id>): datos del visitante (solo lectura, CA-P5-43), vehículo con su
+// P5 — Detalle de un contacto (/contactos/<id>): datos del visitante (solo lectura, CA-P5-43), vehículo con su
 // estado actual (CA-P5-49), historial cronológico (CA-P5-42), notas (CA-P5-37), cierre con resultado (CA-P5-39)
 // y, solo para el administrador, reabrir (CA-P5-41), reasignar (CA-P5-44) y la prueba de autorización (CA-P5-16).
 // P5b: un aviso no tiene vehículo ("Sin vehículo asociado"), muestra la descripción o el tipo de vehículo, ofrece
@@ -42,7 +42,7 @@ import {
   type ResultadoCierre,
 } from '../api/leads'
 import { formatoCop } from '../catalogo/formato'
-import { HASH_CONTACTOS, hashVehiculo, navegar } from '../rutas'
+import { RUTA_CONTACTOS, rutaVehiculo, navegar } from '../rutas'
 import { Aviso, type DatosAviso } from './Aviso'
 import { BusquedaAdmin } from './BusquedaAdmin'
 import { CampoAreaTexto, CampoSelect } from './Campo'
@@ -295,7 +295,7 @@ export function DetalleContacto({
   return (
     <div className="cat-pagina inv-pagina contactos">
       <p className="inv-volver">
-        <a href={HASH_CONTACTOS}>Volver a la lista de contactos</a>
+        <a href={RUTA_CONTACTOS}>Volver a la lista de contactos</a>
       </p>
       <h1 tabIndex={-1} className="inv-titulo">
         {lead ? `${aviso ? 'Solicitud' : 'Contacto'} de ${lead.nombre || 'sin nombre'}` : 'Contacto'}
@@ -451,7 +451,7 @@ export function DetalleContacto({
                   {vehiculoVisible && vehiculo.slug && (
                     <a
                       className="inv-boton-enlace inv-boton-pequeno inv-boton-secundario"
-                      href={hashVehiculo(vehiculo.slug)}
+                      href={rutaVehiculo(vehiculo.slug)}
                     >
                       Ver en el portal
                     </a>
@@ -462,7 +462,7 @@ export function DetalleContacto({
                       className="secondary-button"
                       onClick={() => {
                         onFiltrarVehiculo({ vehiculoId: vehiculo.vehiculoId, titulo: vehiculo.titulo })
-                        navegar(HASH_CONTACTOS)
+                        navegar(RUTA_CONTACTOS)
                       }}
                     >
                       Ver todos los contactos de este vehículo

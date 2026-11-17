@@ -12,6 +12,7 @@ import { recargarContactoPortal } from '../src/components/useContactoPortal'
 import { CONTACTO_PORTAL_POR_DEFECTO, RUTA_CONTACTO_PORTAL, RUTA_FILTROS, simularFetch, type RespuestaSimulada } from './helpers'
 import { detalle, rutaDetalle, V1 } from './catalogoDatos'
 import { abrirApp } from './p4pDatos'
+import { irA } from './helpers'
 
 declare global {
   interface ImportMeta {
@@ -35,7 +36,7 @@ const FALLO_RESPALDO =
 
 function abrir(hash: string, rutas: Record<string, RespuestaSimulada | RespuestaSimulada[]>) {
   const api = simularFetch(rutas)
-  window.location.hash = hash
+  irA(hash)
   render(<App />)
   return { api, user: userEvent.setup() }
 }
@@ -61,7 +62,7 @@ describe('Mensajes con el WhatsApp vigente (CA-P9-57, 59)', () => {
   })
 
   it('crédito: un 500 muestra el WhatsApp guardado por el administrador', async () => {
-    const { user } = abrir('#/credito', {
+    const { user } = abrir('/credito', {
       [RUTA_CONTACTO_PORTAL]: CONTACTO_300,
       [RUTA_CREDITOS]: { status: 500, body: { error: 'interno' } },
     })
@@ -71,7 +72,7 @@ describe('Mensajes con el WhatsApp vigente (CA-P9-57, 59)', () => {
   })
 
   it('crédito: sin conexión y con la lectura del contacto fallida usa el respaldo de D-42', async () => {
-    const { user } = abrir('#/credito', {
+    const { user } = abrir('/credito', {
       [RUTA_CONTACTO_PORTAL]: { red: true },
       [RUTA_CREDITOS]: { red: true },
     })
@@ -81,7 +82,7 @@ describe('Mensajes con el WhatsApp vigente (CA-P9-57, 59)', () => {
 
   it('contacto de la ficha: un 502 muestra el WhatsApp vigente', async () => {
     const d = detalle(V1)
-    const { user } = abrir(`#/vehiculo/${d.slug}`, {
+    const { user } = abrir(`/vehiculo/${d.slug}`, {
       [RUTA_CONTACTO_PORTAL]: CONTACTO_300,
       [rutaDetalle(d.slug)]: { status: 200, body: d },
       '/api/contactos': { status: 502 },
@@ -96,7 +97,7 @@ describe('Mensajes con el WhatsApp vigente (CA-P9-57, 59)', () => {
   })
 
   it('aviso "Vende tu camión": un 500 muestra el WhatsApp vigente', async () => {
-    const { user } = abrir('#/vende-tu-camion', {
+    const { user } = abrir('/vende-tu-camion', {
       [RUTA_CONTACTO_PORTAL]: CONTACTO_300,
       '/api/avisos/vende-tu-camion': { status: 500 },
     })
@@ -112,7 +113,7 @@ describe('Mensajes con el WhatsApp vigente (CA-P9-57, 59)', () => {
 
 describe('Textos fijos con el número vigente (CA-P9-58, 60)', () => {
   it('"Busco un vehículo" sin categorías muestra el WhatsApp vigente', async () => {
-    abrir('#/busco-un-vehiculo', {
+    abrir('/busco-un-vehiculo', {
       [RUTA_CONTACTO_PORTAL]: CONTACTO_300,
       [RUTA_LISTAS]: { status: 200, body: { tipos: [], marcas: [], departamentos: [] } },
     })
@@ -122,7 +123,7 @@ describe('Textos fijos con el número vigente (CA-P9-58, 60)', () => {
   })
 
   it('"Mis solicitudes" muestra el WhatsApp vigente en la introducción', async () => {
-    abrirApp('#/mis-solicitudes', ['COMPRADOR'], {
+    abrirApp('/mis-solicitudes', ['COMPRADOR'], {
       [RUTA_CONTACTO_PORTAL]: CONTACTO_300,
       [RUTA_MIS]: { status: 200, body: { items: [], total: 0, pagina: 1, tamano: 20 } },
     })
@@ -130,7 +131,7 @@ describe('Textos fijos con el número vigente (CA-P9-58, 60)', () => {
   })
 
   it('"Mis solicitudes" con la lectura fallida usa el respaldo', async () => {
-    abrirApp('#/mis-solicitudes', ['COMPRADOR'], {
+    abrirApp('/mis-solicitudes', ['COMPRADOR'], {
       [RUTA_CONTACTO_PORTAL]: { red: true },
       [RUTA_MIS]: { status: 200, body: { items: [], total: 0, pagina: 1, tamano: 20 } },
     })
@@ -138,7 +139,7 @@ describe('Textos fijos con el número vigente (CA-P9-58, 60)', () => {
   })
 
   it('el enlace de WhatsApp de la confirmación del crédito usa el número vigente', async () => {
-    const { user } = abrir('#/credito', {
+    const { user } = abrir('/credito', {
       [RUTA_CONTACTO_PORTAL]: CONTACTO_300,
       [RUTA_CREDITOS]: { status: 201, body: { mensaje: 'Listo.' } },
     })
@@ -197,7 +198,7 @@ describe('Caché en memoria del contacto del portal', () => {
 
   it('la app completa pide el contacto una sola vez por carga', async () => {
     const api = simularFetch({ [RUTA_FILTROS]: { status: 200, body: { tipos: [], marcas: [], rangos: {} } } })
-    window.location.hash = '#/privacidad'
+    irA('/privacidad')
     render(<App />)
     await screen.findByRole('heading', { level: 1, name: /Política de tratamiento de datos/ })
     await waitFor(() => expect(api.llamadasA(RUTA_CONTACTO_PORTAL)).toHaveLength(1))

@@ -59,13 +59,13 @@ function botonesDe(t: HTMLElement): string[] {
 
 function abrirAsesor(rutas: Parameters<typeof simularFetch>[0]) {
   const api = simularFetch({ [ME]: me(['ASESOR']), [CATALOGOS]: { status: 200, body: CAT }, ...rutas })
-  abrirConSesion('#/inventario')
+  abrirConSesion('/inventario')
   return api
 }
 
 function abrirAdmin(rutas: Parameters<typeof simularFetch>[0]) {
   const api = simularFetch({ [ME]: me(['ADMINISTRADOR']), [CATALOGOS]: { status: 200, body: CAT_ADMIN }, ...rutas })
-  abrirConSesion('#/inventario')
+  abrirConSesion('/inventario')
   return api
 }
 
@@ -73,7 +73,7 @@ describe('Tarjetas (CA-UI-03)', () => {
   it('foto o marcador, título sin "null", placa, precio con miles, estado en texto y "Registrar vehículo"', async () => {
     abrirAsesor({ [LISTA]: lista([V_ACTIVO, V_CARROCERIA, V_MAQUINA]) })
     expect(await screen.findByRole('heading', { level: 3, name: 'Chevrolet NPR 2020' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Registrar vehículo' })).toHaveAttribute('href', '#/inventario/nuevo')
+    expect(screen.getByRole('link', { name: 'Registrar vehículo' })).toHaveAttribute('href', '/inventario/nuevo')
     expect(screen.getByText(/\(3 vehículos\)/)).toBeInTheDocument()
 
     const camion = tarjeta('Chevrolet NPR 2020')
@@ -82,7 +82,7 @@ describe('Tarjetas (CA-UI-03)', () => {
     expect(within(camion).getByText('Activo')).toBeInTheDocument()
     expect(within(camion).getByText('85.000 km')).toBeInTheDocument()
     expect(within(camion).getByText('Sin foto')).toBeInTheDocument()
-    expect(within(camion).getByRole('link', { name: /Editar/ })).toHaveAttribute('href', '#/inventario/1')
+    expect(within(camion).getByRole('link', { name: /Editar/ })).toHaveAttribute('href', '/inventario/1')
 
     const carroceria = tarjeta('Carrocería')
     expect(carroceria.textContent).not.toMatch(/null|undefined/)
@@ -111,7 +111,7 @@ describe('Tarjetas (CA-UI-03)', () => {
     expect(botonesDe(vendido)).toEqual([])
     expect(within(vendido).getByText('Vendido')).toBeInTheDocument()
     expect(within(vendido).getByText('Un vehículo vendido no se puede modificar.')).toBeInTheDocument()
-    expect(within(vendido).getByRole('link', { name: /Ver/ })).toHaveAttribute('href', '#/inventario/4')
+    expect(within(vendido).getByRole('link', { name: /Ver/ })).toHaveAttribute('href', '/inventario/4')
     expect(within(vendido).queryByRole('link', { name: /Editar/ })).toBeNull()
   })
 

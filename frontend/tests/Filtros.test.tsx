@@ -14,6 +14,7 @@ import {
   V4,
 } from './catalogoDatos'
 import { simularFetch, type RespuestaSimulada } from './helpers'
+import { irA, ubicacionActual } from './helpers'
 
 const VACIA = pagina([], 0)
 
@@ -51,14 +52,14 @@ describe('Resultados: consulta y contador', () => {
       [rutaPublicaciones('q=b')]: pagina([V1], 1),
       [rutaPublicaciones('q=c')]: VACIA,
     })
-    abrirApp('#/buscar?q=a')
+    abrirApp('/vehiculos?q=a')
     expect(await screen.findByText('25 vehículos encontrados')).toHaveAttribute('role', 'status')
     act(() => {
-      window.location.hash = '#/buscar?q=b'
+      irA('/vehiculos?q=b')
     })
     expect(await screen.findByText('1 vehículo encontrado')).toHaveAttribute('role', 'status')
     act(() => {
-      window.location.hash = '#/buscar?q=c'
+      irA('/vehiculos?q=c')
     })
     expect(await screen.findByText('0 vehículos encontrados')).toHaveAttribute('role', 'status')
   })
@@ -66,7 +67,7 @@ describe('Resultados: consulta y contador', () => {
   it('CA-004-17 abrir la URL con filtros rellena los campos y pide los mismos parámetros', async () => {
     const consulta = 'marcaId=10&precioMax=100000000&orden=precio_asc'
     const api = base({ [rutaPublicaciones(consulta)]: pagina([V1]) })
-    abrirApp(`#/buscar?${consulta}`)
+    abrirApp(`/vehiculos?${consulta}`)
     expect(await screen.findByText('1 vehículo encontrado')).toBeInTheDocument()
     expect(api.llamadasA(rutaPublicaciones(consulta))).toHaveLength(1)
     await waitFor(() => expect(campo('Marca')).toHaveValue('10'))
@@ -80,22 +81,22 @@ describe('Resultados: consulta y contador', () => {
       [rutaPublicaciones('marcaId=10')]: pagina([V1, V4]),
       [rutaPublicaciones('marcaId=11')]: pagina([V2]),
     })
-    abrirApp('#/buscar?marcaId=10')
+    abrirApp('/vehiculos?marcaId=10')
     expect(await screen.findByText('2 vehículos encontrados')).toBeInTheDocument()
     const user = userEvent.setup()
     await waitFor(() => expect(campo('Marca')).toHaveValue('10'))
     await user.selectOptions(campo('Marca'), '11')
     await user.click(screen.getByRole('button', { name: 'Aplicar filtros' }))
-    await waitFor(() => expect(window.location.hash).toBe('#/buscar?marcaId=11'))
+    await waitFor(() => expect(ubicacionActual()).toBe('/vehiculos?marcaId=11'))
     expect(await screen.findByRole('link', { name: V2.titulo })).toBeInTheDocument()
 
     act(() => window.history.back())
-    await waitFor(() => expect(window.location.hash).toBe('#/buscar?marcaId=10'))
+    await waitFor(() => expect(ubicacionActual()).toBe('/vehiculos?marcaId=10'))
     expect(await screen.findByRole('link', { name: V4.titulo })).toBeInTheDocument()
     expect(campo('Marca')).toHaveValue('10')
 
     act(() => window.history.forward())
-    await waitFor(() => expect(window.location.hash).toBe('#/buscar?marcaId=11'))
+    await waitFor(() => expect(ubicacionActual()).toBe('/vehiculos?marcaId=11'))
     expect(await screen.findByRole('link', { name: V2.titulo })).toBeInTheDocument()
     expect(campo('Marca')).toHaveValue('11')
   })
@@ -116,10 +117,10 @@ describe('Resultados: consulta y contador', () => {
         return new Promise<Response>((resolver) => pendientes.push({ url, resolver }))
       }),
     )
-    abrirApp('#/buscar?q=primero')
+    abrirApp('/vehiculos?q=primero')
     await waitFor(() => expect(pendientes).toHaveLength(1))
     act(() => {
-      window.location.hash = '#/buscar?q=segundo'
+      irA('/vehiculos?q=segundo')
     })
     await waitFor(() => expect(pendientes).toHaveLength(2))
     expect(contador()).toHaveTextContent('Buscando vehículos...')
@@ -141,7 +142,7 @@ describe('Resultados: consulta y contador', () => {
 
   it('CA-004-23 / CA-UI-10 un fallo de red muestra "No se pudo conectar con el servidor." y Reintentar', async () => {
     base({ [rutaPublicaciones()]: [{ red: true }, pagina([V1])] })
-    abrirApp('#/buscar')
+    abrirApp('/vehiculos')
     expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo conectar con el servidor.')
     expect(screen.queryByRole('article')).not.toBeInTheDocument()
     await userEvent.setup().click(screen.getByRole('button', { name: 'Reintentar' }))
@@ -154,7 +155,7 @@ describe('Filtros: URL y consulta', () => {
     const consulta =
       'q=npr&tipoId=2&marcaId=10&lineaId=101&precioMin=50000000&precioMax=120000000&anioMin=2015&anioMax=2022&kmMax=85000&orden=precio_desc'
     const api = base({ [rutaPublicaciones(consulta)]: pagina([V1]) })
-    abrirApp('#/buscar')
+    abrirApp('/vehiculos')
     await screen.findByText('3 vehículos encontrados')
     const user = userEvent.setup()
     await user.type(campo('Buscar'), 'npr')
@@ -175,7 +176,8 @@ describe('Filtros: URL y consulta', () => {
     await user.selectOptions(campo('Ordenar por'), 'precio_desc')
     await user.click(screen.getByRole('button', { name: 'Aplicar filtros' }))
 
-    await waitFor(() => expect(window.location.hash).toBe(`#/buscar?${consulta}`))
+    // P10 (CA-P10-39): el tipo Camión lleva a /camiones; el resto de filtros viaja en la consulta.
+    await waitFor(() => expect(ubicacionActual()).toBe(`/camiones?${consulta.replace("tipoId=2&", "")}`))
     expect(await screen.findByText('1 vehículo encontrado')).toBeInTheDocument()
     expect(api.llamadasA(rutaPublicaciones(consulta))).toHaveLength(1)
     // CA-009-06: el campo del presupuesto está en el grupo que indica COP.
@@ -185,7 +187,7 @@ describe('Filtros: URL y consulta', () => {
 
   it('CA-007-03 marcas en orden con opción "Todas"; CA-008-06 modelo deshabilitado sin marca y solo con sus líneas', async () => {
     base()
-    abrirApp('#/buscar')
+    abrirApp('/vehiculos')
     await screen.findByText('3 vehículos encontrados')
     await waitFor(() => expect(textoOpciones(campo('Marca'))).toHaveLength(4))
     expect(textoOpciones(campo('Marca'))).toEqual(['Todas', 'Chevrolet (4)', 'Kenworth (2)', 'Renault (1)'])
@@ -211,13 +213,13 @@ describe('Filtros: URL y consulta', () => {
       [rutaPublicaciones('marcaId=10&lineaId=101')]: pagina([V1]),
       [rutaPublicaciones('marcaId=11')]: pagina([V2]),
     })
-    abrirApp('#/buscar?marcaId=10&lineaId=101')
+    abrirApp('/vehiculos?marcaId=10&lineaId=101')
     await screen.findByText('1 vehículo encontrado')
     await waitFor(() => expect(campo('Modelo')).toHaveValue('101'))
     const user = userEvent.setup()
     await user.selectOptions(campo('Marca'), '11')
     await user.click(screen.getByRole('button', { name: 'Aplicar filtros' }))
-    await waitFor(() => expect(window.location.hash).toBe('#/buscar?marcaId=11'))
+    await waitFor(() => expect(ubicacionActual()).toBe('/vehiculos?marcaId=11'))
   })
 
   it('CA-004-22 cambiar el orden actualiza orden en la URL y vuelve a la página 1', async () => {
@@ -225,31 +227,31 @@ describe('Filtros: URL y consulta', () => {
       [rutaPublicaciones('pagina=2')]: pagina([V1], 30, 2),
       [rutaPublicaciones('orden=km_asc')]: pagina([V3], 30, 1),
     })
-    abrirApp('#/buscar?pagina=2')
+    abrirApp('/vehiculos?pagina=2')
     await screen.findByText('30 vehículos encontrados')
     const user = userEvent.setup()
     await user.selectOptions(campo('Ordenar por'), 'km_asc')
     await user.click(screen.getByRole('button', { name: 'Aplicar filtros' }))
-    await waitFor(() => expect(window.location.hash).toBe('#/buscar?orden=km_asc'))
+    await waitFor(() => expect(ubicacionActual()).toBe('/vehiculos?orden=km_asc'))
     expect(await screen.findByRole('link', { name: V3.titulo })).toBeInTheDocument()
     expect(api.llamadasA(rutaPublicaciones('orden=km_asc'))).toHaveLength(1)
   })
 
   it('el orden "recientes" (por defecto) no se escribe en la URL', async () => {
     base({ [rutaPublicaciones('orden=precio_asc')]: pagina([V1]) })
-    abrirApp('#/buscar?orden=precio_asc')
+    abrirApp('/vehiculos?orden=precio_asc')
     await screen.findByText('1 vehículo encontrado')
     const user = userEvent.setup()
     await user.selectOptions(campo('Ordenar por'), 'recientes')
     await user.click(screen.getByRole('button', { name: 'Aplicar filtros' }))
-    await waitFor(() => expect(window.location.hash).toBe('#/buscar'))
+    await waitFor(() => expect(ubicacionActual()).toBe('/vehiculos'))
   })
 })
 
 describe('Filtros: validación', () => {
   it('validación en cliente con los mensajes del contrato; no se pide nada y el foco va al primer error', async () => {
     const api = base()
-    abrirApp('#/buscar')
+    abrirApp('/vehiculos')
     await screen.findByText('3 vehículos encontrados')
     const user = userEvent.setup()
     await user.click(campo('Mínimo'))
@@ -266,28 +268,28 @@ describe('Filtros: validación', () => {
     expect(errorDe('Desde')).toBe('Escribe un año entre 1900 y 2200.')
     expect(errorDe('Hasta')).toBe('Escribe un año entre 1900 y 2200.')
     expect(campo('Mínimo')).toHaveAttribute('aria-invalid', 'false')
-    expect(window.location.hash).toBe('#/buscar')
+    expect(ubicacionActual()).toBe('/vehiculos')
     expect(api.llamadas.length).toBe(llamadasAntes)
     await waitFor(() => expect(campo('Máximo')).toHaveFocus())
   })
 
   it('año final menor que el inicial', async () => {
     base()
-    abrirApp('#/buscar')
+    abrirApp('/vehiculos')
     await screen.findByText('3 vehículos encontrados')
     const user = userEvent.setup()
     await user.type(campo('Desde'), '2020')
     await user.type(campo('Hasta'), '2019')
     await user.click(screen.getByRole('button', { name: 'Aplicar filtros' }))
     expect(errorDe('Hasta')).toBe('El año final debe ser mayor o igual al inicial.')
-    expect(window.location.hash).toBe('#/buscar')
+    expect(ubicacionActual()).toBe('/vehiculos')
   })
 
   it('valores inválidos que llegan por la URL se marcan al aplicar (precio, km y búsqueda larga)', async () => {
     const larga = 'x'.repeat(101)
     const consulta = `q=${larga}&precioMin=abc&kmMax=-1`
     base({ [rutaPublicaciones(consulta)]: VACIA })
-    abrirApp(`#/buscar?${consulta}`)
+    abrirApp(`/vehiculos?${consulta}`)
     await screen.findByText('0 vehículos encontrados')
     await userEvent.setup().click(screen.getByRole('button', { name: 'Aplicar filtros' }))
     expect(errorDe('Buscar')).toBe('La búsqueda no puede tener más de 100 caracteres.')
@@ -310,7 +312,7 @@ describe('Filtros: validación', () => {
         },
       },
     })
-    abrirApp(`#/buscar?${consulta}`)
+    abrirApp(`/vehiculos?${consulta}`)
     expect(await screen.findByRole('alert')).toHaveTextContent('Revisa los filtros.')
     expect(errorDe('Máximo')).toBe('Escribe un precio válido en pesos (número entero mayor o igual a 0).')
     expect(errorDe('Desde')).toBe('Escribe un año entre 1900 y 2200.')
@@ -330,7 +332,7 @@ describe('Filtros: validación', () => {
         body: { error: 'Revisa los filtros.', errores: { pagina: ['Página o tamaño no válidos.'] } },
       },
     })
-    abrirApp('#/buscar?pagina=0')
+    abrirApp('/vehiculos?pagina=0')
     await screen.findByText('Página o tamaño no válidos.')
   })
 })
@@ -355,11 +357,11 @@ describe('Estado vacío, Limpiar filtros y paginación', () => {
 
   it('CA-004-20 / CA-012-03 sin resultados: mensaje y "Limpiar filtros" vuelve a #/buscar sin parámetros', async () => {
     const api = base({ [rutaPublicaciones('marcaId=12')]: VACIA })
-    abrirApp('#/buscar?marcaId=12')
+    abrirApp('/vehiculos?marcaId=12')
     expect(await screen.findByText('No encontramos vehículos con esos filtros.')).toBeInTheDocument()
     const vacio = screen.getByText('No encontramos vehículos con esos filtros.').parentElement as HTMLElement
     await userEvent.setup().click(within(vacio).getByRole('button', { name: 'Limpiar filtros' }))
-    await waitFor(() => expect(window.location.hash).toBe('#/buscar'))
+    await waitFor(() => expect(ubicacionActual()).toBe('/vehiculos'))
     expect(await screen.findByText('3 vehículos encontrados')).toBeInTheDocument()
     expect(api.llamadasA(rutaPublicaciones())).toHaveLength(1)
     camposVacios()
@@ -367,12 +369,12 @@ describe('Estado vacío, Limpiar filtros y paginación', () => {
 
   it('CA-012-02 Limpiar filtros vacía todos los campos, deja la URL sin parámetros y pide /publicaciones sin filtros', async () => {
     const api = base({ [rutaPublicaciones(COMPLETA)]: pagina([V1], 30, 2) })
-    abrirApp(`#/buscar?${COMPLETA}`)
+    abrirApp(`/vehiculos?${COMPLETA}`)
     await screen.findByText('30 vehículos encontrados')
     await waitFor(() => expect(campo('Modelo')).toHaveValue('101'))
     expect(screen.getByRole('searchbox', { name: 'Buscar vehículos' })).toHaveValue('npr')
     await userEvent.setup().click(botonLimpiarDelFormulario())
-    await waitFor(() => expect(window.location.hash).toBe('#/buscar'))
+    await waitFor(() => expect(ubicacionActual()).toBe('/vehiculos'))
     expect(await screen.findByText('3 vehículos encontrados')).toBeInTheDocument()
     camposVacios()
     expect(screen.getByRole('searchbox', { name: 'Buscar vehículos' })).toHaveValue('')
@@ -387,7 +389,7 @@ describe('Estado vacío, Limpiar filtros y paginación', () => {
         body: { error: 'Revisa los filtros.', errores: { anioMin: ['Escribe un año entre 1900 y 2200.'] } },
       },
     })
-    abrirApp('#/buscar?anioMin=1800')
+    abrirApp('/vehiculos?anioMin=1800')
     await screen.findByRole('alert')
     expect(errorDe('Desde')).toBe('Escribe un año entre 1900 y 2200.')
     await userEvent.setup().click(botonLimpiarDelFormulario())
@@ -398,7 +400,7 @@ describe('Estado vacío, Limpiar filtros y paginación', () => {
 
   it('CA-012-05 tras limpiar, Atrás devuelve los filtros anteriores', async () => {
     base({ [rutaPublicaciones('marcaId=10')]: pagina([V1, V4]) })
-    abrirApp('#/buscar?marcaId=10')
+    abrirApp('/vehiculos?marcaId=10')
     await screen.findByText('2 vehículos encontrados')
     await userEvent.setup().click(botonLimpiarDelFormulario())
     await screen.findByText('3 vehículos encontrados')
@@ -413,44 +415,44 @@ describe('Estado vacío, Limpiar filtros y paginación', () => {
       [rutaPublicaciones('marcaId=10&pagina=2')]: pagina([V2], 30, 2),
       [rutaPublicaciones('marcaId=10&pagina=3')]: pagina([V3], 30, 3),
     })
-    abrirApp('#/buscar?marcaId=10')
+    abrirApp('/vehiculos?marcaId=10')
     await screen.findByText('30 vehículos encontrados')
     let nav = screen.getByRole('navigation', { name: 'Paginación' })
     expect(nav).toHaveTextContent('Página 1 de 3')
     expect(within(nav).queryByRole('link', { name: 'Anterior' })).not.toBeInTheDocument()
     const user = userEvent.setup()
     await user.click(within(nav).getByRole('link', { name: 'Siguiente' }))
-    await waitFor(() => expect(window.location.hash).toBe('#/buscar?marcaId=10&pagina=2'))
+    await waitFor(() => expect(ubicacionActual()).toBe('/vehiculos?marcaId=10&pagina=2'))
     expect(await screen.findByRole('link', { name: V2.titulo })).toBeInTheDocument()
     expect(api.llamadasA(rutaPublicaciones('marcaId=10&pagina=2'))).toHaveLength(1)
 
     nav = screen.getByRole('navigation', { name: 'Paginación' })
-    expect(within(nav).getByRole('link', { name: 'Anterior' })).toHaveAttribute('href', '#/buscar?marcaId=10')
+    expect(within(nav).getByRole('link', { name: 'Anterior' })).toHaveAttribute('href', '/vehiculos?marcaId=10')
     await user.click(within(nav).getByRole('link', { name: 'Siguiente' }))
     expect(await screen.findByRole('link', { name: V3.titulo })).toBeInTheDocument()
     nav = screen.getByRole('navigation', { name: 'Paginación' })
     expect(nav).toHaveTextContent('Página 3 de 3')
     expect(within(nav).queryByRole('link', { name: 'Siguiente' })).not.toBeInTheDocument()
-    expect(within(nav).getByRole('link', { name: 'Anterior' })).toHaveAttribute('href', '#/buscar?marcaId=10&pagina=2')
+    expect(within(nav).getByRole('link', { name: 'Anterior' })).toHaveAttribute('href', '/vehiculos?marcaId=10&pagina=2')
   })
 
   it('una sola página no muestra paginación; una página sin resultados ofrece ir a la primera', async () => {
     base({ [rutaPublicaciones('pagina=9')]: pagina([], 30, 9) })
-    abrirApp('#/buscar')
+    abrirApp('/vehiculos')
     await screen.findByText('3 vehículos encontrados')
     expect(screen.queryByRole('navigation', { name: 'Paginación' })).not.toBeInTheDocument()
     act(() => {
-      window.location.hash = '#/buscar?pagina=9'
+      irA('/vehiculos?pagina=9')
     })
     expect(await screen.findByText('Esta página no tiene resultados.')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Ir a la primera página' })).toHaveAttribute('href', '#/buscar')
+    expect(screen.getByRole('link', { name: 'Ir a la primera página' })).toHaveAttribute('href', '/vehiculos')
   })
 })
 
 describe('Opciones de filtros y móvil', () => {
   it('CA-FIL-08 con /filtros 200 los selectores de categoría, marca y modelo se llenan', async () => {
     base()
-    abrirApp('#/buscar')
+    abrirApp('/vehiculos')
     await waitFor(() =>
       expect(textoOpciones(campo('Categoría'))).toEqual(['Todas', 'Carro (3)', 'Camión (5)', 'Carrocería (2)', 'Maquinaria (2)']),
     )
@@ -463,21 +465,21 @@ describe('Opciones de filtros y móvil', () => {
       [rutaPublicaciones()]: pagina([V1, V2, V3]),
       [rutaPublicaciones('q=npr')]: pagina([V1]),
     })
-    abrirApp('#/buscar')
+    abrirApp('/vehiculos')
     expect(await screen.findByText('3 vehículos encontrados')).toBeInTheDocument()
     expect(await screen.findByRole('alert')).toBeInTheDocument()
     expect(textoOpciones(campo('Marca'))).toEqual(['Todas'])
     const user = userEvent.setup()
     await user.type(campo('Buscar'), 'npr')
     await user.click(screen.getByRole('button', { name: 'Aplicar filtros' }))
-    await waitFor(() => expect(window.location.hash).toBe('#/buscar?q=npr'))
+    await waitFor(() => expect(ubicacionActual()).toBe('/vehiculos?q=npr'))
     expect(await screen.findByText('1 vehículo encontrado')).toBeInTheDocument()
     expect(api.llamadasA(rutaPublicaciones('q=npr'))).toHaveLength(1)
   })
 
   it('CA-FIL-08 si /filtros falla por red, se avisa que no se pudieron cargar las opciones y se ofrece Reintentar', async () => {
     simularFetch({ [RUTA_FILTROS]: { red: true }, [rutaPublicaciones()]: pagina([V1]) })
-    abrirApp('#/buscar')
+    abrirApp('/vehiculos')
     await screen.findByText('1 vehículo encontrado')
     const aviso = await screen.findByText('No se pudieron cargar las opciones de los filtros.')
     expect(aviso).toHaveAttribute('role', 'alert')
@@ -486,7 +488,7 @@ describe('Opciones de filtros y móvil', () => {
 
   it('CA-UI-07 el botón de filtros despliega y pliega el panel con aria-expanded', async () => {
     base()
-    abrirApp('#/buscar')
+    abrirApp('/vehiculos')
     await screen.findByText('3 vehículos encontrados')
     const boton = screen.getByRole('button', { name: 'Mostrar filtros' })
     expect(boton).toHaveAttribute('aria-expanded', 'false')
