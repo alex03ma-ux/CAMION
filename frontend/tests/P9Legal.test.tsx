@@ -102,7 +102,7 @@ describe('Pie: enlaces legales (CA-P9-22)', () => {
     expect(politica).toHaveAttribute('href', '/privacidad')
     expect(terminos).not.toHaveAttribute('target')
     expect(politica).not.toHaveAttribute('target')
-    expect(legal.closest('.cat-pie-legal')).toHaveTextContent(/© \d{4} VCA Automotores/)
+    expect(legal.closest('.cat-pie-legal')).toHaveTextContent(/© \d{4} VC Automotores/)
   })
 })
 

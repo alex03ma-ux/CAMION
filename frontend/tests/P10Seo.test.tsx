@@ -148,7 +148,7 @@ describe('JSON-LD (CA-P10-61 a 68)', () => {
     const sin = jsonLdOrganizacion({ ...CONTACTO_PORTAL_RESPALDO, empresa: null }, 'https://ejemplo.co')
     expect(sin).toMatchObject({
       '@type': 'Organization',
-      name: 'VCA Automotores',
+      name: 'VC Automotores',
       alternateName: 'Venta de Camiones – Financiamos tu Camión',
       url: 'https://ejemplo.co/',
       logo: 'https://ejemplo.co/marca/logo-cuadrado.png',

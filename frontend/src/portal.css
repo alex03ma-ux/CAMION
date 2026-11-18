@@ -33,7 +33,7 @@
   gap: 12px 28px;
 }
 
-/* P10 (CA-P10-02, 04, 05, D-87): logos de VCA Automotores. El horizontal (JPEG recortado, fondo blanco) solo va en
+/* P10 (CA-P10-02, 04, 05, D-87): logos de VC Automotores. El horizontal (JPEG recortado, fondo blanco) solo va en
    el encabezado blanco; el pie oscuro usa el cuadrado con transparencia. */
 .cat-logo.cat-logo-imagen {
   display: inline-flex;

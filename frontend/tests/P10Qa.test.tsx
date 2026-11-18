@@ -645,11 +645,11 @@ describe('QA CA-P10-08, 10, 11: pesos y tamaños de los derivados de marca (tabl
 
 // ---------------------------------------------------------------------------------------------------------------------
 describe('QA CA-P10-17, 38: "Mi cuenta" y foco al cambiar de pantalla', () => {
-  it('CA-P10-17: /cuenta muestra "VCA AUTOMOTORES" como antetítulo y "Venta de Camiones" como h1; el párrafo no cambia', async () => {
+  it('CA-P10-17: /cuenta muestra "VC AUTOMOTORES" como antetítulo y "Venta de Camiones" como h1; el párrafo no cambia', async () => {
     simularFetch(datos())
     abrirApp('/cuenta')
     const h1 = await screen.findByRole('heading', { level: 1, name: 'Venta de Camiones' })
-    expect(h1.previousElementSibling?.textContent).toBe('VCA AUTOMOTORES')
+    expect(h1.previousElementSibling?.textContent).toBe('VC AUTOMOTORES')
     expect(h1.nextElementSibling?.textContent).toBe('Tu próximo negocio puede comenzar con un camión.')
     expect(screen.queryByText('RED DE VENTA')).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { level: 1, name: /Financiamos Tu Camión/ })).not.toBeInTheDocument()

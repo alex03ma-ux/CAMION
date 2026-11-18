@@ -2,7 +2,7 @@
 // aquí; para cambiar el nombre visible se cambia solo este archivo (y `index.html`, que no puede importarlo).
 
 /** Empresa dueña de la marca (logo de D-87). */
-export const MARCA = 'VCA Automotores'
+export const MARCA = 'VC Automotores'
 /** Nombre visible del portal (D-87: título). */
 export const NOMBRE_PORTAL = 'Venta de Camiones'
 /** Lema (D-87). "tu" en minúscula, como en el logo. */
