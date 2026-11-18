@@ -20,7 +20,7 @@ function saltarAlContenido(evento: MouseEvent<HTMLAnchorElement>) {
 }
 
 /**
- * P10 (CA-P10-02, 03, 06; D-87, D-91 A): logo horizontal de VCA Automotores en el encabezado blanco, con WebP y
+ * P10 (CA-P10-02, 03, 06; D-87, D-91 A): logo horizontal de VC Automotores (el dibujo dice "VCA") en el encabezado blanco, con WebP y
  * respaldo PNG. `width`/`height` reservan el espacio (sin saltos al cargar); el CSS lo muestra a 56 px de alto
  * (36 px en móvil). Su texto alternativo es el nombre accesible del enlace a la portada.
  */

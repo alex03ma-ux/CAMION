@@ -68,7 +68,7 @@ describe('Encabezado', () => {
     expect(within(nav).getByRole('link', { name: 'Camiones' })).toHaveAttribute('href', '/camiones')
     expect(within(nav).getByRole('link', { name: 'Carrocerías' })).toHaveAttribute('href', '/carrocerias')
     expect(within(nav).getByRole('link', { name: 'Maquinaria' })).toHaveAttribute('href', '/maquinaria')
-    expect(within(encabezado()).getByRole('link', { name: 'VCA Automotores, Venta de Camiones. Financiamos tu Camión' })).toHaveAttribute('href', '/')
+    expect(within(encabezado()).getByRole('link', { name: 'VC Automotores, Venta de Camiones. Financiamos tu Camión' })).toHaveAttribute('href', '/')
     // Rediseño: en el inicio la búsqueda está en la portada; en las demás pantallas, en el encabezado.
     expect(within(encabezado()).queryByRole('searchbox')).not.toBeInTheDocument()
     expect(screen.getByRole('searchbox', { name: 'Buscar vehículos' })).toBeInTheDocument()

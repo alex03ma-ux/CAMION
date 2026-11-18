@@ -18,7 +18,7 @@ const INICIO_VACIO = { status: 200, body: { destacados: [], recientes: [] } }
 
 describe('Módulo de marca (CA-P10-13, 14)', () => {
   it('define los nombres de D-87 en un solo sitio', () => {
-    expect(MARCA).toBe('VCA Automotores')
+    expect(MARCA).toBe('VC Automotores')
     expect(NOMBRE_PORTAL).toBe('Venta de Camiones')
     expect(LEMA).toBe('Financiamos tu Camión')
     expect(SUFIJO_TITULO).toBe('Financiamos tu Camión')
@@ -35,7 +35,7 @@ describe('Logos en el encabezado y el pie (CA-P10-02 a 06)', () => {
     const banner = screen.getByRole('banner')
     const enlace = within(banner).getByRole('link', { name: ALT_LOGO_HORIZONTAL })
     expect(enlace).toHaveAttribute('href', '/')
-    expect(ALT_LOGO_HORIZONTAL).toBe('VCA Automotores, Venta de Camiones. Financiamos tu Camión')
+    expect(ALT_LOGO_HORIZONTAL).toBe('VC Automotores, Venta de Camiones. Financiamos tu Camión')
     const img = within(enlace).getByRole('img')
     expect(img).toHaveAttribute('src', '/marca/logo-horizontal.png')
     expect(img).toHaveAttribute('width', '322')
@@ -47,7 +47,7 @@ describe('Logos en el encabezado y el pie (CA-P10-02 a 06)', () => {
     expect(enlace.textContent).toBe('')
   })
 
-  it('el pie oscuro usa el logo cuadrado y nunca el horizontal; © VCA Automotores', async () => {
+  it('el pie oscuro usa el logo cuadrado y nunca el horizontal; © VC Automotores', async () => {
     simularFetch({ [RUTA_FILTROS]: respuestaFiltros(), [RUTA_INICIO]: INICIO_VACIO })
     abrirApp('/')
     const pie = screen.getByRole('contentinfo')
@@ -55,7 +55,7 @@ describe('Logos en el encabezado y el pie (CA-P10-02 a 06)', () => {
     expect(img).toHaveAttribute('src', '/marca/logo-cuadrado.png')
     expect(img.closest('picture')?.querySelector('source')).toHaveAttribute('srcset', '/marca/logo-cuadrado.webp')
     expect(pie.innerHTML).not.toContain('logo-horizontal')
-    expect(within(pie).getByText(/© \d{4} VCA Automotores/)).toBeInTheDocument()
+    expect(within(pie).getByText(/© \d{4} VC Automotores/)).toBeInTheDocument()
     expect(within(pie).getByText('Portal de venta de vehículos de trabajo en Colombia.')).toBeInTheDocument()
   })
 
@@ -106,7 +106,7 @@ describe('Manifiesto e íconos (CA-P10-07 a 10, 12)', () => {
     const manifiesto = JSON.parse(archivos['../public/site.webmanifest']) as Record<string, unknown>
     expect(manifiesto).toEqual({
       name: 'Venta de Camiones – Financiamos tu Camión',
-      short_name: 'VCA Camiones',
+      short_name: 'VC Camiones',
       lang: 'es-CO',
       start_url: '/',
       display: 'browser',
