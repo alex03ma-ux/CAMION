@@ -63,6 +63,8 @@ describe('"Contactos (N nuevos)" (D-48, CA-P5-58)', () => {
     const { api } = abrirApp('/cuenta', ['ASESOR'], { [RUTA_RESUMEN]: resumen(n) })
     const enlace = await screen.findByRole('link', { name: texto })
     expect(enlace).toHaveAttribute('href', '/contactos')
+    // Con 0 nuevos el texto esperado ("Contactos") es el mismo que se ve antes de pedir el resumen: se espera la llamada.
+    await waitFor(() => expect(api.llamadasA(RUTA_RESUMEN)).toHaveLength(1))
     expect(cabecera(api.llamadasA(RUTA_RESUMEN)[0].init, 'Authorization')).toBe(`Bearer ${TOKEN_FICTICIO}`)
   })
 
@@ -147,6 +149,11 @@ describe('Lista del asesor (CA-P5-29, CA-P5-36)', () => {
   it('un 401 de la lista termina la sesión', async () => {
     abrirApp('/contactos', ['ASESOR'], { [rutaLeads()]: { status: 401 } })
     expect(await screen.findByText('Tu sesión terminó. Inicia sesión de nuevo.')).toBeInTheDocument()
+    // El aviso se muestra una sola vez, en el inicio de sesión de /cuenta (antes se montaba un primer role="alert"
+    // en /contactos que desaparecía al redirigir: se anunciaba dos veces y la prueba fallaba de forma intermitente).
+    expect(ubicacionActual()).toBe('/cuenta')
+    expect(screen.getAllByText('Tu sesión terminó. Inicia sesión de nuevo.')).toHaveLength(1)
+    expect(screen.getByRole('button', { name: 'Iniciar sesión' })).toBeInTheDocument()
   })
 
   it('un 403 (asesor sin perfil) muestra el mensaje de permiso', async () => {

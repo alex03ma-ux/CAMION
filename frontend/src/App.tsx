@@ -324,8 +324,13 @@ export default function App() {
     <>
       <Encabezado ruta={ruta} tipos={tipos} conSesion={conSesion} />
       <main id="contenido" ref={principal} tabIndex={-1} className="cat-principal">
-        {/* Si la sesión termina mientras se navega el catálogo, también se avisa aquí (CA-REG-05). */}
-        {ruta.nombre !== 'cuenta' && vista.tipo === 'login' && vista.aviso === AVISO_SESION_TERMINADA && (
+        {/* Si la sesión termina mientras se navega el catálogo, también se avisa aquí (CA-REG-05). En las rutas que
+            exigen sesión no: el efecto de abajo lleva a /cuenta, cuyo inicio de sesión ya muestra el aviso; pintarlo
+            también aquí montaba dos role="alert" seguidos (el lector lo anunciaba dos veces y el texto parpadeaba). */}
+        {ruta.nombre !== 'cuenta' &&
+          !enInventario &&
+          vista.tipo === 'login' &&
+          vista.aviso === AVISO_SESION_TERMINADA && (
           <div className="container">
             <Aviso aviso={AVISO_SESION_TERMINADA} />
           </div>
