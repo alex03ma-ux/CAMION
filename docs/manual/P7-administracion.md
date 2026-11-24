@@ -15,6 +15,7 @@ Estado: rama `feature/p7-ventas-admin`, EN REVISIÓN (rama por publicar). Las pr
   - el botón "Pagos" de cada suscripción muestra la lista y el total (sin contar los anulados), con "Registrar pago" y "Anular pago";
   - con el medio "Otro", la referencia es obligatoria;
   - un pago mal escrito no se borra: se anula con un motivo y queda a la vista como "Anulado";
+  - **anular un pago deshace lo que ese pago dio** (D-61 B, D-66, D-67): el de una renovación devuelve la fecha de vencimiento a la de antes; el de una **asignación cancela la suscripción y sus publicaciones dejan de verse**; el de un cambio de plan vuelve al plan y a la fecha anteriores; un pago posterior solo se anula. Solo se puede anular el pago del movimiento más reciente, y el aviso de confirmación dice exactamente qué pasará. Para corregir un pago mal escrito: se anula y se renueva de nuevo con los datos correctos;
   - el portal no recibe tarjetas ni cuentas bancarias y no hace facturas.
 - **Parámetros:** el WhatsApp, el correo, el horario (de 1 a 4 líneas), Instagram y TikTok del portal (D-63). Se ven en el pie, en la página de Privacidad y en el botón de WhatsApp de la ficha cuando el vendedor no tiene celular o es la administración. Instagram y TikTok solo se muestran si tienen enlace.
 
@@ -61,7 +62,7 @@ Use solo datos inventados, por ejemplo la referencia "PRUEBA-001". No escriba da
 3. **Ver, registrar y anular pagos.** En esa suscripción, pulse **Pagos**.
    - Debe verse el pago del paso 2 y el total.
    - Pulse **Registrar pago** y anote otro con medio "Transferencia". El total debe subir.
-   - Anule uno con **Anular pago** y un motivo. Debe quedar como "Anulado", el total debe bajar y la suscripción no debe cambiar.
+   - Anule uno con **Anular pago** y un motivo. Debe quedar como "Anulado" y el total debe bajar. La suscripción **sí cambia** según el pago anulado (D-67): si era el de una renovación, la fecha de vencimiento vuelve a la anterior; si era el de la asignación, la suscripción queda CANCELADA y sus publicaciones dejan de verse. Lea el aviso de confirmación antes de aceptar.
 4. **Historial de ventas.**
    - Como administradora, abra **Ventas**. Deben verse todas las ventas, las revertidas con su motivo. Pruebe un filtro y "Limpiar filtros". Abra una fila y mire el "Historial de ventas" del vehículo.
    - Si quiere más datos, marque un vehículo como vendido, revierta la venta con un motivo y vuelva a venderlo: el historial debe mostrar las dos ventas, la vigente primero.

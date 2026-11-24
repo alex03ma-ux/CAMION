@@ -4,6 +4,8 @@ Para la responsable del portal. Explica qué cambió en P9 y cómo comprobarlo a
 
 Estado: rama `feature/p9-prepublicacion`, pendiente de unir a `main`. Las pruebas automáticas están **PROBADAS** (1481 de la API y 875 de pantallas, según `docs/criterios/P9-evidencia.md`). La prueba manual, la prueba con la API reiniciada en la rama, la revisión en el celular (375 px) y las pruebas E2E **no se han ejecutado**. P9 **no tiene migración**: no cambia la estructura de `camion_ventas`.
 
+Nota (2026-11-24): las direcciones de esta guía ya están escritas sin `#`, como quedaron con P10 (por ejemplo `/terminos`). Los enlaces viejos con `#/` siguen funcionando porque el portal los convierte solo.
+
 Los textos legales siguen en revisión del abogado (D-44). Por eso las páginas de términos y de privacidad muestran la franja "En revisión legal" y no traen el texto de los borradores. Eso es lo esperado.
 
 ## 0. Antes de empezar: reiniciar la API con la rama
@@ -32,7 +34,7 @@ Use solo datos ficticios en las pruebas (por ejemplo, un correo como `prueba-p9@
 
 ## 1. Registro con la casilla de autorización
 
-1. Sin iniciar sesión, entre en "Mi cuenta" y luego en el registro (`#/cuenta/registro`).
+1. Sin iniciar sesión, entre en "Mi cuenta" y luego en el registro (`/cuenta/registro`).
 2. Con "Soy comprador" elegido, revise que, antes del botón "Crear cuenta", hay una **casilla sin marcar** que dice "Autorizo el tratamiento de mis datos personales según la Política de tratamiento de datos."
 3. Revise que junto a la casilla hay dos enlaces: "Política de tratamiento de datos" y "Términos y condiciones". Ábralos: deben abrir en una pestaña nueva.
 4. Llene todos los datos con valores ficticios, **sin marcar la casilla**, y pulse "Crear cuenta".
@@ -47,9 +49,9 @@ Opcional: repita los pasos 6 y 7 como asesor. La solicitud queda pendiente de ap
 
 ## 2. Términos y privacidad
 
-1. Abra `#/terminos`, con y sin sesión.
+1. Abra `/terminos`, con y sin sesión.
    - Esperado: página "Términos y condiciones de uso" con la franja **"En revisión legal"**, un texto breve que explica que los términos se publicarán cuando termine la revisión, el contacto vigente del portal y un enlace "Ir al inicio".
-2. Abra `#/privacidad`.
+2. Abra `/privacidad`.
    - Esperado: la misma franja "En revisión legal" y el contacto vigente.
 3. En ninguna de las dos debe aparecer texto de los borradores, como "NOTA PARA REVISIÓN", "[RAZÓN SOCIAL]", "[NIT]" o "[DOMINIO]".
 4. La pestaña del navegador debe decir "Términos y condiciones | Financiamos Tu Camión" y "Política de tratamiento de datos | Financiamos Tu Camión".
@@ -62,7 +64,7 @@ Opcional: repita los pasos 6 y 7 como asesor. La solicitud queda pendiente de ap
 
 ## 4. Datos de la empresa (administradora)
 
-1. Inicie sesión como administradora y entre en "Parámetros" (`#/cuenta/parametros`).
+1. Inicie sesión como administradora y entre en "Parámetros" (`/cuenta/parametros`).
 2. Debajo de "Datos de contacto" está la sección **"Datos de la empresa"**, con el aviso "Se muestran en el pie del portal solo cuando los tres están completos." y el estado "no se muestran en el portal (faltan datos)".
 3. Escriba una razón social ficticia, por ejemplo `Empresa de Prueba SAS`, y en NIT el valor **no válido** `800197268-5`. Pulse "Guardar datos de la empresa".
    - Esperado: no se guarda y bajo el NIT aparece "Escribe el NIT con su dígito de verificación, por ejemplo 900.123.456-7." Lo escrito se conserva.
@@ -71,7 +73,7 @@ Opcional: repita los pasos 6 y 7 como asesor. La solicitud queda pendiente de ap
 5. Escriba una dirección de notificaciones ficticia (al menos 5 caracteres) y guarde.
    - Esperado: el estado pasa a "se muestran en el pie del portal" y aparece la fecha y quién hizo el último cambio.
 6. Recargue la portada con `Ctrl+Shift+R`. El pie muestra "Empresa de Prueba SAS · NIT 800.197.268-4 · Dirección de notificaciones: …".
-7. Abra `#/terminos` y `#/privacidad`: muestran los mismos datos como "Responsable".
+7. Abra `/terminos` y `/privacidad`: muestran los mismos datos como "Responsable".
 8. Al terminar, **vacíe los tres campos y guarde**, para que no queden datos ficticios en el pie. El pie vuelve a no mostrar nada de la empresa.
 
 Los datos reales los entrega usted cuando el abogado confirme cuáles usar (D-44, D-83 A). Mientras estén vacíos, no se muestra nada.
@@ -100,10 +102,10 @@ El límite del registro (5 por hora y 20 al día) no se prueba a mano porque cre
 
 ## 7. Página no encontrada
 
-1. Escriba en la barra de direcciones `http://localhost:5173/#/esta-pagina-no-existe`.
+1. Escriba en la barra de direcciones `http://localhost:5173/esta-pagina-no-existe`.
    - Esperado: "Página no encontrada", con el texto "La página que buscas no existe o cambió de dirección." y los enlaces "Ir al inicio" y "Ver todos los vehículos". El encabezado y el pie se ven como siempre.
 2. Pulse "Ir al inicio": vuelve a la portada.
-3. Escriba solo `http://localhost:5173/#/`: debe mostrar la portada, no la página de error.
+3. Escriba solo `http://localhost:5173/`: debe mostrar la portada, no la página de error.
 
 ## 8. Favicon y robots.txt
 

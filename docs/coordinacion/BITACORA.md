@@ -716,3 +716,33 @@ Registro interno del coordinador y los agentes (progreso, decisiones técnicas r
 - **Pendientes:** la prueba manual (pasos en `docs/manual/P10-marca-visibilidad.md`), abrir la PR y unir a `main`; D-91 B cuando lleguen los originales del logo; al abrir al público, encender la indexación con `Portal__PermitirIndexacion=true` y `VITE_PERMITIR_INDEXACION=true` juntas y comprobar `robots.txt` y `sitemap.xml` (guía de publicación).
 - PR: por abrir contra `main`, sin merge.
 
+## P10, nombre de la empresa e INF-4 unidos a `main` (hasta `d71a558`)
+- Datos del coordinador; esta entrada no añade verificación propia.
+- [PR #18](https://github.com/alex03ma-ux/CAMION/pull/18): P10 "Marca y visibilidad" unido a `main`.
+- [PR #19](https://github.com/alex03ma-ux/CAMION/pull/19): el nombre de la empresa es **"VC Automotores"**; "VCA" es solo el diseño del logo (D-87).
+- [PR #20](https://github.com/alex03ma-ux/CAMION/pull/20) (INF-4): con un 401 en una ruta con sesión, el aviso "Tu sesión terminó. Inicia sesión de nuevo." salía dos veces; ahora sale una sola. Se corrigieron las pruebas intermitentes de `P5Leads`. IMPLEMENTADO; la responsable lo comprobó en el paso 5.4 de la prueba integral (entrada siguiente).
+- CI: la auditoría de dependencias bloquea solo las de producción (`npm audit --omit=dev`). La auditoría completa es informativa por GHSA-fc5q-39xc-vjpf en `picomatch`, que solo llega por Vite y Vitest (anexo de `REVISION-SEGURIDAD-P10.md`).
+
+## 2026-11-23/24 — Prueba integral manual (`main` en `d71a558`, guía `docs/manual/PRUEBA-INTEGRAL.md`)
+- La responsable recorrió la guía completa y confirmó que todo funcionó bien. Regresión de P1 a P10 e INF-4 (HU y RN de cada fase, ver sus entradas).
+- **Verificado por el coordinador en `camion_ventas`, solo con consultas SELECT** (sin cambios en la base):
+  - 8 solicitudes: 3 contactos de vehículo, 2 créditos, 1 búsqueda, 1 "Vende tu camión" y 1 seguro todo riesgo;
+  - 10 autorizaciones de datos: las de las 8 solicitudes, más `REGISTRO_COMPRADOR` e `INSCRIPCION_ASESOR`;
+  - 2 cuentas nuevas (comprador y asesor de prueba); el asesor quedó inscrito y aprobado;
+  - un vehículo y una publicación creados por el asesor de prueba;
+  - una venta registrada y revertida;
+  - en las solicitudes: 3 cierres, 2 reaperturas y 3 notas;
+  - 2 pagos registrados y 1 anulado. Se anuló el **pago de la asignación**, así que la suscripción quedó CANCELADA y la publicación OCULTA, como manda D-67;
+  - 5 cambios de parámetros, el cambio de la foto de portada y 1 exportación CSV;
+  - 2 bloqueos y 2 desbloqueos del comprador de prueba;
+  - 3 enlaces de recuperación generados y 2 contraseñas restablecidas;
+  - el límite de intentos de inicio de sesión rechazó peticiones (HU-059, RN-SE-001).
+- **No probado:**
+  - reasignación de solicitudes (D-7): la base no registra ninguna en esta prueba; queda pendiente;
+  - vista previa al compartir por WhatsApp o Facebook: requiere el portal publicado en su dominio (D-81);
+  - correo automático: no hay servicio de correo (D-73).
+- **Incidencias:** un único error pasajero de conexión con MySQL en el registro de la API, sin efecto visible para la responsable.
+- Datos de prueba: quedan en la base local, que es solo de pruebas (D-80 A).
+- **DOCUMENTADO:** esta entrada; fila "Prueba integral manual" en `BACKLOG.md`; README; estado de `docs/manual/PRUEBA-INTEGRAL.md`.
+- PR: la documentación va en `feature/docs-prueba-integral`, por abrir contra `main`, sin merge.
+

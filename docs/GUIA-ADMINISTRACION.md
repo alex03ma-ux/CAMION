@@ -12,6 +12,8 @@ Esta guía explica, paso a paso, cómo crear la primera cuenta de administrador,
 
 Antes de empezar necesitas el backend y el frontend funcionando en tu equipo (ver `README.md`).
 
+Desde P10 las direcciones del portal van sin `#` (por ejemplo http://localhost:5173/cuenta). Los enlaces viejos con `#/` siguen funcionando: el portal los convierte solo.
+
 > En esta guía, `<TU_CORREO>` significa "tu correo electrónico". Escríbelo sin los signos `<` y `>`. Nunca escribas tu contraseña en la consola ni en ningún documento.
 
 ---
@@ -22,7 +24,7 @@ Ninguna pantalla web permite convertirse en administrador. Se hace en dos partes
 
 ### Paso 1. Registrarte en la web como comprador
 
-1. Abre http://localhost:5173/#/cuenta/registro. (También puedes abrir http://localhost:5173, que ahora es el catálogo público, y pulsar **Registrarme** en el encabezado.)
+1. Abre http://localhost:5173/cuenta/registro. (También puedes abrir http://localhost:5173, que ahora es el catálogo público, y pulsar **Registrarme** en el encabezado.)
 2. Si no se abrió ya el formulario, pulsa **Registrarme**.
 3. En "Tipo de cuenta" deja marcado **Soy comprador**.
 4. Escribe tu nombre, tu correo, tu teléfono y **tu propia contraseña** (al menos 8 caracteres, con una mayúscula, una minúscula y un número).
@@ -65,8 +67,8 @@ Si MariaDB está apagado, el comando termina con un error técnico en inglés. E
 ### Paso 4. Volver a entrar
 
 1. Vuelve a encender el backend (en `backend\Camion.Api`, `dotnet run`).
-2. En la web, abre http://localhost:5173/#/cuenta (enlace **Mi cuenta** o **Iniciar sesión** del encabezado) y pulsa **Cerrar sesión** si estabas dentro. Por seguridad, el comando ya invalidó las sesiones que tenías abiertas; si no cierras tú, la web te pedirá entrar de nuevo en cuanto consulte al servidor.
-3. En http://localhost:5173/#/cuenta, inicia sesión con tu correo y tu contraseña.
+2. En la web, abre http://localhost:5173/cuenta (enlace **Mi cuenta** o **Iniciar sesión** del encabezado) y pulsa **Cerrar sesión** si estabas dentro. Por seguridad, el comando ya invalidó las sesiones que tenías abiertas; si no cierras tú, la web te pedirá entrar de nuevo en cuanto consulte al servidor.
+3. En http://localhost:5173/cuenta, inicia sesión con tu correo y tu contraseña.
 4. En tu perfil debe decir **Rol: Administrador** y aparecer el botón **Administrar usuarios**.
 
 ---
@@ -105,7 +107,7 @@ El comando no enciende el servidor web y queda anotado en la auditoría (sin el 
 
 ### Cómo entrar
 
-1. Abre http://localhost:5173/#/cuenta (desde P3 la página principal es el catálogo público; la cuenta está en el enlace **Iniciar sesión** o **Mi cuenta** del encabezado) e inicia sesión con tu cuenta de administrador.
+1. Abre http://localhost:5173/cuenta (desde P3 la página principal es el catálogo público; la cuenta está en el enlace **Iniciar sesión** o **Mi cuenta** del encabezado) e inicia sesión con tu cuenta de administrador.
 2. En tu perfil pulsa **Administrar usuarios**.
 3. Para salir del panel, pulsa **Volver a mi perfil**.
 

@@ -1,6 +1,6 @@
 # CAMION — Venta de Camiones – Financiamos tu Camión
 
-Portal **Red de Venta – Financiamos Tu Camión** (línea base funcional v3.0). Con P10 (en su rama, pendiente de unir), el nombre visible pasa a ser **"Venta de Camiones – Financiamos tu Camión"**, con el logo de **VCA Automotores** (D-87).
+Portal **Red de Venta – Financiamos Tu Camión** (línea base funcional v3.0). Desde P10 el nombre visible es **"Venta de Camiones – Financiamos tu Camión"**. La empresa es **VC Automotores**; "VCA" es solo el diseño del logo (D-87, PR #19).
 
 ## 1. Qué es
 
@@ -10,7 +10,7 @@ Estados que usa esta documentación: **IMPLEMENTADO** (el código existe), **PRO
 
 ## 2. Qué funciona hoy
 
-`main` contiene P0 a P8 e INF-1 a INF-3, unidos mediante las PR #2 a #16, y P9 (la rama de P10 se creó desde `origin/main` en `2e23a8b`, que ya incluye P9). Todo lo de esta sección está **IMPLEMENTADO y PROBADO** con pruebas automáticas. Además, la responsable hizo una prueba manual de cada fase hasta P8. Las de P6, P7 y P8 fueron **parciales**: lo que no se probó a mano lo cubren las pruebas automáticas. No hay pruebas E2E. P10 "Marca y visibilidad" está en su rama, pendiente de unir (ver más abajo). Detalle por fase en [`docs/coordinacion/BITACORA.md`](docs/coordinacion/BITACORA.md) y [`docs/coordinacion/ESTADO-REAL.md`](docs/coordinacion/ESTADO-REAL.md).
+`main` (en `d71a558`) contiene P0 a P10 e INF-1 a INF-4, unidos mediante las PR #2 a #20. Todo lo de esta sección está **IMPLEMENTADO y PROBADO** con pruebas automáticas. Además, la responsable hizo una prueba manual de cada fase. Las de P6, P7 y P8 fueron **parciales**: lo que no se probó a mano lo cubren las pruebas automáticas. El 2026-11-23/24 hizo la **prueba integral manual** de todo el portal ([`docs/manual/PRUEBA-INTEGRAL.md`](docs/manual/PRUEBA-INTEGRAL.md)) y confirmó que todo funcionó; el coordinador verificó el resultado en la base con consultas de solo lectura. Quedó sin probar la reasignación de solicitudes. No hay pruebas E2E. Detalle por fase en [`docs/coordinacion/BITACORA.md`](docs/coordinacion/BITACORA.md) y [`docs/coordinacion/ESTADO-REAL.md`](docs/coordinacion/ESTADO-REAL.md).
 
 **Visitante (sin cuenta)**
 - Ver el catálogo: inicio con destacados y recientes, búsqueda, filtros y ficha del vehículo (P3, P4b).
@@ -41,6 +41,8 @@ Estados que usa esta documentación: **IMPLEMENTADO** (el código existe), **PRO
 
 **Infraestructura** (INF-1 a INF-3, PR #16): CI en GitHub Actions, comprobaciones de arranque para el servidor (proxy, https, claves) y corrección de las pruebas intermitentes.
 
+**INF-4** (PR #20): con un 401 en una ruta con sesión, el aviso "Tu sesión terminó. Inicia sesión de nuevo." salía dos veces; ahora sale una sola. También se corrigieron las pruebas intermitentes de `P5Leads`.
+
 **P9 "Prepublicación"** (en `main`; sin migración)
 - Está **IMPLEMENTADO y PROBADO** con pruebas automáticas. La bitácora no registra la prueba manual de la responsable, la prueba contra la API real, las pruebas E2E ni la revisión a 375 px. Guía de prueba en [`docs/manual/P9-prepublicacion.md`](docs/manual/P9-prepublicacion.md).
 - Registro de comprador e inscripción de asesor con la **casilla de autorización de datos**, sin marcar; la API la vuelve a exigir y guarda la prueba con la versión de la política (HU-062, D-44). Junto a la casilla hay un enlace a los términos, pero no una casilla para aceptarlos (D-84 A).
@@ -51,13 +53,13 @@ Estados que usa esta documentación: **IMPLEMENTADO** (el código existe), **PRO
 - Los mensajes de crédito, búsqueda, seguro y "Mis solicitudes" muestran el WhatsApp vigente de "Parámetros", no un número fijo.
 - Revisión de seguridad: **APROBADO CON OBSERVACIONES**, sin hallazgos altos ([`REVISION-SEGURIDAD-P9.md`](docs/coordinacion/REVISION-SEGURIDAD-P9.md)). M-1 (configurar el proxy en el servidor) es obligatorio antes de abrir al público. B-5 se corrigió en la rama.
 
-**P10 "Marca y visibilidad": en la rama `feature/p10-marca-visibilidad`, pendiente de unir** (sin migración; D-87 a D-92)
-- Está **IMPLEMENTADO y PROBADO** con pruebas automáticas (ver §5). La prueba manual de la responsable, la prueba contra la API real, las pruebas E2E y la revisión a 375 px **no se han ejecutado**. Guía de prueba en [`docs/manual/P10-marca-visibilidad.md`](docs/manual/P10-marca-visibilidad.md).
+**P10 "Marca y visibilidad"** (en `main`, PR #18; sin migración; D-87 a D-92)
+- Está **IMPLEMENTADO y PROBADO** con pruebas automáticas (ver §5). La responsable hizo su prueba manual el 2026-11-17 y lo repasó en la prueba integral. Las pruebas E2E no se han ejecutado. Guía de prueba en [`docs/manual/P10-marca-visibilidad.md`](docs/manual/P10-marca-visibilidad.md).
 - **Lo que nota quien usa el portal:**
   - las direcciones ya no llevan `#`: por ejemplo `/vehiculo/<slug>`, `/camiones`, `/cuenta`. Cada vehículo tiene su propia dirección, que se puede recargar (F5) y compartir. Los enlaces viejos con `#/` se convierten solos a la dirección nueva;
   - categorías con dirección propia: `/carros`, `/camiones`, `/carrocerias` y `/maquinaria`;
-  - logo de **VCA Automotores**: el horizontal en el encabezado y el cuadrado en el pie; favicon con la cabeza del toro (D-91 A);
-  - nombre **"Venta de Camiones – Financiamos tu Camión"**; títulos de pestaña con el sufijo "| Financiamos tu Camión" ("tu" en minúscula); el pie dice "© <año> VCA Automotores";
+  - logo de **VC Automotores** (diseño "VCA"): el horizontal en el encabezado y el cuadrado en el pie; favicon con la cabeza del toro (D-91 A);
+  - nombre **"Venta de Camiones – Financiamos tu Camión"**; títulos de pestaña con el sufijo "| Financiamos tu Camión" ("tu" en minúscula); el pie dice "© <año> VC Automotores" (PR #19);
   - el título principal de la portada es **"Venta de camiones usados"** y la frase anterior queda como subtítulo (D-92);
   - el mensaje de "Escribir por WhatsApp" de la ficha termina con la dirección del vehículo (nota sobre D-47);
   - el enlace de recuperación de contraseña tiene la forma `<portal>/restablecer-contrasena#codigo=<código>`; los enlaces viejos siguen sirviendo mientras no venzan.
@@ -66,12 +68,14 @@ Estados que usa esta documentación: **IMPLEMENTADO** (el código existe), **PRO
 - Revisión de seguridad: **APROBADO CON OBSERVACIONES**, sin hallazgos altos ([`REVISION-SEGURIDAD-P10.md`](docs/coordinacion/REVISION-SEGURIDAD-P10.md)). M-1, B-1, B-2 y B-6 corregidos en el código; B-3 y B-4 corregidos en la guía de publicación; B-5 cubierto por una prueba de QA.
 
 **Pendiente** (ver [`docs/coordinacion/BACKLOG.md`](docs/coordinacion/BACKLOG.md))
-- P10: la prueba manual de la responsable (pasos en `docs/manual/P10-marca-visibilidad.md`), abrir la PR y unir a `main`. Con dominio (D-81): validadores de Google y schema.org y vista previa en WhatsApp y Facebook (CA-P10-69 y 81). Al abrir al público: encender la indexación con las dos claves juntas.
-- D-91 B: cambiar los archivos del logo cuando lleguen los originales con transparencia y la versión para fondo oscuro (no requiere programar).
 - **Antes de publicar en internet** (detalle en `docs/coordinacion/ESTADO-REAL.md`, "Preparación para publicar"):
   - D-81: hosting y dominio (PENDIENTE de la responsable);
   - D-44: revisión del abogado de la política y de los términos, y los **datos de la empresa** que debe entregar la responsable (razón social, NIT, dirección de notificaciones y dominio). Ningún formulario sale a internet sin esa revisión. Después hay que publicar los textos aprobados y cambiar `PoliticaDatos:Version`;
-  - poner en marcha el servidor según [`docs/GUIA-PUBLICACION.md`](docs/GUIA-PUBLICACION.md): variables, base nueva (D-80 A) con el 017 aprobado, primer administrador, planes y contacto, proxy (incluido M-1 de P9), https y respaldos programados.
+  - la **vista previa al compartir** (tarjeta con foto y título al pegar el enlace en WhatsApp o Facebook) y los validadores de Google y schema.org (CA-P10-69 y 81): requieren el portal publicado en su dominio (D-81);
+  - poner en marcha el servidor según [`docs/GUIA-PUBLICACION.md`](docs/GUIA-PUBLICACION.md): variables, base nueva (D-80 A) con el 017 aprobado, primer administrador, planes y contacto, proxy (incluido M-1 de P9), https y respaldos programados;
+  - al abrir al público: encender la indexación con las dos claves juntas.
+- Prueba integral: falta probar a mano la reasignación de solicitudes (D-7).
+- D-91 B: cambiar los archivos del logo cuando lleguen los originales con transparencia y la versión para fondo oscuro (no requiere programar).
 - D-82: si se implementan los favoritos (PENDIENTE de la responsable). P8b (promociones, D-75 B): opcional.
 - Otros: P2b ("Solicitar ser asesor"), P6-B (hallazgos bajos de seguridad) y B-2 y B-3 de la revisión de P8.
 - No hay servicio de correo (D-73): la recuperación de contraseña es asistida por el administrador, no automática.
@@ -168,7 +172,7 @@ npm install
 npm run dev
 ```
 
-Abre http://localhost:5173/. El inicio es el catálogo. Con P10 las direcciones van sin `#`: "Mi cuenta" está en http://localhost:5173/cuenta, el catálogo en http://localhost:5173/vehiculos y cada vehículo en http://localhost:5173/vehiculo/<slug>. Cualquiera de ellas se puede recargar (F5): Vite responde la aplicación. `/api`, `/media`, `/health`, `/robots.txt` y `/sitemap.xml` van a la API (http://localhost:5080); `/vehiculo/` **no** va a la API en desarrollo. Los enlaces viejos como http://localhost:5173/#/cuenta siguen funcionando: se convierten solos. En `main`, mientras no se una P10, las direcciones siguen con `#` (por ejemplo `#/cuenta`).
+Abre http://localhost:5173/. El inicio es el catálogo. Desde P10 las direcciones van sin `#`: "Mi cuenta" está en http://localhost:5173/cuenta, el catálogo en http://localhost:5173/vehiculos y cada vehículo en http://localhost:5173/vehiculo/<slug>. Cualquiera de ellas se puede recargar (F5): Vite responde la aplicación. `/api`, `/media`, `/health`, `/robots.txt` y `/sitemap.xml` van a la API (http://localhost:5080); `/vehiculo/` **no** va a la API en desarrollo. Los enlaces viejos como http://localhost:5173/#/cuenta siguen funcionando: se convierten solos.
 
 ## 5. Pruebas
 
@@ -182,17 +186,17 @@ npx tsc -b
 npm run build
 ```
 
-Último resultado registrado, en la rama **`feature/p10-marca-visibilidad`** después de las correcciones de la revisión de seguridad (coordinador, 2026-11-17, [`docs/criterios/P10-evidencia.md`](docs/criterios/P10-evidencia.md) §6):
+Último recuento con cifras registrado en la documentación, en la rama **`feature/p10-marca-visibilidad`** después de las correcciones de la revisión de seguridad (coordinador, 2026-11-17, [`docs/criterios/P10-evidencia.md`](docs/criterios/P10-evidencia.md) §6). Las PR #19 y #20 se unieron después; esta documentación no registra sus recuentos:
 - frontend **1025/1025**, sin ninguna prueba marcada como fallo esperado;
 - backend, corrida completa: **1557 pasan y 5 omitidas**. Las 5 son `P10QaIndexCompiladoTests`, que necesitan el `index.html` compilado (variables `CAMION_QA_INDEX_APAGADA` y `CAMION_QA_INDEX_ENCENDIDA`). En corridas aparte con el `index.html` compilado real, con la indexación apagada y encendida, las 52 pruebas P10 pasan y 0 se omiten.
 
-La evidencia de QA de P10 (2026-11-16, antes de las correcciones) registró backend 1554/1554 y frontend 1017 + 1 fallo esperado (QA-P10-1, hoy corregido); `tsc -b`, `tsc -p tsconfig.test.json` y `npm run build`, correctos. En la revisión de seguridad de P10, `npm audit` y `dotnet list package --vulnerable`, sin avisos. En P9 (QA, 2026-11-16) el último resultado registrado fue 1481/1481 y 875/875.
+La evidencia de QA de P10 (2026-11-16, antes de las correcciones) registró backend 1554/1554 y frontend 1017 + 1 fallo esperado (QA-P10-1, hoy corregido); `tsc -b`, `tsc -p tsconfig.test.json` y `npm run build`, correctos. En la revisión de seguridad de P10, `npm audit` y `dotnet list package --vulnerable`, sin avisos; después, en la PR #18, el CI encontró GHSA-fc5q-39xc-vjpf en `picomatch` (solo desarrollo; ver el párrafo del CI). En P9 (QA, 2026-11-16) el último resultado registrado fue 1481/1481 y 875/875.
 
-**CI (INF-1):** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) ejecuta todo lo anterior en cada push y PR, más `dotnet list package --vulnerable` y `npm audit`, sin secretos. El backend se prueba en Windows (obligatorio) y en Linux (informativo hasta decidir el hosting, D-81). Las pruebas de la API usan SQLite en memoria y no tocan `camion_ventas`.
+**CI (INF-1):** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) ejecuta todo lo anterior en cada push y PR, más `dotnet list package --vulnerable` y `npm audit`, sin secretos. La auditoría de dependencias **bloquea solo las de producción** (`npm audit --omit=dev`). La auditoría completa es informativa por GHSA-fc5q-39xc-vjpf en `picomatch`, que llega solo por Vite y Vitest y no tiene parche publicado (anexo de [`REVISION-SEGURIDAD-P10.md`](docs/coordinacion/REVISION-SEGURIDAD-P10.md)). El backend se prueba en Windows (obligatorio) y en Linux (informativo hasta decidir el hosting, D-81). Las pruebas de la API usan SQLite en memoria y no tocan `camion_ventas`.
 
 Si Windows (Smart App Control) bloquea la DLL de pruebas, `dotnet test` termina sin error pero con **0 pruebas**. Revisa siempre el recuento "Total" y, si sale 0, vuelve a compilar.
 
-Las pruebas intermitentes de INF-3 quedaron corregidas en la PR #16 (detalle en [`docs/criterios/INF-3-evidencia.md`](docs/criterios/INF-3-evidencia.md)). Si una corrida vuelve a fallar sin motivo claro, repítela y anota el nombre de la prueba.
+Las pruebas intermitentes de INF-3 quedaron corregidas en la PR #16 (detalle en [`docs/criterios/INF-3-evidencia.md`](docs/criterios/INF-3-evidencia.md)), y las de `P5Leads` en la PR #20 (INF-4). Si una corrida vuelve a fallar sin motivo claro, repítela y anota el nombre de la prueba.
 
 ## 6. Forma de trabajo
 
@@ -214,8 +218,9 @@ Las pruebas intermitentes de INF-3 quedaron corregidas en la PR #16 (detalle en 
 | `docs/requisitos/` | Requisitos funcionales v3.0 y minuta de transferencia |
 | `docs/criterios/` | Criterios, contratos de API y evidencia por fase |
 | `docs/manual/` | Guías de uso y de prueba manual: P5 contactos, P5b avisos, P6 créditos, P7 administración, P8 reportes, P9 prepublicación y P10 marca y visibilidad |
+| `docs/manual/PRUEBA-INTEGRAL.md` | Prueba integral manual de todo el portal antes de publicar (hecha el 2026-11-23/24; resultado en la bitácora) |
 | `docs/GUIA-PUBLICACION.md` | Lista de verificación para publicar: variables, base nueva, https, proxy (con las reglas de las direcciones sin `#` de P10), claves, respaldos y cómo encender la indexación |
-| `docs/marca/` | Originales del logo de VCA Automotores (sin seguimiento en Git; no se publican). Los derivados web están en `frontend/public/marca/` |
+| `docs/marca/` | Originales del logo de VC Automotores (sin seguimiento en Git; no se publican). Los derivados web están en `frontend/public/marca/` |
 | `.env.example` | Nombres de las variables de entorno del servidor (sin valores) |
 | `docs/GUIA-ADMINISTRACION.md`, `GUIA-CATALOGO.md`, `GUIA-CATALOGOS.md` | Guías de administración, catálogo público y marcas y modelos |
 | `docs/legal/` | Borradores de la política de datos y de los términos (D-44; falta la revisión legal). No se publican en el portal |
