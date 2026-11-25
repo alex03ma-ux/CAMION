@@ -650,9 +650,8 @@ main:focus:not(:focus-visible) {
   border-bottom: 1px solid #e2e8f0;
 }
 
+/* El ancho y los márgenes laterales los pone el contenedor común (.page-container, portal.css). */
 .cat-encabezado-interior {
-  max-width: var(--ancho-contenido);
-  margin: auto;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -722,10 +721,12 @@ form.cat-busqueda {
   padding-top: 40px;
 }
 
+/* En las páginas públicas el ancho y los márgenes laterales los pone el contenedor común (.page-container,
+   portal.css). Estos valores solo quedan para el panel privado (.cat-pagina.inv-pagina), que no cambia. */
 .cat-pagina {
-  max-width: var(--ancho-contenido);
+  max-width: 80rem;
   margin: auto;
-  padding: 24px var(--margen-lateral) 48px;
+  padding: 24px clamp(1rem, 4vw, 1.25rem) 48px;
 }
 
 .cat-portada p {
@@ -798,10 +799,11 @@ form.cat-busqueda {
 
 /* Rejilla: las columnas salen del ancho mínimo de la tarjeta (--tarjeta-min, portal.css), sin puntos de quiebre.
    auto-fill conserva las columnas vacías: pocas tarjetas no se estiran. min(100%, ...) evita desbordes en 320 px.
-   Con el contenedor de 1280 px salen como máximo 4; en los resultados (filtros al lado), 3. */
+   Con el contenedor de 1600 px salen como máximo 5 (4 en escritorio normal, 5 desde unos 1504 px de contenido);
+   en los resultados, con los filtros al lado, como máximo 4. */
 .cat-rejilla {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--tarjeta-min, 16.5rem)), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--tarjeta-min, 18rem)), 1fr));
   gap: 1rem;
   margin: 0;
   padding: 0;

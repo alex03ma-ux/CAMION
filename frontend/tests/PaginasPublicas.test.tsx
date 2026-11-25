@@ -37,6 +37,13 @@ describe('Páginas públicas (D-93, 3b)', () => {
     expect(within(tarjeta).getByRole('search')).toBeInTheDocument()
     // La imagen queda fuera de la tarjeta (a la derecha en escritorio, arriba en celular).
     expect(tarjeta.querySelector('.cat-portada-imagen')).toBeNull()
+    // Estructura del eje común: la foto va en su propio marco dentro del contenedor de la portada (ya no es una
+    // capa absoluta sobre todo el ancho), junto a la tarjeta.
+    const interior = container.querySelector('.cat-portada > .cat-portada-interior') as HTMLElement
+    expect(interior).not.toBeNull()
+    expect(interior.querySelector(':scope > .cat-portada-figura > .cat-portada-imagen')).not.toBeNull()
+    expect(interior.querySelector(':scope > .cat-portada-tarjeta')).toBe(tarjeta)
+    expect(container.querySelector('.cat-portada > .cat-portada-imagen')).toBeNull()
     // "Ver catálogo" sigue en las categorías (oculto al lector; en celular, también a la vista con CSS).
     const categorias = screen.getByRole('list', { name: 'Categorías' })
     expect(within(categorias).getAllByText(/Ver catálogo/).length).toBeGreaterThan(0)

@@ -8,22 +8,37 @@
   --negro: #111111;
   --gris-texto: #555555;
   --gris-borde: #e3e3e3;
-  /* Contenedor común (encabezado, portada, secciones y pie): 1280 px en total, márgenes incluidos.
-     En rem para que todo siga también el tamaño de letra elegido en el navegador. */
-  --ancho-contenido: 80rem;
-  --margen-lateral: clamp(1rem, 4vw, 1.25rem);
-  --espacio-seccion: clamp(2rem, 1.5rem + 2vw, 2.75rem);
-  /* Ancho mínimo de una tarjeta de vehículo: las columnas salen de aquí (máximo 4 en 1280 px). */
-  --tarjeta-min: 16.5rem;
+  /* Contenedor común de todas las páginas públicas (D-93): 1600 px en total, márgenes incluidos. */
+  --page-max-width: 1600px;
+  --page-gutter: clamp(12px, 2vw, 40px);
+  --section-gap: clamp(24px, 3vw, 48px);
+  /* Ancho mínimo de una tarjeta de vehículo: las columnas salen de aquí. Con 1rem de separación: 2 desde
+     37rem de contenido, 3 desde 56rem, 4 desde 75rem y 5 desde 94rem (unos 1504 px); máximo 5. */
+  --tarjeta-min: 18rem;
   /* Área táctil mínima (44 × 44 px). */
   --toque-min: 2.75rem;
   /* Alto máximo de la foto de la portada en celular (16:9). */
   --portada-alto-movil: 12rem;
 }
 
-/* Puntos de quiebre (en rem): 47.99rem portada apilada y buscador vertical; 47.5rem categorías, servicios,
-   avisos y pie; 68.75rem (1100 px) menú plegable del encabezado, el ancho en que la navegación deja de
-   caber en una fila junto al logo. */
+/* Puntos de quiebre (en rem): 47.99rem buscador vertical; 48rem categorías en 4 columnas; 64rem portada en 2
+   columnas; 47.5rem servicios, avisos y pie; 68.75rem (1100 px) menú plegable del encabezado. */
+
+/* Contenedor común: un solo eje para el encabezado, la portada, las secciones, los formularios, las páginas legales
+   y el pie. El panel privado (.inv-pagina) conserva el suyo. */
+.page-container,
+.cat-encabezado-interior,
+.cat-portada-interior,
+.cat-pagina:not(.inv-pagina),
+.cat-pie-interior,
+.cat-pie-legal {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--page-max-width);
+  margin-inline: auto;
+  padding-inline: var(--page-gutter);
+  min-width: 0;
+}
 
 .texto-rojo {
   color: var(--rojo);
@@ -44,7 +59,7 @@
 }
 
 .cat-encabezado-interior {
-  padding: 0.875rem var(--margen-lateral);
+  padding-block: 0.875rem;
   gap: 0.75rem 1.75rem;
 }
 
@@ -295,38 +310,51 @@ form.cat-busqueda {
 }
 
 /* ---- Portada ---- */
+/* El fondo ocupa todo el ancho; el contenido va en el contenedor común. Apilada (foto arriba, tarjeta debajo)
+   hasta 64rem; desde ahí, dos columnas: tarjeta de textos y buscador | foto, con el mismo eje que las secciones. */
 .cat-portada {
-  position: relative;
-  overflow: hidden;
   padding: 0;
   text-align: left;
   background: #f1eeeb;
-  min-height: 26.25rem;
-}
-
-.cat-portada-imagen {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 60%;
-  height: 100%;
-}
-
-/* Velo claro a la izquierda para que el texto se lea sobre la ilustración. */
-.cat-portada::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: linear-gradient(90deg, rgba(248, 246, 244, 1) 0%, rgba(248, 246, 244, 0.95) 38%, rgba(248, 246, 244, 0) 52%);
 }
 
 .cat-portada-interior {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--section-gap);
+  align-items: center;
+  padding-block: clamp(1.25rem, 0.75rem + 2vw, 3rem);
+}
+
+/* Marco de la foto: 16:9 (como la ilustración y la vista previa de Admin > Portada), cover y sin deformar. */
+.cat-portada-figura {
   position: relative;
-  z-index: 2;
-  max-width: var(--ancho-contenido);
-  margin: auto;
-  padding: clamp(1.5rem, 1rem + 2.5vw, 3rem) var(--margen-lateral) clamp(2.5rem, 2rem + 2.5vw, 4rem);
+  min-width: 0;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 1rem;
+  background: #ebe5df;
+}
+
+.cat-portada-imagen {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@media (min-width: 64rem) {
+  .cat-portada-interior {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    grid-template-areas: "texto foto";
+  }
+
+  .cat-portada-tarjeta {
+    grid-area: texto;
+  }
+
+  .cat-portada-figura {
+    grid-area: foto;
+  }
 }
 
 .cat-portada-eyebrow {
@@ -354,7 +382,7 @@ form.cat-busqueda {
 .cat-portada .cat-portada-frase {
   max-width: 35rem;
   margin: 0 0 0.875rem;
-  font-size: clamp(1.75rem, 1rem + 4vw, 3.375rem);
+  font-size: clamp(1.75rem, 0.9rem + 2.4vw, 3rem);
   font-weight: 900;
   line-height: 1.05;
   color: var(--negro);
@@ -429,22 +457,19 @@ form.cat-busqueda-portada {
   background: var(--rojo-oscuro);
 }
 
-/* Tablet: la imagen ocupa la mitad derecha; los textos van en la tarjeta blanca de la izquierda (D-93, 3b). */
+/* Tablet (apilada): foto arriba, centrada y con un tope de ancho para no dominar la primera pantalla. */
 @media (min-width: 48rem) and (max-width: 63.99rem) {
-  .cat-portada-imagen {
-    width: 50%;
+  .cat-portada-figura {
+    width: min(100%, 32rem);
+    margin-inline: auto;
   }
 }
 
-/* D-93 (3b), guía visual: desde 48rem, textos y buscador en una tarjeta blanca a la izquierda y la foto a la
-   derecha, en lugar del velo. En celular la tarjeta no se dibuja (foto arriba, textos y buscador debajo). */
+/* D-93 (3b), guía visual: desde 48rem, textos y buscador en una tarjeta blanca. En celular la tarjeta no se
+   dibuja (foto arriba, textos y buscador debajo). */
 @media (min-width: 48rem) {
-  .cat-portada::before {
-    display: none;
-  }
-
   .cat-portada-tarjeta {
-    width: min(100%, 62%);
+    container-type: inline-size;
     padding: clamp(1.25rem, 0.5rem + 2vw, 2.25rem);
     border-radius: 1rem;
     background: #fff;
@@ -456,9 +481,26 @@ form.cat-busqueda-portada {
   }
 }
 
-@media (min-width: 64rem) {
-  .cat-portada-tarjeta {
-    width: min(100%, 37.5rem);
+/* Si la tarjeta es estrecha, el buscador pasa a dos filas (campo | tipo y Buscar): el texto de ayuda del campo
+   no se corta. */
+@container (max-width: 40rem) {
+  form.cat-busqueda-portada {
+    flex-wrap: wrap;
+  }
+
+  .cat-busqueda-portada input {
+    flex-basis: 100%;
+    border-bottom: 1px solid var(--gris-borde);
+  }
+
+  .cat-busqueda-portada .cat-busqueda-lupa {
+    top: 1.75rem;
+  }
+
+  .cat-busqueda-portada select {
+    flex: 1;
+    min-height: 3rem;
+    border-left: none;
   }
 }
 
@@ -466,31 +508,9 @@ form.cat-busqueda-portada {
    La ilustración mide 640 x 360 (16:9): se ve entera. La foto se recorta desde el centro, igual que la
    vista previa de Admin > Portada. El marco reserva el espacio antes de que cargue. */
 @media (max-width: 47.99rem) {
-  .cat-portada {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-  }
-
-  .cat-portada::before {
-    display: none;
-  }
-
-  .cat-portada-imagen {
-    position: static;
-    display: block;
+  .cat-portada-figura {
     width: min(100%, calc(var(--portada-alto-movil) * 16 / 9));
-    height: auto;
-    aspect-ratio: 16 / 9;
-    margin: 0 auto;
-  }
-
-  .cat-portada .cat-portada-foto {
-    object-position: center;
-  }
-
-  .cat-portada-interior {
-    width: 100%;
+    margin-inline: auto;
   }
 
   /* Buscador vertical: campo, tipo y botón a todo el ancho, cada uno de al menos 44 px. */
@@ -522,10 +542,6 @@ form.cat-busqueda-portada {
 
 /* Horizontal con poca altura (celular girado): portada más compacta, con los mismos textos. */
 @media (orientation: landscape) and (max-height: 30rem) {
-  .cat-portada {
-    min-height: 0;
-  }
-
   .cat-portada-interior {
     padding-top: 1rem;
     padding-bottom: 2.5rem;
@@ -549,16 +565,15 @@ form.cat-busqueda-portada {
 .cat-categorias {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: clamp(12px, 1.2vw, 24px);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-@media (min-width: 47.5rem) {
+@media (min-width: 48rem) {
   .cat-categorias {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 18px;
   }
 }
 
@@ -627,23 +642,13 @@ form.cat-busqueda-portada {
 }
 
 /* ---- Secciones de vehículos ---- */
+/* Las categorías van debajo de la portada, sin montarse sobre ella, en el mismo eje. */
 .cat-inicio .cat-pagina {
-  position: relative;
-  z-index: 3;
-  margin-top: -2rem;
-  padding-top: 0;
-}
-
-/* Celular: con la portada apilada, las categorías ya no se montan sobre ella. */
-@media (max-width: 47.99rem) {
-  .cat-inicio .cat-pagina {
-    margin-top: 0;
-    padding-top: 1.5rem;
-  }
+  padding-top: var(--section-gap);
 }
 
 .cat-inicio .cat-seccion {
-  margin-top: var(--espacio-seccion);
+  margin-top: var(--section-gap);
 }
 
 .cat-seccion-cabecera {
@@ -791,7 +796,7 @@ form.cat-busqueda-portada {
 
 /* ---- Franja de confianza ---- */
 .cat-servicios {
-  margin: var(--espacio-seccion) 0 0;
+  margin: var(--section-gap) 0 0;
 }
 
 .cat-servicios h2 {
@@ -853,7 +858,7 @@ form.cat-busqueda-portada {
   display: flex;
   align-items: center;
   gap: 28px;
-  margin-top: var(--espacio-seccion);
+  margin-top: var(--section-gap);
   padding: 28px 32px;
   overflow: hidden;
   border-radius: 18px;
@@ -1027,9 +1032,7 @@ form.cat-busqueda-portada {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 24px;
-  max-width: var(--ancho-contenido);
-  margin: auto;
-  padding: 36px var(--margen-lateral) 20px;
+  padding-block: 36px 20px;
 }
 
 @media (min-width: 47.5rem) {
@@ -1087,9 +1090,7 @@ form.cat-busqueda-portada {
 }
 
 .cat-pie-legal {
-  max-width: var(--ancho-contenido);
-  margin: auto;
-  padding: 12px var(--margen-lateral) 28px;
+  padding-block: 12px 28px;
   font-size: 13px;
   color: #9a9a9a;
 }
@@ -1167,10 +1168,11 @@ form.cat-busqueda-portada {
   margin: 0;
 }
 
-/* D-42: foto de portada subida por el administrador (cubre el lado derecho, igual que la ilustración). */
+/* D-42: foto de portada subida por el administrador: llena su marco recortando desde el centro, sin deformarse
+   (igual que la vista previa de Admin > Portada). */
 .cat-portada-foto {
   object-fit: cover;
-  object-position: right center;
+  object-position: center;
 }
 
 /* ---- Administración: Portada ---- */
@@ -1780,7 +1782,7 @@ form.cat-busqueda[data-abierta="false"] {
 }
 
 /* Cuántas tarjetas se ven lo decide el ancho del carrusel, con los mismos cortes que la rejilla de Recientes
-   (--tarjeta-min de 16.5rem y separación de 1rem): 2 desde 34rem, 3 desde 51.5rem y 4 desde 69rem. */
+   (--tarjeta-min de 18rem y separación de 1rem): 2 desde 37rem, 3 desde 56rem, 4 desde 75rem y 5 desde 94rem. */
 .cat-carrusel-marco {
   container-type: inline-size;
 }
@@ -1806,21 +1808,27 @@ form.cat-busqueda[data-abierta="false"] {
   scroll-snap-align: start;
 }
 
-@container (min-width: 34rem) {
+@container (min-width: 37rem) {
   .cat-carrusel-pista {
     --visibles: 2;
   }
 }
 
-@container (min-width: 51.5rem) {
+@container (min-width: 56rem) {
   .cat-carrusel-pista {
     --visibles: 3;
   }
 }
 
-@container (min-width: 69rem) {
+@container (min-width: 75rem) {
   .cat-carrusel-pista {
     --visibles: 4;
+  }
+}
+
+@container (min-width: 94rem) {
+  .cat-carrusel-pista {
+    --visibles: 5;
   }
 }
 
@@ -1908,8 +1916,8 @@ form.cat-busqueda[data-abierta="false"] {
 
 /* Inicio de sesión, registro y restablecer contraseña: contenedor común y formulario fluido. */
 .container.cuenta.cuenta-publica {
-  max-width: var(--ancho-contenido);
-  padding: clamp(1.5rem, 1rem + 2vw, 2.5rem) var(--margen-lateral) 3rem;
+  max-width: var(--page-max-width);
+  padding: clamp(1.5rem, 1rem + 2vw, 2.5rem) var(--page-gutter) 3rem;
 }
 
 .cuenta-publica form,
@@ -1920,11 +1928,7 @@ form.cat-busqueda[data-abierta="false"] {
 }
 
 /* Categorías compactas 2 x 2 en celular; "Ver catálogo" (ya aria-hidden) se oculta solo a la vista. */
-@media (max-width: 47.49rem) {
-  .cat-categorias {
-    gap: 0.625rem;
-  }
-
+@media (max-width: 47.99rem) {
   .cat-categoria {
     min-height: var(--toque-min);
     padding: 0.75rem 0.5rem;

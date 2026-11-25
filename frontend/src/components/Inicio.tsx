@@ -87,19 +87,23 @@ export function Inicio({ tipos }: InicioProps) {
   return (
     <div className="cat-inicio">
       <section className="cat-portada" aria-labelledby="inicio-titulo">
-        {fotoPortada.url && !fotoPortada.fallida ? (
-          <img
-            className="cat-portada-imagen cat-portada-foto"
-            src={fotoPortada.url}
-            alt=""
-            fetchPriority="high"
-            decoding="async"
-            onError={fotoPortada.alFallar}
-          />
-        ) : (
-          <IlustracionCamion className="cat-portada-imagen" />
-        )}
+        {/* Estructura (D-93): el fondo ocupa todo el ancho; dentro del contenedor común, una cuadrícula con la
+            tarjeta de textos y buscador y la foto en su propio marco, alineada al mismo eje que el resto. */}
         <div className="cat-portada-interior">
+          <div className="cat-portada-figura">
+            {fotoPortada.url && !fotoPortada.fallida ? (
+              <img
+                className="cat-portada-imagen cat-portada-foto"
+                src={fotoPortada.url}
+                alt=""
+                fetchPriority="high"
+                decoding="async"
+                onError={fotoPortada.alFallar}
+              />
+            ) : (
+              <IlustracionCamion className="cat-portada-imagen" />
+            )}
+          </div>
           {/* D-93 (3b): en escritorio, textos y buscador van en una tarjeta blanca a la izquierda de la foto. */}
           <div className="cat-portada-tarjeta">
             <p className="cat-portada-eyebrow">Camiones, carros, carrocerías y maquinaria</p>
