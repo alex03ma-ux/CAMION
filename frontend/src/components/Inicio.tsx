@@ -100,16 +100,19 @@ export function Inicio({ tipos }: InicioProps) {
           <IlustracionCamion className="cat-portada-imagen" />
         )}
         <div className="cat-portada-interior">
-          <p className="cat-portada-eyebrow">Camiones, carros, carrocerías y maquinaria</p>
-          {/* P10 (CA-P10-20, D-92): h1 con las palabras que se buscan; la frase de D-42 queda como subtítulo igual. */}
-          <h1 id="inicio-titulo" className="cat-portada-h1" tabIndex={-1}>
-            {TITULO_PORTADA}
-          </h1>
-          <p className="cat-portada-frase">
-            Tu próximo negocio empieza con el <span className="texto-rojo">vehículo correcto</span>
-          </p>
-          <p className="cat-portada-texto">Compra con respaldo y te ayudamos con la financiación.</p>
-          <BusquedaPortada categorias={categorias} />
+          {/* D-93 (3b): en escritorio, textos y buscador van en una tarjeta blanca a la izquierda de la foto. */}
+          <div className="cat-portada-tarjeta">
+            <p className="cat-portada-eyebrow">Camiones, carros, carrocerías y maquinaria</p>
+            {/* P10 (CA-P10-20, D-92): h1 con las palabras que se buscan; la frase de D-42 queda como subtítulo igual. */}
+            <h1 id="inicio-titulo" className="cat-portada-h1" tabIndex={-1}>
+              {TITULO_PORTADA}
+            </h1>
+            <p className="cat-portada-frase">
+              Tu próximo negocio empieza con el <span className="texto-rojo">vehículo correcto</span>
+            </p>
+            <p className="cat-portada-texto">Compra con respaldo y te ayudamos con la financiación.</p>
+            <BusquedaPortada categorias={categorias} />
+          </div>
         </div>
       </section>
 

@@ -942,9 +942,10 @@ form.cat-busqueda {
   display: block;
 }
 
-@media (min-width: 900px) {
+/* D-93 (3b): barra de filtros y corte en rem. */
+@media (min-width: 56.25rem) {
   .cat-resultados {
-    grid-template-columns: 280px minmax(0, 1fr);
+    grid-template-columns: 17.5rem minmax(0, 1fr);
     align-items: start;
   }
 
@@ -1053,7 +1054,7 @@ form.cat-filtros {
   gap: 24px;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 56.25rem) {
   .cat-detalle-cuerpo {
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     align-items: start;

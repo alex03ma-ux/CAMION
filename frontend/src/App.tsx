@@ -605,8 +605,11 @@ export default function App() {
   }
 
   function renderCuenta() {
+    // D-93 (3b): el inicio de sesión y el registro son públicos y usan el contenedor común (cuenta-publica); el
+    // perfil y la administración conservan el de siempre.
+    const publica = vista.tipo === 'login' || vista.tipo === 'registro'
     return (
-    <div className="container cuenta">
+    <div className={publica ? 'container cuenta cuenta-publica' : 'container cuenta'}>
       {/* P10 (CA-P10-17, D-87). */}
       <p className="eyebrow">{MARCA.toUpperCase()}</p>
       <h1 tabIndex={-1}>{NOMBRE_PORTAL}</h1>

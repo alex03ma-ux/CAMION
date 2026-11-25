@@ -429,17 +429,36 @@ form.cat-busqueda-portada {
   background: var(--rojo-oscuro);
 }
 
-/* Tablet: la imagen ocupa la mitad derecha y los textos la izquierda (sin quedar sobre la imagen). */
+/* Tablet: la imagen ocupa la mitad derecha; los textos van en la tarjeta blanca de la izquierda (D-93, 3b). */
 @media (min-width: 48rem) and (max-width: 63.99rem) {
   .cat-portada-imagen {
     width: 50%;
   }
+}
 
-  .cat-portada .cat-portada-eyebrow,
-  .cat-portada h1.cat-portada-h1,
-  .cat-portada .cat-portada-frase,
+/* D-93 (3b), guía visual: desde 48rem, textos y buscador en una tarjeta blanca a la izquierda y la foto a la
+   derecha, en lugar del velo. En celular la tarjeta no se dibuja (foto arriba, textos y buscador debajo). */
+@media (min-width: 48rem) {
+  .cat-portada::before {
+    display: none;
+  }
+
+  .cat-portada-tarjeta {
+    width: min(100%, 62%);
+    padding: clamp(1.25rem, 0.5rem + 2vw, 2.25rem);
+    border-radius: 1rem;
+    background: #fff;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12);
+  }
+
   .cat-portada .cat-portada-texto {
-    max-width: min(35rem, 48%);
+    margin-bottom: 1.25rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  .cat-portada-tarjeta {
+    width: min(100%, 37.5rem);
   }
 }
 
@@ -1121,8 +1140,9 @@ form.cat-busqueda-portada {
 }
 
 .no-encontrada-enlaces a {
-  display: inline-block;
-  padding: 6px 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--toque-min);
 }
 
 /* P9 (CA-P9-35): datos del responsable en las páginas legales. */
@@ -1313,8 +1333,8 @@ form.admin-portada-form {
 }
 
 .privacidad-cuerpo {
-  max-width: 720px;
-  padding: 20px;
+  max-width: 45rem;
+  padding: clamp(1.25rem, 0.75rem + 2vw, 2rem);
   background: #fff;
   border-radius: 14px;
   box-shadow: 0 6px 20px rgba(20, 38, 62, 0.08);
@@ -1346,7 +1366,7 @@ form.admin-portada-form {
 
 /* ---- P5b: pantallas públicas de los avisos (/vende-tu-camion, /seguro-todo-riesgo) ---- */
 .aviso-publico-intro {
-  max-width: 640px;
+  max-width: 40rem;
   margin: 0 0 8px;
   line-height: 1.5;
   color: var(--gris-texto);
@@ -1354,9 +1374,9 @@ form.admin-portada-form {
 
 .aviso-publico-form {
   position: relative;
-  max-width: 640px;
+  max-width: 40rem;
   margin: 12px 0 0;
-  padding: 28px;
+  padding: clamp(1.25rem, 0.75rem + 2vw, 1.75rem);
   border-top: 6px solid var(--rojo);
 }
 
@@ -1369,11 +1389,6 @@ form.admin-portada-form {
   text-align: right;
 }
 
-@media (max-width: 480px) {
-  .aviso-publico-form {
-    padding: 20px 16px;
-  }
-}
 
 /* P5b: origen de la solicitud en la bandeja del administrador. */
 .lead-origen {
@@ -1419,7 +1434,7 @@ form.admin-portada-form {
 
 /* ---- P6: crédito, "Busco un vehículo" y "Mis solicitudes" ---- */
 .credito-vehiculo {
-  max-width: 640px;
+  max-width: 40rem;
   margin: 12px 0 0;
   padding: 12px 14px;
   border-left: 4px solid var(--rojo);
@@ -1813,4 +1828,127 @@ form.cat-busqueda[data-abierta="false"] {
 .cat-etiqueta-disponible {
   background: #fff;
   color: #067647;
+}
+
+/* =====================================================================
+   D-93 (entrega 3b): el sistema en las páginas públicas (áreas táctiles de 44 px, anchos en rem).
+   Solo con clases públicas: no se tocan las reglas globales form, button ni .container, ni las clases .inv-*.
+   ===================================================================== */
+
+/* Botones del catálogo (Aplicar, Limpiar, "Filtros", Reintentar, flechas de la galería); fuera del panel privado.
+   Solo el alto: el botón ya centra su texto y no se cambia su display (el de "Filtros" se oculta en escritorio). */
+.cat-pagina:not(.inv-pagina) .cat-boton {
+  min-height: var(--toque-min);
+}
+
+/* Filtros: campos de al menos 44 px de alto. */
+.cat-filtros input,
+.cat-filtros select {
+  min-height: var(--toque-min);
+}
+
+/* Paginación. */
+.cat-paginacion a,
+.cat-paginacion-inactivo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--toque-min);
+  min-width: var(--toque-min);
+}
+
+/* Ficha: "Volver a resultados" y el acceso al crédito. */
+.cat-volver a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--toque-min);
+}
+
+.credito-ficha .credito-ficha-boton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--toque-min);
+}
+
+/* Casilla de autorización en las páginas públicas: casilla de 24 px y fila (casilla + etiqueta, que también la
+   marca) de al menos 44 px de alto. */
+.cat-pagina:not(.inv-pagina) .autorizacion-casilla,
+.cuenta-publica .autorizacion-casilla {
+  align-items: center;
+  min-height: var(--toque-min);
+}
+
+.cat-pagina:not(.inv-pagina) .autorizacion-casilla input[type='checkbox'],
+.cuenta-publica .autorizacion-casilla input[type='checkbox'] {
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-top: 0;
+}
+
+.cat-pagina:not(.inv-pagina) .autorizacion-casilla label,
+.cuenta-publica .autorizacion-casilla label {
+  padding-block: 0.5rem;
+  cursor: pointer;
+}
+
+.cat-pagina:not(.inv-pagina) .autorizacion-terminos,
+.cuenta-publica .autorizacion-terminos {
+  padding-left: 2.125rem;
+}
+
+/* Confirmación de los avisos: las tres salidas de al menos 44 px. */
+.aviso-confirmacion-acciones .inv-boton-enlace,
+.aviso-confirmacion-acciones .aviso-confirmacion-otra {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--toque-min);
+}
+
+/* Inicio de sesión, registro y restablecer contraseña: contenedor común y formulario fluido. */
+.container.cuenta.cuenta-publica {
+  max-width: var(--ancho-contenido);
+  padding: clamp(1.5rem, 1rem + 2vw, 2.5rem) var(--margen-lateral) 3rem;
+}
+
+.cuenta-publica form,
+.cuenta-publica > section {
+  width: min(100%, 27rem);
+  max-width: none;
+  padding: clamp(1.25rem, 0.5rem + 3vw, 2.2rem);
+}
+
+/* Categorías compactas 2 x 2 en celular; "Ver catálogo" (ya aria-hidden) se oculta solo a la vista. */
+@media (max-width: 47.49rem) {
+  .cat-categorias {
+    gap: 0.625rem;
+  }
+
+  .cat-categoria {
+    min-height: var(--toque-min);
+    padding: 0.75rem 0.5rem;
+    gap: 0.125rem;
+  }
+
+  .cat-categoria .icono {
+    width: 2.75rem;
+    height: 2.25rem;
+  }
+
+  .cat-categoria-nombre {
+    font-size: 1.0625rem;
+  }
+
+  .cat-categoria-ver {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
 }
