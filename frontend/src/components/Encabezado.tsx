@@ -1,8 +1,8 @@
-import { useState, type FormEvent, type MouseEvent } from 'react'
+import { useRef, useState, type FormEvent, type KeyboardEvent, type MouseEvent } from 'react'
 import { categoriasDisponibles, Q_MAX, type OpcionCatalogo } from '../api/catalogo'
 import { RUTA_CUENTA, RUTA_INICIO, RUTA_REGISTRO, navegar, rutaBuscar, rutaCategoria, type Ruta } from '../rutas'
 import { ALT_LOGO_HORIZONTAL, LOGO } from '../marca'
-import { IconoLupa, IconoUsuario } from './IconosPortal'
+import { IconoLupa, IconoMenu, IconoUsuario } from './IconosPortal'
 
 type EncabezadoProps = {
   ruta: Ruta
@@ -41,14 +41,45 @@ export function LogoEncabezado() {
   )
 }
 
+/** id de la navegación principal: el botón del menú la controla (aria-controls). */
+export const ID_MENU_PRINCIPAL = 'menu-principal'
+
 /**
  * Encabezado común (P3, rediseño rojo/negro/blanco): logo, Inicio y las categorías, y el acceso a la
  * cuenta. En el inicio la búsqueda está en la portada; en las demás pantallas, aquí.
+ *
+ * Por debajo de 1100 px (68.75rem) la navegación se pliega tras el botón "Menú" (patrón de botón que
+ * despliega contenido, sin trampa de foco): el CSS la oculta solo en ese ancho y solo si está cerrada.
+ * Esc la cierra y devuelve el foco al botón; también se cierra al pulsar un enlace o al cambiar de ruta.
+ * El buscador del encabezado queda fuera del menú.
  */
 export function Encabezado({ ruta, tipos, conSesion }: EncabezadoProps) {
   const qActual = ruta.nombre === 'buscar' ? ruta.filtros.q : ''
   const tipoActual = ruta.nombre === 'buscar' ? ruta.filtros.tipoId : ''
   const enInicio = ruta.nombre === 'inicio'
+  const [abierto, setAbierto] = useState(false)
+  const boton = useRef<HTMLButtonElement>(null)
+  // Al cambiar de ruta el menú se cierra (ajuste durante el render, sin efecto). La ruta se recalcula en
+  // cada render de App, así que se compara por su contenido y no por identidad.
+  const claveRuta = JSON.stringify(ruta)
+  const [rutaMenu, setRutaMenu] = useState(claveRuta)
+  if (rutaMenu !== claveRuta) {
+    setRutaMenu(claveRuta)
+    setAbierto(false)
+  }
+
+  function alTeclear(evento: KeyboardEvent<HTMLElement>) {
+    if (evento.key === 'Escape' && abierto) {
+      evento.preventDefault()
+      setAbierto(false)
+      boton.current?.focus()
+    }
+  }
+
+  function alPulsarEnMenu(evento: MouseEvent<HTMLElement>) {
+    if (evento.target instanceof Element && evento.target.closest('a')) setAbierto(false)
+  }
+
   return (
     <header className="cat-encabezado">
       <a className="saltar-contenido" href="#contenido" onClick={saltarAlContenido}>
@@ -56,7 +87,26 @@ export function Encabezado({ ruta, tipos, conSesion }: EncabezadoProps) {
       </a>
       <div className="cat-encabezado-interior">
         <LogoEncabezado />
-        <nav className="cat-nav" aria-label="Principal">
+        <button
+          ref={boton}
+          type="button"
+          className="cat-menu-boton"
+          aria-expanded={abierto}
+          aria-controls={ID_MENU_PRINCIPAL}
+          onClick={() => setAbierto((a) => !a)}
+          onKeyDown={alTeclear}
+        >
+          <IconoMenu />
+          Menú
+        </button>
+        <nav
+          id={ID_MENU_PRINCIPAL}
+          className="cat-nav"
+          aria-label="Principal"
+          data-abierto={abierto ? 'true' : 'false'}
+          onKeyDown={alTeclear}
+          onClick={alPulsarEnMenu}
+        >
           <ul>
             <li>
               <a href={RUTA_INICIO} aria-current={enInicio ? 'page' : undefined}>
