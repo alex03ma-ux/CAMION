@@ -28,7 +28,7 @@ public static class CatalogoEndpoints
 
     private const int MaxBusqueda = 100;
     private const int MaxSlug = 200;
-    private const int MaxDestacadosInicio = 8;
+    private const int MaxDestacadosInicio = 10; // D-93: 10 destacados en la portada.
     private const int MaxRecientesInicio = 12;
     private const int TamanoPorDefecto = 12;
     private const int TamanoMaximo = 48;
@@ -39,7 +39,7 @@ public static class CatalogoEndpoints
     {
         var catalogo = app.MapGroup("/api/catalogo").AllowAnonymous();
 
-        // HU-001, HU-002, HU-003: destacados (hasta 8) y recientes (hasta 12, incluye destacados marcados).
+        // HU-001, HU-002, HU-003: destacados (hasta 10, D-93) y recientes (hasta 12, incluye destacados marcados).
         catalogo.MapGet("/inicio", async (CamionDbContext db, TimeProvider reloj, CancellationToken ct) =>
         {
             var ahora = reloj.GetUtcNow().UtcDateTime;
