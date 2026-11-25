@@ -8,16 +8,22 @@
   --negro: #111111;
   --gris-texto: #555555;
   --gris-borde: #e3e3e3;
-  /* Contenedor común (encabezado, portada, secciones y pie): 1280 px en total, márgenes incluidos. */
-  --ancho-contenido: 1280px;
-  --margen-lateral: 20px;
+  /* Contenedor común (encabezado, portada, secciones y pie): 1280 px en total, márgenes incluidos.
+     En rem para que todo siga también el tamaño de letra elegido en el navegador. */
+  --ancho-contenido: 80rem;
+  --margen-lateral: clamp(1rem, 4vw, 1.25rem);
+  --espacio-seccion: clamp(2rem, 1.5rem + 2vw, 2.75rem);
+  /* Ancho mínimo de una tarjeta de vehículo: las columnas salen de aquí (máximo 4 en 1280 px). */
+  --tarjeta-min: 16.5rem;
+  /* Área táctil mínima (44 × 44 px). */
+  --toque-min: 2.75rem;
+  /* Alto máximo de la foto de la portada en celular (16:9). */
+  --portada-alto-movil: 12rem;
 }
 
-@media (max-width: 479px) {
-  :root {
-    --margen-lateral: 16px;
-  }
-}
+/* Puntos de quiebre (en rem): 47.99rem portada apilada y buscador vertical; 47.5rem categorías, servicios,
+   avisos y pie; 68.75rem (1100 px) menú plegable del encabezado, el ancho en que la navegación deja de
+   caber en una fila junto al logo. */
 
 .texto-rojo {
   color: var(--rojo);
@@ -38,8 +44,8 @@
 }
 
 .cat-encabezado-interior {
-  padding: 14px var(--margen-lateral);
-  gap: 12px 28px;
+  padding: 0.875rem var(--margen-lateral);
+  gap: 0.75rem 1.75rem;
 }
 
 /* P10 (CA-P10-02, 04, 05, D-87): logos de VC Automotores. El horizontal (JPEG recortado, fondo blanco) solo va en
@@ -48,6 +54,7 @@
   display: inline-flex;
   flex: none;
   align-items: center;
+  min-height: var(--toque-min);
   line-height: 0;
   border-radius: 4px;
 }
@@ -55,13 +62,13 @@
 .cat-logo-imagen img {
   display: block;
   width: auto;
-  height: 56px;
+  height: 3.5rem;
   max-width: 100%;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 29.99rem) {
   .cat-logo-imagen img {
-    height: 36px;
+    height: 2.25rem;
   }
 }
 
@@ -89,10 +96,13 @@
 
 .cat-nav a {
   position: relative;
-  padding: 8px 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--toque-min);
+  padding: 0.5rem 0;
   color: #222;
   font-weight: 500;
-  font-size: 16px;
+  font-size: 1rem;
 }
 
 .cat-nav a:hover,
@@ -139,6 +149,83 @@
   color: #fff;
 }
 
+/* Botón "Menú": solo por debajo de 68.75rem; arriba la navegación va completa en una fila. */
+.cat-menu-boton {
+  display: none;
+}
+
+@media (max-width: 68.74rem) {
+  .cat-menu-boton {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: auto;
+    min-height: var(--toque-min);
+    min-width: var(--toque-min);
+    margin: 0 0 0 auto;
+    padding: 0.5rem 1rem;
+    border: 1.5px solid var(--negro);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--negro);
+    font-size: 1rem;
+  }
+
+  .cat-menu-boton:hover,
+  .cat-menu-boton[aria-expanded="true"] {
+    background: var(--negro);
+    color: #fff;
+  }
+
+  .cat-menu-boton:focus-visible {
+    outline: 3px solid #2563eb;
+    outline-offset: 2px;
+  }
+
+  .cat-menu-boton .icono {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  /* Plegada: oculta solo con CSS, para que en escritorio siga visible sin depender del estado. */
+  .cat-nav {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+
+  .cat-nav[data-abierto="false"] {
+    display: none;
+  }
+
+  .cat-nav ul {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 0.25rem 0 0.5rem;
+    border-top: 1px solid var(--gris-borde);
+  }
+
+  .cat-nav li {
+    border-bottom: 1px solid var(--gris-borde);
+  }
+
+  .cat-nav a {
+    display: flex;
+    width: 100%;
+    font-size: 1.0625rem;
+  }
+
+  .cat-nav-acceso {
+    margin-left: 0;
+  }
+
+  .cat-nav a.cat-nav-cuenta {
+    width: auto;
+    margin: 0.5rem 0;
+    justify-content: center;
+  }
+}
+
 form.cat-busqueda {
   position: relative;
   flex-basis: 100%;
@@ -175,7 +262,7 @@ form.cat-busqueda {
   padding: 0;
   text-align: left;
   background: #f1eeeb;
-  min-height: 420px;
+  min-height: 26.25rem;
 }
 
 .cat-portada-imagen {
@@ -184,12 +271,6 @@ form.cat-busqueda {
   right: 0;
   width: 60%;
   height: 100%;
-}
-
-@media (max-width: 900px) {
-  .cat-portada-imagen {
-    width: 100%;
-  }
 }
 
 /* Velo claro a la izquierda para que el texto se lea sobre la ilustración. */
@@ -206,14 +287,14 @@ form.cat-busqueda {
   z-index: 2;
   max-width: var(--ancho-contenido);
   margin: auto;
-  padding: 48px var(--margen-lateral) 64px;
+  padding: clamp(1.5rem, 1rem + 2.5vw, 3rem) var(--margen-lateral) clamp(2.5rem, 2rem + 2.5vw, 4rem);
 }
 
 .cat-portada-eyebrow {
   display: inline-block;
-  margin: 0 0 16px;
-  padding-bottom: 10px;
-  font-size: 13px;
+  margin: 0 0 1rem;
+  padding-bottom: 0.625rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.5px;
   text-transform: uppercase;
@@ -223,18 +304,18 @@ form.cat-busqueda {
 
 /* D-92: el h1 es pequeño, encima de la frase; la frase conserva el aspecto que tenía como h1. */
 .cat-portada h1.cat-portada-h1 {
-  max-width: 560px;
-  margin: 0 0 8px;
-  font-size: 20px;
+  max-width: 35rem;
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
   font-weight: 800;
   line-height: 1.2;
   color: var(--rojo-oscuro);
 }
 
 .cat-portada .cat-portada-frase {
-  max-width: 560px;
-  margin: 0 0 14px;
-  font-size: clamp(34px, 5vw, 54px);
+  max-width: 35rem;
+  margin: 0 0 0.875rem;
+  font-size: clamp(1.75rem, 1rem + 4vw, 3.375rem);
   font-weight: 900;
   line-height: 1.05;
   color: var(--negro);
@@ -245,9 +326,9 @@ form.cat-busqueda {
 }
 
 .cat-portada .cat-portada-texto {
-  max-width: 420px;
-  margin: 0 0 28px;
-  font-size: 19px;
+  max-width: 26.25rem;
+  margin: 0 0 1.75rem;
+  font-size: clamp(1.0625rem, 1rem + 0.4vw, 1.1875rem);
   line-height: 1.4;
   color: #333;
 }
@@ -256,7 +337,7 @@ form.cat-busqueda-portada {
   position: relative;
   display: flex;
   align-items: stretch;
-  max-width: 880px;
+  max-width: 55rem;
   margin: 0;
   padding: 0;
   background: #fff;
@@ -275,63 +356,134 @@ form.cat-busqueda-portada {
 .cat-busqueda-portada input {
   flex: 1;
   min-width: 0;
-  padding: 18px 16px 18px 54px;
+  min-height: var(--toque-min);
+  padding: 1.125rem 1rem 1.125rem 3.375rem;
   border: none;
   border-radius: 0;
-  font-size: 17px;
+  font-size: 1.0625rem;
 }
 
 .cat-busqueda-portada select {
   width: auto;
   margin: 0;
-  padding: 0 14px;
+  min-height: var(--toque-min);
+  padding: 0 0.875rem;
   border: none;
   border-left: 1px solid var(--gris-borde);
   border-radius: 0;
   background: #fff;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 600;
 }
 
 .cat-busqueda-portada button {
   width: auto;
   margin: 0;
-  padding: 0 36px;
+  min-height: var(--toque-min);
+  padding: 0 2.25rem;
   border-radius: 0;
   background: var(--rojo);
-  font-size: 18px;
+  font-size: 1.125rem;
 }
 
 .cat-busqueda-portada button:hover {
   background: var(--rojo-oscuro);
 }
 
-@media (max-width: 640px) {
-  .cat-portada::before {
-    background: linear-gradient(180deg, rgba(248, 246, 244, 0.96) 0%, rgba(248, 246, 244, 0.9) 60%, rgba(248, 246, 244, 0.55) 100%);
+/* Tablet: la imagen ocupa la mitad derecha y los textos la izquierda (sin quedar sobre la imagen). */
+@media (min-width: 48rem) and (max-width: 63.99rem) {
+  .cat-portada-imagen {
+    width: 50%;
   }
 
+  .cat-portada .cat-portada-eyebrow,
+  .cat-portada h1.cat-portada-h1,
+  .cat-portada .cat-portada-frase,
+  .cat-portada .cat-portada-texto {
+    max-width: min(35rem, 48%);
+  }
+}
+
+/* Celular: foto (16:9, con tope de alto), textos y buscador apilados; sin velo ni texto sobre la foto.
+   La ilustración mide 640 x 360 (16:9): se ve entera. La foto se recorta desde el centro, igual que la
+   vista previa de Admin > Portada. El marco reserva el espacio antes de que cargue. */
+@media (max-width: 47.99rem) {
+  .cat-portada {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .cat-portada::before {
+    display: none;
+  }
+
+  .cat-portada-imagen {
+    position: static;
+    display: block;
+    width: min(100%, calc(var(--portada-alto-movil) * 16 / 9));
+    height: auto;
+    aspect-ratio: 16 / 9;
+    margin: 0 auto;
+  }
+
+  .cat-portada .cat-portada-foto {
+    object-position: center;
+  }
+
+  .cat-portada-interior {
+    width: 100%;
+  }
+
+  /* Buscador vertical: campo, tipo y botón a todo el ancho, cada uno de al menos 44 px. */
   form.cat-busqueda-portada {
-    flex-wrap: wrap;
+    flex-direction: column;
   }
 
   .cat-busqueda-portada input {
-    flex-basis: 100%;
+    padding-top: 0.875rem;
+    padding-bottom: 0.875rem;
     border-bottom: 1px solid var(--gris-borde);
   }
 
   .cat-busqueda-portada .cat-busqueda-lupa {
-    top: 30px;
+    top: 1.5625rem;
   }
 
   .cat-busqueda-portada select {
-    flex: 1;
-    padding: 12px 14px;
+    width: 100%;
+    padding: 0.75rem 0.875rem;
     border-left: none;
   }
 
   .cat-busqueda-portada button {
-    padding: 12px 24px;
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+  }
+}
+
+/* Horizontal con poca altura (celular girado): portada más compacta, con los mismos textos. */
+@media (orientation: landscape) and (max-height: 30rem) {
+  .cat-portada {
+    min-height: 0;
+  }
+
+  .cat-portada-interior {
+    padding-top: 1rem;
+    padding-bottom: 2.5rem;
+  }
+
+  .cat-portada-eyebrow {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.375rem;
+  }
+
+  .cat-portada .cat-portada-frase {
+    font-size: clamp(1.75rem, 1rem + 2.5vw, 2.5rem);
+  }
+
+  .cat-portada .cat-portada-texto {
+    margin-bottom: 1rem;
   }
 }
 
@@ -345,7 +497,7 @@ form.cat-busqueda-portada {
   list-style: none;
 }
 
-@media (min-width: 760px) {
+@media (min-width: 47.5rem) {
   .cat-categorias {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 18px;
@@ -386,7 +538,7 @@ form.cat-busqueda-portada {
   overflow-wrap: anywhere;
 }
 
-@media (max-width: 399px) {
+@media (max-width: 24.99rem) {
   .cat-categoria-nombre {
     font-size: 19px;
   }
@@ -420,12 +572,20 @@ form.cat-busqueda-portada {
 .cat-inicio .cat-pagina {
   position: relative;
   z-index: 3;
-  margin-top: -32px;
+  margin-top: -2rem;
   padding-top: 0;
 }
 
+/* Celular: con la portada apilada, las categorías ya no se montan sobre ella. */
+@media (max-width: 47.99rem) {
+  .cat-inicio .cat-pagina {
+    margin-top: 0;
+    padding-top: 1.5rem;
+  }
+}
+
 .cat-inicio .cat-seccion {
-  margin-top: 40px;
+  margin-top: var(--espacio-seccion);
 }
 
 .cat-seccion-cabecera {
@@ -448,6 +608,7 @@ form.cat-busqueda-portada {
 .cat-ver-todos {
   display: inline-flex;
   align-items: center;
+  min-height: var(--toque-min);
   gap: 2px;
   color: var(--rojo);
   font-size: 18px;
@@ -572,7 +733,7 @@ form.cat-busqueda-portada {
 
 /* ---- Franja de confianza ---- */
 .cat-servicios {
-  margin: 44px 0 0;
+  margin: var(--espacio-seccion) 0 0;
 }
 
 .cat-servicios h2 {
@@ -590,7 +751,7 @@ form.cat-busqueda-portada {
   list-style: none;
 }
 
-@media (min-width: 760px) {
+@media (min-width: 47.5rem) {
   .cat-confianza {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -600,7 +761,7 @@ form.cat-busqueda-portada {
   }
 }
 
-@media (min-width: 1100px) {
+@media (min-width: 68.75rem) {
   .cat-confianza {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
@@ -634,7 +795,7 @@ form.cat-busqueda-portada {
   display: flex;
   align-items: center;
   gap: 28px;
-  margin-top: 44px;
+  margin-top: var(--espacio-seccion);
   padding: 28px 32px;
   overflow: hidden;
   border-radius: 18px;
@@ -668,6 +829,7 @@ form.cat-busqueda-portada {
 .cat-credito-boton {
   display: inline-flex;
   align-items: center;
+  min-height: var(--toque-min);
   gap: 4px;
   padding: 11px 22px;
   border-radius: 10px;
@@ -682,7 +844,7 @@ form.cat-busqueda-portada {
   background: var(--rojo-oscuro);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 39.99rem) {
   .cat-credito {
     flex-direction: column;
     align-items: flex-start;
@@ -706,14 +868,14 @@ form.cat-busqueda-portada {
   margin-top: 24px;
 }
 
-@media (min-width: 760px) {
+@media (min-width: 47.5rem) {
   .cat-avisos {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 /* Tres accesos en una fila en pantallas anchas (vender, seguro y "Busco un vehículo", D-56 d B). */
-@media (min-width: 1000px) {
+@media (min-width: 62.5rem) {
   .cat-avisos {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -763,6 +925,7 @@ form.cat-busqueda-portada {
   margin-top: auto;
   display: inline-flex;
   align-items: center;
+  min-height: var(--toque-min);
   gap: 4px;
   padding: 10px 18px;
   border-radius: 10px;
@@ -781,7 +944,7 @@ form.cat-busqueda-portada {
   outline-offset: 2px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 39.99rem) {
   .cat-aviso-bloque {
     flex-direction: column;
     gap: 10px;
@@ -811,7 +974,7 @@ form.cat-busqueda-portada {
   padding: 36px var(--margen-lateral) 20px;
 }
 
-@media (min-width: 760px) {
+@media (min-width: 47.5rem) {
   /* P5b: cinco bloques (marca, Explora, Servicios, Tu cuenta, Contacto); en tabletas, dos filas. */
   .cat-pie-interior {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -848,10 +1011,13 @@ form.cat-busqueda-portada {
 }
 
 .cat-pie li {
-  margin: 0 0 6px;
+  margin: 0;
 }
 
 .cat-pie a:not(.cat-logo) {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--toque-min);
   color: #d6d6d6;
   text-decoration: none;
   overflow-wrap: anywhere;
@@ -887,8 +1053,9 @@ form.cat-busqueda-portada {
 }
 
 .cat-pie .cat-pie-legal-enlaces a {
-  display: inline-block;
-  padding: 4px 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--toque-min);
   color: #d6d6d6;
   text-decoration: underline;
 }
@@ -1132,7 +1299,7 @@ form.admin-portada-form {
 }
 
 
-@media (min-width: 1100px) {
+@media (min-width: 68.75rem) {
   .cat-pie-interior {
     grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
   }

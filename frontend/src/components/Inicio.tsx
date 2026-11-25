@@ -84,7 +84,14 @@ export function Inicio({ tipos }: InicioProps) {
     <div className="cat-inicio">
       <section className="cat-portada" aria-labelledby="inicio-titulo">
         {fotoPortada.url && !fotoPortada.fallida ? (
-          <img className="cat-portada-imagen cat-portada-foto" src={fotoPortada.url} alt="" onError={fotoPortada.alFallar} />
+          <img
+            className="cat-portada-imagen cat-portada-foto"
+            src={fotoPortada.url}
+            alt=""
+            fetchPriority="high"
+            decoding="async"
+            onError={fotoPortada.alFallar}
+          />
         ) : (
           <IlustracionCamion className="cat-portada-imagen" />
         )}

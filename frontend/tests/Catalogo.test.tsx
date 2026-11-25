@@ -26,6 +26,7 @@ import {
   cabecera,
   guardarSesionFicticia,
   PERFIL_FICTICIO,
+  RUTA_PORTADA,
   simularFetch,
   type RespuestaSimulada,
 } from './helpers'
@@ -324,6 +325,22 @@ describe('Tarjeta', () => {
     fireEvent.error(within(t).getByRole('img', { name: `Foto de ${V1.titulo}` }))
     expect(within(t).getByRole('img', { name: 'Sin foto disponible' })).toBeInTheDocument()
     expect(within(t).getByText('Destacado')).toBeInTheDocument()
+  })
+
+  it('adaptable: la foto de la portada se pide con prioridad alta y las fotos de las tarjetas se cargan en diferido', async () => {
+    simularFetch({
+      [RUTA_FILTROS]: respuestaFiltros(),
+      [RUTA_INICIO]: { status: 200, body: { destacados: [V1], recientes: [V1] } },
+      [RUTA_PORTADA]: { status: 200, body: { url: '/media/portal/portada-20261125-abc.jpg' } },
+    })
+    const { container } = abrirApp('/')
+    await waitFor(() => expect(container.querySelector('.cat-portada img')).not.toBeNull())
+    const portada = container.querySelector('.cat-portada img') as HTMLImageElement
+    expect(portada).toHaveAttribute('fetchpriority', 'high')
+    expect(portada).toHaveAttribute('decoding', 'async')
+    const fotos = await screen.findAllByRole('img', { name: `Foto de ${V1.titulo}` })
+    expect(fotos).toHaveLength(2)
+    for (const foto of fotos) expect(foto).toHaveAttribute('loading', 'lazy')
   })
 
   it('CA-D17-06 a 08 / CA-UI-05 kilometraje en la tarjeta: Carrocería no, Maquinaria con 0 no, con 1200 sí, Camión con 0 sí', async () => {
