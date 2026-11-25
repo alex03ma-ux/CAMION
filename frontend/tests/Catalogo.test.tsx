@@ -290,6 +290,32 @@ describe('Tarjeta', () => {
     expect(within(t4).getByText('Destacado')).toBeInTheDocument()
   })
 
+  it('D-93 etiqueta "Disponible" en la tarjeta si está disponible, en la misma lista que "Destacado" y "Reservado"', async () => {
+    const reservadoDestacado = { ...V2, slug: 'rd', titulo: 'Reservado destacado', destacado: true }
+    simularFetch({
+      [RUTA_FILTROS]: respuestaFiltros(),
+      [RUTA_INICIO]: { status: 200, body: { destacados: [], recientes: [V1, V2, V3, reservadoDestacado] } },
+    })
+    abrirApp('/')
+    // V1: disponible y destacado: las dos etiquetas, en una sola lista (sin superponerse).
+    const t1 = await tarjetaDe(V1.titulo)
+    const etiquetas1 = within(t1).getByRole('list', { name: 'Etiquetas' })
+    expect(within(etiquetas1).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Destacado', 'Disponible'])
+    // V2: reservado, nunca "Disponible".
+    const t2 = await tarjetaDe(V2.titulo)
+    expect(within(t2).getByText('Reservado')).toBeInTheDocument()
+    expect(within(t2).queryByText('Disponible')).not.toBeInTheDocument()
+    // V3: disponible, sin destacar.
+    const t3 = await tarjetaDe(V3.titulo)
+    expect(within(within(t3).getByRole('list', { name: 'Etiquetas' })).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      'Disponible',
+    ])
+    const t4 = await tarjetaDe(reservadoDestacado.titulo)
+    expect(within(t4).queryByText('Disponible')).not.toBeInTheDocument()
+    // "Usado" no existe en los datos: no se muestra.
+    expect(screen.queryByText('Usado')).not.toBeInTheDocument()
+  })
+
   it('CA-DET-12 sin foto se ve la imagen de reemplazo con texto alternativo; si la foto falla, también', async () => {
     simularFetch({ [RUTA_FILTROS]: respuestaFiltros(), [RUTA_INICIO]: { status: 200, body: { destacados: [], recientes: [V1, V3] } } })
     abrirApp('/')

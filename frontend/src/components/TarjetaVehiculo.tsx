@@ -4,17 +4,22 @@ import { rutaVehiculo } from '../rutas'
 import { IconoEstrella } from './IconosPortal'
 import { ImagenVehiculo } from './ImagenVehiculo'
 
-/** Etiquetas "Destacado" y "Reservado": siempre con texto, no solo con color. */
+/**
+ * Etiquetas "Destacado", "Reservado" y "Disponible": siempre con texto, no solo con color. "Disponible" (D-93) solo
+ * la pide la tarjeta del catálogo; la ficha no la muestra.
+ */
 export function EtiquetasVehiculo({
   destacado,
   reservado,
+  disponible = false,
   negociable = false,
 }: {
   destacado: boolean
   reservado: boolean
+  disponible?: boolean
   negociable?: boolean
 }) {
-  if (!destacado && !reservado && !negociable) return null
+  if (!destacado && !reservado && !disponible && !negociable) return null
   return (
     <ul className="cat-etiquetas" aria-label="Etiquetas">
       {destacado && (
@@ -24,6 +29,7 @@ export function EtiquetasVehiculo({
         </li>
       )}
       {reservado && <li className="cat-etiqueta cat-etiqueta-reservado">Reservado</li>}
+      {disponible && <li className="cat-etiqueta cat-etiqueta-disponible">Disponible</li>}
       {negociable && <li className="cat-etiqueta cat-etiqueta-negociable">Negociable</li>}
     </ul>
   )
@@ -47,6 +53,7 @@ export function TarjetaVehiculo({ vehiculo }: { vehiculo: DatosTarjeta }) {
       <EtiquetasVehiculo
         destacado={vehiculo.destacado}
         reservado={vehiculo.estadoComercial === 'RESERVADO'}
+        disponible={vehiculo.estadoComercial === 'DISPONIBLE'}
       />
       <p className="cat-precio">{formatoCop(vehiculo.precioCop)}</p>
       <ul className="cat-datos">

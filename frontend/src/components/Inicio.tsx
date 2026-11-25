@@ -35,7 +35,9 @@ import {
   IconoRevisado,
   IlustracionCamion,
 } from './IconosPortal'
+import { CarruselVehiculos } from './CarruselVehiculos'
 import { RejillaVehiculos } from './TarjetaVehiculo'
+import { useRestaurarScroll } from '../scrollPorEntrada'
 import { useContactoPortal } from './useContactoPortal'
 
 /** D-92 (decisión de la responsable, 2026-11-16): h1 de la portada. */
@@ -69,6 +71,8 @@ export const SERVICIOS: { texto: string; icono: ReactNode }[] = [
 export function Inicio({ tipos }: InicioProps) {
   const cargar = useCallback((signal: AbortSignal) => obtenerInicio(signal), [])
   const [estado, reintentar] = usePeticion(cargar, 'inicio')
+  // D-93 (3a): al volver de la ficha, la portada vuelve a la misma posición cuando los vehículos ya están pintados.
+  useRestaurarScroll(estado.estado !== 'cargando')
 
   const categorias = categoriasDisponibles(tipos)
   const fotoPortada = useFotoPortada()
@@ -165,7 +169,8 @@ export function Inicio({ tipos }: InicioProps) {
                 Ver todos <IconoFlecha />
               </a>
             </div>
-            <RejillaVehiculos vehiculos={estado.datos.destacados} />
+            {/* D-93 (3a): carrusel horizontal; Recientes sigue en rejilla. */}
+            <CarruselVehiculos vehiculos={estado.datos.destacados} />
           </section>
         )}
 
