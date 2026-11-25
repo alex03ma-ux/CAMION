@@ -5,6 +5,7 @@ import { afterEach, beforeEach, vi } from 'vitest'
 import { olvidarCodigoRecuperacion } from '../src/api/recuperacion'
 import { olvidarContactoPortal } from '../src/components/useContactoPortal'
 import { olvidarTiposCatalogo } from '../src/rutas'
+import { olvidarScrollPorEntrada } from '../src/scrollPorEntrada'
 
 // INF-3 (O-8): con carga (CI en máquinas lentas, varias suites a la vez) la espera por defecto de 1 s de
 // findBy*/waitFor no basta y fallaban de 1 a 4 pruebas distintas. 5 s solo da margen: una prueba que deba
@@ -51,6 +52,13 @@ beforeEach(() => {
   const almacen = new AlmacenEnMemoria()
   Object.defineProperty(window, 'localStorage', { value: almacen, configurable: true })
   Object.defineProperty(globalThis, 'localStorage', { value: almacen, configurable: true })
+  // D-93 (3a): la posición de la página por entrada del historial vive en sessionStorage (mismo problema que
+  // localStorage en Node 25) y jsdom no implementa window.scrollTo.
+  const sesion = new AlmacenEnMemoria()
+  Object.defineProperty(window, 'sessionStorage', { value: sesion, configurable: true })
+  Object.defineProperty(globalThis, 'sessionStorage', { value: sesion, configurable: true })
+  Object.defineProperty(window, 'scrollTo', { value: vi.fn(), configurable: true, writable: true })
+  olvidarScrollPorEntrada()
   // D-30: jsdom no implementa las URL de objeto (vistas previas de las fotos elegidas).
   let siguiente = 1
   Object.defineProperty(URL, 'createObjectURL', {

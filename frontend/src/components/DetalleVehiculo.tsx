@@ -115,7 +115,9 @@ export function DetalleVehiculo({ slug, sesion = null }: { slug: string; sesion?
   return (
     <div className="cat-pagina cat-detalle">
       <p className="cat-volver">
-        <a href={rutaVolverAResultados()}>Volver a resultados</a>
+        <a href={rutaVolverAResultados()} data-restaurar-scroll>
+          Volver a resultados
+        </a>
       </p>
 
       {/* El h1 se mantiene en el mismo sitio para no perder el foco al cargar. */}
