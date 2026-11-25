@@ -38,7 +38,8 @@ export function TarjetaVehiculo({ vehiculo }: { vehiculo: DatosTarjeta }) {
   const ubicacion = textoUbicacion(vehiculo.municipio, vehiculo.departamento)
   return (
     <article className={vehiculo.destacado ? 'cat-tarjeta cat-tarjeta-destacada' : 'cat-tarjeta'}>
-      <h3 className="cat-tarjeta-titulo">
+      {/* El título se corta a 2 líneas con CSS; el nombre completo queda en el enlace y en el title. */}
+      <h3 className="cat-tarjeta-titulo" title={vehiculo.titulo}>
         <a className="cat-tarjeta-enlace" href={rutaVehiculo(vehiculo.slug)}>
           {vehiculo.titulo}
         </a>

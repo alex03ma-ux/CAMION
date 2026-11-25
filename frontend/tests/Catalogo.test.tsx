@@ -301,6 +301,31 @@ describe('Tarjeta', () => {
     expect(conFoto.querySelector('img')).toBeNull()
   })
 
+  it('ajustes visuales: un título largo (cortado a 2 líneas con CSS) sigue completo en el enlace y en el title', async () => {
+    const largo = {
+      ...V2,
+      slug: 'largo',
+      titulo: 'Chevrolet NPR Reward Euro 6 furgón termoking doble troque con carrocería de estacas 2022',
+    }
+    simularFetch({ [RUTA_FILTROS]: respuestaFiltros(), [RUTA_INICIO]: { status: 200, body: { destacados: [], recientes: [largo] } } })
+    abrirApp('/')
+    const t = await tarjetaDe(largo.titulo)
+    const h3 = within(t).getByRole('heading', { level: 3 })
+    expect(h3).toHaveTextContent(largo.titulo)
+    expect(h3).toHaveAttribute('title', largo.titulo)
+    expect(within(t).getByRole('link')).toHaveAccessibleName(largo.titulo)
+  })
+
+  it('ajustes visuales: en Destacados, la foto que no carga también muestra "Sin foto disponible"', async () => {
+    simularFetch({ [RUTA_FILTROS]: respuestaFiltros(), [RUTA_INICIO]: { status: 200, body: { destacados: [V1], recientes: [] } } })
+    abrirApp('/')
+    const destacados = (await screen.findByRole('heading', { name: 'Destacados' })).closest('section') as HTMLElement
+    const t = within(destacados).getByRole('article')
+    fireEvent.error(within(t).getByRole('img', { name: `Foto de ${V1.titulo}` }))
+    expect(within(t).getByRole('img', { name: 'Sin foto disponible' })).toBeInTheDocument()
+    expect(within(t).getByText('Destacado')).toBeInTheDocument()
+  })
+
   it('CA-D17-06 a 08 / CA-UI-05 kilometraje en la tarjeta: Carrocería no, Maquinaria con 0 no, con 1200 sí, Camión con 0 sí', async () => {
     simularFetch({
       [RUTA_FILTROS]: respuestaFiltros(),
