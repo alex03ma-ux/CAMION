@@ -91,8 +91,8 @@
   }
 }
 
-/* Por debajo de 360 px el botón queda solo con el ícono (44 x 44); "Menú" sigue como nombre accesible. */
-@media (max-width: 22.49rem) {
+/* Por debajo de 400 px (con la lupa al lado, D-93) el botón queda solo con el ícono (44 x 44); "Menú" sigue como nombre accesible. */
+@media (max-width: 24.99rem) {
   .cat-encabezado .cat-menu-boton {
     justify-content: center;
     padding: 0.5rem;
@@ -1607,4 +1607,210 @@ form.admin-portada-form {
 .cat-pie-redes .icono {
   width: 22px;
   height: 22px;
+}
+
+/* =====================================================================
+   D-93 (entrega 3a): encabezado fijo con lupa, carrusel de destacados y etiqueta "Disponible".
+   ===================================================================== */
+
+/* Las anclas, el foco y "Saltar al contenido" no quedan debajo del encabezado fijo (Encabezado.tsx mide su alto). */
+html {
+  scroll-padding-top: var(--alto-encabezado, 5.5rem);
+}
+
+/* Fijo arriba al desplazarse, siempre con el mismo alto (no se achica: sin saltos). Debajo del diálogo (z-index 10). */
+.cat-encabezado {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+/* Lupa: por debajo de 68.75rem en todas las páginas; en escritorio, solo fuera del inicio. */
+.cat-lupa-boton {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--toque-min);
+  height: var(--toque-min);
+  margin: 0;
+  padding: 0;
+  border: 1.5px solid var(--negro);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--negro);
+}
+
+.cat-lupa-boton:hover,
+.cat-lupa-boton[aria-expanded="true"] {
+  background: var(--negro);
+  color: #fff;
+}
+
+.cat-lupa-boton:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.cat-lupa-boton .icono {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+/* Buscador plegado tras la lupa: oculto solo con CSS mientras está cerrado. */
+form.cat-busqueda[data-abierta="false"] {
+  display: none;
+}
+
+@media (max-width: 68.74rem) {
+  .cat-lupa-boton {
+    margin-left: auto;
+  }
+
+  .cat-encabezado .cat-menu-boton {
+    margin-left: 0;
+  }
+
+  /* Menú abierto: si no cabe en la pantalla (celular girado), se desplaza por dentro. */
+  .cat-nav {
+    max-height: calc(100vh - 5rem);
+    max-height: calc(100dvh - 5rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+@media (min-width: 68.75rem) {
+  /* En el inicio el buscador está en la portada: sin lupa ni buscador en el encabezado. */
+  .cat-encabezado[data-inicio] .cat-lupa-boton,
+  .cat-encabezado[data-inicio] form.cat-busqueda {
+    display: none;
+  }
+
+  /* Fuera del inicio: logo, navegación y lupa en una fila; el buscador abierto, debajo. Separaciones algo menores
+     para que la lupa quepa en la misma fila desde 1100 px. */
+  .cat-encabezado:not([data-inicio]) .cat-encabezado-interior {
+    column-gap: clamp(1rem, 2.5vw - 0.75rem, 1.75rem);
+  }
+
+  .cat-encabezado:not([data-inicio]) .cat-nav ul {
+    column-gap: clamp(1rem, 2vw - 0.25rem, 1.625rem);
+  }
+
+  .cat-encabezado:not([data-inicio]) .cat-nav-acceso {
+    margin-left: 0.25rem;
+  }
+
+  .cat-encabezado .cat-nav {
+    order: 1;
+  }
+
+  .cat-encabezado .cat-lupa-boton {
+    order: 2;
+  }
+
+  .cat-encabezado form.cat-busqueda {
+    order: 3;
+  }
+}
+
+/* ---- Carrusel de destacados (CarruselVehiculos.tsx) ---- */
+.cat-carrusel-controles {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+}
+
+.cat-carrusel-controles[hidden] {
+  display: none;
+}
+
+.cat-carrusel-flecha {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--toque-min);
+  height: var(--toque-min);
+  margin: 0;
+  padding: 0;
+  border: 1.5px solid var(--negro);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--negro);
+}
+
+.cat-carrusel-flecha:hover:not([aria-disabled="true"]) {
+  background: var(--negro);
+  color: #fff;
+}
+
+.cat-carrusel-flecha[aria-disabled="true"] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.cat-carrusel-flecha:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.cat-carrusel-flecha .icono {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.cat-carrusel-anterior .icono {
+  rotate: 180deg;
+}
+
+/* Cuántas tarjetas se ven lo decide el ancho del carrusel, con los mismos cortes que la rejilla de Recientes
+   (--tarjeta-min de 16.5rem y separación de 1rem): 2 desde 34rem, 3 desde 51.5rem y 4 desde 69rem. */
+.cat-carrusel-marco {
+  container-type: inline-size;
+}
+
+.cat-carrusel-pista {
+  --visibles: 1;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - (var(--visibles) - 1) * 1rem) / var(--visibles));
+  gap: 1rem;
+  /* El relleno deja ver la sombra y el contorno de foco de la tarjeta; el margen negativo conserva el eje. */
+  margin: 0 -0.375rem;
+  padding: 0.375rem 0.375rem 0.75rem;
+  list-style: none;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 0.375rem;
+}
+
+.cat-carrusel-pista > li {
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+@container (min-width: 34rem) {
+  .cat-carrusel-pista {
+    --visibles: 2;
+  }
+}
+
+@container (min-width: 51.5rem) {
+  .cat-carrusel-pista {
+    --visibles: 3;
+  }
+}
+
+@container (min-width: 69rem) {
+  .cat-carrusel-pista {
+    --visibles: 4;
+  }
+}
+
+/* Etiqueta "Disponible": mismo formato y posición que "Reservado", en tono claro (contraste 5,7:1). */
+.cat-etiqueta-disponible {
+  background: #fff;
+  color: #067647;
 }
