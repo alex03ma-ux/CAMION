@@ -97,7 +97,8 @@ export function Encabezado({ ruta, tipos, conSesion }: EncabezadoProps) {
           onKeyDown={alTeclear}
         >
           <IconoMenu />
-          Menú
+          {/* Por debajo de 360 px el texto se oculta solo a la vista; sigue siendo el nombre accesible. */}
+          <span className="cat-menu-texto">Menú</span>
         </button>
         <nav
           id={ID_MENU_PRINCIPAL}
