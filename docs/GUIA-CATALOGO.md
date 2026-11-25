@@ -45,7 +45,7 @@ Nadie puede crear, editar ni borrar vehículos desde el catálogo: no hay ningú
 ### La página de inicio (`#/`)
 
 - Accesos a las categorías y el botón **Ver todos los vehículos**.
-- **Destacados**: hasta 8 vehículos destacados.
+- **Destacados**: hasta 10 vehículos destacados.
 - **Recientes**: los 12 vehículos publicados más recientemente (pueden incluir destacados).
 - Si no hay ningún vehículo visible, se ve "Pronto tendremos vehículos publicados." Es lo normal mientras no haya datos: el alta de vehículos llega en P4.
 

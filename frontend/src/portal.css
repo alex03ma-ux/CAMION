@@ -8,6 +8,36 @@
   --negro: #111111;
   --gris-texto: #555555;
   --gris-borde: #e3e3e3;
+  /* Contenedor común de todas las páginas públicas (D-93): 1600 px en total, márgenes incluidos. */
+  --page-max-width: 1600px;
+  --page-gutter: clamp(12px, 2vw, 40px);
+  --section-gap: clamp(24px, 3vw, 48px);
+  /* Ancho mínimo de una tarjeta de vehículo: las columnas salen de aquí. Con 1rem de separación: 2 desde
+     37rem de contenido, 3 desde 56rem, 4 desde 75rem y 5 desde 94rem (unos 1504 px); máximo 5. */
+  --tarjeta-min: 18rem;
+  /* Área táctil mínima (44 × 44 px). */
+  --toque-min: 2.75rem;
+  /* Alto máximo de la foto de la portada en celular (marco 16:9 a todo el ancho del contenedor). */
+  --portada-alto-movil: 12rem;
+}
+
+/* Puntos de quiebre (en rem): 47.99rem buscador vertical; 48rem categorías en 4 columnas; 64rem portada en 2
+   columnas; 47.5rem servicios, avisos y pie; 68.75rem (1100 px) menú plegable del encabezado. */
+
+/* Contenedor común: un solo eje para el encabezado, la portada, las secciones, los formularios, las páginas legales
+   y el pie. El panel privado (.inv-pagina) conserva el suyo. */
+.page-container,
+.cat-encabezado-interior,
+.cat-portada-interior,
+.cat-pagina:not(.inv-pagina),
+.cat-pie-interior,
+.cat-pie-legal {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--page-max-width);
+  margin-inline: auto;
+  padding-inline: var(--page-gutter);
+  min-width: 0;
 }
 
 .texto-rojo {
@@ -29,8 +59,8 @@
 }
 
 .cat-encabezado-interior {
-  padding: 14px 20px;
-  gap: 12px 28px;
+  padding-block: 0.875rem;
+  gap: 0.75rem 1.75rem;
 }
 
 /* P10 (CA-P10-02, 04, 05, D-87): logos de VC Automotores. El horizontal (JPEG recortado, fondo blanco) solo va en
@@ -39,6 +69,7 @@
   display: inline-flex;
   flex: none;
   align-items: center;
+  min-height: var(--toque-min);
   line-height: 0;
   border-radius: 4px;
 }
@@ -46,13 +77,52 @@
 .cat-logo-imagen img {
   display: block;
   width: auto;
-  height: 56px;
+  height: 3.5rem;
   max-width: 100%;
 }
 
-@media (max-width: 480px) {
+/* Celular: logo y botón "Menú" en una sola fila hasta 320 px. El logo parte de ancho 0 (así la fila no se
+   parte) y crece hasta su tamaño de 36 px de alto; si no cabe, se reduce en proporción, sin desbordar.
+   El buscador y la navegación abierta siguen en su propia fila (flex-basis: 100%). */
+@media (max-width: 29.99rem) {
+  .cat-encabezado-interior {
+    column-gap: 0.75rem;
+  }
+
+  .cat-logo.cat-logo-imagen {
+    flex: 1 1 0;
+    max-width: max-content;
+    min-width: 0;
+  }
+
+  .cat-logo-imagen picture {
+    display: contents;
+  }
+
   .cat-logo-imagen img {
-    height: 36px;
+    min-width: 0;
+    height: auto;
+    max-height: 2.25rem;
+  }
+}
+
+/* Por debajo de 400 px (con la lupa al lado, D-93) el botón queda solo con el ícono (44 x 44); "Menú" sigue como nombre accesible. */
+@media (max-width: 24.99rem) {
+  .cat-encabezado .cat-menu-boton {
+    justify-content: center;
+    padding: 0.5rem;
+  }
+
+  .cat-menu-texto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 }
 
@@ -80,10 +150,13 @@
 
 .cat-nav a {
   position: relative;
-  padding: 8px 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--toque-min);
+  padding: 0.5rem 0;
   color: #222;
   font-weight: 500;
-  font-size: 16px;
+  font-size: 1rem;
 }
 
 .cat-nav a:hover,
@@ -130,6 +203,83 @@
   color: #fff;
 }
 
+/* Botón "Menú": solo por debajo de 68.75rem; arriba la navegación va completa en una fila. */
+.cat-menu-boton {
+  display: none;
+}
+
+@media (max-width: 68.74rem) {
+  .cat-menu-boton {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: auto;
+    min-height: var(--toque-min);
+    min-width: var(--toque-min);
+    margin: 0 0 0 auto;
+    padding: 0.5rem 1rem;
+    border: 1.5px solid var(--negro);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--negro);
+    font-size: 1rem;
+  }
+
+  .cat-menu-boton:hover,
+  .cat-menu-boton[aria-expanded="true"] {
+    background: var(--negro);
+    color: #fff;
+  }
+
+  .cat-menu-boton:focus-visible {
+    outline: 3px solid #2563eb;
+    outline-offset: 2px;
+  }
+
+  .cat-menu-boton .icono {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  /* Plegada: oculta solo con CSS, para que en escritorio siga visible sin depender del estado. */
+  .cat-nav {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+
+  .cat-nav[data-abierto="false"] {
+    display: none;
+  }
+
+  .cat-nav ul {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 0.25rem 0 0.5rem;
+    border-top: 1px solid var(--gris-borde);
+  }
+
+  .cat-nav li {
+    border-bottom: 1px solid var(--gris-borde);
+  }
+
+  .cat-nav a {
+    display: flex;
+    width: 100%;
+    font-size: 1.0625rem;
+  }
+
+  .cat-nav-acceso {
+    margin-left: 0;
+  }
+
+  .cat-nav a.cat-nav-cuenta {
+    width: auto;
+    margin: 0.5rem 0;
+    justify-content: center;
+  }
+}
+
 form.cat-busqueda {
   position: relative;
   flex-basis: 100%;
@@ -160,51 +310,58 @@ form.cat-busqueda {
 }
 
 /* ---- Portada ---- */
+/* El fondo ocupa todo el ancho; el contenido va en el contenedor común. Apilada (foto arriba, tarjeta debajo)
+   hasta 64rem; desde ahí, dos columnas: tarjeta de textos y buscador | foto, con el mismo eje que las secciones. */
 .cat-portada {
-  position: relative;
-  overflow: hidden;
   padding: 0;
   text-align: left;
   background: #f1eeeb;
-  min-height: 420px;
-}
-
-.cat-portada-imagen {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 60%;
-  height: 100%;
-}
-
-@media (max-width: 900px) {
-  .cat-portada-imagen {
-    width: 100%;
-  }
-}
-
-/* Velo claro a la izquierda para que el texto se lea sobre la ilustración. */
-.cat-portada::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: linear-gradient(90deg, rgba(248, 246, 244, 1) 0%, rgba(248, 246, 244, 0.95) 38%, rgba(248, 246, 244, 0) 52%);
 }
 
 .cat-portada-interior {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--section-gap);
+  align-items: center;
+  padding-block: clamp(1.25rem, 0.75rem + 2vw, 3rem);
+}
+
+/* Marco de la foto: 16:9 (como la ilustración y la vista previa de Admin > Portada), cover y sin deformar. */
+.cat-portada-figura {
   position: relative;
-  z-index: 2;
-  max-width: 1280px;
-  margin: auto;
-  padding: 48px 20px 64px;
+  min-width: 0;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 1rem;
+  background: #ebe5df;
+}
+
+.cat-portada-imagen {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@media (min-width: 64rem) {
+  .cat-portada-interior {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    grid-template-areas: "texto foto";
+  }
+
+  .cat-portada-tarjeta {
+    grid-area: texto;
+  }
+
+  .cat-portada-figura {
+    grid-area: foto;
+  }
 }
 
 .cat-portada-eyebrow {
   display: inline-block;
-  margin: 0 0 16px;
-  padding-bottom: 10px;
-  font-size: 13px;
+  margin: 0 0 1rem;
+  padding-bottom: 0.625rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.5px;
   text-transform: uppercase;
@@ -214,18 +371,18 @@ form.cat-busqueda {
 
 /* D-92: el h1 es pequeño, encima de la frase; la frase conserva el aspecto que tenía como h1. */
 .cat-portada h1.cat-portada-h1 {
-  max-width: 560px;
-  margin: 0 0 8px;
-  font-size: 20px;
+  max-width: 35rem;
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
   font-weight: 800;
   line-height: 1.2;
   color: var(--rojo-oscuro);
 }
 
 .cat-portada .cat-portada-frase {
-  max-width: 560px;
-  margin: 0 0 14px;
-  font-size: clamp(34px, 5vw, 54px);
+  max-width: 35rem;
+  margin: 0 0 0.875rem;
+  font-size: clamp(1.75rem, 0.9rem + 2.4vw, 3rem);
   font-weight: 900;
   line-height: 1.05;
   color: var(--negro);
@@ -236,9 +393,9 @@ form.cat-busqueda {
 }
 
 .cat-portada .cat-portada-texto {
-  max-width: 420px;
-  margin: 0 0 28px;
-  font-size: 19px;
+  max-width: 26.25rem;
+  margin: 0 0 1.75rem;
+  font-size: clamp(1.0625rem, 1rem + 0.4vw, 1.1875rem);
   line-height: 1.4;
   color: #333;
 }
@@ -247,7 +404,7 @@ form.cat-busqueda-portada {
   position: relative;
   display: flex;
   align-items: stretch;
-  max-width: 880px;
+  max-width: 55rem;
   margin: 0;
   padding: 0;
   background: #fff;
@@ -266,42 +423,68 @@ form.cat-busqueda-portada {
 .cat-busqueda-portada input {
   flex: 1;
   min-width: 0;
-  padding: 18px 16px 18px 54px;
+  min-height: var(--toque-min);
+  padding: 1.125rem 1rem 1.125rem 3.375rem;
   border: none;
   border-radius: 0;
-  font-size: 17px;
+  font-size: 1.0625rem;
 }
 
 .cat-busqueda-portada select {
   width: auto;
   margin: 0;
-  padding: 0 14px;
+  min-height: var(--toque-min);
+  padding: 0 0.875rem;
   border: none;
   border-left: 1px solid var(--gris-borde);
   border-radius: 0;
   background: #fff;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 600;
 }
 
 .cat-busqueda-portada button {
   width: auto;
   margin: 0;
-  padding: 0 36px;
+  min-height: var(--toque-min);
+  padding: 0 2.25rem;
   border-radius: 0;
   background: var(--rojo);
-  font-size: 18px;
+  font-size: 1.125rem;
 }
 
 .cat-busqueda-portada button:hover {
   background: var(--rojo-oscuro);
 }
 
-@media (max-width: 640px) {
-  .cat-portada::before {
-    background: linear-gradient(180deg, rgba(248, 246, 244, 0.96) 0%, rgba(248, 246, 244, 0.9) 60%, rgba(248, 246, 244, 0.55) 100%);
+/* Apilada (celular y tablet): la foto ocupa todo el ancho del contenedor, con el mismo eje que las demás
+   secciones, y un tope de alto para no dominar la primera pantalla (recorte vertical leve, sin deformar). */
+@media (min-width: 48rem) and (max-width: 63.99rem) {
+  .cat-portada-figura {
+    width: 100%;
+    max-height: 20rem;
+  }
+}
+
+/* D-93 (3b), guía visual: desde 48rem, textos y buscador en una tarjeta blanca. En celular la tarjeta no se
+   dibuja (foto arriba, textos y buscador debajo). */
+@media (min-width: 48rem) {
+  .cat-portada-tarjeta {
+    container-type: inline-size;
+    padding: clamp(1.25rem, 0.5rem + 2vw, 2.25rem);
+    border-radius: 1rem;
+    background: #fff;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12);
   }
 
+  .cat-portada .cat-portada-texto {
+    margin-bottom: 1.25rem;
+  }
+}
+
+/* Si la tarjeta es estrecha, el buscador pasa a dos filas (campo | tipo y Buscar): el texto de ayuda del campo
+   no se corta. */
+@container (max-width: 40rem) {
   form.cat-busqueda-portada {
     flex-wrap: wrap;
   }
@@ -312,17 +495,70 @@ form.cat-busqueda-portada {
   }
 
   .cat-busqueda-portada .cat-busqueda-lupa {
-    top: 30px;
+    top: 1.75rem;
   }
 
   .cat-busqueda-portada select {
     flex: 1;
-    padding: 12px 14px;
+    min-height: 3rem;
+    border-left: none;
+  }
+}
+
+/* Celular: foto (16:9, con tope de alto), textos y buscador apilados; sin velo ni texto sobre la foto.
+   La ilustración mide 640 x 360 (16:9): se ve entera. La foto se recorta desde el centro, igual que la
+   vista previa de Admin > Portada. El marco reserva el espacio antes de que cargue. */
+@media (max-width: 47.99rem) {
+  .cat-portada-figura {
+    width: 100%;
+    max-height: var(--portada-alto-movil);
+  }
+
+  /* Buscador vertical: campo, tipo y botón a todo el ancho, cada uno de al menos 44 px. */
+  form.cat-busqueda-portada {
+    flex-direction: column;
+  }
+
+  .cat-busqueda-portada input {
+    padding-top: 0.875rem;
+    padding-bottom: 0.875rem;
+    border-bottom: 1px solid var(--gris-borde);
+  }
+
+  .cat-busqueda-portada .cat-busqueda-lupa {
+    top: 1.5625rem;
+  }
+
+  .cat-busqueda-portada select {
+    width: 100%;
+    padding: 0.75rem 0.875rem;
     border-left: none;
   }
 
   .cat-busqueda-portada button {
-    padding: 12px 24px;
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+  }
+}
+
+/* Horizontal con poca altura (celular girado): portada más compacta, con los mismos textos. */
+@media (orientation: landscape) and (max-height: 30rem) {
+  .cat-portada-interior {
+    padding-top: 1rem;
+    padding-bottom: 2.5rem;
+  }
+
+  .cat-portada-eyebrow {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.375rem;
+  }
+
+  .cat-portada .cat-portada-frase {
+    font-size: clamp(1.75rem, 1rem + 2.5vw, 2.5rem);
+  }
+
+  .cat-portada .cat-portada-texto {
+    margin-bottom: 1rem;
   }
 }
 
@@ -330,16 +566,15 @@ form.cat-busqueda-portada {
 .cat-categorias {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: clamp(12px, 1.2vw, 24px);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-@media (min-width: 760px) {
+@media (min-width: 48rem) {
   .cat-categorias {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 18px;
   }
 }
 
@@ -370,8 +605,17 @@ form.cat-busqueda-portada {
 }
 
 .cat-categoria-nombre {
+  max-width: 100%;
   font-size: 21px;
   font-weight: 800;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 24.99rem) {
+  .cat-categoria-nombre {
+    font-size: 19px;
+  }
 }
 
 .cat-categoria-ver {
@@ -399,15 +643,13 @@ form.cat-busqueda-portada {
 }
 
 /* ---- Secciones de vehículos ---- */
+/* Las categorías van debajo de la portada, sin montarse sobre ella, en el mismo eje. */
 .cat-inicio .cat-pagina {
-  position: relative;
-  z-index: 3;
-  margin-top: -32px;
-  padding-top: 0;
+  padding-top: var(--section-gap);
 }
 
 .cat-inicio .cat-seccion {
-  margin-top: 40px;
+  margin-top: var(--section-gap);
 }
 
 .cat-seccion-cabecera {
@@ -430,6 +672,7 @@ form.cat-busqueda-portada {
 .cat-ver-todos {
   display: inline-flex;
   align-items: center;
+  min-height: var(--toque-min);
   gap: 2px;
   color: var(--rojo);
   font-size: 18px;
@@ -443,7 +686,6 @@ form.cat-busqueda-portada {
 
 .cat-tarjeta {
   border: 1px solid var(--gris-borde);
-  border-radius: 14px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
 }
 
@@ -451,18 +693,40 @@ form.cat-busqueda-portada {
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.14);
 }
 
+/* Todas las tarjetas con borde de 1 px (mismas medidas); la destacada se marca con color y un anillo. */
 .cat-tarjeta-destacada {
-  border: 2px solid var(--rojo);
+  border-color: var(--rojo);
+  box-shadow: 0 0 0 1px var(--rojo), 0 4px 14px rgba(0, 0, 0, 0.06);
 }
 
+.cat-tarjeta-destacada:hover {
+  box-shadow: 0 0 0 1px var(--rojo), 0 10px 26px rgba(0, 0, 0, 0.14);
+}
+
+/* Foto 4:3: la imagen llena el marco recortando desde el centro, sin deformarse. */
 .cat-tarjeta-foto {
   background: #ececec;
 }
 
+.cat-tarjeta-foto > img {
+  object-fit: cover;
+  object-position: center;
+}
+
+/* Título de 2 líneas como máximo, con alto fijo de 2 líneas: el precio y los datos quedan a la misma altura.
+   El nombre completo sigue en el enlace (lector de pantalla) y en el title del h3. El h3 no debe llevar
+   position: el ::after del enlace se ubica respecto a la tarjeta y así no lo recorta el overflow. */
 .cat-tarjeta-titulo {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  min-height: calc(2em * 1.3);
   margin-top: 4px;
   font-size: 19px;
   font-weight: 800;
+  line-height: 1.3;
 }
 
 .cat-tarjeta-enlace {
@@ -533,7 +797,7 @@ form.cat-busqueda-portada {
 
 /* ---- Franja de confianza ---- */
 .cat-servicios {
-  margin: 44px 0 0;
+  margin: var(--section-gap) 0 0;
 }
 
 .cat-servicios h2 {
@@ -551,7 +815,7 @@ form.cat-busqueda-portada {
   list-style: none;
 }
 
-@media (min-width: 760px) {
+@media (min-width: 47.5rem) {
   .cat-confianza {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -561,7 +825,7 @@ form.cat-busqueda-portada {
   }
 }
 
-@media (min-width: 1100px) {
+@media (min-width: 68.75rem) {
   .cat-confianza {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
@@ -595,7 +859,7 @@ form.cat-busqueda-portada {
   display: flex;
   align-items: center;
   gap: 28px;
-  margin-top: 44px;
+  margin-top: var(--section-gap);
   padding: 28px 32px;
   overflow: hidden;
   border-radius: 18px;
@@ -629,6 +893,7 @@ form.cat-busqueda-portada {
 .cat-credito-boton {
   display: inline-flex;
   align-items: center;
+  min-height: var(--toque-min);
   gap: 4px;
   padding: 11px 22px;
   border-radius: 10px;
@@ -643,7 +908,7 @@ form.cat-busqueda-portada {
   background: var(--rojo-oscuro);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 39.99rem) {
   .cat-credito {
     flex-direction: column;
     align-items: flex-start;
@@ -667,14 +932,14 @@ form.cat-busqueda-portada {
   margin-top: 24px;
 }
 
-@media (min-width: 760px) {
+@media (min-width: 47.5rem) {
   .cat-avisos {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 /* Tres accesos en una fila en pantallas anchas (vender, seguro y "Busco un vehículo", D-56 d B). */
-@media (min-width: 1000px) {
+@media (min-width: 62.5rem) {
   .cat-avisos {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -682,7 +947,7 @@ form.cat-busqueda-portada {
 
 .cat-aviso-bloque {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 18px;
   padding: 24px;
   border: 2px solid var(--gris-borde);
@@ -692,9 +957,18 @@ form.cat-busqueda-portada {
 }
 
 .cat-aviso-icono {
+  align-self: flex-start;
   width: 56px;
   height: 56px;
   color: var(--rojo);
+}
+
+/* Texto en columna y botón abajo: los tres botones quedan alineados aunque el texto ocupe más líneas. */
+.cat-aviso-bloque > div {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .cat-aviso-bloque h2 {
@@ -711,8 +985,11 @@ form.cat-busqueda-portada {
 }
 
 .cat-aviso-boton {
+  align-self: flex-start;
+  margin-top: auto;
   display: inline-flex;
   align-items: center;
+  min-height: var(--toque-min);
   gap: 4px;
   padding: 10px 18px;
   border-radius: 10px;
@@ -731,7 +1008,7 @@ form.cat-busqueda-portada {
   outline-offset: 2px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 39.99rem) {
   .cat-aviso-bloque {
     flex-direction: column;
     gap: 10px;
@@ -756,12 +1033,10 @@ form.cat-busqueda-portada {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 24px;
-  max-width: 1280px;
-  margin: auto;
-  padding: 36px 20px 20px;
+  padding-block: 36px 20px;
 }
 
-@media (min-width: 760px) {
+@media (min-width: 47.5rem) {
   /* P5b: cinco bloques (marca, Explora, Servicios, Tu cuenta, Contacto); en tabletas, dos filas. */
   .cat-pie-interior {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -798,10 +1073,13 @@ form.cat-busqueda-portada {
 }
 
 .cat-pie li {
-  margin: 0 0 6px;
+  margin: 0;
 }
 
 .cat-pie a:not(.cat-logo) {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--toque-min);
   color: #d6d6d6;
   text-decoration: none;
   overflow-wrap: anywhere;
@@ -813,9 +1091,7 @@ form.cat-busqueda-portada {
 }
 
 .cat-pie-legal {
-  max-width: 1280px;
-  margin: auto;
-  padding: 12px 20px 28px;
+  padding-block: 12px 28px;
   font-size: 13px;
   color: #9a9a9a;
 }
@@ -837,8 +1113,9 @@ form.cat-busqueda-portada {
 }
 
 .cat-pie .cat-pie-legal-enlaces a {
-  display: inline-block;
-  padding: 4px 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--toque-min);
   color: #d6d6d6;
   text-decoration: underline;
 }
@@ -865,8 +1142,9 @@ form.cat-busqueda-portada {
 }
 
 .no-encontrada-enlaces a {
-  display: inline-block;
-  padding: 6px 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--toque-min);
 }
 
 /* P9 (CA-P9-35): datos del responsable en las páginas legales. */
@@ -891,10 +1169,11 @@ form.cat-busqueda-portada {
   margin: 0;
 }
 
-/* D-42: foto de portada subida por el administrador (cubre el lado derecho, igual que la ilustración). */
+/* D-42: foto de portada subida por el administrador: llena su marco recortando desde el centro, sin deformarse
+   (igual que la vista previa de Admin > Portada). */
 .cat-portada-foto {
   object-fit: cover;
-  object-position: right center;
+  object-position: center;
 }
 
 /* ---- Administración: Portada ---- */
@@ -1057,8 +1336,8 @@ form.admin-portada-form {
 }
 
 .privacidad-cuerpo {
-  max-width: 720px;
-  padding: 20px;
+  max-width: 45rem;
+  padding: clamp(1.25rem, 0.75rem + 2vw, 2rem);
   background: #fff;
   border-radius: 14px;
   box-shadow: 0 6px 20px rgba(20, 38, 62, 0.08);
@@ -1082,7 +1361,7 @@ form.admin-portada-form {
 }
 
 
-@media (min-width: 1100px) {
+@media (min-width: 68.75rem) {
   .cat-pie-interior {
     grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
   }
@@ -1090,7 +1369,7 @@ form.admin-portada-form {
 
 /* ---- P5b: pantallas públicas de los avisos (/vende-tu-camion, /seguro-todo-riesgo) ---- */
 .aviso-publico-intro {
-  max-width: 640px;
+  max-width: 40rem;
   margin: 0 0 8px;
   line-height: 1.5;
   color: var(--gris-texto);
@@ -1098,9 +1377,9 @@ form.admin-portada-form {
 
 .aviso-publico-form {
   position: relative;
-  max-width: 640px;
+  max-width: 40rem;
   margin: 12px 0 0;
-  padding: 28px;
+  padding: clamp(1.25rem, 0.75rem + 2vw, 1.75rem);
   border-top: 6px solid var(--rojo);
 }
 
@@ -1113,11 +1392,6 @@ form.admin-portada-form {
   text-align: right;
 }
 
-@media (max-width: 480px) {
-  .aviso-publico-form {
-    padding: 20px 16px;
-  }
-}
 
 /* P5b: origen de la solicitud en la bandeja del administrador. */
 .lead-origen {
@@ -1163,7 +1437,7 @@ form.admin-portada-form {
 
 /* ---- P6: crédito, "Busco un vehículo" y "Mis solicitudes" ---- */
 .credito-vehiculo {
-  max-width: 640px;
+  max-width: 40rem;
   margin: 12px 0 0;
   padding: 12px 14px;
   border-left: 4px solid var(--rojo);
@@ -1351,4 +1625,335 @@ form.admin-portada-form {
 .cat-pie-redes .icono {
   width: 22px;
   height: 22px;
+}
+
+/* =====================================================================
+   D-93 (entrega 3a): encabezado fijo con lupa, carrusel de destacados y etiqueta "Disponible".
+   ===================================================================== */
+
+/* Las anclas, el foco y "Saltar al contenido" no quedan debajo del encabezado fijo (Encabezado.tsx mide su alto). */
+html {
+  scroll-padding-top: var(--alto-encabezado, 5.5rem);
+}
+
+/* Fijo arriba al desplazarse, siempre con el mismo alto (no se achica: sin saltos). Debajo del diálogo (z-index 10). */
+.cat-encabezado {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+/* Lupa: por debajo de 68.75rem en todas las páginas; en escritorio, solo fuera del inicio. */
+.cat-lupa-boton {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--toque-min);
+  height: var(--toque-min);
+  margin: 0;
+  padding: 0;
+  border: 1.5px solid var(--negro);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--negro);
+}
+
+.cat-lupa-boton:hover,
+.cat-lupa-boton[aria-expanded="true"] {
+  background: var(--negro);
+  color: #fff;
+}
+
+.cat-lupa-boton:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.cat-lupa-boton .icono {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+/* Buscador plegado tras la lupa: oculto solo con CSS mientras está cerrado. */
+form.cat-busqueda[data-abierta="false"] {
+  display: none;
+}
+
+@media (max-width: 68.74rem) {
+  .cat-lupa-boton {
+    margin-left: auto;
+  }
+
+  .cat-encabezado .cat-menu-boton {
+    margin-left: 0;
+  }
+
+  /* Menú abierto: si no cabe en la pantalla (celular girado), se desplaza por dentro. */
+  .cat-nav {
+    max-height: calc(100vh - 5rem);
+    max-height: calc(100dvh - 5rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+@media (min-width: 68.75rem) {
+  /* En el inicio el buscador está en la portada: sin lupa ni buscador en el encabezado. */
+  .cat-encabezado[data-inicio] .cat-lupa-boton,
+  .cat-encabezado[data-inicio] form.cat-busqueda {
+    display: none;
+  }
+
+  /* Fuera del inicio: logo, navegación y lupa en una fila; el buscador abierto, debajo. Separaciones algo menores
+     para que la lupa quepa en la misma fila desde 1100 px. */
+  .cat-encabezado:not([data-inicio]) .cat-encabezado-interior {
+    column-gap: clamp(1rem, 2.5vw - 0.75rem, 1.75rem);
+  }
+
+  .cat-encabezado:not([data-inicio]) .cat-nav ul {
+    column-gap: clamp(1rem, 2vw - 0.25rem, 1.625rem);
+  }
+
+  .cat-encabezado:not([data-inicio]) .cat-nav-acceso {
+    margin-left: 0.25rem;
+  }
+
+  .cat-encabezado .cat-nav {
+    order: 1;
+  }
+
+  .cat-encabezado .cat-lupa-boton {
+    order: 2;
+  }
+
+  .cat-encabezado form.cat-busqueda {
+    order: 3;
+  }
+}
+
+/* ---- Carrusel de destacados (CarruselVehiculos.tsx) ---- */
+.cat-carrusel-controles {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+}
+
+.cat-carrusel-controles[hidden] {
+  display: none;
+}
+
+.cat-carrusel-flecha {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--toque-min);
+  height: var(--toque-min);
+  margin: 0;
+  padding: 0;
+  border: 1.5px solid var(--negro);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--negro);
+}
+
+.cat-carrusel-flecha:hover:not([aria-disabled="true"]) {
+  background: var(--negro);
+  color: #fff;
+}
+
+.cat-carrusel-flecha[aria-disabled="true"] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.cat-carrusel-flecha:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.cat-carrusel-flecha .icono {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.cat-carrusel-anterior .icono {
+  rotate: 180deg;
+}
+
+/* Cuántas tarjetas se ven lo decide el ancho del carrusel, con los mismos cortes que la rejilla de Recientes
+   (--tarjeta-min de 18rem y separación de 1rem): 2 desde 37rem, 3 desde 56rem, 4 desde 75rem y 5 desde 94rem. */
+.cat-carrusel-marco {
+  container-type: inline-size;
+}
+
+.cat-carrusel-pista {
+  --visibles: 1;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - (var(--visibles) - 1) * 1rem) / var(--visibles));
+  gap: 1rem;
+  /* El relleno deja ver la sombra y el contorno de foco de la tarjeta; el margen negativo conserva el eje. */
+  margin: 0 -0.375rem;
+  padding: 0.375rem 0.375rem 0.75rem;
+  list-style: none;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 0.375rem;
+}
+
+.cat-carrusel-pista > li {
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+@container (min-width: 37rem) {
+  .cat-carrusel-pista {
+    --visibles: 2;
+  }
+}
+
+@container (min-width: 56rem) {
+  .cat-carrusel-pista {
+    --visibles: 3;
+  }
+}
+
+@container (min-width: 75rem) {
+  .cat-carrusel-pista {
+    --visibles: 4;
+  }
+}
+
+@container (min-width: 94rem) {
+  .cat-carrusel-pista {
+    --visibles: 5;
+  }
+}
+
+/* Etiqueta "Disponible": mismo formato y posición que "Reservado", en tono claro (contraste 5,7:1). */
+.cat-etiqueta-disponible {
+  background: #fff;
+  color: #067647;
+}
+
+/* =====================================================================
+   D-93 (entrega 3b): el sistema en las páginas públicas (áreas táctiles de 44 px, anchos en rem).
+   Solo con clases públicas: no se tocan las reglas globales form, button ni .container, ni las clases .inv-*.
+   ===================================================================== */
+
+/* Botones del catálogo (Aplicar, Limpiar, "Filtros", Reintentar, flechas de la galería); fuera del panel privado.
+   Solo el alto: el botón ya centra su texto y no se cambia su display (el de "Filtros" se oculta en escritorio). */
+.cat-pagina:not(.inv-pagina) .cat-boton {
+  min-height: var(--toque-min);
+}
+
+/* Filtros: campos de al menos 44 px de alto. */
+.cat-filtros input,
+.cat-filtros select {
+  min-height: var(--toque-min);
+}
+
+/* Paginación. */
+.cat-paginacion a,
+.cat-paginacion-inactivo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--toque-min);
+  min-width: var(--toque-min);
+}
+
+/* Ficha: "Volver a resultados" y el acceso al crédito. */
+.cat-volver a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--toque-min);
+}
+
+.credito-ficha .credito-ficha-boton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--toque-min);
+}
+
+/* Casilla de autorización en las páginas públicas: casilla de 24 px y fila (casilla + etiqueta, que también la
+   marca) de al menos 44 px de alto. */
+.cat-pagina:not(.inv-pagina) .autorizacion-casilla,
+.cuenta-publica .autorizacion-casilla {
+  align-items: center;
+  min-height: var(--toque-min);
+}
+
+.cat-pagina:not(.inv-pagina) .autorizacion-casilla input[type='checkbox'],
+.cuenta-publica .autorizacion-casilla input[type='checkbox'] {
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-top: 0;
+}
+
+.cat-pagina:not(.inv-pagina) .autorizacion-casilla label,
+.cuenta-publica .autorizacion-casilla label {
+  padding-block: 0.5rem;
+  cursor: pointer;
+}
+
+.cat-pagina:not(.inv-pagina) .autorizacion-terminos,
+.cuenta-publica .autorizacion-terminos {
+  padding-left: 2.125rem;
+}
+
+/* Confirmación de los avisos: las tres salidas de al menos 44 px. */
+.aviso-confirmacion-acciones .inv-boton-enlace,
+.aviso-confirmacion-acciones .aviso-confirmacion-otra {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--toque-min);
+}
+
+/* Inicio de sesión, registro y restablecer contraseña: contenedor común y formulario fluido. */
+.container.cuenta.cuenta-publica {
+  max-width: var(--page-max-width);
+  padding: clamp(1.5rem, 1rem + 2vw, 2.5rem) var(--page-gutter) 3rem;
+}
+
+.cuenta-publica form,
+.cuenta-publica > section {
+  width: min(100%, 27rem);
+  max-width: none;
+  padding: clamp(1.25rem, 0.5rem + 3vw, 2.2rem);
+}
+
+/* Categorías compactas 2 x 2 en celular; "Ver catálogo" (ya aria-hidden) se oculta solo a la vista. */
+@media (max-width: 47.99rem) {
+  .cat-categoria {
+    min-height: var(--toque-min);
+    padding: 0.75rem 0.5rem;
+    gap: 0.125rem;
+  }
+
+  .cat-categoria .icono {
+    width: 2.75rem;
+    height: 2.25rem;
+  }
+
+  .cat-categoria-nombre {
+    font-size: 1.0625rem;
+  }
+
+  .cat-categoria-ver {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
 }

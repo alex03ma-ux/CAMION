@@ -107,7 +107,7 @@ export function RestablecerContrasena() {
   }
 
   return (
-    <div className="container cuenta">
+    <div className="container cuenta cuenta-publica">
       <p className="eyebrow">RED DE VENTA</p>
       <h1 ref={titulo} tabIndex={-1}>
         {TITULO_RESTABLECER}

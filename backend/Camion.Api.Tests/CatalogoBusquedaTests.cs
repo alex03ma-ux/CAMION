@@ -97,7 +97,7 @@ public sealed class CatalogoBusquedaTests(CatalogoReferencia referencia) : IClas
         }
     }
 
-    [Fact(DisplayName = "CA-002-01, CA-003-02: límites de /inicio (12 recientes y 8 destacados, por publicadaEn descendente)")]
+    [Fact(DisplayName = "CA-002-01, CA-003-02: límites de /inicio (12 recientes y 10 destacados D-93, por publicadaEn descendente)")]
     public async Task Limites_del_inicio()
     {
         using var api = await CatalogoApi.Crear(visibles: false, noVisibles: false, extra: s =>
@@ -105,12 +105,12 @@ public sealed class CatalogoBusquedaTests(CatalogoReferencia referencia) : IClas
             for (var i = 1; i <= 15; i++)
             {
                 var p = s.Pub($"p{i:00}", publicadaEn: T.AddHours(-i));
-                if (i >= 6) s.Destacar(p, T.AddDays(-1), T.AddDays(1)); // 10 destacadas: p06 a p15
+                if (i >= 4) s.Destacar(p, T.AddDays(-1), T.AddDays(1)); // 12 destacadas: p04 a p15
             }
         });
         var inicio = await api.Inicio();
         Assert.Equal(Enumerable.Range(1, 12).Select(i => $"p{i:00}").ToArray(), Slugs(inicio.GetProperty("recientes")));
-        Assert.Equal(Enumerable.Range(6, 8).Select(i => $"p{i:00}").ToArray(), Slugs(inicio.GetProperty("destacados")));
+        Assert.Equal(Enumerable.Range(4, 10).Select(i => $"p{i:00}").ToArray(), Slugs(inicio.GetProperty("destacados")));
         Assert.All(inicio.GetProperty("destacados").EnumerateArray(), x => Assert.True(x.GetProperty("destacado").GetBoolean()));
     }
 

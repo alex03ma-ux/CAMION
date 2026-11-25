@@ -17,6 +17,7 @@ import { Aviso } from './Aviso'
 import { Filtros } from './Filtros'
 import { Paginacion } from './Paginacion'
 import { RejillaVehiculos } from './TarjetaVehiculo'
+import { useRestaurarScroll } from '../scrollPorEntrada'
 
 type ResultadosProps = {
   filtros: FiltrosCatalogo
@@ -52,6 +53,8 @@ export function Resultados({ filtros, ubicacion, opciones, onReintentarOpciones 
     consulta,
   )
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false)
+  // D-93 (3a): al volver de la ficha, la lista vuelve a la misma posición cuando ya está pintada.
+  useRestaurarScroll(estado.estado !== 'cargando')
 
   useEffect(() => {
     recordarBusqueda(ubicacion)

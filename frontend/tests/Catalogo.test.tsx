@@ -26,6 +26,7 @@ import {
   cabecera,
   guardarSesionFicticia,
   PERFIL_FICTICIO,
+  RUTA_PORTADA,
   simularFetch,
   type RespuestaSimulada,
 } from './helpers'
@@ -289,6 +290,32 @@ describe('Tarjeta', () => {
     expect(within(t4).getByText('Destacado')).toBeInTheDocument()
   })
 
+  it('D-93 etiqueta "Disponible" en la tarjeta si está disponible, en la misma lista que "Destacado" y "Reservado"', async () => {
+    const reservadoDestacado = { ...V2, slug: 'rd', titulo: 'Reservado destacado', destacado: true }
+    simularFetch({
+      [RUTA_FILTROS]: respuestaFiltros(),
+      [RUTA_INICIO]: { status: 200, body: { destacados: [], recientes: [V1, V2, V3, reservadoDestacado] } },
+    })
+    abrirApp('/')
+    // V1: disponible y destacado: las dos etiquetas, en una sola lista (sin superponerse).
+    const t1 = await tarjetaDe(V1.titulo)
+    const etiquetas1 = within(t1).getByRole('list', { name: 'Etiquetas' })
+    expect(within(etiquetas1).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Destacado', 'Disponible'])
+    // V2: reservado, nunca "Disponible".
+    const t2 = await tarjetaDe(V2.titulo)
+    expect(within(t2).getByText('Reservado')).toBeInTheDocument()
+    expect(within(t2).queryByText('Disponible')).not.toBeInTheDocument()
+    // V3: disponible, sin destacar.
+    const t3 = await tarjetaDe(V3.titulo)
+    expect(within(within(t3).getByRole('list', { name: 'Etiquetas' })).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      'Disponible',
+    ])
+    const t4 = await tarjetaDe(reservadoDestacado.titulo)
+    expect(within(t4).queryByText('Disponible')).not.toBeInTheDocument()
+    // "Usado" no existe en los datos: no se muestra.
+    expect(screen.queryByText('Usado')).not.toBeInTheDocument()
+  })
+
   it('CA-DET-12 sin foto se ve la imagen de reemplazo con texto alternativo; si la foto falla, también', async () => {
     simularFetch({ [RUTA_FILTROS]: respuestaFiltros(), [RUTA_INICIO]: { status: 200, body: { destacados: [], recientes: [V1, V3] } } })
     abrirApp('/')
@@ -299,6 +326,47 @@ describe('Tarjeta', () => {
     fireEvent.error(within(conFoto).getByRole('img', { name: `Foto de ${V1.titulo}` }))
     expect(within(conFoto).getByRole('img', { name: 'Sin foto disponible' })).toBeInTheDocument()
     expect(conFoto.querySelector('img')).toBeNull()
+  })
+
+  it('ajustes visuales: un título largo (cortado a 2 líneas con CSS) sigue completo en el enlace y en el title', async () => {
+    const largo = {
+      ...V2,
+      slug: 'largo',
+      titulo: 'Chevrolet NPR Reward Euro 6 furgón termoking doble troque con carrocería de estacas 2022',
+    }
+    simularFetch({ [RUTA_FILTROS]: respuestaFiltros(), [RUTA_INICIO]: { status: 200, body: { destacados: [], recientes: [largo] } } })
+    abrirApp('/')
+    const t = await tarjetaDe(largo.titulo)
+    const h3 = within(t).getByRole('heading', { level: 3 })
+    expect(h3).toHaveTextContent(largo.titulo)
+    expect(h3).toHaveAttribute('title', largo.titulo)
+    expect(within(t).getByRole('link')).toHaveAccessibleName(largo.titulo)
+  })
+
+  it('ajustes visuales: en Destacados, la foto que no carga también muestra "Sin foto disponible"', async () => {
+    simularFetch({ [RUTA_FILTROS]: respuestaFiltros(), [RUTA_INICIO]: { status: 200, body: { destacados: [V1], recientes: [] } } })
+    abrirApp('/')
+    const destacados = (await screen.findByRole('heading', { name: 'Destacados' })).closest('section') as HTMLElement
+    const t = within(destacados).getByRole('article')
+    fireEvent.error(within(t).getByRole('img', { name: `Foto de ${V1.titulo}` }))
+    expect(within(t).getByRole('img', { name: 'Sin foto disponible' })).toBeInTheDocument()
+    expect(within(t).getByText('Destacado')).toBeInTheDocument()
+  })
+
+  it('adaptable: la foto de la portada se pide con prioridad alta y las fotos de las tarjetas se cargan en diferido', async () => {
+    simularFetch({
+      [RUTA_FILTROS]: respuestaFiltros(),
+      [RUTA_INICIO]: { status: 200, body: { destacados: [V1], recientes: [V1] } },
+      [RUTA_PORTADA]: { status: 200, body: { url: '/media/portal/portada-20261125-abc.jpg' } },
+    })
+    const { container } = abrirApp('/')
+    await waitFor(() => expect(container.querySelector('.cat-portada img')).not.toBeNull())
+    const portada = container.querySelector('.cat-portada img') as HTMLImageElement
+    expect(portada).toHaveAttribute('fetchpriority', 'high')
+    expect(portada).toHaveAttribute('decoding', 'async')
+    const fotos = await screen.findAllByRole('img', { name: `Foto de ${V1.titulo}` })
+    expect(fotos).toHaveLength(2)
+    for (const foto of fotos) expect(foto).toHaveAttribute('loading', 'lazy')
   })
 
   it('CA-D17-06 a 08 / CA-UI-05 kilometraje en la tarjeta: Carrocería no, Maquinaria con 0 no, con 1200 sí, Camión con 0 sí', async () => {

@@ -40,6 +40,7 @@ import { BusquedaVehiculo } from './components/BusquedaVehiculo'
 import { CategoriaSinTipo } from './components/CategoriaSinTipo'
 import { DetalleVehiculo } from './components/DetalleVehiculo'
 import { PiePortal } from './components/PiePortal'
+import { aplicarScrollDeNavegacion, instalarScrollPorEntrada } from './scrollPorEntrada'
 import { Encabezado } from './components/Encabezado'
 import { Inicio } from './components/Inicio'
 import { InventarioPagina } from './components/InventarioPagina'
@@ -131,6 +132,8 @@ export default function App() {
 
   // CA-P10-36: los clics en enlaces internos cambian de pantalla sin recargar.
   useEffect(() => instalarNavegacionEnlaces(), [])
+  // D-93 (3a): posición de la página por entrada del historial (volver de la ficha al mismo punto del listado).
+  useEffect(() => instalarScrollPorEntrada(), [])
 
   // CA-P10-39: /vehiculos?tipoId=<id de una categoría> (o un enlace viejo #/buscar?tipoId=N) pasa a /camiones….
   const direccionCanonicaBusqueda = ruta.nombre === 'buscar' && ruta.categoria === null ? rutaBuscar(ruta.filtros) : null
@@ -277,6 +280,8 @@ export default function App() {
 
   // Al cambiar de ruta: título del documento y foco al título de la página (CA-P10-38).
   // En la cuenta, los formularios ya mueven el foco a su propio título.
+  // D-93 (3a): el foco no mueve la página (preventScroll); la posición la decide scrollPorEntrada: arriba en una
+  // navegación nueva, la guardada al volver (Atrás o "Volver a resultados").
   useEffect(() => {
     if (primeraRuta.current) {
       primeraRuta.current = false
@@ -290,8 +295,8 @@ export default function App() {
       activo !== null &&
       activo !== contenedor &&
       contenedor.contains(activo)
-    if (focoEnCuenta) return
-    contenedor.querySelector<HTMLHeadingElement>('h1')?.focus()
+    if (!focoEnCuenta) contenedor.querySelector<HTMLHeadingElement>('h1')?.focus({ preventScroll: true })
+    aplicarScrollDeNavegacion()
   }, [ubicacion])
 
   const conSesion = vista.tipo !== 'login' && vista.tipo !== 'registro'
@@ -600,8 +605,11 @@ export default function App() {
   }
 
   function renderCuenta() {
+    // D-93 (3b): el inicio de sesión y el registro son públicos y usan el contenedor común (cuenta-publica); el
+    // perfil y la administración conservan el de siempre.
+    const publica = vista.tipo === 'login' || vista.tipo === 'registro'
     return (
-    <div className="container cuenta">
+    <div className={publica ? 'container cuenta cuenta-publica' : 'container cuenta'}>
       {/* P10 (CA-P10-17, D-87). */}
       <p className="eyebrow">{MARCA.toUpperCase()}</p>
       <h1 tabIndex={-1}>{NOMBRE_PORTAL}</h1>

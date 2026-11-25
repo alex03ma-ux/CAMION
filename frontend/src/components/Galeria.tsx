@@ -60,6 +60,7 @@ export function Galeria({ fotos, titulo }: GaleriaProps) {
         <ImagenVehiculo
           key={foto.url}
           src={foto.url}
+          prioritaria
           alt={`${titulo}, foto ${actual + 1} de ${total}`}
         />
         {total > 1 && (

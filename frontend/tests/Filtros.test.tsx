@@ -19,7 +19,10 @@ import { irA, ubicacionActual } from './helpers'
 const VACIA = pagina([], 0)
 
 function campo(nombre: string) {
-  return screen.getByLabelText(nombre) as HTMLInputElement | HTMLSelectElement
+  // D-93 (3a): la lupa del encabezado también se llama "Buscar"; los campos son los del panel de filtros.
+  return within(screen.getByRole('complementary', { name: 'Filtros de búsqueda' })).getByLabelText(nombre) as
+    | HTMLInputElement
+    | HTMLSelectElement
 }
 
 function contador() {

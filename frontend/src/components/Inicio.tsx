@@ -35,7 +35,9 @@ import {
   IconoRevisado,
   IlustracionCamion,
 } from './IconosPortal'
+import { CarruselVehiculos } from './CarruselVehiculos'
 import { RejillaVehiculos } from './TarjetaVehiculo'
+import { useRestaurarScroll } from '../scrollPorEntrada'
 import { useContactoPortal } from './useContactoPortal'
 
 /** D-92 (decisión de la responsable, 2026-11-16): h1 de la portada. */
@@ -69,6 +71,8 @@ export const SERVICIOS: { texto: string; icono: ReactNode }[] = [
 export function Inicio({ tipos }: InicioProps) {
   const cargar = useCallback((signal: AbortSignal) => obtenerInicio(signal), [])
   const [estado, reintentar] = usePeticion(cargar, 'inicio')
+  // D-93 (3a): al volver de la ficha, la portada vuelve a la misma posición cuando los vehículos ya están pintados.
+  useRestaurarScroll(estado.estado !== 'cargando')
 
   const categorias = categoriasDisponibles(tipos)
   const fotoPortada = useFotoPortada()
@@ -83,22 +87,36 @@ export function Inicio({ tipos }: InicioProps) {
   return (
     <div className="cat-inicio">
       <section className="cat-portada" aria-labelledby="inicio-titulo">
-        {fotoPortada.url && !fotoPortada.fallida ? (
-          <img className="cat-portada-imagen cat-portada-foto" src={fotoPortada.url} alt="" onError={fotoPortada.alFallar} />
-        ) : (
-          <IlustracionCamion className="cat-portada-imagen" />
-        )}
+        {/* Estructura (D-93): el fondo ocupa todo el ancho; dentro del contenedor común, una cuadrícula con la
+            tarjeta de textos y buscador y la foto en su propio marco, alineada al mismo eje que el resto. */}
         <div className="cat-portada-interior">
-          <p className="cat-portada-eyebrow">Camiones, carros, carrocerías y maquinaria</p>
-          {/* P10 (CA-P10-20, D-92): h1 con las palabras que se buscan; la frase de D-42 queda como subtítulo igual. */}
-          <h1 id="inicio-titulo" className="cat-portada-h1" tabIndex={-1}>
-            {TITULO_PORTADA}
-          </h1>
-          <p className="cat-portada-frase">
-            Tu próximo negocio empieza con el <span className="texto-rojo">vehículo correcto</span>
-          </p>
-          <p className="cat-portada-texto">Compra con respaldo y te ayudamos con la financiación.</p>
-          <BusquedaPortada categorias={categorias} />
+          <div className="cat-portada-figura">
+            {fotoPortada.url && !fotoPortada.fallida ? (
+              <img
+                className="cat-portada-imagen cat-portada-foto"
+                src={fotoPortada.url}
+                alt=""
+                fetchPriority="high"
+                decoding="async"
+                onError={fotoPortada.alFallar}
+              />
+            ) : (
+              <IlustracionCamion className="cat-portada-imagen" />
+            )}
+          </div>
+          {/* D-93 (3b): en escritorio, textos y buscador van en una tarjeta blanca a la izquierda de la foto. */}
+          <div className="cat-portada-tarjeta">
+            <p className="cat-portada-eyebrow">Camiones, carros, carrocerías y maquinaria</p>
+            {/* P10 (CA-P10-20, D-92): h1 con las palabras que se buscan; la frase de D-42 queda como subtítulo igual. */}
+            <h1 id="inicio-titulo" className="cat-portada-h1" tabIndex={-1}>
+              {TITULO_PORTADA}
+            </h1>
+            <p className="cat-portada-frase">
+              Tu próximo negocio empieza con el <span className="texto-rojo">vehículo correcto</span>
+            </p>
+            <p className="cat-portada-texto">Compra con respaldo y te ayudamos con la financiación.</p>
+            <BusquedaPortada categorias={categorias} />
+          </div>
         </div>
       </section>
 
@@ -158,7 +176,8 @@ export function Inicio({ tipos }: InicioProps) {
                 Ver todos <IconoFlecha />
               </a>
             </div>
-            <RejillaVehiculos vehiculos={estado.datos.destacados} />
+            {/* D-93 (3a): carrusel horizontal; Recientes sigue en rejilla. */}
+            <CarruselVehiculos vehiculos={estado.datos.destacados} />
           </section>
         )}
 

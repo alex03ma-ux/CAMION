@@ -80,6 +80,15 @@ export function IconoLupa(p: PropsIcono) {
   )
 }
 
+/** Tres líneas del botón del menú del encabezado (tablet y celular). */
+export function IconoMenu(p: PropsIcono) {
+  return (
+    <Icono {...p} vista="0 0 24 24">
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </Icono>
+  )
+}
+
 export function IconoUsuario(p: PropsIcono) {
   return (
     <svg className={['icono', p.className].filter(Boolean).join(' ')} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">

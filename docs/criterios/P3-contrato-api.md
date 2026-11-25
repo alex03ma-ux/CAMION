@@ -108,7 +108,7 @@ Respuesta 200:
 { "destacados": [Tarjeta], "recientes": [Tarjeta] }
 ```
 
-- `destacados`: hasta 8, ordenados por `publicadaEn` descendente.
+- `destacados`: hasta 10 (D-93), ordenados por `publicadaEn` descendente.
 - `recientes`: hasta 12, ordenados por `publicadaEn` descendente. **Incluye** también a los destacados, que van marcados con `destacado: true`.
 
 ### GET /api/catalogo/publicaciones — HU-004 a HU-012

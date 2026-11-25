@@ -1142,3 +1142,13 @@ Detectadas al escribir `docs/criterios/criterios-P8-reportes.md` (2026-11-13, an
 
 ## Nota del coordinador (2026-11-16) — texto de WhatsApp de la ficha (D-47, CA-P10-83)
 - Con P10 el mensaje prellenado de "Escribir por WhatsApp" de la ficha termina con ": <dirección pública del vehículo>", para que el administrador o el asesor sepan de qué vehículo se trata. Cambio menor de texto sobre D-47, sin datos personales; lo verá la responsable en la prueba manual de P10.
+
+## D-93 — Diseño integral de las páginas públicas (fases visuales 1 a 3) · TOMADA (2026-11-25)
+- Contexto: la responsable pidió estandarizar la portada (fase 1), hacerla adaptable al ancho y al zoom con menú móvil (fase 2) y aplicar el sistema a todas las páginas públicas según una guía visual (fase 3).
+- **Decisiones de la responsable:**
+  - Fase 1: ancho total de 1280 px, la foto de la portada llega al borde y 1 columna en celular.
+  - Fase 2: foto arriba en celular, máximo 4 columnas y enlaces del pie de 44 px.
+  - Fase 3: entregas 3a (encabezado fijo con lupa, carrusel de destacados, volver a la misma posición) y 3b (sistema en todas las páginas públicas). Buscador del encabezado plegado tras la lupa. El panel privado va en una fase aparte.
+- **Destacados:** el backend envía hasta **10** (antes 8). Es un cambio de una constante, autorizado por la responsable el 2026-11-25. Siguen dependiendo de los planes de los asesores (D-38).
+- **Etiquetas de la tarjeta:** se muestra **"Disponible"**, que ya existe en los datos. **"Usado"** no existe en la base y queda pendiente hasta que el abogado defina cómo se anuncian usados y nuevos (D-44); requeriría migración y regla de negocio.
+- **Pendiente:** los textos de la guía ("Encuentra tu próximo camión", "Oportunidades seleccionadas para ti", "Tu aliado en el camino", "Financiamos tu camión"). Por ahora se conservan los textos actuales, incluido el h1 de D-92. La foto completa (contain) en la ficha también queda pendiente.

@@ -650,14 +650,11 @@ main:focus:not(:focus-visible) {
   border-bottom: 1px solid #e2e8f0;
 }
 
+/* El ancho y los márgenes laterales los pone el contenedor común (.page-container, portal.css). */
 .cat-encabezado-interior {
-  max-width: 1280px;
-  margin: auto;
-  padding: 12px 16px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px 24px;
 }
 
 .cat-logo {
@@ -724,15 +721,12 @@ form.cat-busqueda {
   padding-top: 40px;
 }
 
+/* En las páginas públicas el ancho y los márgenes laterales los pone el contenedor común (.page-container,
+   portal.css). Estos valores solo quedan para el panel privado (.cat-pagina.inv-pagina), que no cambia. */
 .cat-pagina {
-  max-width: 1280px;
+  max-width: 80rem;
   margin: auto;
-  padding: 24px 16px 48px;
-}
-
-.cat-portada {
-  padding: 24px 0 8px;
-  text-align: center;
+  padding: 24px clamp(1rem, 4vw, 1.25rem) 48px;
 }
 
 .cat-portada p {
@@ -803,32 +797,17 @@ form.cat-busqueda {
   color: #52657b;
 }
 
-/* Rejilla: 1 columna en móvil, 2 en tableta, 3 y 4 en escritorio. */
+/* Rejilla: las columnas salen del ancho mínimo de la tarjeta (--tarjeta-min, portal.css), sin puntos de quiebre.
+   auto-fill conserva las columnas vacías: pocas tarjetas no se estiran. min(100%, ...) evita desbordes en 320 px.
+   Con el contenedor de 1600 px salen como máximo 5 (4 en escritorio normal, 5 desde unos 1504 px de contenido);
+   en los resultados, con los filtros al lado, como máximo 4. */
 .cat-rejilla {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--tarjeta-min, 18rem)), 1fr));
+  gap: 1rem;
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-@media (min-width: 600px) {
-  .cat-rejilla {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1000px) {
-  .cat-rejilla {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1240px) {
-  .cat-pagina > .cat-seccion .cat-rejilla {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
 }
 
 .cat-tarjeta {
@@ -854,8 +833,7 @@ form.cat-busqueda {
 .cat-tarjeta-foto {
   order: -1;
   margin: 0 0 12px;
-  aspect-ratio: 16 / 10;
-  background: #e2e8f0;
+  aspect-ratio: 4 / 3;
 }
 
 .cat-tarjeta-foto img,
@@ -966,9 +944,10 @@ form.cat-busqueda {
   display: block;
 }
 
-@media (min-width: 900px) {
+/* D-93 (3b): barra de filtros y corte en rem. */
+@media (min-width: 56.25rem) {
   .cat-resultados {
-    grid-template-columns: 280px minmax(0, 1fr);
+    grid-template-columns: 17.5rem minmax(0, 1fr);
     align-items: start;
   }
 
@@ -1077,7 +1056,7 @@ form.cat-filtros {
   gap: 24px;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 56.25rem) {
   .cat-detalle-cuerpo {
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     align-items: start;

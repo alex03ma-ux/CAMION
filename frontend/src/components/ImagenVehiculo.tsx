@@ -5,6 +5,11 @@ type ImagenVehiculoProps = {
   /** Texto alternativo; vacío si la imagen es decorativa (p. ej. una miniatura con etiqueta propia). */
   alt: string
   className?: string
+  /**
+   * D-93 (3b): la foto principal de la ficha se pide de inmediato y con prioridad alta (es la imagen más grande de
+   * la pantalla); el resto (tarjetas, miniaturas) se carga en diferido.
+   */
+  prioritaria?: boolean
 }
 
 /** Imagen de reemplazo en SVG (sin archivos externos) cuando no hay foto o no carga. */
@@ -38,7 +43,7 @@ function ImagenReemplazo({ alt, className }: { alt: string; className?: string }
  * Foto del vehículo. Si `src` es null o la carga falla (onError), muestra la
  * imagen de reemplazo con el mismo texto alternativo.
  */
-export function ImagenVehiculo({ src, alt, className }: ImagenVehiculoProps) {
+export function ImagenVehiculo({ src, alt, className, prioritaria = false }: ImagenVehiculoProps) {
   const [fallida, setFallida] = useState<string | null>(null)
   if (!src || fallida === src) {
     return (
@@ -50,7 +55,8 @@ export function ImagenVehiculo({ src, alt, className }: ImagenVehiculoProps) {
       className={className}
       src={src}
       alt={alt}
-      loading="lazy"
+      loading={prioritaria ? 'eager' : 'lazy'}
+      fetchPriority={prioritaria ? 'high' : undefined}
       decoding="async"
       onError={() => setFallida(src)}
     />

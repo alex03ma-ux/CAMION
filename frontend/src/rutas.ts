@@ -29,6 +29,7 @@ import {
   type SlugCategoria,
 } from './api/catalogo'
 import { guardarCodigoRecuperacion } from './api/recuperacion'
+import { antesDeNavegar, despuesDeNavegar, estadoNuevaEntrada } from './scrollPorEntrada'
 
 export type Ruta =
   | { nombre: 'inicio' }
@@ -463,11 +464,20 @@ export function useRuta(): Ruta {
 /**
  * Navega a una dirección del portal sin recargar (CA-P10-36): `pushState` (o `replaceState` con `reemplazar`) y aviso
  * a `useUbicacion`. Si ya se está en esa dirección, no hace nada.
+ *
+ * D-93 (3a): antes de cambiar se guarda la posición de la página actual; cada entrada lleva su propia clave en
+ * `history.state` (`scrollPorEntrada.ts`). `restaurarScroll` = volver a la posición guardada para esa dirección
+ * (enlace "Volver a resultados", marcado con `data-restaurar-scroll`).
  */
-export function navegar(direccion: string, { reemplazar = false }: { reemplazar?: boolean } = {}): void {
+export function navegar(
+  direccion: string,
+  { reemplazar = false, restaurarScroll = false }: { reemplazar?: boolean; restaurarScroll?: boolean } = {},
+): void {
   if (`${window.location.pathname}${window.location.search}${window.location.hash}` === direccion) return
-  if (reemplazar) window.history.replaceState(null, '', direccion)
-  else window.history.pushState(null, '', direccion)
+  antesDeNavegar(direccion, { reemplazar, restaurar: restaurarScroll })
+  if (reemplazar) window.history.replaceState(window.history.state, '', direccion)
+  else window.history.pushState(estadoNuevaEntrada(), '', direccion)
+  despuesDeNavegar()
   window.dispatchEvent(new Event(EVENTO_NAVEGACION))
 }
 
@@ -496,7 +506,7 @@ export function instalarNavegacionEnlaces(): () => void {
     if (url.origin !== window.location.origin) return
     if (esRutaReservada(url.pathname)) return
     evento.preventDefault()
-    navegar(`${url.pathname}${url.search}${url.hash}`)
+    navegar(`${url.pathname}${url.search}${url.hash}`, { restaurarScroll: destino.hasAttribute('data-restaurar-scroll') })
   }
   document.addEventListener('click', alHacerClic)
   return () => document.removeEventListener('click', alHacerClic)
