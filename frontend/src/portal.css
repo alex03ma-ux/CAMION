@@ -17,7 +17,7 @@
   --tarjeta-min: 18rem;
   /* Área táctil mínima (44 × 44 px). */
   --toque-min: 2.75rem;
-  /* Alto máximo de la foto de la portada en celular (16:9). */
+  /* Alto máximo de la foto de la portada en celular (marco 16:9 a todo el ancho del contenedor). */
   --portada-alto-movil: 12rem;
 }
 
@@ -457,11 +457,12 @@ form.cat-busqueda-portada {
   background: var(--rojo-oscuro);
 }
 
-/* Tablet (apilada): foto arriba, centrada y con un tope de ancho para no dominar la primera pantalla. */
+/* Apilada (celular y tablet): la foto ocupa todo el ancho del contenedor, con el mismo eje que las demás
+   secciones, y un tope de alto para no dominar la primera pantalla (recorte vertical leve, sin deformar). */
 @media (min-width: 48rem) and (max-width: 63.99rem) {
   .cat-portada-figura {
-    width: min(100%, 32rem);
-    margin-inline: auto;
+    width: 100%;
+    max-height: 20rem;
   }
 }
 
@@ -509,8 +510,8 @@ form.cat-busqueda-portada {
    vista previa de Admin > Portada. El marco reserva el espacio antes de que cargue. */
 @media (max-width: 47.99rem) {
   .cat-portada-figura {
-    width: min(100%, calc(var(--portada-alto-movil) * 16 / 9));
-    margin-inline: auto;
+    width: 100%;
+    max-height: var(--portada-alto-movil);
   }
 
   /* Buscador vertical: campo, tipo y botón a todo el ancho, cada uno de al menos 44 px. */
